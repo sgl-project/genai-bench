@@ -1,0 +1,45 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Pyre type checker
+.pyre/
+
+# PyCharm
+.idea
+
+# VSCode
+.vscode
+
+# uv
+uv.lock
+poetry.lock
+.ruff_cache
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+.coverage
+
+.DS_Store
+./.DS_Store
+/dist/
+
+# data
+*.jsonl
+
+# generated data
+genai_bench*.log
+# PyPI configuration file
+.pypirc
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore
