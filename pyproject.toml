@@ -1,0 +1,109 @@
+[project]
+name = "genai-bench"
+version = "0.0.0+DEV-DONOTUSE"
+description = ""
+authors = [{ name = "Chang Su", email = "chang.s.su@oracle.com" }]
+requires-python = ">=3.11,<3.13"
+readme = "README.md"
+dependencies = [
+    "locust>=2.32.4,<3.0.0",
+    "numpy>=1.26.4",
+    "requests>=2.32.3,<3.0.0",
+    "transformers>=4.44.2,<5.0.0",
+    "click>=8.1.7",
+    "pandas>=2.2.2",
+    "pydantic>=2.8.2",
+    "rich>=13.8.0",
+    "openpyxl>=3.1.5,<4.0.0",
+    "matplotlib>=3.9.2,<4.0.0",
+    "gevent>=24.2.1",
+    "oci>=2.150.1",
+    "tenacity>=8.2.3,<9.0.0",
+    "datasets>=3.1.0",
+    "pillow>=11.1.0,<12.0.0",
+]
+
+[project.scripts]
+genai-bench = "genai_bench.cli.cli:cli"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5.6,<0.6.0",
+    "mypy>=1.11.1,<2.0.0",
+    "isort>=5.13.2,<6.0.0",
+    "black>=24.8.0,<25.0.0",
+    "pre-commit>=3.8.0,<4.0.0",
+    "pytest>=8.3.2,<9.0.0",
+    "pytest-cov>=5.0.0,<6.0.0",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["genai_bench"]
+
+[tool.hatch.build.targets.wheel]
+include = ["genai_bench"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+extend-exclude = [
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    "G",
+]
+ignore = [
+    # star imports
+    "F405", "F403",
+    # lambda expression assignment
+    "E731",
+    # Loop control variable not used within loop body
+    "B007",
+    # logging statement uses f-string
+    "G004",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*" = ["F841"]
+"genai_bench/sampling/__init__.py" = ["F401"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+exclude = '\.venv|build|dist'
+
+[tool.isort]
+profile = "black"
+sections = [
+    "FUTURE",
+    "LOCUST",
+    "STDLIB",
+    "THIRDPARTY",
+    "FIRSTPARTY",
+    "LOCALFOLDER",
+]
+known_locust = ["locust"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disable_error_code = "import-untyped"
+
+files = "genai_bench"
+exclude = [
+    "genai_bench/analysis/",
+    "genai_bench/ui/"
+]
