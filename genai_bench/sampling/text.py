@@ -32,6 +32,7 @@ class TextSampler(Sampler):
         output_modality: str,
         data: List[str],
         use_scenario: bool = True,
+        prefix_length: int = 0,
         additional_request_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -48,6 +49,8 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = False
 
         self.batch_size = 1  # Default batch size
+        self.prefix_length = prefix_length
+        self.prefix = ""
 
     def sample(self, scenario: Scenario) -> UserRequest:
         """
@@ -161,6 +164,32 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
+    def _generate_prefix(self) -> str:
+        """
+        Generates prefix of length self.prefix_length to be
+        prepended to all input prompts.
+        """
+
+        data_copy = self.data.copy()
+
+        prefix = ""
+        prefix_tokens = 0
+        # Generate the prefix
+        while prefix_tokens < self.prefix_length:
+            random.shuffle(data_copy)
+            for line in data_copy:
+                tokens = self.get_token_length(line)
+                if prefix_tokens + tokens > self.prefix_length:
+                    # Truncate the line if it exceeds the remaining prefix length
+                    remaining_prefix_len = self.prefix_length - prefix_tokens
+                    prefix += line[:remaining_prefix_len]
+                    prefix_tokens += remaining_prefix_len
+                    break
+                prefix += line
+                prefix_tokens += tokens
+
+        return prefix
+
     def _sample_text(self, num_input_tokens: int) -> str:
         """
         Samples text from a list of lines based on the specified number of
@@ -169,13 +198,28 @@ class TextSampler(Sampler):
         Args:
             num_input_tokens (int): The target number of input tokens.
 
+        Raises:
+            ValueError: if the prompt length is shorter than the prefix
+                length.
+
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
         data_copy = self.data.copy()
-        prompt = ""
-        left_tokens_to_sample = num_input_tokens
 
+        if num_input_tokens <= self.prefix_length:
+            raise ValueError("Prefix length must be shorter than total input length")
+
+        # Generate the prefix if it hasn't been created yet
+        if len(self.prefix) != self.prefix_length:
+            self.prefix = self._generate_prefix()
+
+        # Prepend the prefix to all prompts with a 4 randomly picked digits
+        prompt = f"{self.prefix}{random.randint(1000,9999)}"
+        left_tokens_to_sample = num_input_tokens - len(prompt)
+
+        if left_tokens_to_sample < 0:
+            return prompt[: len(prompt) + left_tokens_to_sample]
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
