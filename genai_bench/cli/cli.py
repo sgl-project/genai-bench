@@ -138,6 +138,7 @@ def benchmark(
     github_token,
     github_owner,
     github_repo,
+    prompt_prefix_length,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -283,6 +284,7 @@ def benchmark(
         data=data,
         use_scenario=use_scenario,
         additional_request_params=additional_request_params,
+        prefix_length=prompt_prefix_length,
     )
 
     if not sampler.use_scenario:
