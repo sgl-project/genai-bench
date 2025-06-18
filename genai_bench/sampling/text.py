@@ -31,6 +31,7 @@ class TextSampler(Sampler):
         model: str,
         output_modality: str,
         data: List[str],
+        prompt_prefix_ratio: float = 0.0,
         additional_request_params: Optional[Dict[str, Any]] = None,
         dataset_config: Optional[DatasetConfig] = None,
         **kwargs,
@@ -41,6 +42,8 @@ class TextSampler(Sampler):
 
         self.data = data
         self.batch_size = 1  # Default batch size
+        self.prompt_prefix_ratio = prompt_prefix_ratio
+        self.prefix = ""
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -167,6 +170,68 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
+    def _sample_prefix(self, current_prefix_length) -> str:
+        """
+        Generates prefix of length current_prefix_length to be
+        prepended to all input prompts.
+        """
+
+        data_copy = self.data.copy()
+
+        if not self.data:
+            raise ValueError("Cannot generate prefix from an empty dataset")
+
+        prefix = ""
+        prefix_tokens_len = 0
+        # Generate the prefix
+        while prefix_tokens_len < current_prefix_length:
+            random.shuffle(data_copy)
+            for line in data_copy:
+                line_tokens = self.tokenizer.encode(line)
+                num_line_tokens = len(line_tokens)
+                if prefix_tokens_len + num_line_tokens > current_prefix_length:
+                    remaining_prefix_len = current_prefix_length - prefix_tokens_len
+                    truncated_text = self.tokenizer.decode(
+                        line_tokens[:remaining_prefix_len]
+                    )
+                    prefix += truncated_text
+                    return prefix
+                prefix += line
+                prefix_tokens_len = len(self.tokenizer.encode(prefix))
+
+        return prefix
+
+    def _get_current_prefix(self, prefix_length: int) -> str:
+        """
+        Returns the prefix for the current prompt of the specified length.
+
+        Args:
+            current_prefix_length (int): The desired length of the prefix.
+        """
+
+        # Prefix of the current prompt being generated
+        current_prefix: str = self.prefix
+
+        # Get the difference in length between the existing
+        # prefix and the desired prefix length
+
+        current_prefix_tokens = self.tokenizer.encode(current_prefix)
+        current_prefix_length = len(current_prefix_tokens)
+        prefix_length_diff: int = prefix_length - current_prefix_length
+
+        # Generate the prefix if it hasn't been created yet, or add
+        # to its length if it's not long enough
+        if prefix_length_diff > 0:
+            self.prefix += self._sample_prefix(prefix_length_diff)
+            current_prefix = self.prefix
+
+        elif prefix_length_diff < 0:
+            # If the prefix is longer than needed, truncate it
+            current_prefix = self.tokenizer.decode(
+                current_prefix_tokens[:prefix_length]
+            )
+        return current_prefix
+
     def _sample_text(self, num_input_tokens: Optional[int]) -> str:
         """
         Samples text from a list of lines based on the specified number of
@@ -176,16 +241,40 @@ class TextSampler(Sampler):
         Args:
             num_input_tokens (int): The target number of input tokens.
 
+        Raises:
+            ValueError: if the prompt length is shorter than the prefix
+                length.
+
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
         if not num_input_tokens:
             return random.choice(self.data)
 
-        data_copy = self.data.copy()
-        prompt = ""
-        left_tokens_to_sample = num_input_tokens
+        # Calculate actual prefix length based on ratio or fixed length
+        current_prefix_length = 0
+        if self.prompt_prefix_ratio > 0.0:
+            current_prefix_length = round(num_input_tokens * self.prompt_prefix_ratio)
 
+        data_copy = self.data.copy()
+
+        if not self.data:
+            raise ValueError("Cannot sample text from an empty dataset")
+
+        if num_input_tokens <= current_prefix_length:
+            raise ValueError("Prefix length must be shorter than total input length")
+
+        # Get the prompt prefix
+        current_prefix: str = self._get_current_prefix(current_prefix_length)
+
+        # Prepend the prefix to all prompts with a randomly picked 4 digits
+        prompt = f"{current_prefix}{random.randint(1000,9999)}"
+
+        prompt_tokens = self.tokenizer.encode(prompt)
+        left_tokens_to_sample = num_input_tokens - len(prompt_tokens)
+
+        if left_tokens_to_sample < 0:
+            return self.tokenizer.decode(prompt_tokens[:num_input_tokens])
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:

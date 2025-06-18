@@ -369,6 +369,14 @@ def server_options(func):
 # Group experiment-related options
 def experiment_options(func):
     func = click.option(
+        "--prompt-prefix-ratio",
+        type=click.FloatRange(0.0, 1.0),
+        default=0.0,
+        help="The ratio of prefix length to overall input length "
+        "to prepend to all inputs to test prefix caching. "
+        "Value should be between 0.0 and 1.0. ",
+    )(func)
+    func = click.option(
         "--experiment-folder-name",
         type=str,
         default=None,
