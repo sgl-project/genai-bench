@@ -134,7 +134,7 @@ def test_validate_tokenizer_with_hf_api(monkeypatch):
     hf_token = "mock_api_key"
     mock_tokenizer = MagicMock()
 
-    monkeypatch.setenv("HUGGINGFACE_API_KEY", hf_token)
+    monkeypatch.setenv("HF_TOKEN", hf_token)
 
     with patch(
         "transformers.AutoTokenizer.from_pretrained",
@@ -151,7 +151,7 @@ def test_validate_tokenizer_with_hf_api(monkeypatch):
 
 def test_validate_tokenizer_no_hf_token(monkeypatch):
     monkeypatch.setattr(Path, "exists", lambda self: False)
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
 
     model_name = "bert-base-uncased"
 

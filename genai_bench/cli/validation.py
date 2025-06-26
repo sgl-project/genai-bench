@@ -139,10 +139,10 @@ def validate_tokenizer(model_tokenizer):
         # Load the tokenizer directly from the local path
         tokenizer = AutoTokenizer.from_pretrained(model_tokenizer)
     else:
-        hf_token = os.environ.get("HUGGINGFACE_API_KEY")
+        hf_token = os.environ.get("HF_TOKEN")
         if hf_token is None:
             raise click.BadParameter(
-                "The HUGGINGFACE_API_KEY environment variable is not set. "
+                "The HF_TOKEN environment variable is not set. "
                 "It is a required parameter to download tokenizer from "
                 "HuggingFace."
             )

@@ -166,7 +166,7 @@ Below is a sample command you can use to start a benchmark. The command will con
 
 ```shell
 # Optional. This is required when you load the tokenizer from huggingface.co with a model-id
-export HUGGINGFACE_API_KEY="<your-key>"  
+export HF_TOKEN="<your-key>"  
 # HF transformers will log a warning about torch not installed, since benchmark doesn't really need torch 
 # and cuda, we use this env to disable the warning
 export TRANSFORMERS_VERBOSITY=error 
@@ -580,7 +580,7 @@ docker run \
     -tid \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
-    --env HUGGINGFACE_API_KEY="your_huggingface_api_key" \
+    --env HF_TOKEN="your_HF_TOKEN" \
     --network benchmark-network \
     -v /mnt/data/models:/models \
     -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
@@ -630,7 +630,7 @@ docker run \
     -tid \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
-    --env HUGGINGFACE_API_KEY="your_huggingface_api_key" \
+    --env HF_TOKEN="your_HF_TOKEN" \
     --network benchmark-network \
     -v /mnt/data/models:/models \
     -v $HOST_OUTPUT_DIR:$CONTAINER_OUTPUT_DIR \
