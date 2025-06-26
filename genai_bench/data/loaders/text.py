@@ -23,7 +23,9 @@ class TextDatasetLoader(DatasetLoader):
             return data
         # Handle HuggingFace datasets
         prompt_column = self.dataset_config.prompt_column
-        if hasattr(data, "__getitem__") and prompt_column:
+        try:
             return data[prompt_column]
-        else:
-            raise ValueError(f"Cannot extract prompts from data: {type(data)}")
+        except (ValueError, KeyError) as e:
+            raise ValueError(
+                f"Cannot extract prompts from data: {type(data)}, error: {str(e)}"
+            ) from e

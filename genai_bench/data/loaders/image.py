@@ -21,9 +21,14 @@ class ImageDatasetLoader(DatasetLoader):
         image_column = self.dataset_config.image_column
         prompt_column = self.dataset_config.prompt_column
 
-        for item in data:
-            image = item[image_column] if image_column else None
-            prompt = item[prompt_column] if prompt_column else ""
-            if image:
-                sampled_requests.append((prompt, image))
+        try:
+            for item in data:
+                image = item[image_column] if image_column else None
+                prompt = item[prompt_column] if prompt_column else ""
+                if image:
+                    sampled_requests.append((prompt, image))
+        except (ValueError, KeyError) as e:
+            raise ValueError(
+                f"Cannot extract image data from dataset: {type(data)}, error: {str(e)}"
+            ) from e
         return sampled_requests
