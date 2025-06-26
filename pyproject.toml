@@ -5,6 +5,18 @@ description = "A powerful benchmark tool designed for comprehensive token-level 
 authors = [{ name = "Chang Su", email = "chang.s.su@oracle.com" }]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Benchmark",
+    "Typing :: Typed",
+]
 dependencies = [
     "locust>=2.32.4,<3.0.0",
     "numpy>=1.26.4",

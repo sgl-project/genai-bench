@@ -1,8 +1,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/github_username/repo_name">
-    <img src="docs/assets/logo.png" alt="Logo" width="" height="150">
+  <a href="https://github.com/sgl-project/genai-bench">
+    <img src="https://raw.githubusercontent.com/sgl-project/genai-bench/main/docs/assets/logo.png" alt="Logo" width="" height="150">
   </a>
 
 <h3 align="center">
@@ -10,12 +10,27 @@ Unified, accurate, and beautiful LLM Benchmarking
 </h3>
 
 <p align="center">
+  <a href="https://pypi.org/project/genai-bench/">
+    <img alt="PyPI version" src="https://img.shields.io/pypi/v/genai-bench">
+  </a>
+  <a href="https://github.com/sgl-project/genai-bench">
+    <img alt="Python versions" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsgl-project%2Fgenai-bench%2Fmain%2Fpyproject.toml">
+  </a>
+  <a href="https://github.com/sgl-project/genai-bench">
+    <img alt="Types - Mypy" src="https://img.shields.io/badge/types-Mypy-blue">
+  </a>
+  <a href="https://github.com/sgl-project/genai-bench/blob/main/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/sgl-project/genai-bench">
+  </a>
+</p>
+
+<p align="center">
 | <a href="./USER_GUIDE.md"><b>User Guide</b></a> | <a href="CONTRIBUTING.md"><b>Contribution Guideline</b></a> |
 </p>
 
 </div>
 
-<p align="center"><img src="docs/assets/ui_dashboard.png" alt="UI" width="1000" height=""></p>
+<p align="center"><img src="https://raw.githubusercontent.com/sgl-project/genai-bench/main/docs/assets/ui_dashboard.png" alt="UI" width="1000" height=""></p>
 
 ## Introduction
 
