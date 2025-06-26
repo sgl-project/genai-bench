@@ -34,6 +34,25 @@ This page contains a short user guide to install and use genai-bench.
 
 ## Getting Started
 
+### Option 1: Install from PyPI (Recommended)
+
+Install the latest published version directly from PyPI:
+
+```shell
+pip install genai-bench
+```
+
+Then run genai-bench commands:
+
+```shell
+genai-bench --help
+genai-bench benchmark --help
+```
+
+### Option 2: Development Setup
+
+For development or to use the latest features:
+
 1. Please make sure you have Python3.11 installed. You can check out online how to set it up.
 2. Use the virtual environment from uv
 
@@ -56,8 +75,6 @@ make install
 
 ```shell
 genai-bench --help
-
-genai-bench benchmark --help
 ```
 
 <!-- TOC --><a name="command-guidelines"></a>
@@ -517,8 +534,17 @@ The default object prefix is empty, but you can specify a prefix using the `--pr
 
 ## Running Benchmark Using `genai-bench` Container
 
-### Pending
-We will publish image to docker hub soon. For now, you can build image from the [Dockerfile](./Dockerfile).
+### Using Pre-built Docker Image
+
+Pull the latest docker image:
+
+```shell
+docker pull ghcr.io/moirai-internal/genai-bench:v0.0.1
+```
+
+### Building from Source
+
+Alternatively, you can build the image locally from the [Dockerfile](./Dockerfile):
 
 ```shell
 docker build . -f Dockerfile -t genai-bench:dev
@@ -620,8 +646,6 @@ You can also utilize `tmux` for additional parallelism and session control.
 ### Monitor benchmark using volume mount
 
 To monitor benchmark interim results using the genai-bench container, you can leverage volume mounts along with the `--experiment-base-dir` option.
-
-
 
 ```shell
 HOST_OUTPUT_DIR=$HOME/benchmark_results
