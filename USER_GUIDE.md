@@ -215,7 +215,7 @@ genai-bench benchmark \
             --num-concurrency 8 \
             --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
             --dataset-image-column "image" \
-            --dataset-prompt-column "conversations"
+            --dataset-prompt-column "prompt"
 ```
 
 <!-- TOC --><a name="start-an-embedding-benchmark"></a>
@@ -569,7 +569,7 @@ docker run \
     --num-concurrency 4 \
     --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
     --dataset-image-column "image" \
-    --dataset-prompt-column "conversations"
+    --dataset-prompt-column "prompt"
 ```
 
 Note that `genai-bench` is already the entrypoint of the container, so you only need to provide the command arguments afterward.
@@ -619,6 +619,6 @@ docker run \
     --num-concurrency 4 \
     --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
     --dataset-image-column "image" \
-    --dataset-prompt-column "conversations" \
+    --dataset-prompt-column "prompt" \
     --experiment-base-dir $CONTAINER_OUTPUT_DIR
 ```
