@@ -79,9 +79,18 @@ def validate_dataset_path_callback(ctx, param, value):
 
     input_modality, output_modality = task.split("-to-")
     if input_modality == "image" and value is None:
-        raise click.BadParameter(
-            '--dataset-path is required when --task includes "image" input modality.'
-        )
+        # Check if dataset_config is provided as alternative
+        dataset_config = ctx.params.get("dataset_config")
+        if dataset_config is None:
+            raise click.BadParameter(
+                '--dataset-path is required when --task includes "image" input '
+                "modality and --dataset-config is not provided."
+            )
+        else:
+            logger.warning(
+                "Using dataset configuration file for image task. "
+                "Ensure your config file specifies the correct image dataset source."
+            )
     return value
 
 

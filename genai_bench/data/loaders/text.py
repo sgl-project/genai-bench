@@ -1,6 +1,9 @@
 from typing import Any, List, Set
 
 from genai_bench.data.loaders.base import DatasetFormat, DatasetLoader
+from genai_bench.logging import init_logger
+
+logger = init_logger(__name__)
 
 
 class TextDatasetLoader(DatasetLoader):

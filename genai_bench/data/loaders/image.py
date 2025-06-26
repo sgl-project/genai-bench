@@ -3,6 +3,9 @@ from typing import Any, List, Set, Tuple
 from PIL.Image import Image
 
 from genai_bench.data.loaders.base import DatasetFormat, DatasetLoader
+from genai_bench.logging import init_logger
+
+logger = init_logger(__name__)
 
 
 class ImageDatasetLoader(DatasetLoader):

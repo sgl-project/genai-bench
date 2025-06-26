@@ -222,7 +222,7 @@ def test_validate_filter_criteria():
     assert result == {"server_gpu_type": 4}
 
 
-def test_validate_dataset_path_callback():
+def test_validate_dataset_path_callback(caplog):
     ctx = click.Context(click.Command("test"))
     param = None
 
@@ -231,13 +231,21 @@ def test_validate_dataset_path_callback():
     result = validate_dataset_path_callback(ctx, param, "/path/to/dataset")
     assert result == "/path/to/dataset"
 
-    # Test with image task and missing dataset path
+    # Test with image task and missing dataset path (no dataset config)
+    ctx.params = {"task": "image-to-text", "dataset_config": None}
     with pytest.raises(click.BadParameter) as exc:
         validate_dataset_path_callback(ctx, param, None)
     assert (
-        '--dataset-path is required when --task includes "image" input modality.'
-        in str(exc.value)
+        '--dataset-path is required when --task includes "image" input modality '
+        "and --dataset-config is not provided." in str(exc.value)
     )
+
+    # Test with image task, missing dataset path, but dataset config provided
+    with caplog.at_level(logging.WARNING):
+        ctx.params = {"task": "image-to-text", "dataset_config": "/path/to/config.json"}
+        result = validate_dataset_path_callback(ctx, param, None)
+        assert result is None
+    assert "Using dataset configuration file for image task" in caplog.text
 
     # Test with text task (dataset path optional)
     ctx.params = {"task": "text-to-text"}
