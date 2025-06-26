@@ -60,7 +60,7 @@ def default_options():
 
 @pytest.fixture
 def mock_env_variables():
-    with patch.dict("os.environ", {"HUGGINGFACE_API_KEY": "dummy_key"}):
+    with patch.dict("os.environ", {"HF_TOKEN": "dummy_key"}):
         yield  # Yield ensures the patch is active for the duration of the test
 
 
