@@ -166,10 +166,10 @@ Below is a sample command you can use to start a benchmark. The command will con
 
 ```shell
 # Optional. This is required when you load the tokenizer from huggingface.co with a model-id
-export HF_TOKEN="<your-key>"  
-# HF transformers will log a warning about torch not installed, since benchmark doesn't really need torch 
+export HF_TOKEN="<your-key>"
+# HF transformers will log a warning about torch not installed, since benchmark doesn't really need torch
 # and cuda, we use this env to disable the warning
-export TRANSFORMERS_VERBOSITY=error 
+export TRANSFORMERS_VERBOSITY=error
 
 genai-bench benchmark --api-backend openai \
             --api-base "http://localhost:8082" \
@@ -182,7 +182,7 @@ genai-bench benchmark --api-backend openai \
             --server-engine "vLLM" \
             --server-gpu-type "H100" \
             --server-version "v0.6.0" \
-            --server-gpu-count 4 
+            --server-gpu-count 4
 ```
 
 <!-- TOC --><a name="start-a-vision-benchmark"></a>
@@ -238,7 +238,7 @@ genai-bench benchmark --api-backend openai \
             --traffic-scenario "E(1024)" \
             --server-gpu-type "H100" \
             --server-version "v0.4.2" \
-            --server-gpu-count 1 
+            --server-gpu-count 1
 ```
 
 <!-- TOC --><a name="start-a-rerank-benchmark"></a>
@@ -270,7 +270,7 @@ genai-bench benchmark --api-backend oci-cohere \
 
 ### Start a benchmark against OCI Cohere
 
-Below is a sample command to trigger a benchmark against cohere chat API. 
+Below is a sample command to trigger a benchmark against cohere chat API.
 
 ```shell
 genai-bench benchmark --api-backend oci-cohere \
@@ -311,7 +311,7 @@ genai-bench benchmark \
             --max-requests-per-run 300 \
             --num-concurrency 1 --num-concurrency 2 --num-concurrency 4 \
             --num-concurrency 8 --num-concurrency 16 --num-concurrency 32 \
-            --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)" 
+            --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)"
 ```
 
 <!-- TOC --><a name="notes-on-specific-options"></a>
@@ -350,7 +350,7 @@ For heavier traffic scenarios, like `D(16000,200)` or `D(128000,200)`, use the f
 If you see the message below in the genai-bench logs, it indicates that a single process is insufficient to generate the desired load.
 
 ```log
-CPU usage above 90%! This may constrain your throughput and may even give inconsistent response time measurements! 
+CPU usage above 90%! This may constrain your throughput and may even give inconsistent response time measurements!
 ```
 
 To address this, you can increase the number of worker processes using the `--num-workers` option. For example, to spin up 4 worker processes, use:
@@ -364,9 +364,9 @@ This distributes the load across multiple processes on a single machine, improvi
 
 #### Notes on Usage
 
-1. This feature is experimental, so monitor the system’s behavior when enabling multiple workers. 
+1. This feature is experimental, so monitor the system’s behavior when enabling multiple workers.
 2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
-3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers. 
+3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers.
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
 
 <!-- TOC --><a name="using-dataset-configurations"></a>
