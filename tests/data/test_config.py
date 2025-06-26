@@ -33,11 +33,10 @@ def test_dataset_source_config_huggingface():
 def test_dataset_source_config_csv():
     """Test CSV dataset source configuration."""
     config = DatasetSourceConfig(
-        type="file", path="/path/to/file.csv", file_format="csv", csv_column_index=1
+        type="file", path="/path/to/file.csv", file_format="csv"
     )
     assert config.type == "file"
     assert config.file_format == "csv"
-    assert config.csv_column_index == 1
 
 
 def test_dataset_config():

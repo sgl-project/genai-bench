@@ -27,7 +27,6 @@ class DatasetSourceConfig(BaseModel):
     file_format: Optional[str] = Field(
         None, description="File format: 'csv', 'txt', 'json'"
     )
-    csv_column_index: Optional[int] = Field(0, description="Column index for CSV files")
 
     # For HuggingFace sources - accepts ANY parameter that load_dataset supports
     huggingface_kwargs: Optional[Dict[str, Any]] = Field(
@@ -71,7 +70,6 @@ class DatasetConfig(BaseModel):
         dataset_path: Optional[str] = None,
         prompt_column: str = "prompt",
         image_column: str = "image",
-        csv_column_index: int = 0,
         **kwargs,
     ) -> "DatasetConfig":
         """Create configuration from CLI arguments for backward compatibility."""
@@ -100,8 +98,10 @@ class DatasetConfig(BaseModel):
             type=source_type,
             path=dataset_path,
             file_format=file_format,
-            csv_column_index=csv_column_index if source_type == "file" else None,
-        )  # type: ignore[call-arg]
+            huggingface_kwargs=None,
+            loader_class=None,
+            loader_kwargs=None,
+        )
 
         return cls(
             source=source_config,

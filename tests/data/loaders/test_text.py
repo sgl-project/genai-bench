@@ -35,7 +35,7 @@ def mock_dataset_config_txt(mock_txt_file):
 def mock_dataset_config_csv(mock_csv_file):
     return DatasetConfig(
         source=DatasetSourceConfig(
-            type="file", path=str(mock_csv_file), file_format="csv", csv_column_index=0
+            type="file", path=str(mock_csv_file), file_format="csv"
         ),
         prompt_column="prompt",
         image_column="image",
@@ -67,8 +67,13 @@ def test_load_txt_file(mock_load, mock_dataset_config_txt):
 
 @patch("genai_bench.data.sources.DatasetSourceFactory.create")
 def test_load_csv_file(mock_factory, mock_dataset_config_csv):
+    """Test loading CSV file with column names."""
     mock_source = MagicMock()
-    mock_source.load.return_value = ["val1", "val3"]
+    # Mock CSV data as a dictionary (like pandas returns)
+    mock_source.load.return_value = {
+        "prompt": ["val1", "val3"],
+        "other_col": ["x", "y"],
+    }
     mock_factory.return_value = mock_source
 
     result = TextDatasetLoader(mock_dataset_config_csv).load_request()
@@ -93,10 +98,17 @@ def test_load_huggingface_hub(mock_factory, mock_dataset_config_hf):
 
 @patch("genai_bench.data.sources.DatasetSourceFactory.create")
 def test_load_csv_invalid_column(mock_factory, mock_dataset_config_csv):
+    """Test handling of invalid column name in CSV file."""
+    # Mock CSV data as a dictionary (like pandas returns)
     mock_source = MagicMock()
-    mock_source.load.side_effect = ValueError("Column index '5' is out of bounds")
+    mock_source.load.return_value = {"text": ["value1", "value2"], "label": ["A", "B"]}
     mock_factory.return_value = mock_source
-    mock_dataset_config_csv.source.csv_column_index = 5  # Invalid column index
 
-    with pytest.raises(ValueError, match="Column index '5' is out of bounds"):
+    # Set an invalid column name that doesn't exist in the data
+    mock_dataset_config_csv.prompt_column = "invalid_column"
+
+    # Should raise ValueError with helpful message about available columns
+    with pytest.raises(
+        ValueError, match="Column 'invalid_column' not found in CSV file"
+    ):
         TextDatasetLoader(mock_dataset_config_csv).load_request()

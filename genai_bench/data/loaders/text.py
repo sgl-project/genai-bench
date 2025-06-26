@@ -21,11 +21,26 @@ class TextDatasetLoader(DatasetLoader):
         # Handle data from dataset sources
         if isinstance(data, list):
             return data
-        # Handle HuggingFace datasets
+
+        # Handle dictionary data (from CSV files) or HuggingFace datasets
         prompt_column = self.dataset_config.prompt_column
         try:
-            return data[prompt_column]
+            column_data = data[prompt_column]
+            # Ensure we return a list of strings
+            if isinstance(column_data, list):
+                return [str(item) for item in column_data]
+            else:
+                # For HuggingFace datasets, convert to list
+                return list(column_data)
         except (ValueError, KeyError) as e:
-            raise ValueError(
-                f"Cannot extract prompts from data: {type(data)}, error: {str(e)}"
-            ) from e
+            # Provide helpful error message with available columns
+            if isinstance(data, dict):
+                available_columns = list(data.keys())
+                raise ValueError(
+                    f"Column '{prompt_column}' not found in CSV file. "
+                    f"Available columns: {available_columns}"
+                ) from e
+            else:
+                raise ValueError(
+                    f"Cannot extract prompts from data: {type(data)}, error: {str(e)}"
+                ) from e

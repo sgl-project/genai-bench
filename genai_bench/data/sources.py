@@ -1,12 +1,12 @@
 """Dataset source implementations for flexible dataset loading."""
 
-import csv
 import importlib
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
+import pandas as pd
 from datasets import load_dataset
 from datasets.exceptions import DatasetNotFoundError
 from huggingface_hub import dataset_info
@@ -64,20 +64,17 @@ class FileDatasetSource(DatasetSource):
         logger.info(f"Loaded {len(lines)} lines from text file")
         return lines
 
-    def _load_csv_file(self, file_path: Path) -> List[str]:
-        """Load CSV file and extract specified column."""
+    def _load_csv_file(self, file_path: Path) -> Any:
+        """Load CSV file as a dictionary-like structure to support column names."""
         logger.info(f"Loading CSV file: {file_path}")
-        column_index = self.config.csv_column_index or 0
 
-        data = []
-        with open(file_path, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > column_index:
-                    data.append(row[column_index])
-
-        logger.info(f"Loaded {len(data)} rows from CSV file")
-        return data
+        # For CSV files, we'll return a pandas DataFrames
+        df = pd.read_csv(file_path)
+        logger.info(
+            f"Loaded {len(df)} rows from CSV file with columns: {list(df.columns)}"
+        )
+        # Return a dict-like structure that supports column access
+        return df.to_dict(orient="list")
 
     def _load_json_file(self, file_path: Path) -> List[Any]:
         """Load JSON file."""
