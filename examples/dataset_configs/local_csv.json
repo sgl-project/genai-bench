@@ -2,8 +2,7 @@
   "source": {
     "type": "file",
     "path": "/data/prompts.csv",
-    "file_format": "csv",
-    "csv_column_index": 1
+    "file_format": "csv"
   },
   "prompt_column": "prompt"
 }
