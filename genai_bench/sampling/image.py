@@ -1,6 +1,6 @@
 import base64
 import random
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 
 import PIL
 from PIL.Image import Image
@@ -12,10 +12,8 @@ from genai_bench.protocol import (
     UserImageEmbeddingRequest,
     UserRequest,
 )
-from genai_bench.sampling.base_sampler import Sampler
-from genai_bench.sampling.base_scenario import MultiModality, Scenario
-from genai_bench.sampling.dataset_loader import DatasetConfig
-from genai_bench.sampling.image_dataset_loader import ImageDatasetLoader
+from genai_bench.sampling.base import Sampler
+from genai_bench.scenarios.base import MultiModality, Scenario
 
 logger = init_logger(__name__)
 
@@ -37,16 +35,12 @@ class ImageSampler(Sampler):
         tokenizer,
         model: str,
         output_modality: str,
-        dataset_config: DatasetConfig,
+        data: List[Tuple[str, Image]],
         additional_request_params: Optional[dict] = None,
         **kwargs,
     ):
         super().__init__(tokenizer, model, output_modality, additional_request_params)
-        loader = ImageDatasetLoader(dataset_config)
-        self.data = cast(
-            List[Tuple[str, Image]],
-            loader.load_request(),
-        )
+        self.data = data
 
     def sample(self, scenario: Scenario) -> UserRequest:
         """

@@ -16,7 +16,7 @@ import psutil
 from genai_bench.logging import WorkerLoggingManager, init_logger
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import RequestLevelMetrics
-from genai_bench.sampling.base_scenario import Scenario
+from genai_bench.scenarios.base import Scenario
 from genai_bench.ui.dashboard import Dashboard
 
 logger = init_logger(__name__)

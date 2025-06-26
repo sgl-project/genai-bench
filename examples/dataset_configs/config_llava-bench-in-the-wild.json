@@ -1,0 +1,11 @@
+{
+  "source": {
+    "type": "huggingface",
+    "path": "lmms-lab/llava-bench-in-the-wild",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "question",
+  "image_column": "image"
+}

@@ -16,7 +16,7 @@
   * [Monitor a benchmark](#monitor-a-benchmark)
   * [Notes on specific options](#notes-on-specific-options)
   * [Distributed Benchmark](#distributed-benchmark)
-  * [Using Huggingface datasets](#using-huggingface-datasets)
+  * [Using Dataset Configurations](#using-dataset-configurations)
 * [Generate an Excel sheet](#generate-an-excel-sheet)
 * [Generate a 2x4 Plot](#generate-a-2x4-plot)
 * [Upload Benchmark Results to OCI Object Storage](#uploading-benchmark-results-to-oci-object-storage)
@@ -213,8 +213,7 @@ genai-bench benchmark \
             --traffic-scenario "I(1024,1024)" \
             --num-concurrency 1 \
             --num-concurrency 8 \
-            --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-            --hf-split "train"
+            --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
 
 <!-- TOC --><a name="start-an-embedding-benchmark"></a>
@@ -370,27 +369,85 @@ This distributes the load across multiple processes on a single machine, improvi
 3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers. 
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
 
-<!-- TOC --><a name="using-huggingface-datasets"></a>
+<!-- TOC --><a name="using-dataset-configurations"></a>
 
-### Using huggingface datasets
-Genai-bench supports running benchmarks with huggingface datasets. Below are some examples
+### Using Dataset Configurations
+Genai-bench supports flexible dataset configurations through two approaches:
 
-Add these extra arguments to run benchmark with the text dataset
+#### Simple CLI Usage (for basic datasets)
 ```shell
-  --dataset-path ccdv/govreport-summarization \
-  --hf-split "train" \
-  --hf-prompt-column-name "report" \
-  --revision "main"
+# Local CSV file
+--dataset-path /path/to/data.csv \
+--dataset-prompt-column "prompt"
+
+# HuggingFace dataset with simple options
+--dataset-path squad \
+--dataset-prompt-column "question"
+
+# Local text file (default)
+--dataset-path /path/to/prompts.txt
 ```
 
-Add these extra arguments to run benchmark with vision dataset
-```shell
-  --hf-split test \
-  --dataset-path BLINK-Benchmark/BLINK \
-  --hf-prompt-column-name "question" \
-  --hf-image-column-name "image_1" \
-  --hf-subset Jigsaw
+#### Advanced Configuration Files (for complex setups)
+For advanced HuggingFace configurations, create a JSON config file:
+
+**Important Note for HuggingFace Datasets:**
+When using HuggingFace datasets, you should always check if you need a `split`, `subset` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail.
+
+**config.json:**
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "ccdv/govreport-summarization",
+    "huggingface_kwargs": {
+      "split": "train",
+      "revision": "main",
+      "streaming": true
+    }
+  },
+  "prompt_column": "report"
+}
 ```
+
+**Vision dataset config:**
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "BLINK-Benchmark/BLINK",
+    "huggingface_kwargs": {
+      "split": "test",
+      "name": "Jigsaw"
+    }
+  },
+  "prompt_column": "question",
+  "image_column": "image_1"
+}
+```
+
+**Example for the llava-bench-in-the-wild dataset:**
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "lmms-lab/llava-bench-in-the-wild",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "question",
+  "image_column": "image"
+}
+```
+
+Then use: `--dataset-config config.json`
+
+**Benefits of config files:**
+- Access to ALL HuggingFace `load_dataset` parameters
+- Reusable and version-controllable
+- Support for complex configurations
+- Future-proof (no CLI updates needed for new HuggingFace features)
 
 <!-- TOC --><a name="generate-an-excel-sheet"></a>
 
@@ -498,6 +555,26 @@ Next, start the genai-bench container with the same network flag.
 
 **Example:**
 
+First, create a dataset configuration file to properly specify the split:
+
+**llava-config.json:**
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "lmms-lab/llava-bench-in-the-wild",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "question",
+  "image_column": "image"
+}
+```
+
+Then run the benchmark with the configuration file:
+
 ```shell
 docker run \
     -tid \
@@ -506,14 +583,15 @@ docker run \
     --env HUGGINGFACE_API_KEY="your_huggingface_api_key" \
     --network benchmark-network \
     -v /mnt/data/models:/models \
-    --name llama-3.2-11b-benchmark \
+    -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
+    --name llama-4-scout-benchmark \
     genai-bench:dev \
     benchmark \
     --api-backend openai \
     --api-base http://localhost:8080 \
     --api-key your_api_key \
-    --api-model-name Llama-3.2-11B-Vision-Instruct \
-    --model-tokenizer /models/Llama-3.2-11B-Vision-Instruct \
+    --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
+    --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --task image-to-text \
     --max-time-per-run 10 \
     --max-requests-per-run 100 \
@@ -526,9 +604,7 @@ docker run \
     --num-concurrency 1 \
     --num-concurrency 2 \
     --num-concurrency 4 \
-    --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-    --hf-split "train" \
-    --dataset-path ./images/questions.jsonl
+    --dataset-config /genai-bench/llava-config.json
 ```
 
 Note that `genai-bench` is already the entrypoint of the container, so you only need to provide the command arguments afterward.
@@ -545,9 +621,11 @@ You can also utilize `tmux` for additional parallelism and session control.
 
 To monitor benchmark interim results using the genai-bench container, you can leverage volume mounts along with the `--experiment-base-dir` option.
 
+
+
 ```shell
-HOST_OUTPUT_DIR = $HOME/benchmark_results
-CONTAINER_OUTPUT_DIR = /genai-bench/benchmark_results
+HOST_OUTPUT_DIR=$HOME/benchmark_results
+CONTAINER_OUTPUT_DIR=/genai-bench/benchmark_results
 docker run \
     -tid \
     --shm-size 5g \
@@ -556,14 +634,15 @@ docker run \
     --network benchmark-network \
     -v /mnt/data/models:/models \
     -v $HOST_OUTPUT_DIR:$CONTAINER_OUTPUT_DIR \
+    -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
     --name llama-3.2-11b-benchmark \
     genai-bench:dev \
     benchmark \
     --api-backend openai \
     --api-base http://localhost:8080 \
     --api-key your_api_key \
-    --api-model-name Llama-3.2-11B-Vision-Instruct \
-    --model-tokenizer /models/Llama-3.2-11B-Vision-Instruct \
+    --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
+    --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --task image-to-text \
     --max-time-per-run 10 \
     --max-requests-per-run 100 \
@@ -576,7 +655,6 @@ docker run \
     --num-concurrency 1 \
     --num-concurrency 2 \
     --num-concurrency 4 \
-    --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-    --hf-split "train" \
+    --dataset-config /genai-bench/llava-config.json \
     --experiment-base-dir $CONTAINER_OUTPUT_DIR
 ```

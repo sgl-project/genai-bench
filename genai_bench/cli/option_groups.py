@@ -8,6 +8,7 @@ from genai_bench.cli.validation import (
     validate_additional_request_params,
     validate_api_backend,
     validate_api_key,
+    validate_dataset_config,
     validate_dataset_path_callback,
     validate_iteration_params,
     validate_object_storage_options,
@@ -139,59 +140,35 @@ def oci_auth_options(func):
 # Group sampling-related options
 def sampling_options(func):
     func = click.option(
-        "--dataset-prompt-column-index",
-        type=click.IntRange(min=0),
-        default=0,
-        help="Index of the column to sample prompts from only if using a CSV file, "
-        "starting from 0.",
+        "--dataset-config",
+        type=click.Path(exists=True),
+        default=None,
+        callback=validate_dataset_config,
+        help="Path to JSON configuration file for advanced dataset options. "
+        "This allows full control over dataset loading parameters.",
+    )(func)
+    func = click.option(
+        "--dataset-image-column",
+        type=str,
+        default="image",
+        help="Column name containing images (for multimodal datasets).",
+    )(func)
+    func = click.option(
+        "--dataset-prompt-column",
+        type=str,
+        default="prompt",
+        help="Column name containing prompts (for CSV/HuggingFace datasets).",
     )(func)
     func = click.option(
         "--dataset-path",
         type=str,
         callback=validate_dataset_path_callback,
         default=None,
-        help="Path to a local directory or huggingface Id. By default Uses inbuilt "
-        "sonnet.txt for benchmarking. Other Examples:\n"
-        "repository/dataset_name: This is the huggingfaceId for any dataset "
-        "hosted on huggingface.\n"
-        "path to local file: Path to a local file/directory containing the "
-        "dataset to be used for benchmark.",
-    )(func)
-    func = click.option(
-        "--hf-prompt-column-name",
-        type=str,
-        default="prompt",
-        help="The name of the prompt column for the huggingface dataset. Only "
-        "used when `--dataset-path` is huggingface Id.",
-    )(func)
-    func = click.option(
-        "--hf-image-column-name",
-        type=str,
-        default="image",
-        help="The name of the image column for the huggingface dataset. Only used "
-        "when `--dataset-path` is huggingface Id and `--task` is image-to-*.",
-    )(func)
-    func = click.option(
-        "--hf-subset",
-        type=str,
-        default=None,
-        help="Subset of the huggingface dataset. Only used when `--dataset-path` "
-        "is huggingface Id.",
-    )(func)
-    func = click.option(
-        "--hf-split",
-        type=str,
-        default=None,
-        help="Split of the huggingface dataset. Only used when `--dataset-path` "
-        "is huggingface Id.",
-    )(func)
-    func = click.option(
-        "--hf-revision",
-        type=str,
-        default=None,
-        help="The revision to use for the dataset. Any branch/SHA can be specified"
-        " for this. By default uses the main branch. Only used when "
-        "`--dataset-path` is huggingface Id.",
+        help="Dataset source: local file path, HuggingFace ID, or 'default' for "
+        "built-in sonnet.txt. Examples:\n"
+        "- Local file: /path/to/data.csv or /path/to/prompts.txt\n"
+        "- HuggingFace: squad or meta-llama/Llama-2-7b-hf\n"
+        "- Default: Leave empty to use built-in sonnet.txt",
     )(func)
     return func
 
