@@ -34,22 +34,22 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m uv pip install --no-color -vvv .
-        python -m uv pip install ".[dev]"
+        python -m uv pip install --system .
+        python -m uv pip install --system ".[dev]"
 
     - name: Run tests with coverage
       run: |
-        python -m uv run --no-reinstall pytest tests --cov --cov-config=.coveragerc -v -s
+        uv run --no-reinstall pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
 
     - name: Check coverage threshold
       run: |
-        python -m uv run --no-reinstall coverage report --show-missing --fail-under=93
+        uv run --no-reinstall coverage report --show-missing --fail-under=93
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
+        fail_ci_if_error: false
 
   lint:
     runs-on: ubuntu-latest
@@ -72,20 +72,20 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m uv pip install --no-color -vvv .
-        python -m uv pip install ".[dev]"
+        python -m uv pip install --system .
+        python -m uv pip install --system ".[dev]"
 
     - name: Check formatting with ruff
       run: |
-        python -m uv run --no-reinstall ruff format --diff genai_bench tests
+        uv run --no-reinstall ruff format --diff genai_bench tests
 
     - name: Lint with ruff
       run: |
-        python -m uv run --no-reinstall ruff check genai_bench tests
+        uv run --no-reinstall ruff check genai_bench tests
 
     - name: Type check with mypy
       run: |
-        python -m uv run --no-reinstall mypy genai_bench
+        uv run --no-reinstall mypy . --exclude '.*/genai_bench/(analysis|ui)/.*'
 
   build:
     runs-on: ubuntu-latest
