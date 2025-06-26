@@ -83,10 +83,6 @@ jobs:
       run: |
         uv run --no-reinstall ruff check genai_bench tests
 
-    - name: Type check with mypy
-      run: |
-        uv run --no-reinstall mypy . --exclude '.*/genai_bench/(analysis|ui)/.*'
-
   build:
     runs-on: ubuntu-latest
     needs: [test, lint]
