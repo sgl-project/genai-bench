@@ -151,7 +151,7 @@ class AudioSampler(Sampler):
     def sample(self, scenario: Scenario) -> UserRequest:
         # Validate scenario
         self._validate_scenario(scenario)
-        
+
         if self.output_modality == "text":
             return self._create_audio_to_text_request(scenario)
         elif self.output_modality == "embeddings":

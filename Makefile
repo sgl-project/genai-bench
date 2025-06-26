@@ -98,5 +98,5 @@ pipx: ## Install pipx package manager.
 	$(PYTHON_CMD) -m pip install -U pipx
 
 .PHONY: uv
-uv: pipx ## Install uv and make a virtual env with 
+uv: pipx ## Install uv and make a virtual env with
 	$(PYTHON_CMD) -m pipx ensurepath; $(PYTHON_CMD) -m pipx install uv; uv venv -p $(PYTHON_CMD)

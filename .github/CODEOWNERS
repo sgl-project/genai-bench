@@ -1,0 +1,8 @@
+# Global code owners
+* @slin1237 @CatherineSue
+
+# Specific ownership for critical files
+/.github/ @slin1237 @CatherineSue
+/genai_bench/ @slin1237 @CatherineSue
+/tests/ @slin1237 @CatherineSue
+pyproject.toml @slin1237 @CatherineSue
