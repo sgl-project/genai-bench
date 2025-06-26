@@ -34,7 +34,7 @@ def is_single_experiment_folder(folder_name: str) -> bool:
 
 def calculate_sonnet_char_token_ratio(tokenizer: PreTrainedTokenizer) -> float:
     """Calculate the ratio of character to token using model tokenizer."""
-    sonnet_file = Path(__file__).parent.resolve() / "sampling/sonnet.txt"
+    sonnet_file = Path(__file__).parent.resolve() / "data/sonnet.txt"
     with open(sonnet_file, "r") as f:
         content = f.read()
 

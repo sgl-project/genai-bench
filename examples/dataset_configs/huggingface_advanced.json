@@ -1,0 +1,17 @@
+{
+  "source": {
+    "type": "huggingface",
+    "path": "meta-llama/Llama-2-7b-hf",
+    "huggingface_kwargs": {
+      "split": "train[:1000]",
+      "revision": "main",
+      "cache_dir": "/custom/cache",
+      "use_auth_token": true,
+      "num_proc": 4,
+      "streaming": false,
+      "trust_remote_code": true,
+      "download_mode": "force_redownload"
+    }
+  },
+  "prompt_column": "text"
+}

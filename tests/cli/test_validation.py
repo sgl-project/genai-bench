@@ -23,7 +23,6 @@ from genai_bench.cli.validation import (
     validate_tokenizer,
     validate_traffic_scenario_callback,
 )
-from genai_bench.sampling.dataset_loader import DatasetFormat
 
 
 def test_validate_scenario_callback():
@@ -228,19 +227,15 @@ def test_validate_dataset_path_callback():
     param = None
 
     # Test with image task and dataset path
-    with patch("genai_bench.cli.validation.DatasetPath.from_value") as dataset:
-        type_mock = MagicMock()
-        type_mock.type = DatasetFormat.HUGGINGFACE_HUB
-        dataset.return_value = type_mock
-        ctx.params = {"task": "image-to-text"}
-        result = validate_dataset_path_callback(ctx, param, "/path/to/dataset")
-        assert result == "/path/to/dataset"
+    ctx.params = {"task": "image-to-text"}
+    result = validate_dataset_path_callback(ctx, param, "/path/to/dataset")
+    assert result == "/path/to/dataset"
 
     # Test with image task and missing dataset path
     with pytest.raises(click.BadParameter) as exc:
         validate_dataset_path_callback(ctx, param, None)
     assert (
-        '--dataset-path is required when --task include "image" input modality.'
+        '--dataset-path is required when --task includes "image" input modality.'
         in str(exc.value)
     )
 

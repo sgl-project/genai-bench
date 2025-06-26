@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from genai_bench.sampling.base_scenario import MultiModality, Scenario, parse_params_str
+from genai_bench.scenarios.base import MultiModality, Scenario, parse_params_str
 
 
 class ImageModality(Scenario):

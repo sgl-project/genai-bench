@@ -1,0 +1,10 @@
+{
+  "source": {
+    "type": "huggingface",
+    "path": "squad",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "question"
+}

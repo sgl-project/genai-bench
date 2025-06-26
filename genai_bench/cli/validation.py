@@ -5,10 +5,9 @@ from pathlib import Path
 import click
 from transformers import AutoTokenizer
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
-from genai_bench.sampling.base_scenario import Scenario
-from genai_bench.sampling.dataset_loader import DatasetPath
-from genai_bench.sampling.image_dataset_loader import ImageDatasetLoader
+from genai_bench.scenarios.base import Scenario
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.openai_user import OpenAIUser
@@ -77,17 +76,25 @@ def validate_dataset_path_callback(ctx, param, value):
         raise click.BadParameter(
             "The '--task' option is required but was not provided."
         )
-    # TODO: This logic is leaking from ImageDatasetHandler.
+
     input_modality, output_modality = task.split("-to-")
-    dataset_format = DatasetPath.from_value(value).type
-    if (
-        input_modality == "image"
-        and dataset_format not in ImageDatasetLoader.supported_formats
-    ):
+    if input_modality == "image" and value is None:
         raise click.BadParameter(
-            '--dataset-path is required when --task include "image" input modality.'
+            '--dataset-path is required when --task includes "image" input modality.'
         )
     return value
+
+
+def validate_dataset_config(ctx, param, value):
+    """Validate dataset configuration file."""
+    if value is None:
+        return None
+
+    try:
+        _ = DatasetConfig.from_file(value)
+        return value
+    except Exception as e:
+        raise click.BadParameter(f"Invalid dataset configuration file: {str(e)}") from e
 
 
 def validate_scenario_callback(scenario):

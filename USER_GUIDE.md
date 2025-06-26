@@ -16,7 +16,7 @@
   * [Monitor a benchmark](#monitor-a-benchmark)
   * [Notes on specific options](#notes-on-specific-options)
   * [Distributed Benchmark](#distributed-benchmark)
-  * [Using Huggingface datasets](#using-huggingface-datasets)
+  * [Using Dataset Configurations](#using-dataset-configurations)
 * [Generate an Excel sheet](#generate-an-excel-sheet)
 * [Generate a 2x4 Plot](#generate-a-2x4-plot)
 * [Upload Benchmark Results to OCI Object Storage](#uploading-benchmark-results-to-oci-object-storage)
@@ -214,7 +214,8 @@ genai-bench benchmark \
             --num-concurrency 1 \
             --num-concurrency 8 \
             --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-            --hf-split "train"
+            --dataset-image-column "image" \
+            --dataset-prompt-column "conversations"
 ```
 
 <!-- TOC --><a name="start-an-embedding-benchmark"></a>
@@ -370,27 +371,67 @@ This distributes the load across multiple processes on a single machine, improvi
 3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers. 
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
 
-<!-- TOC --><a name="using-huggingface-datasets"></a>
+<!-- TOC --><a name="using-dataset-configurations"></a>
 
-### Using huggingface datasets
-Genai-bench supports running benchmarks with huggingface datasets. Below are some examples
+### Using Dataset Configurations
+Genai-bench supports flexible dataset configurations through two approaches:
 
-Add these extra arguments to run benchmark with the text dataset
+#### Simple CLI Usage (for basic datasets)
 ```shell
-  --dataset-path ccdv/govreport-summarization \
-  --hf-split "train" \
-  --hf-prompt-column-name "report" \
-  --revision "main"
+# Local CSV file
+--dataset-path /path/to/data.csv \
+--dataset-prompt-column "prompt"
+
+# HuggingFace dataset with simple options
+--dataset-path squad \
+--dataset-prompt-column "question"
+
+# Local text file (default)
+--dataset-path /path/to/prompts.txt
 ```
 
-Add these extra arguments to run benchmark with vision dataset
-```shell
-  --hf-split test \
-  --dataset-path BLINK-Benchmark/BLINK \
-  --hf-prompt-column-name "question" \
-  --hf-image-column-name "image_1" \
-  --hf-subset Jigsaw
+#### Advanced Configuration Files (for complex setups)
+For advanced HuggingFace configurations, create a JSON config file:
+
+**config.json:**
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "ccdv/govreport-summarization",
+    "huggingface_kwargs": {
+      "split": "train",
+      "revision": "main",
+      "streaming": true
+    }
+  },
+  "prompt_column": "report"
+}
 ```
+
+**Vision dataset config:**
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "BLINK-Benchmark/BLINK",
+    "huggingface_kwargs": {
+      "split": "test",
+      "name": "Jigsaw"
+    }
+  },
+  "prompt_column": "question",
+  "image_column": "image_1"
+}
+```
+
+Then use: `--dataset-config config.json`
+
+**Benefits of config files:**
+- Access to ALL HuggingFace `load_dataset` parameters
+- Reusable and version-controllable
+- Support for complex configurations
+- Future-proof (no CLI updates needed for new HuggingFace features)
 
 <!-- TOC --><a name="generate-an-excel-sheet"></a>
 
@@ -527,8 +568,8 @@ docker run \
     --num-concurrency 2 \
     --num-concurrency 4 \
     --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-    --hf-split "train" \
-    --dataset-path ./images/questions.jsonl
+    --dataset-image-column "image" \
+    --dataset-prompt-column "conversations"
 ```
 
 Note that `genai-bench` is already the entrypoint of the container, so you only need to provide the command arguments afterward.
@@ -577,6 +618,7 @@ docker run \
     --num-concurrency 2 \
     --num-concurrency 4 \
     --dataset-path "shenoyvvarun/llava-bench-in-the-wild" \
-    --hf-split "train" \
+    --dataset-image-column "image" \
+    --dataset-prompt-column "conversations" \
     --experiment-base-dir $CONTAINER_OUTPUT_DIR
 ```

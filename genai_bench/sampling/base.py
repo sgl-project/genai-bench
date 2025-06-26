@@ -4,7 +4,7 @@ from typing import Dict, Optional, Set, Type
 from transformers import PreTrainedTokenizer
 
 from genai_bench.protocol import UserRequest
-from genai_bench.sampling.base_scenario import Scenario
+from genai_bench.scenarios.base import Scenario
 
 
 class Sampler(ABC):

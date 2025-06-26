@@ -7,7 +7,7 @@ import pytest
 
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.metrics.metrics import RequestLevelMetrics
-from genai_bench.sampling.base_scenario import Scenario
+from genai_bench.scenarios.base import Scenario
 
 
 @pytest.fixture

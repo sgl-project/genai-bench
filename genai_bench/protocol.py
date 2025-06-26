@@ -211,7 +211,6 @@ class ExperimentMetadata(BaseModel):
         description="The name of the folder to save the experiment results.",
     )
     dataset_path: Optional[str] = None
-    dataset_prompt_column_index: Optional[int] = None
     character_token_ratio: Optional[float] = Field(
         None,
         description="The ratio of the total character count in the sonnet "

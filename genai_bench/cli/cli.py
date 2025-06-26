@@ -27,12 +27,13 @@ from genai_bench.cli.option_groups import (
 from genai_bench.cli.report import excel, plot
 from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
 from genai_bench.cli.validation import validate_tokenizer
+from genai_bench.data.config import DatasetConfig
+from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.logging import LoggingManager, init_logger
 from genai_bench.oci_object_storage.os_datastore import OSDataStore
 from genai_bench.protocol import ExperimentMetadata
-from genai_bench.sampling.base_sampler import Sampler
-from genai_bench.sampling.dataset_loader import DatasetConfig, DatasetPath
+from genai_bench.sampling.base import Sampler
 from genai_bench.ui.dashboard import create_dashboard
 from genai_bench.utils import calculate_sonnet_char_token_ratio, sanitize_string
 from genai_bench.version import __version__ as GENAI_BENCH_VERSION
@@ -85,12 +86,9 @@ def benchmark(
     experiment_folder_name,
     experiment_base_dir,
     dataset_path,
-    hf_prompt_column_name,
-    hf_image_column_name,
-    hf_subset,
-    hf_split,
-    hf_revision,
-    dataset_prompt_column_index,
+    dataset_config,
+    dataset_prompt_column,
+    dataset_image_column,
     config_file,
     profile,
     auth,
@@ -169,30 +167,36 @@ def benchmark(
     sonnet_character_token_ratio = calculate_sonnet_char_token_ratio(tokenizer)
     logger.info(f"The average character token ratio is: {sonnet_character_token_ratio}")
 
-    dataset_path = DatasetPath.from_value(dataset_path)
-    dataset_config = DatasetConfig(
-        dataset_path=dataset_path,
-        hf_prompt_column_name=hf_prompt_column_name,
-        hf_image_column_name=hf_image_column_name,
-        hf_subset=hf_subset,
-        hf_split=hf_split,
-        hf_revision=hf_revision,
-        max_requests_per_run=max_requests_per_run,
-        dataset_prompt_column_index=dataset_prompt_column_index,
-    )
+    # Handle dataset configuration
+    if dataset_config:
+        # Load from config file
+        dataset_config_obj = DatasetConfig.from_file(dataset_config)
+    else:
+        # Build configuration from CLI arguments
+        dataset_config_obj = DatasetConfig.from_cli_args(
+            dataset_path=dataset_path,
+            prompt_column=dataset_prompt_column,
+            image_column=dataset_image_column,
+        )
+
+    # Load data using the factory
+    data, use_scenario = DataLoaderFactory.load_data_for_task(task, dataset_config_obj)
+
+    # Create sampler with preloaded data
     sampler = Sampler.create(
         task=task,
         tokenizer=tokenizer,
         model=api_model_name,
+        data=data,
+        use_scenario=use_scenario,
         additional_request_params=additional_request_params,
-        dataset_config=dataset_config,
     )
 
     if not sampler.use_scenario:
         logger.info(
-            f"No traffic scenario needed for dataset type {dataset_path.type}"
-            f" and task {task}. Setting scenario to a no-op placeholder 'F' "
-            f"(No Effect)."
+            f"No traffic scenario needed for dataset source type "
+            f"{dataset_config_obj.source.type} and task {task}. Setting scenario to a "
+            f"no-op placeholder 'F' (No Effect)."
         )
         traffic_scenario = ["F"]
 
@@ -235,7 +239,6 @@ def benchmark(
         experiment_folder_name=experiment_folder_abs_path,
         additional_request_params=additional_request_params,
         dataset_path=str(dataset_path),
-        dataset_prompt_column_index=dataset_prompt_column_index,
         character_token_ratio=sonnet_character_token_ratio,
     )
     experiment_metadata_file = Path(

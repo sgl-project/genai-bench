@@ -1,5 +1,5 @@
 import random
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
@@ -8,18 +8,8 @@ from genai_bench.protocol import (
     UserRequest,
     UserReRankRequest,
 )
-from genai_bench.sampling.base_sampler import Sampler
-from genai_bench.sampling.base_scenario import (
-    EmbeddingDistribution,
-    Scenario,
-    TextDistribution,
-)
-from genai_bench.sampling.dataset_loader import (
-    DatasetConfig,
-    DatasetFormat,
-    DatasetPath,
-)
-from genai_bench.sampling.text_dataset_loader import TextDatasetLoader
+from genai_bench.sampling.base import Sampler
+from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDistribution
 
 logger = init_logger(__name__)
 
@@ -39,30 +29,22 @@ class TextSampler(Sampler):
         tokenizer,
         model: str,
         output_modality: str,
-        dataset_config: DatasetConfig,
+        data: List[str],
+        use_scenario: bool = True,
         additional_request_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         super().__init__(tokenizer, model, output_modality, additional_request_params)
-        dataset_path = dataset_config.dataset_path
-        is_sonnet = "sonnet" in dataset_path.path
-        if not is_sonnet and output_modality == "embeddings":
-            logger.warning(
-                "Embeddings currently do not support user-specified datasets. "
-                "Using the default `sonnet.txt` dataset."
-            )
-            dataset_path = DatasetPath()  # Reset dataset_path to use the sonnet
-            dataset_config.dataset_path = dataset_path
 
-        loader = TextDatasetLoader(dataset_config)
-        self.data = cast(List[str], loader.load_request())
+        self.data = data
+        self.use_scenario = use_scenario
 
-        if dataset_path.type != DatasetFormat.TEXT:
-            self.additional_request_params["ignore_eos"] = False
-            self.use_scenario = False
-        else:
+        # Set ignore_eos based on scenario usage
+        if use_scenario:
             self.additional_request_params["ignore_eos"] = True
-            self.use_scenario = True
+        else:
+            self.additional_request_params["ignore_eos"] = False
+
         self.batch_size = 1  # Default batch size
 
     def sample(self, scenario: Scenario) -> UserRequest:
@@ -232,7 +214,7 @@ class TextSampler(Sampler):
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
         if discrepancy > threshold * num_input_tokens and discrepancy > 10:
             logger.warning(
-                f"🚨 Discrepancy detected: "
+                f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
                 f"num_prefill_tokens={num_prefill_tokens}, "
                 f"discrepancy={discrepancy}"

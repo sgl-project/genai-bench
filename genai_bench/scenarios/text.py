@@ -2,7 +2,7 @@ from typing import Any, Optional, Tuple
 
 import numpy as np
 
-from genai_bench.sampling.base_scenario import (
+from genai_bench.scenarios.base import (
     EmbeddingDistribution,
     ReRankDistribution,
     Scenario,

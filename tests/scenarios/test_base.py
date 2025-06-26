@@ -1,8 +1,8 @@
 import pytest
 
-from genai_bench.sampling.base_scenario import Scenario
-from genai_bench.sampling.multi_modality_scenario import ImageModality
-from genai_bench.sampling.text_scenario import (
+from genai_bench.scenarios import ImageModality
+from genai_bench.scenarios.base import Scenario
+from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
     NoOpScenario,
