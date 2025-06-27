@@ -35,6 +35,8 @@ class TestOCIModelAuthAdapter:
     def test_get_config(self):
         """Test get_config returns proper configuration."""
         mock_oci_auth = MagicMock()
+        # Mock the underlying auth's get_config method
+        mock_oci_auth.get_config.return_value = {"region": "us-ashburn-1"}
         adapter = OCIModelAuthAdapter(mock_oci_auth)
 
         # Mock the get_auth_type to return a known value
@@ -44,8 +46,8 @@ class TestOCIModelAuthAdapter:
 
         assert isinstance(config, dict)
         assert config["auth_type"] == "oci_user_principal"
-        assert config["oci_auth"] is mock_oci_auth
-        assert len(config) == 2
+        assert config["region"] == "us-ashburn-1"
+        assert "oci_auth" not in config  # Should not include non-serializable object
 
     def test_get_credentials(self):
         """Test get_credentials returns the OCI auth provider."""
@@ -103,7 +105,10 @@ class TestOCIModelAuthAdapter:
 
         # Test that all required methods work
         assert adapter.get_headers() == {}
-        assert "oci_auth" in adapter.get_config()
+        config = adapter.get_config()
+        assert "auth_type" in config
+        assert "region" in config
+        assert "oci_auth" not in config  # Should not include non-serializable object
         assert adapter.get_credentials() is mock_oci_auth
         assert adapter.get_auth_type().startswith("oci_")
 
@@ -115,7 +120,8 @@ class TestOCIModelAuthAdapter:
         assert adapter.get_headers() == {}
 
         config = adapter.get_config()
-        assert config["oci_auth"] is None
+        assert "auth_type" in config
+        assert "oci_auth" not in config  # Should not include non-serializable object
 
         # get_auth_type should handle None gracefully
         auth_type = adapter.get_auth_type()

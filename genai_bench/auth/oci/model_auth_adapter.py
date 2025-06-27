@@ -31,10 +31,16 @@ class OCIModelAuthAdapter(ModelAuthProvider):
         Returns:
             Dict[str, Any]: Configuration dictionary
         """
-        return {
+        # Return a serializable configuration
+        config = {
             "auth_type": self.get_auth_type(),
-            "oci_auth": self.oci_auth,
         }
+
+        # Add any serializable config from the underlying auth if available
+        if hasattr(self.oci_auth, "get_config"):
+            config.update(self.oci_auth.get_config())
+
+        return config
 
     def get_auth_type(self) -> str:
         """Get the authentication type identifier.
