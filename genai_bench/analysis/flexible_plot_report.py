@@ -462,10 +462,17 @@ class FlexiblePlotGenerator:
         # Position legend outside plot area for multi-line plots to avoid overlap
         ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize="small")
 
-        # Apply any special formatting
-        y_field_specs = plot_spec.get_y_field_specs()
-        if any("ttft" in spec.field.lower() for spec in y_field_specs):
-            ax.set_yscale("log", base=10)
+        # Apply y-axis scale from config or default based on field name
+        if plot_spec.y_scale:
+            # Use explicit scale from config
+            if plot_spec.y_scale == "log":
+                ax.set_yscale("log", base=10)
+            # 'linear' is matplotlib default, no need to set explicitly
+        else:
+            # Backward compatibility: apply log scale for TTFT fields if not specified
+            y_field_specs = plot_spec.get_y_field_specs()
+            if any("ttft" in spec.field.lower() for spec in y_field_specs):
+                ax.set_yscale("log", base=10)
 
         # Handle concurrency x-axis formatting - evenly spaced ticks
         if plot_spec.x_field == "num_concurrency":

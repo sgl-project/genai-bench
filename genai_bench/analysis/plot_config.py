@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, field_validator
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics
@@ -40,6 +40,9 @@ class PlotSpec(BaseModel):
         default="line", description="Type of plot: line, scatter, bar"
     )
     position: Tuple[int, int] = Field(..., description="Position in grid (row, col)")
+    y_scale: Optional[str] = Field(
+        None, description="Y-axis scale type: 'linear' (default) or 'log'"
+    )
 
     @field_validator("plot_type")
     def validate_plot_type(cls, v):
@@ -48,10 +51,18 @@ class PlotSpec(BaseModel):
             raise ValueError(f"plot_type must be one of {allowed_types}, got {v}")
         return v
 
-    @validator("y_fields")
-    def validate_y_fields(cls, v, values):
+    @field_validator("y_scale")
+    def validate_y_scale(cls, v):
+        if v is not None:
+            allowed_scales = {"linear", "log"}
+            if v not in allowed_scales:
+                raise ValueError(f"y_scale must be one of {allowed_scales}, got {v}")
+        return v
+
+    @field_validator("y_fields")
+    def validate_y_fields(cls, v, info):
         """Ensure either y_field or y_fields is specified, but not both."""
-        y_field = values.get("y_field")
+        y_field = info.data.get("y_field") if hasattr(info, "data") else None
 
         if y_field is not None and v is not None:
             raise ValueError(
@@ -95,12 +106,12 @@ class PlotConfig(BaseModel):
     layout: PlotLayout = Field(default_factory=PlotLayout)
     plots: List[PlotSpec] = Field(..., description="List of plot specifications")
 
-    @validator("plots")
-    def validate_plot_positions(cls, v, values):
-        if "layout" not in values:
+    @field_validator("plots")
+    def validate_plot_positions(cls, v, info):
+        if not hasattr(info, "data") or "layout" not in info.data:
             return v
 
-        layout = values["layout"]
+        layout = info.data["layout"]
         max_row, max_col = layout.rows - 1, layout.cols - 1
 
         positions = set()
@@ -282,9 +293,10 @@ class PlotConfigManager:
                         },
                     ],
                     "x_label": "Output Throughput (tokens/s)",
-                    "y_label": "Time to First Token (s)",
+                    "y_label": "Time to First Token (s) (log scale)",
                     "plot_type": "line",
                     "position": [0, 1],
+                    "y_scale": "log",
                 },
                 {
                     "title": "Throughput Components",

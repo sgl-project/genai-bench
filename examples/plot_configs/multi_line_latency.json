@@ -49,9 +49,10 @@
         }
       ],
       "x_label": "Output Throughput (tokens/s)",
-      "y_label": "Time to First Token (s)",
+      "y_label": "Time to First Token (s) (log scale)",
       "plot_type": "line",
-      "position": [0, 1]
+      "position": [0, 1],
+      "y_scale": "log"
     },
     {
       "title": "Token Processing Speed",
