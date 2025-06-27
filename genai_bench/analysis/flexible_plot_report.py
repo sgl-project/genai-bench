@@ -450,7 +450,7 @@ class FlexiblePlotGenerator:
                 self._add_plot_annotations(
                     ax,
                     plot_spec,
-                    [float(x) for x in valid_x],
+                    valid_x,
                     y_data,
                     valid_concurrency,
                 )
@@ -459,7 +459,7 @@ class FlexiblePlotGenerator:
                 self._add_plot_annotations(
                     ax,
                     plot_spec,
-                    [float(x) for x in valid_x],
+                    valid_x,
                     y_data,
                     valid_concurrency,
                 )

@@ -97,11 +97,12 @@ def load_one_experiment(
             )
             experiment_metadata.traffic_scenario.remove(scenario)
 
-    expected_concurrency_list = {
-        "batch_size": experiment_metadata.batch_size,
-        "num_concurrency": experiment_metadata.num_concurrency,
-    }.get(experiment_metadata.iteration_type, [])
-    expected_concurrency = set(expected_concurrency_list or [])
+    expected_concurrency = set(
+        {
+            "batch_size": experiment_metadata.batch_size,
+            "num_concurrency": experiment_metadata.num_concurrency,
+        }.get(experiment_metadata.iteration_type, [])
+    )
 
     # Check if any scenarios are missing concurrency levels
     for scenario_key, scenario_data in run_data.items():
