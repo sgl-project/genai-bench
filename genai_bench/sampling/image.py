@@ -21,14 +21,14 @@ logger = init_logger(__name__)
 class ImageSampler(Sampler):
     """
     A sampler for image-based tasks, supporting multiple output modalities:
-    - `image-to-text`: Generates `UserImageChatRequest` for vision-based chat
+    - `image-text-to-text`: Generates `UserImageChatRequest` for vision-based chat
       tasks.
     - `image-to-embeddings`: Generates `UserImageEmbeddingRequest` for image
       embedding tasks.
     """
 
     input_modality = "image"
-    supported_tasks = {"image-to-text", "image-to-embeddings"}
+    supported_tasks = {"image-text-to-text", "image-to-embeddings"}
 
     def __init__(
         self,
@@ -75,7 +75,7 @@ class ImageSampler(Sampler):
         num_output_tokens: int,
     ) -> UserImageChatRequest:
         """
-        Generates a `UserImageChatRequest` for image-to-text tasks.
+        Generates a `UserImageChatRequest` for image-text-to-text tasks.
 
         Args:
             prompt (str): The textual prompt accompanying the images.
@@ -84,7 +84,7 @@ class ImageSampler(Sampler):
             num_output_tokens (int): Number of output tokens expected.
 
         Returns:
-            UserImageChatRequest: A request object for image-to-text tasks.
+            UserImageChatRequest: A request object for image-text-to-text tasks.
         """
         return UserImageChatRequest(
             model=self.model,

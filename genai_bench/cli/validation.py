@@ -59,7 +59,7 @@ DEFAULT_SCENARIOS_FOR_RERANK = [
 DEFAULT_SCENARIOS_BY_TASK = {
     "text-to-text": DEFAULT_SCENARIOS_FOR_CHAT,
     "text-to-rerank": DEFAULT_SCENARIOS_FOR_RERANK,
-    "image-to-text": DEFAULT_SCENARIOS_FOR_VISION,
+    "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
     "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,
     # add other tasks and default scenarios as needed
@@ -78,7 +78,7 @@ def validate_dataset_path_callback(ctx, param, value):
         )
 
     input_modality, output_modality = task.split("-to-")
-    if input_modality == "image" and value is None:
+    if "image" in input_modality and value is None:
         # Check if dataset_config is provided as alternative
         dataset_config = ctx.params.get("dataset_config")
         if dataset_config is None:

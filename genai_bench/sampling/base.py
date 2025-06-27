@@ -85,14 +85,22 @@ class Sampler(ABC):
             input_modality, output_modality = task.split("-to-")
         except ValueError as err:
             raise ValueError(
-                f"Invalid task format: {task}. Expected '<input>-to-<output>'."
+                f"Invalid task format: {task}. Expected " f"'<input>-to-<output>'."
             ) from err
 
         # Check if the input modality is supported
+        # Handle composite input modalities like "image-text" by checking for
+        # base modalities
         if input_modality not in cls.modality_registry:
-            raise ValueError(f"No sampler supports input modality: {input_modality}")
-
-        sampler_cls = cls.modality_registry[input_modality]
+            # For composite modalities like "image-text", use the primary modality
+            if "image" in input_modality and "image" in cls.modality_registry:
+                sampler_cls = cls.modality_registry["image"]
+            else:
+                raise ValueError(
+                    f"No sampler supports input modality: {input_modality}"
+                )
+        else:
+            sampler_cls = cls.modality_registry[input_modality]
         if not sampler_cls.supports_task(input_modality, output_modality):
             raise ValueError(
                 f"Sampler for {input_modality} does not support output "

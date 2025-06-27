@@ -33,7 +33,7 @@ class DataLoaderFactory:
 
         if input_modality == "text":
             return DataLoaderFactory._load_text_data(dataset_config, output_modality)
-        elif input_modality == "image":
+        elif "image" in input_modality:
             return DataLoaderFactory._load_image_data(dataset_config), False
         else:
             raise ValueError(f"Unsupported input modality: {input_modality}")

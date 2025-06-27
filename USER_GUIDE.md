@@ -115,12 +115,12 @@ Here are the currently supported tasks:
 
 **NOTE**: Task compatibility may vary depending on the API format.
 
-| Task Name             | Description                                                                  |
-|-----------------------|------------------------------------------------------------------------------|
-| `text-to-text`        | Benchmarks generating text output from text input, such as chat or QA tasks. |
-| `text-to-embeddings`  | Benchmarks generating embeddings from text input, often for semantic search. |
-| `image-to-text`       | Benchmarks generating text from images, such as visual question answering.   |
-| `image-to-embeddings` | Benchmarks generating embeddings from images, often for image similarity.    |
+| Task Name             | Description                                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| `text-to-text`        | Benchmarks generating text output from text input, such as chat or QA tasks.                |
+| `text-to-embeddings`  | Benchmarks generating embeddings from text input, often for semantic search.                |
+| `image-text-to-text`  | Benchmarks generating text from images and text prompts, such as visual question answering. |
+| `image-to-embeddings` | Benchmarks generating embeddings from images, often for image similarity.                   |
 
 <!-- TOC --><a name="how-tasks-work"></a>
 

@@ -28,7 +28,7 @@ class OpenAIUser(BaseUser):
     BACKEND_NAME = "openai"
     supported_tasks = {
         "text-to-text": "chat",
-        "image-to-text": "chat",
+        "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         # Future support can be added here
     }

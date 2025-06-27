@@ -71,7 +71,7 @@ def test_load_data_for_image_task():
         mock_loader_class.return_value = mock_loader
 
         data, use_scenario = DataLoaderFactory.load_data_for_task(
-            "image-to-text", config
+            "image-text-to-text", config
         )
 
         assert data == [("prompt1", "image1"), ("prompt2", "image2")]
