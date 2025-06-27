@@ -108,7 +108,7 @@ def load_one_experiment(
     for scenario_key, scenario_data in run_data.items():
         seen_concurrency: Set[int] = scenario_data.get(
             f"{experiment_metadata.iteration_type}_levels", set()
-        )
+        )  # type: ignore[call-overload]
         missing_concurrency: List[Any] = sorted(expected_concurrency - seen_concurrency)
         if missing_concurrency:
             logger.warning(
@@ -116,7 +116,7 @@ def load_one_experiment(
                 f"{experiment_metadata.iteration_type} levels: {missing_concurrency}. "
                 f"Please re-run this scenario if necessary!"
             )
-        del scenario_data[f"{experiment_metadata.iteration_type}_levels"]
+        del scenario_data[f"{experiment_metadata.iteration_type}_levels"]  # type: ignore[arg-type]
 
     return experiment_metadata, run_data
 

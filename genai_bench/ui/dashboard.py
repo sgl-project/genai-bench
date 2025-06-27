@@ -159,16 +159,27 @@ class RichLiveDashboard:
     def update_metrics_panels(self, live_metrics: LiveMetricsData):
         if "stats" not in live_metrics or not live_metrics["stats"]:
             return
-        input_latency_panel, input_throughput_panel = create_metric_panel(
-            "Input",
-            live_metrics["stats"]["ttft"],
-            live_metrics["stats"]["input_throughput"],
-        )
-        output_latency_panel, output_throughput_panel = create_metric_panel(
-            "Output",
-            live_metrics["stats"]["output_latency"],
-            live_metrics["stats"]["output_throughput"],
-        )
+        stats = live_metrics["stats"]
+        # Handle both dict and list formats for stats
+        if isinstance(stats, dict):
+            input_latency_panel, input_throughput_panel = create_metric_panel(
+                "Input",
+                stats.get("ttft", []),
+                stats.get("input_throughput", []),
+            )
+            output_latency_panel, output_throughput_panel = create_metric_panel(
+                "Output",
+                stats.get("output_latency", []),
+                stats.get("output_throughput", []),
+            )
+        else:
+            # If stats is a list or other format, use empty lists as fallback
+            input_latency_panel, input_throughput_panel = create_metric_panel(
+                "Input", [], []
+            )
+            output_latency_panel, output_throughput_panel = create_metric_panel(
+                "Output", [], []
+            )
 
         self.layout["input_throughput"].update(input_throughput_panel)
         self.layout["input_latency"].update(input_latency_panel)
