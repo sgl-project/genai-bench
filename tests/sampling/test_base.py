@@ -42,7 +42,7 @@ def test_sampler_factory(mock_vision_dataset):
     assert isinstance(sampler, TextSampler)
 
     sampler = Sampler.create(
-        task="image-to-text",
+        task="image-text-to-text",
         tokenizer=Mock(),
         model="gpt-3",
         data=mock_vision_dataset,
