@@ -180,7 +180,7 @@ Each `User` corresponds to one API backend, such as [`OpenAIUser`](genai_bench/u
 class OpenAIUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
-        "image-to-text": "chat",
+        "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         "audio-to-text": "audio_to_text",  # New task added
     }

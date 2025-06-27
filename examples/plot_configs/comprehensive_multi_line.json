@@ -1,0 +1,99 @@
+{
+  "layout": {
+    "rows": 1,
+    "cols": 3,
+    "figsize": [24, 8]
+  },
+  "plots": [
+    {
+      "title": "End-to-End Latency Distribution",
+      "x_field": "requests_per_second",
+      "y_fields": [
+        {
+          "field": "stats.e2e_latency.p25",
+          "label": "P25",
+          "color": "#1f77b4",
+          "linestyle": "-"
+        },
+        {
+          "field": "stats.e2e_latency.p50",
+          "label": "P50 (Median)",
+          "color": "#ff7f0e",
+          "linestyle": "-"
+        },
+        {
+          "field": "stats.e2e_latency.p75",
+          "label": "P75",
+          "color": "#2ca02c",
+          "linestyle": "-"
+        },
+        {
+          "field": "stats.e2e_latency.p90",
+          "label": "P90",
+          "color": "#d62728",
+          "linestyle": "--"
+        },
+        {
+          "field": "stats.e2e_latency.p99",
+          "label": "P99",
+          "color": "#9467bd",
+          "linestyle": "-."
+        }
+      ],
+      "x_label": "RPS",
+      "y_label": "E2E Latency (s)",
+      "plot_type": "line",
+      "position": [0, 0]
+    },
+    {
+      "title": "Throughput Components",
+      "x_field": "num_concurrency",
+      "y_fields": [
+        {
+          "field": "mean_input_throughput_tokens_per_s",
+          "label": "Input Throughput",
+          "color": "skyblue"
+        },
+        {
+          "field": "mean_output_throughput_tokens_per_s",
+          "label": "Output Throughput",
+          "color": "lightcoral"
+        },
+        {
+          "field": "mean_total_tokens_throughput_tokens_per_s",
+          "label": "Total Throughput",
+          "color": "lightgreen"
+        }
+      ],
+      "x_label": "Concurrency",
+      "y_label": "Throughput (tokens/s)",
+      "plot_type": "line",
+      "position": [0, 1]
+    },
+    {
+      "title": "Token Statistics",
+      "x_field": "requests_per_second",
+      "y_fields": [
+        {
+          "field": "stats.num_input_tokens.mean",
+          "label": "Avg Input Tokens",
+          "color": "navy"
+        },
+        {
+          "field": "stats.num_output_tokens.mean",
+          "label": "Avg Output Tokens",
+          "color": "darkred"
+        },
+        {
+          "field": "stats.total_tokens.mean",
+          "label": "Avg Total Tokens",
+          "color": "darkgreen"
+        }
+      ],
+      "x_label": "RPS",
+      "y_label": "Token Count",
+      "plot_type": "scatter",
+      "position": [0, 2]
+    }
+  ]
+}

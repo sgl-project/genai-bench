@@ -227,12 +227,12 @@ def test_validate_dataset_path_callback(caplog):
     param = None
 
     # Test with image task and dataset path
-    ctx.params = {"task": "image-to-text"}
+    ctx.params = {"task": "image-text-to-text"}
     result = validate_dataset_path_callback(ctx, param, "/path/to/dataset")
     assert result == "/path/to/dataset"
 
     # Test with image task and missing dataset path (no dataset config)
-    ctx.params = {"task": "image-to-text", "dataset_config": None}
+    ctx.params = {"task": "image-text-to-text", "dataset_config": None}
     with pytest.raises(click.BadParameter) as exc:
         validate_dataset_path_callback(ctx, param, None)
     assert (
@@ -242,7 +242,10 @@ def test_validate_dataset_path_callback(caplog):
 
     # Test with image task, missing dataset path, but dataset config provided
     with caplog.at_level(logging.WARNING):
-        ctx.params = {"task": "image-to-text", "dataset_config": "/path/to/config.json"}
+        ctx.params = {
+            "task": "image-text-to-text",
+            "dataset_config": "/path/to/config.json",
+        }
         result = validate_dataset_path_callback(ctx, param, None)
         assert result is None
     assert "Using dataset configuration file for image task" in caplog.text

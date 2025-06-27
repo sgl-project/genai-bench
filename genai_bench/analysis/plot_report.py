@@ -47,9 +47,9 @@ def plot_graph(
         x_positions = range(len(concurrency_levels))
         ax.set_xticks(x_positions)
         ax.set_xticklabels(concurrency_levels)
-        x_data = x_positions  # Replace x_data with even positions for plotting
+        x_data = x_positions  # type: ignore[assignment]  # Replace x_data with even positions for plotting
     else:
-        x_positions = x_data
+        x_positions = x_data  # type: ignore[assignment]
 
     # If this is TTFT or E2E latency, filter out values outside [0.1, 100]
     valid_x = []
@@ -80,7 +80,17 @@ def plot_graph(
     # Annotate
     for xx, yy, cc in zip(valid_x, valid_y, valid_concurrency, strict=False):
         annotation = f"{yy:.2f}" if x_label == "Concurrency" else f"{cc}"
-        ax.annotate(annotation, (xx, yy), fontsize=9)
+        ax.annotate(
+            annotation,
+            (xx, yy),
+            fontsize=9,
+            xytext=(4, 4),
+            textcoords="offset points",
+            ha="left",
+            bbox=dict(
+                boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor="none"
+            ),
+        )
 
     if y_label == "TTFT":
         ax.set_yscale("log", base=10)
@@ -131,7 +141,7 @@ def plot_metrics(
         concurrency_levels = label_to_concurrency_map[labels[i]]
 
         # Define all plot specifications in a single list
-        plot_specs = [
+        plot_specs = [  # type: ignore[union-attr,index]
             # First row
             {
                 "y_data": [
@@ -442,7 +452,7 @@ def extract_traffic_scenarios(
     Returns:
         set: A set of unique traffic scenarios found in the run data.
     """
-    traffic_scenarios = set()
+    traffic_scenarios: set[str] = set()
     for _, run_data in run_data_list:
         traffic_scenarios.update(run_data.keys())
     return traffic_scenarios
@@ -668,7 +678,7 @@ def plot_error_rates(
         all_codes.update(error_freq.keys())
 
     # Convert to a sorted list so each code is consistently stacked
-    all_codes = sorted(all_codes)
+    all_codes = sorted(all_codes)  # type: ignore[assignment]
 
     bottom = np.zeros(len(concurrency_levels))
     color_map = plt.get_cmap("tab20")

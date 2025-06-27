@@ -115,12 +115,12 @@ Here are the currently supported tasks:
 
 **NOTE**: Task compatibility may vary depending on the API format.
 
-| Task Name             | Description                                                                  |
-|-----------------------|------------------------------------------------------------------------------|
-| `text-to-text`        | Benchmarks generating text output from text input, such as chat or QA tasks. |
-| `text-to-embeddings`  | Benchmarks generating embeddings from text input, often for semantic search. |
-| `image-to-text`       | Benchmarks generating text from images, such as visual question answering.   |
-| `image-to-embeddings` | Benchmarks generating embeddings from images, often for image similarity.    |
+| Task Name             | Description                                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| `text-to-text`        | Benchmarks generating text output from text input, such as chat or QA tasks.                |
+| `text-to-embeddings`  | Benchmarks generating embeddings from text input, often for semantic search.                |
+| `image-text-to-text`  | Benchmarks generating text from images and text prompts, such as visual question answering. |
+| `image-to-embeddings` | Benchmarks generating embeddings from images, often for image similarity.                   |
 
 <!-- TOC --><a name="how-tasks-work"></a>
 
@@ -482,7 +482,7 @@ genai-bench excel --experiment-folder <path-to-experiment-folder> --excel-name <
 
 ## Generate a 2x4 Plot
 
-You can check out `genai-bench plot --help` to find how to generate a 2x3 Plot containing:
+You can check out `genai-bench plot --help` to find how to generate a 2x4 Plot containing:
 
 1. Output Inference Speed (tokens/s) vs Output Throughput of Server (tokens/s)
 2. TTFT (s) vs Output Throughput of Server (tokens/s)
@@ -492,6 +492,8 @@ You can check out `genai-bench plot --help` to find how to generate a 2x3 Plot c
 6. TTFT (s) vs Total Throughput (Input + Output) of Server (tokens/s)
 7. P90 E2E Latency (s) per Request vs RPS
 8. P99 E2E Latency (s) per Request vs RPS
+
+**Note**: TTFT plots automatically use logarithmic scale for better visualization of the wide range of values. You can override this by specifying `"y_scale": "linear"` in custom plot configurations.
 
 ```shell
 genai-bench plot --experiments-folder <path-to-experiment-folder> --group-key traffic_scenario

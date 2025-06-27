@@ -44,7 +44,7 @@ def api_options(func):
                 "text-to-text",
                 "text-to-embeddings",
                 "text-to-rerank",
-                "image-to-text",
+                "image-text-to-text",
                 "image-to-embeddings",
             ],
             case_sensitive=False,
@@ -54,7 +54,7 @@ def api_options(func):
         callback=validate_task,
         help="The task to benchmark: it follows `<input_modality>-to-"
         "<output_modality>` pattern. Currently we support `text-to-text`,"
-        " `image-to-text`, `text-to-embeddings, and `image-to-embeddings`.",
+        " `image-text-to-text`, `text-to-embeddings, and `image-to-embeddings`.",
     )(func)
     func = click.option(
         "--api-key",

@@ -1,0 +1,45 @@
+{
+  "layout": {
+    "rows": 2,
+    "cols": 2,
+    "figsize": [16, 12]
+  },
+  "plots": [
+    {
+      "title": "Throughput vs Mean Latency",
+      "x_field": "mean_output_throughput_tokens_per_s",
+      "y_field": "stats.e2e_latency.mean",
+      "x_label": "Output Throughput (tokens/s)",
+      "y_label": "Mean E2E Latency (s)",
+      "plot_type": "line",
+      "position": [0, 0]
+    },
+    {
+      "title": "RPS vs P99 Latency",
+      "x_field": "requests_per_second",
+      "y_field": "stats.e2e_latency.p99",
+      "x_label": "Requests Per Second",
+      "y_label": "P99 E2E Latency (s)",
+      "plot_type": "line",
+      "position": [0, 1]
+    },
+    {
+      "title": "Concurrency vs TTFT",
+      "x_field": "num_concurrency",
+      "y_field": "stats.ttft.mean",
+      "x_label": "Concurrency Level",
+      "y_label": "Mean TTFT (s)",
+      "plot_type": "line",
+      "position": [1, 0]
+    },
+    {
+      "title": "Error Rate Analysis",
+      "x_field": "num_concurrency",
+      "y_field": "error_rate",
+      "x_label": "Concurrency Level",
+      "y_label": "Error Rate",
+      "plot_type": "bar",
+      "position": [1, 1]
+    }
+  ]
+}
