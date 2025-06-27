@@ -81,7 +81,7 @@ class PlotSpec(BaseModel):
         if self.y_fields is not None:
             return self.y_fields
         elif self.y_field is not None:
-            return [YFieldSpec(field=self.y_field)]
+            return [YFieldSpec(field=self.y_field)]  # type: ignore[call-arg]
         else:
             raise ValueError("No Y-field specifications found")
 
@@ -103,7 +103,7 @@ class PlotLayout(BaseModel):
 class PlotConfig(BaseModel):
     """Complete plot configuration."""
 
-    layout: PlotLayout = Field(default_factory=PlotLayout)
+    layout: PlotLayout = Field(default_factory=lambda: PlotLayout())  # type: ignore[call-arg]
     plots: List[PlotSpec] = Field(..., description="List of plot specifications")
 
     @field_validator("plots")
@@ -428,7 +428,14 @@ class PlotConfigManager:
             available = list(cls.PRESETS.keys())
             raise ValueError(f"Unknown preset '{preset_name}'. Available: {available}")
 
-        return PlotConfig(**cls.PRESETS[preset_name])
+        preset_data = cls.PRESETS[preset_name]
+        layout_data = preset_data["layout"]
+        plots_data = preset_data["plots"]
+
+        # Type ignore for mypy issues with preset data structure
+        layout = PlotLayout(**layout_data)  # type: ignore[arg-type]
+        plots = [PlotSpec(**plot_data) for plot_data in plots_data]  # type: ignore[arg-type]
+        return PlotConfig(layout=layout, plots=plots)
 
     @classmethod
     def load_from_file(cls, file_path: str) -> PlotConfig:

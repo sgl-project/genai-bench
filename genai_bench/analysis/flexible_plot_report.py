@@ -1,7 +1,7 @@
 """Flexible plotting system supporting user-defined plot configurations."""
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +10,11 @@ from matplotlib.figure import Figure
 
 from genai_bench.analysis.experiment_loader import ExperimentMetrics, MetricsData
 from genai_bench.analysis.plot_config import PlotConfig, PlotConfigManager, PlotSpec
-from genai_bench.analysis.plot_report import plot_error_rates, plot_graph
+from genai_bench.analysis.plot_report import (
+    get_scenario_data,
+    plot_error_rates,
+    plot_graph,
+)
 from genai_bench.logging import init_logger
 from genai_bench.protocol import ExperimentMetadata
 from genai_bench.utils import sanitize_string
@@ -82,8 +86,6 @@ class FlexiblePlotGenerator:
         experiment_folder: str,
     ) -> None:
         """Plot grouped by traffic scenario."""
-        from genai_bench.analysis.plot_report import get_scenario_data
-
         label_to_concurrency_map, concurrency_data_list, labels = get_scenario_data(
             run_data_list
         )
@@ -212,9 +214,11 @@ class FlexiblePlotGenerator:
                         x_field=plot_spec.x_field,
                         y_field=first_field.field,
                         x_label=plot_spec.x_label,
+                        y_fields=None,
+                        position=plot_spec.position,
+                        y_scale=plot_spec.y_scale,
                         y_label=plot_spec.y_label,
                         plot_type=plot_spec.plot_type,
-                        position=plot_spec.position,
                     )
 
                     self._plot_single_line_metric(
@@ -282,10 +286,13 @@ class FlexiblePlotGenerator:
 
         for c in concurrency_levels:
             try:
-                metrics = concurrency_data[c]["aggregated_metrics"]
+                scenario_data = concurrency_data[c]
+                if "aggregated_metrics" not in scenario_data:
+                    continue
+                metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
 
-                x_val = PlotConfigManager.get_field_value(metrics, plot_spec.x_field)
-                y_val = PlotConfigManager.get_field_value(metrics, y_field_spec.field)
+                x_val = PlotConfigManager.get_field_value(metrics, plot_spec.x_field)  # type: ignore[arg-type]
+                y_val = PlotConfigManager.get_field_value(metrics, y_field_spec.field)  # type: ignore[arg-type]
 
                 if x_val is not None and y_val is not None:
                     x_data.append(x_val)
@@ -360,14 +367,20 @@ class FlexiblePlotGenerator:
         label: str,
     ) -> None:
         """Plot multiple lines on the same subplot."""
-        colors = plt.cm.tab10.colors  # Get default color cycle
+        # Get colors from tab10 colormap
+        cmap = plt.cm.get_cmap("tab10")
+        colors = [cmap(i) for i in range(10)]  # Get first 10 colors
         linestyles = ["-", "--", "-.", ":"]
 
-        x_data = []
+        x_data: List[Any] = []
         for c in concurrency_levels:
             try:
-                metrics = concurrency_data[c]["aggregated_metrics"]
-                x_val = PlotConfigManager.get_field_value(metrics, plot_spec.x_field)
+                scenario_data = concurrency_data[c]
+                if "aggregated_metrics" not in scenario_data:
+                    x_data.append(None)
+                    continue
+                metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
+                x_val = PlotConfigManager.get_field_value(metrics, plot_spec.x_field)  # type: ignore[arg-type]
                 if x_val is not None:
                     x_data.append(x_val)
                 else:
@@ -386,10 +399,13 @@ class FlexiblePlotGenerator:
                     continue
 
                 try:
-                    metrics = concurrency_data[c]["aggregated_metrics"]
+                    scenario_data = concurrency_data[c]
+                    if "aggregated_metrics" not in scenario_data:
+                        continue
+                    metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
                     y_val = PlotConfigManager.get_field_value(
                         metrics, y_field_spec.field
-                    )
+                    )  # type: ignore[arg-type]
 
                     if y_val is not None:
                         y_data.append(y_val)
@@ -432,12 +448,20 @@ class FlexiblePlotGenerator:
                     markersize=4,
                 )
                 self._add_plot_annotations(
-                    ax, plot_spec, valid_x, y_data, valid_concurrency
+                    ax,
+                    plot_spec,
+                    [float(x) for x in valid_x],
+                    y_data,
+                    valid_concurrency,
                 )
             elif plot_spec.plot_type == "scatter":
                 ax.scatter(valid_x, y_data, color=color, label=full_label)
                 self._add_plot_annotations(
-                    ax, plot_spec, valid_x, y_data, valid_concurrency
+                    ax,
+                    plot_spec,
+                    [float(x) for x in valid_x],
+                    y_data,
+                    valid_concurrency,
                 )
             elif plot_spec.plot_type == "bar":
                 # For bar plots with multiple fields, use grouped bars
@@ -477,7 +501,7 @@ class FlexiblePlotGenerator:
         # Handle concurrency x-axis formatting - evenly spaced ticks
         if plot_spec.x_field == "num_concurrency":
             ax.set_xticks(range(len(concurrency_levels)))
-            ax.set_xticklabels(concurrency_levels)
+            ax.set_xticklabels([str(level) for level in concurrency_levels])
 
     def _save_individual_subplots_multiline(
         self, axs: Any, experiment_folder: str, output_file_prefix: str
@@ -671,7 +695,7 @@ def plot_experiment_data_flexible(
     run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
     group_key: str,
     experiment_folder: str,
-    plot_config: PlotConfig = None,
+    plot_config: Optional[PlotConfig] = None,
 ) -> None:
     """
     Plot experiment data using flexible configuration.
@@ -710,9 +734,10 @@ def validate_plot_config_with_data(
         _, experiment_metrics = sample_metrics[0]
         first_scenario = list(experiment_metrics.keys())[0]
         first_concurrency = list(experiment_metrics[first_scenario].keys())[0]
-        sample_agg_metrics = experiment_metrics[first_scenario][first_concurrency][
-            "aggregated_metrics"
-        ]
+        scenario_data = experiment_metrics[first_scenario][first_concurrency]
+        if "aggregated_metrics" not in scenario_data:
+            raise KeyError("aggregated_metrics not found in sample data")
+        sample_agg_metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
     except (IndexError, KeyError) as e:
         errors.append(f"Cannot extract sample metrics for validation: {e}")
         return errors
@@ -721,7 +746,8 @@ def validate_plot_config_with_data(
     for i, plot_spec in enumerate(config.plots):
         # Validate X field path
         if not PlotConfigManager.validate_field_path(
-            plot_spec.x_field, sample_agg_metrics
+            plot_spec.x_field,
+            sample_agg_metrics,  # type: ignore[arg-type]
         ):
             errors.append(f"Plot {i+1}: Invalid x_field '{plot_spec.x_field}'")
 
@@ -730,7 +756,8 @@ def validate_plot_config_with_data(
             y_field_specs = plot_spec.get_y_field_specs()
             for j, y_field_spec in enumerate(y_field_specs):
                 if not PlotConfigManager.validate_field_path(
-                    y_field_spec.field, sample_agg_metrics
+                    y_field_spec.field,
+                    sample_agg_metrics,  # type: ignore[arg-type]
                 ):
                     if len(y_field_specs) == 1:
                         errors.append(

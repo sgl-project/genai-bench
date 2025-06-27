@@ -113,7 +113,7 @@ def _create_summary_sheet_common(
 
     for scenario in merged_scenarios:
         summary_value = -9999
-        summary_total_chars_per_hour = 0
+        summary_total_chars_per_hour = 0.0
 
         iteration_key = experiment_metadata.iteration_type
 
@@ -126,7 +126,7 @@ def _create_summary_sheet_common(
                 if is_embedding
                 else metrics.stats.output_inference_speed[percentile]
             )
-            if metric_value > threshold:
+            if metric_value is not None and metric_value > threshold:
                 if (
                     summary_value != -9999
                     and getattr(metrics, iteration_key) > summary_value
@@ -338,9 +338,14 @@ def create_aggregated_metrics_sheet(
 
     for scenario in merged_scenarios:
         for iteration in sorted(run_data[scenario]):
-            metrics: AggregatedMetrics = run_data[scenario][iteration][
-                "aggregated_metrics"
-            ]
+            scenario_data = run_data[scenario][iteration]
+            if "aggregated_metrics" not in scenario_data:
+                continue
+            # Type assertion since we verified the key exists
+            metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
+            assert isinstance(
+                metrics, AggregatedMetrics
+            ), f"Expected AggregatedMetrics, got {type(metrics)}"
             metrics_dict = metrics.model_dump()
             row = []
             for field in metadata_headers:
@@ -383,11 +388,22 @@ def create_single_request_metrics_sheet(
         start_row_iteration = start_row
         for iteration in sorted(run_data[scenario]):
             row_for_iteration = 0
-            metrics = run_data[scenario][iteration]["individual_request_metrics"]
+            scenario_data = run_data[scenario][iteration]
+            if "individual_metrics" not in scenario_data:
+                continue
+            # Access individual metrics with proper type handling
+            metrics = scenario_data.get("individual_metrics", [])  # type: ignore[call-overload]
             for single_request_metrics in metrics:
                 row = [scenario, iteration]
                 for field in RequestLevelMetrics.model_fields:
-                    value = single_request_metrics.get(field)
+                    if hasattr(single_request_metrics, field):
+                        value = getattr(single_request_metrics, field)
+                    else:
+                        value = (
+                            single_request_metrics.get(field)
+                            if hasattr(single_request_metrics, "get")
+                            else None
+                        )
                     row.append(value)
                 sheet.append(row)
                 rows_for_scenario += 1

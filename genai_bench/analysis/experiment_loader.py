@@ -97,18 +97,17 @@ def load_one_experiment(
             )
             experiment_metadata.traffic_scenario.remove(scenario)
 
-    expected_concurrency = set(
-        {
-            "batch_size": experiment_metadata.batch_size,
-            "num_concurrency": experiment_metadata.num_concurrency,
-        }.get(experiment_metadata.iteration_type, [])
-    )
+    expected_concurrency_list = {
+        "batch_size": experiment_metadata.batch_size,
+        "num_concurrency": experiment_metadata.num_concurrency,
+    }.get(experiment_metadata.iteration_type, [])
+    expected_concurrency = set(expected_concurrency_list or [])
 
     # Check if any scenarios are missing concurrency levels
     for scenario_key, scenario_data in run_data.items():
         seen_concurrency: Set[int] = scenario_data.get(
             f"{experiment_metadata.iteration_type}_levels", set()
-        )
+        )  # type: ignore[call-overload]
         missing_concurrency: List[Any] = sorted(expected_concurrency - seen_concurrency)
         if missing_concurrency:
             logger.warning(
@@ -116,7 +115,7 @@ def load_one_experiment(
                 f"{experiment_metadata.iteration_type} levels: {missing_concurrency}. "
                 f"Please re-run this scenario if necessary!"
             )
-        del scenario_data[f"{experiment_metadata.iteration_type}_levels"]
+        del scenario_data[f"{experiment_metadata.iteration_type}_levels"]  # type: ignore[arg-type]
 
     return experiment_metadata, run_data
 
