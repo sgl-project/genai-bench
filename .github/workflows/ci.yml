@@ -45,11 +45,18 @@ jobs:
       run: |
         uv run --no-reinstall coverage report --show-missing --fail-under=93
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        fail_ci_if_error: false
+    # Optional: If you want to see coverage in CI logs
+    - name: Display coverage
+      run: |
+        uv run --no-reinstall coverage report
+
+    - name: Generate and display coverage info
+      if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
+      run: |
+        # Extract coverage percentage
+        COVERAGE=$(uv run --no-reinstall coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+        echo "Coverage: $COVERAGE%"
+        echo "Update README badge with: https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
 
   lint:
     runs-on: ubuntu-latest

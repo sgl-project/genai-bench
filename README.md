@@ -19,6 +19,7 @@ Unified, accurate, and beautiful LLM Benchmarking
   <a href="https://github.com/sgl-project/genai-bench">
     <img alt="Types - Mypy" src="https://img.shields.io/badge/types-Mypy-blue">
   </a>
+  <img alt="Coverage" src="https://img.shields.io/badge/coverage-93%25-brightgreen">
   <a href="https://github.com/sgl-project/genai-bench/blob/main/LICENSE">
     <img alt="License" src="https://img.shields.io/github/license/sgl-project/genai-bench">
   </a>
