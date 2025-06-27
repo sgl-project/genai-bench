@@ -231,3 +231,23 @@ class OSDataStore(DataStore):
 
                 logger.info(f"Uploading {file_path} to {bucket}/{object_name}")
                 self.upload(str(file_path), target)
+
+    def delete_object(self, target: ObjectURI) -> None:
+        """Delete an object from OCI Object Storage.
+
+        Args:
+            target: Target object URI
+        """
+        logger.info(f"Deleting object {target}")
+
+        if not target.namespace:
+            namespace = self.get_namespace()
+            target.namespace = namespace
+            logger.debug(f"Using namespace: {namespace}")
+
+        self.client.delete_object(
+            namespace_name=target.namespace,
+            bucket_name=target.bucket_name,
+            object_name=target.object_name,
+        )
+        logger.info(f"Successfully deleted {target}")
