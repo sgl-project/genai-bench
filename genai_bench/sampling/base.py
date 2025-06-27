@@ -85,7 +85,7 @@ class Sampler(ABC):
             input_modality, output_modality = task.split("-to-")
         except ValueError as err:
             raise ValueError(
-                f"Invalid task format: {task}. Expected " f"'<input>-to-<output>'."
+                f"Invalid task format: {task}. Expected '<input>-to-<output>'."
             ) from err
 
         # Check if the input modality is supported
