@@ -338,11 +338,9 @@ def create_aggregated_metrics_sheet(
 
     for scenario in merged_scenarios:
         for iteration in sorted(run_data[scenario]):
-            scenario_data = run_data[scenario][iteration]
-            if "aggregated_metrics" not in scenario_data:
-                continue
-            # Type assertion since we verified the key exists
-            metrics = scenario_data["aggregated_metrics"]  # type: ignore[index]
+            metrics: AggregatedMetrics = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
+                "aggregated_metrics"
+            ]
             assert isinstance(
                 metrics, AggregatedMetrics
             ), f"Expected AggregatedMetrics, got {type(metrics)}"
@@ -388,22 +386,13 @@ def create_single_request_metrics_sheet(
         start_row_iteration = start_row
         for iteration in sorted(run_data[scenario]):
             row_for_iteration = 0
-            scenario_data = run_data[scenario][iteration]
-            if "individual_metrics" not in scenario_data:
-                continue
-            # Access individual metrics with proper type handling
-            metrics = scenario_data.get("individual_metrics", [])  # type: ignore[call-overload]
+            metrics: List[RequestLevelMetrics] = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
+                "individual_request_metrics"
+            ]
             for single_request_metrics in metrics:
                 row = [scenario, iteration]
                 for field in RequestLevelMetrics.model_fields:
-                    if hasattr(single_request_metrics, field):
-                        value = getattr(single_request_metrics, field)
-                    else:
-                        value = (
-                            single_request_metrics.get(field)
-                            if hasattr(single_request_metrics, "get")
-                            else None
-                        )
+                    value = single_request_metrics.get(field)  # type: ignore[attr-defined]
                     row.append(value)
                 sheet.append(row)
                 rows_for_scenario += 1
