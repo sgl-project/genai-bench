@@ -33,7 +33,7 @@ class OpenAIAuth(AuthProvider):
         """
         return {}
 
-    def get_auth_credentials(self) -> str:
+    def get_credentials(self) -> str:
         """Get OpenAI API key.
 
         Returns:

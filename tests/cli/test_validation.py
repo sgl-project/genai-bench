@@ -368,25 +368,25 @@ def test_validate_object_storage_options():
     ctx.params = {}
     assert validate_object_storage_options(ctx, param, False) is False
 
-    # Test case 2: When upload_results is True and bucket is in params
+    # Test case 2: When upload_results is True and storage_bucket is in params
     param.name = "upload_results"
-    ctx.params = {"bucket": "test-bucket"}
+    ctx.params = {"storage_bucket": "test-bucket"}
     assert validate_object_storage_options(ctx, param, True) is True
 
-    # Test case 3: When upload_results is True but bucket is not provided
+    # Test case 3: When upload_results is True but storage_bucket is not provided
     param.name = "upload_results"
     ctx.params = {}
     with pytest.raises(click.UsageError) as exc_info:
         validate_object_storage_options(ctx, param, True)
-    assert "You must provide a bucket name when uploading results." in str(
+    assert "You must provide a storage bucket name (--storage-bucket)" in str(
         exc_info.value
     )
 
-    # Test case 4: When validating bucket parameter
-    param.name = "bucket"
+    # Test case 4: When validating storage_bucket parameter
+    param.name = "storage_bucket"
     ctx.params = {"upload_results": True}
 
-    # Valid bucket name
+    # Valid storage bucket name
     assert validate_object_storage_options(ctx, param, "test-bucket") == "test-bucket"
 
 

@@ -29,7 +29,7 @@ class OCIOBOTokenAuth(AuthProvider):
             "region": self.region,
         }
 
-    def get_auth_credentials(self) -> oci.signer.AbstractBaseSigner:
+    def get_credentials(self) -> oci.signer.AbstractBaseSigner:
         """Get OCI security token signer.
 
         Returns:

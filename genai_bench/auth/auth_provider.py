@@ -15,7 +15,7 @@ class AuthProvider(ABC):
         pass
 
     @abstractmethod
-    def get_auth_credentials(self) -> Any:
+    def get_credentials(self) -> Any:
         """Get authentication credentials.
 
         Returns:
