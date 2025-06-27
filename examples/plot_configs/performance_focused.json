@@ -1,0 +1,63 @@
+{
+  "layout": {
+    "rows": 2,
+    "cols": 3,
+    "figsize": [24, 12]
+  },
+  "plots": [
+    {
+      "title": "Token Generation Speed",
+      "x_field": "mean_output_throughput_tokens_per_s",
+      "y_field": "stats.output_inference_speed.mean",
+      "x_label": "Server Output Throughput (tokens/s)",
+      "y_label": "Per-Request Speed (tokens/s)",
+      "plot_type": "line",
+      "position": [0, 0]
+    },
+    {
+      "title": "Time to First Token",
+      "x_field": "mean_output_throughput_tokens_per_s",
+      "y_field": "stats.ttft.mean",
+      "x_label": "Server Output Throughput (tokens/s)",
+      "y_label": "TTFT (s)",
+      "plot_type": "line",
+      "position": [0, 1]
+    },
+    {
+      "title": "Latency Percentiles",
+      "x_field": "requests_per_second",
+      "y_field": "stats.e2e_latency.p90",
+      "x_label": "RPS",
+      "y_label": "P90 Latency (s)",
+      "plot_type": "line",
+      "position": [0, 2]
+    },
+    {
+      "title": "Token Efficiency",
+      "x_field": "stats.num_input_tokens.mean",
+      "y_field": "stats.num_output_tokens.mean",
+      "x_label": "Mean Input Tokens",
+      "y_label": "Mean Output Tokens",
+      "plot_type": "scatter",
+      "position": [1, 0]
+    },
+    {
+      "title": "Request Success Rate",
+      "x_field": "num_concurrency",
+      "y_field": "num_completed_requests",
+      "x_label": "Concurrency",
+      "y_label": "Completed Requests",
+      "plot_type": "bar",
+      "position": [1, 1]
+    },
+    {
+      "title": "Throughput Scaling",
+      "x_field": "num_concurrency",
+      "y_field": "mean_total_tokens_throughput_tokens_per_s",
+      "x_label": "Concurrency",
+      "y_label": "Total Throughput (tokens/s)",
+      "plot_type": "line",
+      "position": [1, 2]
+    }
+  ]
+}

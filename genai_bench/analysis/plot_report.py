@@ -80,7 +80,17 @@ def plot_graph(
     # Annotate
     for xx, yy, cc in zip(valid_x, valid_y, valid_concurrency, strict=False):
         annotation = f"{yy:.2f}" if x_label == "Concurrency" else f"{cc}"
-        ax.annotate(annotation, (xx, yy), fontsize=9)
+        ax.annotate(
+            annotation,
+            (xx, yy),
+            fontsize=9,
+            xytext=(4, 4),
+            textcoords="offset points",
+            ha="left",
+            bbox=dict(
+                boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor="none"
+            ),
+        )
 
     if y_label == "TTFT":
         ax.set_yscale("log", base=10)
