@@ -12,12 +12,28 @@ from genai_bench.metrics.metrics import AggregatedMetrics
 logger = init_logger(__name__)
 
 
+class YFieldSpec(BaseModel):
+    """Specification for a Y-axis field in multi-line plots."""
+
+    field: str = Field(..., description="Field path for Y-axis data")
+    label: Optional[str] = Field(None, description="Custom label for this line")
+    color: Optional[str] = Field(None, description="Custom color for this line")
+    linestyle: Optional[str] = Field(
+        None, description="Line style: '-', '--', '-.', ':'"
+    )
+
+
 class PlotSpec(BaseModel):
     """Specification for a single plot."""
 
     title: str = Field(..., description="Title of the plot")
     x_field: str = Field(..., description="Field path for X-axis data")
-    y_field: str = Field(..., description="Field path for Y-axis data")
+    y_field: Optional[str] = Field(
+        None, description="Field path for Y-axis data (single line)"
+    )
+    y_fields: Optional[List[YFieldSpec]] = Field(
+        None, description="Multiple Y-fields for multi-line plots"
+    )
     x_label: Optional[str] = Field(None, description="Custom X-axis label")
     y_label: Optional[str] = Field(None, description="Custom Y-axis label")
     plot_type: str = Field(
@@ -31,6 +47,36 @@ class PlotSpec(BaseModel):
         if v not in allowed_types:
             raise ValueError(f"plot_type must be one of {allowed_types}, got {v}")
         return v
+
+    @validator("y_fields")
+    def validate_y_fields(cls, v, values):
+        """Ensure either y_field or y_fields is specified, but not both."""
+        y_field = values.get("y_field")
+
+        if y_field is not None and v is not None:
+            raise ValueError(
+                "Cannot specify both y_field and y_fields. Use one or the other."
+            )
+
+        if y_field is None and (v is None or len(v) == 0):
+            raise ValueError(
+                "Must specify either y_field or y_fields with at least one field."
+            )
+
+        return v
+
+    def get_y_field_specs(self) -> List[YFieldSpec]:
+        """Get Y-field specifications, converting single y_field if needed."""
+        if self.y_fields is not None:
+            return self.y_fields
+        elif self.y_field is not None:
+            return [YFieldSpec(field=self.y_field)]
+        else:
+            raise ValueError("No Y-field specifications found")
+
+    def is_multi_line(self) -> bool:
+        """Check if this plot has multiple Y-fields."""
+        return self.y_fields is not None and len(self.y_fields) > 1
 
 
 class PlotLayout(BaseModel):
@@ -185,6 +231,157 @@ class PlotConfigManager:
                     "x_field": "num_concurrency",
                     "y_field": "mean_total_tokens_throughput_tokens_per_s",
                     "plot_type": "line",
+                    "position": [1, 1],
+                },
+            ],
+        },
+        "multi_line_latency": {
+            "layout": {"rows": 2, "cols": 2, "figsize": [16, 12]},
+            "plots": [
+                {
+                    "title": "Latency Percentiles Comparison",
+                    "x_field": "requests_per_second",
+                    "y_fields": [
+                        {
+                            "field": "stats.e2e_latency.mean",
+                            "label": "Mean Latency",
+                            "color": "blue",
+                            "linestyle": "-",
+                        },
+                        {
+                            "field": "stats.e2e_latency.p90",
+                            "label": "P90 Latency",
+                            "color": "orange",
+                            "linestyle": "--",
+                        },
+                        {
+                            "field": "stats.e2e_latency.p99",
+                            "label": "P99 Latency",
+                            "color": "red",
+                            "linestyle": "-.",
+                        },
+                    ],
+                    "x_label": "Requests Per Second",
+                    "y_label": "Latency (seconds)",
+                    "plot_type": "line",
+                    "position": [0, 0],
+                },
+                {
+                    "title": "TTFT Performance Analysis",
+                    "x_field": "mean_output_throughput_tokens_per_s",
+                    "y_fields": [
+                        {
+                            "field": "stats.ttft.mean",
+                            "label": "Mean TTFT",
+                            "color": "green",
+                        },
+                        {
+                            "field": "stats.ttft.p95",
+                            "label": "P95 TTFT",
+                            "color": "purple",
+                        },
+                    ],
+                    "x_label": "Output Throughput (tokens/s)",
+                    "y_label": "Time to First Token (s)",
+                    "plot_type": "line",
+                    "position": [0, 1],
+                },
+                {
+                    "title": "Throughput Components",
+                    "x_field": "num_concurrency",
+                    "y_fields": [
+                        {
+                            "field": "mean_output_throughput_tokens_per_s",
+                            "label": "Output Throughput",
+                        },
+                        {
+                            "field": "mean_total_tokens_throughput_tokens_per_s",
+                            "label": "Total Throughput",
+                        },
+                    ],
+                    "x_label": "Concurrency Level",
+                    "y_label": "Throughput (tokens/s)",
+                    "plot_type": "line",
+                    "position": [1, 0],
+                },
+                {
+                    "title": "Request Success Rate",
+                    "x_field": "num_concurrency",
+                    "y_field": "error_rate",
+                    "x_label": "Concurrency Level",
+                    "y_label": "Error Rate",
+                    "plot_type": "bar",
+                    "position": [1, 1],
+                },
+            ],
+        },
+        "single_scenario_analysis": {
+            "layout": {"rows": 2, "cols": 2, "figsize": [16, 12]},
+            "plots": [
+                {
+                    "title": "Latency Percentiles vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_fields": [
+                        {
+                            "field": "stats.e2e_latency.mean",
+                            "label": "Mean",
+                            "color": "blue",
+                            "linestyle": "-",
+                        },
+                        {
+                            "field": "stats.e2e_latency.p90",
+                            "label": "P90",
+                            "color": "orange",
+                            "linestyle": "--",
+                        },
+                        {
+                            "field": "stats.e2e_latency.p99",
+                            "label": "P99",
+                            "color": "red",
+                            "linestyle": "-.",
+                        },
+                    ],
+                    "x_label": "Requests Per Second",
+                    "y_label": "E2E Latency (s)",
+                    "plot_type": "line",
+                    "position": [0, 0],
+                },
+                {
+                    "title": "TTFT Analysis",
+                    "x_field": "mean_output_throughput_tokens_per_s",
+                    "y_fields": [
+                        {
+                            "field": "stats.ttft.mean",
+                            "label": "Mean TTFT",
+                            "color": "green",
+                        },
+                        {
+                            "field": "stats.ttft.p95",
+                            "label": "P95 TTFT",
+                            "color": "purple",
+                        },
+                    ],
+                    "x_label": "Output Throughput (tokens/s)",
+                    "y_label": "TTFT (s)",
+                    "plot_type": "line",
+                    "position": [0, 1],
+                },
+                {
+                    "title": "Throughput vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "mean_output_throughput_tokens_per_s",
+                    "x_label": "Concurrency",
+                    "y_label": "Output Throughput (tokens/s)",
+                    "plot_type": "line",
+                    "position": [1, 0],
+                },
+                {
+                    "title": "Error Rate vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "error_rate",
+                    "x_label": "Concurrency",
+                    "y_label": "Error Rate",
+                    "plot_type": "bar",
                     "position": [1, 1],
                 },
             ],

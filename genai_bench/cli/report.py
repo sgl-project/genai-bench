@@ -62,7 +62,8 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
     type=str,
     required=True,
     prompt=True,
-    help="Key to group the data by (e.g., 'traffic_scenario', 'server_version').",
+    help="Key to group the data by (e.g., 'traffic_scenario', 'server_version'). "
+    "Use 'none' for single scenario analysis.",
 )
 @click.option(
     "--filter-criteria",
@@ -81,7 +82,9 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
 )
 @click.option(
     "--preset",
-    type=click.Choice(["2x4_default", "simple_2x2"]),
+    type=click.Choice(
+        ["2x4_default", "simple_2x2", "multi_line_latency", "single_scenario_analysis"]
+    ),
     default=None,
     help="Use a built-in plot preset. Overrides --plot-config if both are provided.",
 )

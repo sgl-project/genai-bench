@@ -12,10 +12,15 @@ genai-bench plot --experiments-folder /path/to/experiments \
                  --group-key traffic_scenario \
                  --plot-config examples/plot_configs/custom_2x2.json
 
-# Use a built-in preset
+# Use a built-in preset for multiple scenarios
 genai-bench plot --experiments-folder /path/to/experiments \
                  --group-key traffic_scenario \
                  --preset simple_2x2
+
+# Use multi-line preset for single scenario analysis
+genai-bench plot --experiments-folder /path/to/experiments \
+                 --group-key none \
+                 --preset single_scenario_analysis
 
 # List available fields with actual data from your experiment
 genai-bench plot --experiments-folder /path/to/experiments \
@@ -47,10 +52,24 @@ A comprehensive 2x3 grid for detailed performance analysis:
 - Request success rates
 - Throughput scaling
 
+### multi_line_latency.json
+Demonstrates multi-line plotting capabilities with a 2x2 layout:
+- **Latency Percentiles Comparison**: Multiple latency percentiles (mean, P90, P99) on one plot
+- **TTFT Performance Analysis**: Mean and P95 TTFT comparison
+- **Token Processing Speed**: Output speed vs input throughput comparison
+- **Request Success Metrics**: Single-line error rate plot
+
+### comprehensive_multi_line.json
+Advanced multi-line example with 1x3 layout showcasing complex comparisons:
+- **E2E Latency Distribution**: All percentiles (P25, P50, P75, P90, P99) with custom colors
+- **Throughput Components**: Input, output, and total throughput comparison
+- **Token Statistics**: Input, output, and total token counts as scatter plot
+
 ## Configuration Format
 
 Plot configurations use the following JSON schema:
 
+### Single-Line Plots
 ```json
 {
   "layout": {
@@ -62,14 +81,79 @@ Plot configurations use the following JSON schema:
     {
       "title": "Plot Title",
       "x_field": "field.path.from.AggregatedMetrics",
-      "y_field": "another.field.path",
-      "x_label": "Custom X Label",  // Optional
-      "y_label": "Custom Y Label",  // Optional
-      "plot_type": "line",  // line, scatter, or bar
-      "position": [0, 0]    // [row, col] in grid
+      "y_field": "another.field.path",           // Single field
+      "x_label": "Custom X Label",              // Optional
+      "y_label": "Custom Y Label",              // Optional
+      "plot_type": "line",                      // line, scatter, or bar
+      "position": [0, 0]                        // [row, col] in grid
     }
   ]
 }
+```
+
+### Multi-Line Plots
+```json
+{
+  "plots": [
+    {
+      "title": "Multi-Line Comparison",
+      "x_field": "requests_per_second",
+      "y_fields": [                             // Multiple fields on same plot
+        {
+          "field": "stats.e2e_latency.mean",
+          "label": "Mean Latency",              // Optional custom label
+          "color": "blue",                      // Optional custom color
+          "linestyle": "-"                      // Optional: '-', '--', '-.', ':'
+        },
+        {
+          "field": "stats.e2e_latency.p90",
+          "label": "P90 Latency",
+          "color": "red",
+          "linestyle": "--"
+        }
+      ],
+      "x_label": "RPS",
+      "y_label": "Latency (s)",
+      "plot_type": "line",
+      "position": [0, 0]
+    }
+  ]
+}
+```
+
+### Key Features
+
+- **Single vs Multi-Line**: Use `y_field` for single line, `y_fields` for multiple lines
+- **Custom Styling**: Each line can have custom color, linestyle, and label
+- **Flexible Layout**: Any NxM grid layout from 1x1 to 5x6
+- **Plot Types**: `line`, `scatter`, `bar` (multi-line bar creates grouped bars)
+- **Automatic Legends**: Multi-line plots automatically generate legends
+
+### When to Use Multi-Line Plots
+
+✅ **GOOD Use Cases:**
+- **Single scenario analysis**: Use `--group-key ""` (empty string) for one traffic scenario
+- **Deep metric comparison**: Comparing mean, P90, P99 latency on same plot
+- **Performance analysis**: Related metrics on the same scale
+
+❌ **AVOID Multi-Line Plots When:**
+- **Multiple scenarios**: `--group-key traffic_scenario` with multiple scenarios
+- **Multiple server versions**: `--group-key server_version`
+- **Any grouping**: Multi-line + grouping creates cluttered, hard-to-read plots
+
+The system will automatically convert multi-line plots to single-line plots when it detects multiple groups/scenarios for better visualization.
+
+### Usage Patterns
+
+```bash
+# ✅ GOOD: Multi-line for single scenario analysis
+genai-bench plot --preset single_scenario_analysis --group-key ""
+
+# ✅ GOOD: Single-line for multiple scenarios
+genai-bench plot --preset 2x4_default --group-key traffic_scenario
+
+# ⚠️ AUTO-CONVERTED: Multi-line + grouping → single-line
+genai-bench plot --preset multi_line_latency --group-key traffic_scenario
 ```
 
 ## Available Fields
