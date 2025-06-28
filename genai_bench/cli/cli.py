@@ -464,8 +464,8 @@ def benchmark(
 
                 dashboard.update_total_progress_bars(total_runs)
 
-                # Sleep for 5 secs for server to clear aborted requests
-                time.sleep(5)
+                # Sleep for 1 sec for server to clear aborted requests
+                time.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
             plot_single_scenario_inference_speed_vs_throughput(
@@ -476,8 +476,8 @@ def benchmark(
                 iteration_type,
             )
 
-        # Sleep for 5 secs before the UI disappears
-        time.sleep(5)
+        # Sleep for 2 secs before the UI disappears
+        time.sleep(2)
 
     # Final cleanup
     runner.cleanup()
