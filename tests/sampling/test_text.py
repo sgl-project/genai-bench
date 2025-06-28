@@ -144,3 +144,57 @@ class TestTextSampler(unittest.TestCase):
         invalid_scenario.scenario_type = "invalid"
         with self.assertRaises(ValueError):
             self.sampler._validate_scenario(invalid_scenario)
+
+    def test_sample_chat_prefix_request(self):
+        self.tokenizer.encode.return_value = [1] * 10
+        scenario = NormalDistribution(
+            mean_input_tokens=20,
+            stddev_input_tokens=0,
+            mean_output_tokens=20,
+            stddev_output_tokens=0,
+        )
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            use_scenario=True,
+            prefix_length=10,  # Set a prefix length for testing
+        )
+        result = prefix_sampler.sample(scenario)
+        self.assertIsInstance(result, UserChatRequest)
+        self.assertEqual(result.model, self.model)
+        self.assertTrue(isinstance(result.prompt, str))
+        self.assertGreater(len(result.prompt), 0)
+        # The prompt should start with the generated prefix and a 4-digit number
+        self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
+        self.assertEqual(len(result.prompt), 20)
+
+    def test_short_prompt_request(self):
+        self.tokenizer.encode.return_value = [1] * 10
+        self.sampler.data = ["2"]
+
+        # Scenario asks for only 1 input token
+        scenario = NormalDistribution(1, 0, 1, 0)
+
+        result = self.sampler.sample(scenario)
+        self.assertIsInstance(result, UserChatRequest)
+        # The prompt will be the 4-digit number, truncated to 1 char
+        self.assertEqual(result.prompt, str(result.prompt)[0])
+        self.assertGreater(len(result.prompt), 0)
+
+    def test_short_prompt_prefix_request(self):
+        # Prefix length is 10, but scenario asks for only 1 input token
+        self.tokenizer.encode.return_value = [1] * 10
+        test_data = ["2"]
+        scenario = NormalDistribution(1, 0, 1, 0)
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=test_data,
+            use_scenario=True,
+            prefix_length=10,
+        )
+        with self.assertRaises(ValueError):
+            prefix_sampler.sample(scenario)

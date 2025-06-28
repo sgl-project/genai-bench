@@ -220,6 +220,13 @@ def server_options(func):
 # Group experiment-related options
 def experiment_options(func):
     func = click.option(
+        "--prompt-prefix-length",
+        type=int,
+        default=0,
+        help="The length of the common prefix to prepend "
+        "to all inputs to test prefix caching.",
+    )(func)
+    func = click.option(
         "--experiment-folder-name",
         type=str,
         default=None,
