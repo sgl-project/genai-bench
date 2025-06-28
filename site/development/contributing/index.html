@@ -52,151 +52,44 @@
               </ul>
               <p class="caption"><span class="caption-text">Getting Started</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/quick-start/">Quick Start</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/configuration/">Configuration</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/metrics-definition/">Metrics Definition</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">User Guide</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/overview/">Overview</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark/">Run Benchmark</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cli/">Command Line Interface</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/tasks/">Tasks and Benchmarks</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-excel-sheet/">Generate Excel Sheet</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/analysis/">Results Analysis</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/upload-benchmark-result/">Upload Benchmark Results</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Examples</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../examples/basic-benchmarks/">Basic Benchmarks</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">API Reference</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">Overview</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/%20plot-config-examples/">Plot Config Examples</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Development</span></p>
               <ul class="current">
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Contributing</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#development-setup">Development Setup</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a>
+    <li class="toctree-l2"><a class="reference internal" href="#coding-style-guide">Coding Style Guide</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#local-development-environment">Local Development Environment</a>
+    <li class="toctree-l2"><a class="reference internal" href="#pull-requests">Pull Requests</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#verify-setup">Verify Setup</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#project-structure">Project Structure</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#development-workflow">Development Workflow</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#1-create-a-feature-branch">1. Create a Feature Branch</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#2-make-your-changes">2. Make Your Changes</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#3-run-tests">3. Run Tests</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#4-check-code-quality">4. Check Code Quality</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#5-commit-your-changes">5. Commit Your Changes</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#6-push-and-create-pull-request">6. Push and Create Pull Request</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#coding-standards">Coding Standards</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#python-style-guide">Python Style Guide</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#code-formatting">Code Formatting</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#type-checking">Type Checking</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#linting">Linting</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#writing-tests">Writing Tests</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#test-structure">Test Structure</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#running-tests">Running Tests</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#code-documentation">Code Documentation</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#documentation-updates">Documentation Updates</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#pull-request-process">Pull Request Process</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#before-submitting">Before Submitting</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#pull-request-template">Pull Request Template</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#review-process">Review Process</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#areas-for-contribution">Areas for Contribution</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#high-priority">High Priority</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#medium-priority">Medium Priority</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#low-priority">Low Priority</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#getting-help">Getting Help</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#communication-channels">Communication Channels</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#before-asking-for-help">Before Asking for Help</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#creating-good-issues">Creating Good Issues</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#release-process">Release Process</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#version-management">Version Management</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#release-checklist">Release Checklist</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#code-of-conduct">Code of Conduct</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#our-standards">Our Standards</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#enforcement">Enforcement</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#license">License</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#acknowledgments">Acknowledgments</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    <li class="toctree-l2"><a class="reference internal" href="#setup-development-environment">Setup Development Environment</a>
     </li>
     </ul>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
                   </li>
               </ul>
       </div>
@@ -224,379 +117,180 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="contributing-to-genai-bench"><a class="toclink" href="#contributing-to-genai-bench">Contributing to GenAI Bench</a><a class="headerlink" href="#contributing-to-genai-bench" title="Permanent link">&para;</a></h1>
-<p>Thank you for your interest in contributing to GenAI Bench! This guide will help you get started with development and understand our contribution process.</p>
-<h2 id="development-setup"><a class="toclink" href="#development-setup">Development Setup</a><a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h2>
-<h3 id="prerequisites"><a class="toclink" href="#prerequisites">Prerequisites</a><a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Python 3.11 or 3.12</li>
-<li>Git</li>
-<li>Make (optional, for using Makefile commands)</li>
-</ul>
-<h3 id="local-development-environment"><a class="toclink" href="#local-development-environment">Local Development Environment</a><a class="headerlink" href="#local-development-environment" title="Permanent link">&para;</a></h3>
+                <h1 id="contribution-guideline"><a class="toclink" href="#contribution-guideline">Contribution Guideline</a><a class="headerlink" href="#contribution-guideline" title="Permanent link">&para;</a></h1>
+<p>Welcome and thank you for your interest in contributing to genai-bench.</p>
+<h2 id="coding-style-guide"><a class="toclink" href="#coding-style-guide">Coding Style Guide</a><a class="headerlink" href="#coding-style-guide" title="Permanent link">&para;</a></h2>
+<p>genai-bench uses python 3.11, and we adhere to <a href="https://google.github.io/styleguide/pyguide.html">Google Python style guide</a>.</p>
+<p>We use <code>make format</code> to format our code using <code>isort</code> and <code>ruff</code>. The detailed configuration can be found in
+<a href="https://github.com/sgl-project/genai-bench/blob/main/pyproject.toml">pyproject.toml</a>.</p>
+<h2 id="pull-requests"><a class="toclink" href="#pull-requests">Pull Requests</a><a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h2>
+<p>When submitting a pull request, please:</p>
 <ol>
-<li>
-<p><strong>Clone the repository</strong>:
-   <code>bash
-   git clone https://github.com/sgl-project/genai-bench.git
-   cd genai-bench</code></p>
-</li>
-<li>
-<p><strong>Set up virtual environment</strong>:
-   <code>bash
-   make uv
-   source .venv/bin/activate</code></p>
-</li>
-<li>
-<p><strong>Install in editable mode</strong>:
-   <code>bash
-   make install</code></p>
-</li>
-<li>
-<p><strong>Install development dependencies</strong>:
-   <code>bash
-   pip install -e ".[dev]"</code></p>
-</li>
-<li>
-<p><strong>Set up pre-commit hooks</strong>:
-   <code>bash
-   pre-commit install</code></p>
-</li>
+<li><code>git pull origin main</code> to make sure your code has been rebased on top of the latest commit on the main branch.</li>
+<li>Ensure code is properly formatted and passed every lint checks by running <code>make check</code>.</li>
+<li>Add new test cases to stay robust and correct. In the case of a bug fix, the tests should fail without your code
+changes. For new features, try to cover as many variants as reasonably possible. You can use <code>make test</code> to check the
+test coverage. Or use <code>make test_changed</code> to test the test coverage for your own branch. We enforce to keep a test
+coverage about 90%.</li>
 </ol>
-<h3 id="verify-setup"><a class="toclink" href="#verify-setup">Verify Setup</a><a class="headerlink" href="#verify-setup" title="Permanent link">&para;</a></h3>
-<p>Test that everything is working:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run tests</span>
-make<span class="w"> </span><span class="nb">test</span>
-
-<span class="c1"># Check code quality</span>
-make<span class="w"> </span>lint
-
-<span class="c1"># Run type checking</span>
-make<span class="w"> </span>type-check
-</code></pre></div>
-
-<h2 id="project-structure"><a class="toclink" href="#project-structure">Project Structure</a><a class="headerlink" href="#project-structure" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code>genai-bench/
-├── genai_bench/           # Main package
-│   ├── cli/              # Command-line interface
-│   ├── metrics/          # Metrics collection and analysis
-│   ├── sampling/         # Data sampling and tokenization
-│   ├── scenarios/        # Traffic scenarios
-│   ├── ui/               # Web UI components
-│   ├── user/             # API user implementations
-│   ├── auth/             # Authentication modules
-│   ├── analysis/         # Result analysis tools
-│   ├── distributed/      # Distributed benchmarking
-│   └── oci_object_storage/ # OCI integration
-├── tests/                # Test suite
-├── examples/             # Example scripts and configs
-├── docs/                 # Documentation
-├── pyproject.toml        # Project configuration
-├── Makefile              # Development commands
-└── README.md             # Project overview
-</code></pre></div>
-
-<h2 id="development-workflow"><a class="toclink" href="#development-workflow">Development Workflow</a><a class="headerlink" href="#development-workflow" title="Permanent link">&para;</a></h2>
-<h3 id="1-create-a-feature-branch"><a class="toclink" href="#1-create-a-feature-branch">1. Create a Feature Branch</a><a class="headerlink" href="#1-create-a-feature-branch" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feature/your-feature-name
-</code></pre></div>
-
-<h3 id="2-make-your-changes"><a class="toclink" href="#2-make-your-changes">2. Make Your Changes</a><a class="headerlink" href="#2-make-your-changes" title="Permanent link">&para;</a></h3>
-<p>Follow our coding standards and make your changes.</p>
-<h3 id="3-run-tests"><a class="toclink" href="#3-run-tests">3. Run Tests</a><a class="headerlink" href="#3-run-tests" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run all tests</span>
-make<span class="w"> </span><span class="nb">test</span>
-
-<span class="c1"># Run specific test file</span>
-pytest<span class="w"> </span>tests/test_specific_module.py
-
-<span class="c1"># Run with coverage</span>
-make<span class="w"> </span>test-cov
-</code></pre></div>
-
-<h3 id="4-check-code-quality"><a class="toclink" href="#4-check-code-quality">4. Check Code Quality</a><a class="headerlink" href="#4-check-code-quality" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run all quality checks</span>
-make<span class="w"> </span>lint
-
-<span class="c1"># Run specific checks</span>
-make<span class="w"> </span>ruff
-make<span class="w"> </span>black
-make<span class="w"> </span>isort
-make<span class="w"> </span>mypy
-</code></pre></div>
-
-<h3 id="5-commit-your-changes"><a class="toclink" href="#5-commit-your-changes">5. Commit Your Changes</a><a class="headerlink" href="#5-commit-your-changes" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>.
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add new feature description&quot;</span>
-</code></pre></div>
-
-<h3 id="6-push-and-create-pull-request"><a class="toclink" href="#6-push-and-create-pull-request">6. Push and Create Pull Request</a><a class="headerlink" href="#6-push-and-create-pull-request" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>feature/your-feature-name
-</code></pre></div>
-
-<p>Then create a pull request on GitHub.</p>
-<h2 id="coding-standards"><a class="toclink" href="#coding-standards">Coding Standards</a><a class="headerlink" href="#coding-standards" title="Permanent link">&para;</a></h2>
-<h3 id="python-style-guide"><a class="toclink" href="#python-style-guide">Python Style Guide</a><a class="headerlink" href="#python-style-guide" title="Permanent link">&para;</a></h3>
-<p>We follow PEP 8 with some modifications:</p>
-<ul>
-<li><strong>Line length</strong>: 88 characters (Black default)</li>
-<li><strong>Import sorting</strong>: Use isort with Black profile</li>
-<li><strong>Type hints</strong>: Required for all public functions</li>
-<li><strong>Docstrings</strong>: Use Google style docstrings</li>
-</ul>
-<h3 id="code-formatting"><a class="toclink" href="#code-formatting">Code Formatting</a><a class="headerlink" href="#code-formatting" title="Permanent link">&para;</a></h3>
-<p>We use automated tools for code formatting:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Format code</span>
-make<span class="w"> </span>format
-
-<span class="c1"># Check formatting</span>
-make<span class="w"> </span>check-format
-</code></pre></div>
-
-<h3 id="type-checking"><a class="toclink" href="#type-checking">Type Checking</a><a class="headerlink" href="#type-checking" title="Permanent link">&para;</a></h3>
-<p>We use MyPy for static type checking:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run type checking</span>
-make<span class="w"> </span>type-check
-
-<span class="c1"># Type check specific file</span>
-mypy<span class="w"> </span>genai_bench/your_module.py
-</code></pre></div>
-
-<h3 id="linting"><a class="toclink" href="#linting">Linting</a><a class="headerlink" href="#linting" title="Permanent link">&para;</a></h3>
-<p>We use Ruff for linting:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run linter</span>
-make<span class="w"> </span>lint
-
-<span class="c1"># Fix auto-fixable issues</span>
-make<span class="w"> </span>lint-fix
-</code></pre></div>
-
-<h2 id="testing"><a class="toclink" href="#testing">Testing</a><a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<h3 id="writing-tests"><a class="toclink" href="#writing-tests">Writing Tests</a><a class="headerlink" href="#writing-tests" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Place tests in the <code>tests/</code> directory</li>
-<li>Use pytest as the testing framework</li>
-<li>Follow the naming convention: <code>test_*.py</code></li>
-<li>Use descriptive test names</li>
-</ul>
-<h3 id="test-structure"><a class="toclink" href="#test-structure">Test Structure</a><a class="headerlink" href="#test-structure" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">genai_bench.your_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">your_function</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">test_your_function_basic</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test basic functionality.&quot;&quot;&quot;</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">your_function</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="s2">&quot;expected_output&quot;</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">test_your_function_edge_case</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test edge case handling.&quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
-        <span class="n">your_function</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-
-
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">sample_data</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provide test data.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">test_your_function_with_fixture</span><span class="p">(</span><span class="n">sample_data</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test with fixture data.&quot;&quot;&quot;</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">your_function</span><span class="p">(</span><span class="n">sample_data</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</code></pre></div>
-
-<h3 id="running-tests"><a class="toclink" href="#running-tests">Running Tests</a><a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Run all tests</span>
-pytest
-
-<span class="c1"># Run with verbose output</span>
-pytest<span class="w"> </span>-v
-
-<span class="c1"># Run specific test</span>
-pytest<span class="w"> </span>tests/test_specific.py::test_function
-
-<span class="c1"># Run with coverage</span>
-pytest<span class="w"> </span>--cov<span class="o">=</span>genai_bench
-
-<span class="c1"># Run integration tests</span>
-pytest<span class="w"> </span>tests/integration/
-</code></pre></div>
-
-<h2 id="documentation"><a class="toclink" href="#documentation">Documentation</a><a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
-<h3 id="code-documentation"><a class="toclink" href="#code-documentation">Code Documentation</a><a class="headerlink" href="#code-documentation" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Use Google style docstrings for all public functions</li>
-<li>Include type hints for all parameters and return values</li>
-<li>Document exceptions that may be raised</li>
-</ul>
-<p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Process input data according to configuration.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        data: Input string to process.</span>
-<span class="sd">        config: Configuration dictionary.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        List of processed strings.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If data is empty or invalid.</span>
-<span class="sd">        ConfigError: If configuration is invalid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Data cannot be empty&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Implementation here</span>
-    <span class="k">return</span> <span class="n">processed_data</span>
-</code></pre></div>
-
-<h3 id="documentation-updates"><a class="toclink" href="#documentation-updates">Documentation Updates</a><a class="headerlink" href="#documentation-updates" title="Permanent link">&para;</a></h3>
-<p>When adding new features:</p>
+<h3 id="pr-template"><a class="toclink" href="#pr-template">PR Template</a><a class="headerlink" href="#pr-template" title="Permanent link">&para;</a></h3>
+<p>It is required to classify your PR and make the commit message concise and useful. Prefix the PR title appropriately
+to indicate the type of change. Please use one of the following:</p>
+<p><code>[Bugfix]</code> for bug fixes.</p>
+<p><code>[Core]</code> for core backend changes. This includes build, version upgrade, changes in user and sampling.</p>
+<p><code>[Metrics]</code> for changes made to metrics.</p>
+<p><code>[Frontend]</code> for UI dashboard and CLI entrypoint related changes.</p>
+<p><code>[Docs]</code> for changes related to documentation.</p>
+<p><code>[CI/Tests]</code> for unittests and integration tests.</p>
+<p><code>[Report]</code> for changes in generating plots and excel reports.</p>
+<p><code>[Misc]</code> for PRs that do not fit the above categories. Please use this sparingly.</p>
+<p>Open source community also recommends to keep the commit message title within 52 chars and each line in message content
+within 72 chars.</p>
+<h3 id="code-reviews"><a class="toclink" href="#code-reviews">Code Reviews</a><a class="headerlink" href="#code-reviews" title="Permanent link">&para;</a></h3>
+<p>All submissions, including submissions by project members, require a code review.
+To make the review process as smooth as possible, please:</p>
 <ol>
-<li>Update relevant documentation files in <code>docs/</code></li>
-<li>Add examples if applicable</li>
-<li>Update API documentation</li>
-<li>Ensure all links work correctly</li>
+<li>Keep your changes as concise as possible.
+   If your pull request involves multiple unrelated changes, consider splitting it into separate pull requests.</li>
+<li>Respond to all comments within a reasonable time frame.
+   If a comment isn't clear,
+   or you disagree with a suggestion, feel free to ask for clarification or discuss the suggestion.</li>
+<li>Provide constructive feedback and meaningful comments. Focus on specific improvements
+   and suggestions that can enhance the code quality or functionality. Remember to
+   acknowledge and respect the work the author has already put into the submission.</li>
 </ol>
-<h2 id="pull-request-process"><a class="toclink" href="#pull-request-process">Pull Request Process</a><a class="headerlink" href="#pull-request-process" title="Permanent link">&para;</a></h2>
-<h3 id="before-submitting"><a class="toclink" href="#before-submitting">Before Submitting</a><a class="headerlink" href="#before-submitting" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Ensure tests pass</strong>: Run <code>make test</code></li>
-<li><strong>Check code quality</strong>: Run <code>make lint</code></li>
-<li><strong>Update documentation</strong>: Add/update relevant docs</li>
-<li><strong>Add tests</strong>: Include tests for new functionality</li>
-</ol>
-<h3 id="pull-request-template"><a class="toclink" href="#pull-request-template">Pull Request Template</a><a class="headerlink" href="#pull-request-template" title="Permanent link">&para;</a></h3>
-<p>Use this template when creating a PR:</p>
-<div class="codehilite"><pre><span></span><code><span class="gu">## Description</span>
-
-Brief description of the changes.
-
-<span class="gu">## Type of Change</span>
-
-<span class="k">- [ ]</span> Bug fix (non-breaking change which fixes an issue)
-<span class="k">- [ ]</span> New feature (non-breaking change which adds functionality)
-<span class="k">- [ ]</span> Breaking change (fix or feature that would cause existing functionality to not work as expected)
-<span class="k">- [ ]</span> Documentation update
-
-<span class="gu">## Testing</span>
-
-<span class="k">- [ ]</span> I have added tests that prove my fix is effective or that my feature works
-<span class="k">- [ ]</span> All existing tests pass
-<span class="k">- [ ]</span> I have tested the changes manually
-
-<span class="gu">## Checklist</span>
-
-<span class="k">- [ ]</span> My code follows the style guidelines of this project
-<span class="k">- [ ]</span> I have performed a self-review of my own code
-<span class="k">- [ ]</span> I have commented my code, particularly in hard-to-understand areas
-<span class="k">- [ ]</span> I have made corresponding changes to the documentation
-<span class="k">- [ ]</span> My changes generate no new warnings
-<span class="k">- [ ]</span> I have added tests that prove my fix is effective or that my feature works
-<span class="k">- [ ]</span> New and existing unit tests pass locally with my changes
+<h2 id="setup-development-environment"><a class="toclink" href="#setup-development-environment">Setup Development Environment</a><a class="headerlink" href="#setup-development-environment" title="Permanent link">&para;</a></h2>
+<h3 id="make"><a class="toclink" href="#make"><code>make</code></a><a class="headerlink" href="#make" title="Permanent link">&para;</a></h3>
+<p>genai-bench utilizes <code>make</code> for a lot of useful commands.</p>
+<p>If your laptop doesn't have <code>GNU make</code> installed, (check this by typing <code>make --version</code> in your terminal),
+you can ask our GenerativeAI's chatbot about how to install it in your system.</p>
+<h3 id="uv"><a class="toclink" href="#uv"><code>uv</code></a><a class="headerlink" href="#uv" title="Permanent link">&para;</a></h3>
+<p>Install uv with <code>make uv</code> or install it from the <a href="https://docs.astral.sh/uv/">official website</a>.
+If installing from the website, create a project venv with <code>uv venv -p python3.11</code>.</p>
+<p>Once you have <code>make</code> and <code>uv</code> installed, you can follow the command below to build genai-bench wheel:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># check out commands genai-bench supports</span>
+make<span class="w"> </span><span class="nb">help</span>
+<span class="c1">#activate virtual env managed by uv</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<span class="c1"># install dependencies</span>
+make<span class="w"> </span>install
 </code></pre></div>
 
-<h3 id="review-process"><a class="toclink" href="#review-process">Review Process</a><a class="headerlink" href="#review-process" title="Permanent link">&para;</a></h3>
+<p>You can utilize wheel to install genai-bench.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># build a .whl under genai-bench/dist</span>
+make<span class="w"> </span>build
+<span class="c1"># send the wheel to your remote machine if applies</span>
+rsync<span class="w"> </span>--delete<span class="w"> </span>-avz<span class="w"> </span>~/genai-bench/dist/&lt;.wheel&gt;<span class="w"> </span>&lt;remote-user&gt;@&lt;remote-ip&gt;:&lt;dest-addr&gt;
+</code></pre></div>
+
+<p>On your remote machine, you can simply use the <code>pip</code> to install genai-bench.</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>&lt;dest-addr&gt;/&lt;.wheel&gt;
+</code></pre></div>
+
+<h1 id="development-guide-adding-a-new-task-in-genai-bench"><a class="toclink" href="#development-guide-adding-a-new-task-in-genai-bench">Development Guide: Adding a New Task in <code>genai-bench</code></a><a class="headerlink" href="#development-guide-adding-a-new-task-in-genai-bench" title="Permanent link">&para;</a></h1>
+<p>This guide explains how to add support for a new task in <code>genai-bench</code>. Follow the steps below to ensure consistency and compatibility with the existing codebase.</p>
+<hr />
+<h2 id="1-define-the-request-and-response-in-protocolpy"><a class="toclink" href="#1-define-the-request-and-response-in-protocolpy">1. Define the Request and Response in <code>protocol.py</code></a><a class="headerlink" href="#1-define-the-request-and-response-in-protocolpy" title="Permanent link">&para;</a></h2>
+<h3 id="steps"><a class="toclink" href="#steps">Steps</a><a class="headerlink" href="#steps" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Automated checks</strong> must pass</li>
-<li><strong>Code review</strong> by maintainers</li>
-<li><strong>Documentation review</strong> if applicable</li>
-<li><strong>Testing verification</strong> if needed</li>
+<li>Add relevant fields to the appropriate request/response data classes in <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/protocol.py"><code>protocol.py</code></a></li>
+<li>If the new task involves a new input-output modality, create a new request/response class.</li>
+<li>Use existing request/response classes (<code>UserChatRequest</code>, <code>UserEmbeddingRequest</code>, <code>UserImageChatRequest</code>, etc.) if they suffice.</li>
 </ol>
-<h2 id="areas-for-contribution"><a class="toclink" href="#areas-for-contribution">Areas for Contribution</a><a class="headerlink" href="#areas-for-contribution" title="Permanent link">&para;</a></h2>
-<h3 id="high-priority"><a class="toclink" href="#high-priority">High Priority</a><a class="headerlink" href="#high-priority" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Performance improvements</strong>: Optimize existing functionality</li>
-<li><strong>Bug fixes</strong>: Fix reported issues</li>
-<li><strong>Documentation</strong>: Improve existing docs or add missing sections</li>
-<li><strong>Test coverage</strong>: Add tests for uncovered code</li>
-</ul>
-<h3 id="medium-priority"><a class="toclink" href="#medium-priority">Medium Priority</a><a class="headerlink" href="#medium-priority" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>New features</strong>: Add requested functionality</li>
-<li><strong>API improvements</strong>: Enhance existing APIs</li>
-<li><strong>UI enhancements</strong>: Improve web interface</li>
-<li><strong>Integration</strong>: Add support for new backends</li>
-</ul>
-<h3 id="low-priority"><a class="toclink" href="#low-priority">Low Priority</a><a class="headerlink" href="#low-priority" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Code refactoring</strong>: Improve code structure</li>
-<li><strong>Tooling</strong>: Enhance development tools</li>
-<li><strong>Examples</strong>: Add more example configurations</li>
-</ul>
-<h2 id="getting-help"><a class="toclink" href="#getting-help">Getting Help</a><a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<h3 id="communication-channels"><a class="toclink" href="#communication-channels">Communication Channels</a><a class="headerlink" href="#communication-channels" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>GitHub Issues</strong>: For bug reports and feature requests</li>
-<li><strong>GitHub Discussions</strong>: For questions and general discussion</li>
-<li><strong>Pull Requests</strong>: For code contributions</li>
-</ul>
-<h3 id="before-asking-for-help"><a class="toclink" href="#before-asking-for-help">Before Asking for Help</a><a class="headerlink" href="#before-asking-for-help" title="Permanent link">&para;</a></h3>
+<h3 id="example"><a class="toclink" href="#example">Example</a><a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UserTextToImageRequest</span><span class="p">(</span><span class="n">UserRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a request for generating images from text.&quot;&quot;&quot;</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">num_images</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of images to generate.&quot;</span><span class="p">)</span>
+    <span class="n">image_resolution</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Resolution of the generated images.&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="2-update-or-create-a-sampler"><a class="toclink" href="#2-update-or-create-a-sampler">2. Update or Create a Sampler</a><a class="headerlink" href="#2-update-or-create-a-sampler" title="Permanent link">&para;</a></h2>
+<h3 id="21-if-input-modality-is-supported-by-an-existing-sampler"><a class="toclink" href="#21-if-input-modality-is-supported-by-an-existing-sampler">2.1 If Input Modality Is Supported by an Existing Sampler</a><a class="headerlink" href="#21-if-input-modality-is-supported-by-an-existing-sampler" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Check existing issues</strong>: Search for similar problems</li>
-<li><strong>Read documentation</strong>: Check relevant docs</li>
-<li><strong>Try debugging</strong>: Use debug mode and logs</li>
-<li><strong>Provide context</strong>: Include error messages and environment details</li>
+<li>Check if the current <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/text_sampler.py"><code>TextSampler</code></a> or <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/image_sampler.py"><code>ImageSampler</code></a> supports the input-modality.</li>
+<li>Add request creation logic in the relevant <code>TextSampler</code> or <code>ImageSampler</code> class.</li>
+<li>Refactor the sampler's <code>_create_request</code> method to support the new task.</li>
+<li><strong>Tip:</strong> Avoid adding long <code>if-else</code> chains for new tasks. Utilize helper methods or design a request creator pattern if needed.</li>
 </ol>
-<h3 id="creating-good-issues"><a class="toclink" href="#creating-good-issues">Creating Good Issues</a><a class="headerlink" href="#creating-good-issues" title="Permanent link">&para;</a></h3>
-<p>When reporting bugs or requesting features:</p>
+<h3 id="22-if-input-modality-is-not-supported"><a class="toclink" href="#22-if-input-modality-is-not-supported">2.2 If Input Modality Is Not Supported</a><a class="headerlink" href="#22-if-input-modality-is-not-supported" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Use clear titles</strong>: Descriptive and specific</li>
-<li><strong>Provide context</strong>: Environment, version, steps to reproduce</li>
-<li><strong>Include logs</strong>: Error messages and relevant output</li>
-<li><strong>Add examples</strong>: Code snippets or configuration files</li>
+<li>Create a new sampler class inheriting from <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/base_sampler.py"><code>BaseSampler</code></a>.</li>
+<li>Define the <code>sample</code> method to generate requests for the new task.</li>
+<li>Refer to <code>TextSampler</code> and <code>ImageSampler</code> for implementation patterns.</li>
+<li>Add utility functions for data preprocessing or validation specific to the new modality if necessary.</li>
 </ol>
-<h2 id="release-process"><a class="toclink" href="#release-process">Release Process</a><a class="headerlink" href="#release-process" title="Permanent link">&para;</a></h2>
-<h3 id="version-management"><a class="toclink" href="#version-management">Version Management</a><a class="headerlink" href="#version-management" title="Permanent link">&para;</a></h3>
-<p>We use semantic versioning (MAJOR.MINOR.PATCH):</p>
-<ul>
-<li><strong>MAJOR</strong>: Breaking changes</li>
-<li><strong>MINOR</strong>: New features, backward compatible</li>
-<li><strong>PATCH</strong>: Bug fixes, backward compatible</li>
-</ul>
-<h3 id="release-checklist"><a class="toclink" href="#release-checklist">Release Checklist</a><a class="headerlink" href="#release-checklist" title="Permanent link">&para;</a></h3>
-<p>Before a release:</p>
+<h3 id="example-for-a-new-sampler"><a class="toclink" href="#example-for-a-new-sampler">Example for a New Sampler</a><a class="headerlink" href="#example-for-a-new-sampler" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AudioSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+    <span class="n">input_modality</span> <span class="o">=</span> <span class="s2">&quot;audio&quot;</span>
+    <span class="n">supported_tasks</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;audio-to-text&quot;</span><span class="p">,</span> <span class="s2">&quot;audio-to-embeddings&quot;</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">:</span> <span class="n">Scenario</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserRequest</span><span class="p">:</span>
+        <span class="c1"># Validate scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_scenario</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_audio_to_text_request</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span> <span class="o">==</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_audio_to_embeddings_request</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported output_modality: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-add-task-support-in-the-user-class"><a class="toclink" href="#3-add-task-support-in-the-user-class">3. Add Task Support in the User Class</a><a class="headerlink" href="#3-add-task-support-in-the-user-class" title="Permanent link">&para;</a></h2>
+<p>Each <code>User</code> corresponds to one API backend, such as <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/user/openai_user.py"><code>OpenAIUser</code></a> for OpenAI. Users can have multiple tasks, each corresponding to an endpoint.</p>
+<h3 id="steps_1"><a class="toclink" href="#steps_1">Steps</a><a class="headerlink" href="#steps_1" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Update version</strong>: Update version in <code>pyproject.toml</code></li>
-<li><strong>Update changelog</strong>: Document changes</li>
-<li><strong>Run full test suite</strong>: Ensure all tests pass</li>
-<li><strong>Update documentation</strong>: Ensure docs are current</li>
-<li><strong>Create release notes</strong>: Summarize changes</li>
+<li>Add the new task to the <code>supported_tasks</code> dictionary in the relevant <code>User</code> class.</li>
+<li>Map the new task to its corresponding function name in the dictionary.</li>
+<li>Implement the new function in the <code>User</code> class for handling the task logic.</li>
+<li>If the new task uses an existing endpoint, refactor the function to support both tasks without duplicating logic.</li>
+<li><strong>Important:</strong> Avoid creating multiple functions for tasks that use the same endpoint.</li>
 </ol>
-<h2 id="code-of-conduct"><a class="toclink" href="#code-of-conduct">Code of Conduct</a><a class="headerlink" href="#code-of-conduct" title="Permanent link">&para;</a></h2>
-<h3 id="our-standards"><a class="toclink" href="#our-standards">Our Standards</a><a class="headerlink" href="#our-standards" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Be respectful and inclusive</li>
-<li>Focus on constructive feedback</li>
-<li>Help others learn and grow</li>
-<li>Respect different viewpoints</li>
-</ul>
-<h3 id="enforcement"><a class="toclink" href="#enforcement">Enforcement</a><a class="headerlink" href="#enforcement" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Report violations to maintainers</li>
-<li>Maintainers will address issues promptly</li>
-<li>Violations may result in temporary or permanent exclusion</li>
-</ul>
-<h2 id="license"><a class="toclink" href="#license">License</a><a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>By contributing to GenAI Bench, you agree that your contributions will be licensed under the MIT License.</p>
-<h2 id="acknowledgments"><a class="toclink" href="#acknowledgments">Acknowledgments</a><a class="headerlink" href="#acknowledgments" title="Permanent link">&para;</a></h2>
-<p>Thank you for contributing to GenAI Bench! Your contributions help make this project better for everyone.</p>
-<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Read the <a href="../architecture/">Architecture Guide</a> to understand the codebase</li>
-<li>Start with small contributions to understand the system better</li>
-<li>Join the community discussions for questions and ideas</li>
-</ul>
+<h3 id="example_1"><a class="toclink" href="#example_1">Example</a><a class="headerlink" href="#example_1" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OpenAIUser</span><span class="p">(</span><span class="n">BaseUser</span><span class="p">):</span>
+    <span class="n">supported_tasks</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;text-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;chat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;image-text-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;chat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;text-to-embeddings&quot;</span><span class="p">:</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;audio-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;audio_to_text&quot;</span><span class="p">,</span>  <span class="c1"># New task added</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">audio_to_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Implement the logic for audio-to-text task</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;/v1/audio/transcriptions&quot;</span>
+        <span class="n">user_request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+
+        <span class="c1"># Add payload and send request</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;audio&quot;</span><span class="p">:</span> <span class="n">user_request</span><span class="o">.</span><span class="n">audio_file</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_request</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_audio_response</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-add-unit-tests"><a class="toclink" href="#4-add-unit-tests">4. Add Unit Tests</a><a class="headerlink" href="#4-add-unit-tests" title="Permanent link">&para;</a></h2>
+<h3 id="steps_2"><a class="toclink" href="#steps_2">Steps</a><a class="headerlink" href="#steps_2" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add tests for the new task in the appropriate test files.</li>
+<li>Include tests for:</li>
+<li>Request creation in the sampler.</li>
+<li>Task validation in the <code>User</code> class.</li>
+<li>End-to-end workflow using the new task.</li>
+</ol>
+<hr />
+<h2 id="5-update-documentation"><a class="toclink" href="#5-update-documentation">5. Update Documentation</a><a class="headerlink" href="#5-update-documentation" title="Permanent link">&para;</a></h2>
+<h3 id="steps_3"><a class="toclink" href="#steps_3">Steps</a><a class="headerlink" href="#steps_3" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add the new task to the list of supported tasks in the <a href="../../getting-started/task-definition/">Task Definition guide</a>.</li>
+<li>Provide sample commands and explain any required configuration changes.</li>
+<li>Mention the new task in this contributing guide for future developers.</li>
+</ol>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../api/overview/" class="btn btn-neutral float-left" title="Overview"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../examples/%20plot-config-examples/" class="btn btn-neutral float-left" title="Plot Config Examples"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -624,10 +318,8 @@ Brief description of the changes.
         </span>
     
     
-      <span><a href="../../api/overview/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../../examples/%20plot-config-examples/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-    
-      <span><a href="../architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

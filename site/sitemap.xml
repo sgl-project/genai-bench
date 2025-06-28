@@ -5,23 +5,15 @@
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/api/overview/</loc>
-         <lastmod>2025-06-28</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/sgl-project/genai-bench/development/architecture/</loc>
-         <lastmod>2025-06-28</lastmod>
-    </url>
-    <url>
          <loc>https://github.com/sgl-project/genai-bench/development/contributing/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/examples/basic-benchmarks/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/examples/%20plot-config-examples/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/getting-started/configuration/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/getting-started/command-guidelines/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
@@ -29,23 +21,31 @@
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/getting-started/quick-start/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/getting-started/metrics-definition/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/user-guide/analysis/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/getting-started/task-definition/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/user-guide/cli/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/user-guide/generate-excel-sheet/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/user-guide/overview/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/user-guide/generate-plot/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/sgl-project/genai-bench/user-guide/tasks/</loc>
+         <loc>https://github.com/sgl-project/genai-bench/user-guide/run-benchmark-using-docker/</loc>
+         <lastmod>2025-06-28</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/sgl-project/genai-bench/user-guide/run-benchmark/</loc>
+         <lastmod>2025-06-28</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/sgl-project/genai-bench/user-guide/upload-benchmark-result/</loc>
          <lastmod>2025-06-28</lastmod>
     </url>
 </urlset>

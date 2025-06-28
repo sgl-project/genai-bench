@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/user-guide/run-benchmark/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Run Benchmark - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Run Benchmark";
+        var mkdocs_page_input_path = "user-guide/run-benchmark.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/user-guide/run-benchmark/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/metrics-definition/">Metrics Definition</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Run Benchmark</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#start-a-chat-benchmark">Start a chat benchmark</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#start-a-vision-based-chat-benchmark">Start a vision based chat benchmark</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#start-an-embedding-benchmark">Start an embedding benchmark</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#start-a-rerank-benchmark-against-oci-cohere">Start a rerank benchmark against OCI Cohere</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#start-a-benchmark-against-oci-cohere">Start a benchmark against OCI Cohere</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#monitor-a-benchmark">Monitor a benchmark</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#specify-traffic-scenario-and-num-concurrency">Specify --traffic-scenario and --num-concurrency</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notes-on-specific-options">Notes on specific options</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#distributed-benchmark">Distributed Benchmark</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notes-on-usage">Notes on Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#using-dataset-configurations">Using Dataset Configurations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#simple-cli-usage-for-basic-datasets">Simple CLI Usage (for basic datasets)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-configuration-files-for-complex-setups">Advanced Configuration Files (for complex setups)</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../run-benchmark-using-docker/">Run Benchmark with Docker</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../generate-excel-sheet/">Generate Excel Sheet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../upload-benchmark-result/">Upload Benchmark Results</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/%20plot-config-examples/">Plot Config Examples</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User Guide</li>
+      <li class="breadcrumb-item active">Run Benchmark</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/user-guide/run-benchmark.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="run-benchmark"><a class="toclink" href="#run-benchmark">Run Benchmark</a><a class="headerlink" href="#run-benchmark" title="Permanent link">&para;</a></h1>
+<h2 id="start-a-chat-benchmark"><a class="toclink" href="#start-a-chat-benchmark">Start a chat benchmark</a><a class="headerlink" href="#start-a-chat-benchmark" title="Permanent link">&para;</a></h2>
+<p><strong>IMPORTANT</strong>: Use <code>genai-bench benchmark --help</code> to check out each command option and how to use it.</p>
+<p>For starter, you can try to type <code>genai-bench benchmark</code>, it will prompt the list of options you need to specify.</p>
+<p>Below is a sample command you can use to start a benchmark. The command will connect with a server running on address
+<code>http://localhost:8082</code>, using the default traffic scenario and num concurrency, and run each combination 1 minute.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Optional. This is required when you load the tokenizer from huggingface.co with a model-id</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_TOKEN</span><span class="o">=</span><span class="s2">&quot;&lt;your-key&gt;&quot;</span>
+<span class="c1"># HF transformers will log a warning about torch not installed, since benchmark doesn&#39;t really need torch</span>
+<span class="c1"># and cuda, we use this env to disable the warning</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TRANSFORMERS_VERBOSITY</span><span class="o">=</span>error
+
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-key<span class="w"> </span><span class="s2">&quot;your-openai-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-model-name<span class="w"> </span><span class="s2">&quot;vllm-model&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;/mnt/data/models/Meta-Llama-3.1-70B-Instruct&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-engine<span class="w"> </span><span class="s2">&quot;vLLM&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-type<span class="w"> </span><span class="s2">&quot;H100&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-version<span class="w"> </span><span class="s2">&quot;v0.6.0&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-count<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+
+<h2 id="start-a-vision-based-chat-benchmark"><a class="toclink" href="#start-a-vision-based-chat-benchmark">Start a vision based chat benchmark</a><a class="headerlink" href="#start-a-vision-based-chat-benchmark" title="Permanent link">&para;</a></h2>
+<p><strong>IMPORTANT</strong>: Image auto-generation pipeline is not yet implemented in this repository, hence we will be using a huggingface dataset instead.</p>
+<ul>
+<li><strong>Image Datasets</strong>: <a href="https://huggingface.co/datasets/shenoyvvarun/llava-bench-in-the-wild">Huggingface Llava Benchmark Images</a></li>
+</ul>
+<p>Below is a sample command to trigger a vision benchmark task.</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-key<span class="w"> </span><span class="s2">&quot;your-openai-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8180&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-model-name<span class="w"> </span><span class="s2">&quot;/models/Phi-3-vision-128k-instruct&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;/models/Phi-3-vision-128k-instruct&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>image-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-engine<span class="w"> </span>vLLM<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-type<span class="w"> </span>A100-80G<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-version<span class="w"> </span><span class="s2">&quot;v0.6.0&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-count<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;I(256,256)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;I(1024,1024)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--dataset-config<span class="w"> </span>./examples/dataset_configs/config_llava-bench-in-the-wild.json
+</code></pre></div>
+
+<h2 id="start-an-embedding-benchmark"><a class="toclink" href="#start-an-embedding-benchmark">Start an embedding benchmark</a><a class="headerlink" href="#start-an-embedding-benchmark" title="Permanent link">&para;</a></h2>
+<p>Below is a sample command to trigger an embedding benchmark task. Note: when running an embedding benchmark, it is recommended to set <code>--num-concurrency</code> to 1.</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-base<span class="w"> </span><span class="s2">&quot;http://172.18.0.3:8000&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-key<span class="w"> </span><span class="s2">&quot;xxx&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-model-name<span class="w"> </span><span class="s2">&quot;/models/e5-mistral-7b-instruct&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;/mnt/data/models/e5-mistral-7b-instruct&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>text-to-embeddings<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-engine<span class="w"> </span><span class="s2">&quot;SGLang&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">1500</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;E(64)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;E(128)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;E(512)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;E(1024)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-type<span class="w"> </span><span class="s2">&quot;H100&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-version<span class="w"> </span><span class="s2">&quot;v0.4.2&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-count<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+
+<h2 id="start-a-rerank-benchmark-against-oci-cohere"><a class="toclink" href="#start-a-rerank-benchmark-against-oci-cohere">Start a rerank benchmark against OCI Cohere</a><a class="headerlink" href="#start-a-rerank-benchmark-against-oci-cohere" title="Permanent link">&para;</a></h2>
+<p>Below is a sample command to trigger a benchmark against cohere chat API.</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--api-backend<span class="w"> </span>oci-cohere<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--config-file<span class="w"> </span>/home/ubuntu/.oci/config<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-base<span class="w"> </span><span class="s2">&quot;https://ppe.inference.generativeai.us-chicago-1.oci.oraclecloud.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-model-name<span class="w"> </span><span class="s2">&quot;rerank-v3.5&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;Cohere/rerank-v3.5&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-engine<span class="w"> </span><span class="s2">&quot;cohere-TensorRT&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>text-to-rerank<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-type<span class="w"> </span>A100-80G<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-version<span class="w"> </span><span class="s2">&quot;1.7.0&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-count<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--additional-request-params<span class="w"> </span><span class="s1">&#39;{&quot;compartmentId&quot;: &quot;COMPARTMENTID&quot;, &quot;endpointId&quot;: &quot;ENDPOINTID&quot;, &quot;servingType&quot;: &quot;DEDICATED&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-workers<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+
+<h2 id="start-a-benchmark-against-oci-cohere"><a class="toclink" href="#start-a-benchmark-against-oci-cohere">Start a benchmark against OCI Cohere</a><a class="headerlink" href="#start-a-benchmark-against-oci-cohere" title="Permanent link">&para;</a></h2>
+<p>Below is a sample command to trigger a benchmark against cohere chat API.</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--api-backend<span class="w"> </span>oci-cohere<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--config-file<span class="w"> </span>/home/ubuntu/.oci/config<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-base<span class="w"> </span><span class="s2">&quot;https://inference.generativeai.us-chicago-1.oci.oraclecloud.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-model-name<span class="w"> </span><span class="s2">&quot;c4ai-command-r-08-2024&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;/home/ubuntu/c4ai-command-r-08-2024&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-engine<span class="w"> </span><span class="s2">&quot;vLLM&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-type<span class="w"> </span>A100-80G<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-version<span class="w"> </span><span class="s2">&quot;command_r_082024_v1_7&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--server-gpu-count<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--additional-request-params<span class="w"> </span><span class="s1">&#39;{&quot;compartmentId&quot;: &quot;COMPARTMENTID&quot;, &quot;endpointId&quot;: &quot;ENDPOINTID&quot;, &quot;servingType&quot;: &quot;DEDICATED&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-workers<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+
+<h2 id="monitor-a-benchmark"><a class="toclink" href="#monitor-a-benchmark">Monitor a benchmark</a><a class="headerlink" href="#monitor-a-benchmark" title="Permanent link">&para;</a></h2>
+<p><strong>IMPORTANT</strong>: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.</p>
+<h2 id="specify-traffic-scenario-and-num-concurrency"><a class="toclink" href="#specify-traffic-scenario-and-num-concurrency">Specify --traffic-scenario and --num-concurrency</a><a class="headerlink" href="#specify-traffic-scenario-and-num-concurrency" title="Permanent link">&para;</a></h2>
+<p><strong>IMPORTANT</strong>: Please use <code>genai-bench benchmark --help</code> to check out the latest default value of <code>--num-concurrency</code>
+and <code>--traffic-scenario</code>.</p>
+<p>Both options are defined as <a href="https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options">multi-value options</a> in click. Meaning you can pass this command multiple times. If you want to define your own <code>--num-concurrency</code> or <code>--traffic-scenario</code>, you can use</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">1</span><span class="w"> </span>--num-concurrency<span class="w"> </span><span class="m">2</span><span class="w"> </span>--num-concurrency<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">8</span><span class="w"> </span>--num-concurrency<span class="w"> </span><span class="m">16</span><span class="w"> </span>--num-concurrency<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;N(480,240)/(300,150)&quot;</span><span class="w"> </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;D(100,100)&quot;</span>
+</code></pre></div>
+
+<h2 id="notes-on-specific-options"><a class="toclink" href="#notes-on-specific-options">Notes on specific options</a><a class="headerlink" href="#notes-on-specific-options" title="Permanent link">&para;</a></h2>
+<p>To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. You can find more details in the <code>manage_run_time</code> function located in <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py">utils.py</a>. Combination of <code>--max-time-per-run</code> and <code>--max-requests-per-run</code> should save overall time of one benchmark.</p>
+<p>For light traffic scenarios, such as D(7800,200) or lighter, we recommend the following settings:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+
+<p>For heavier traffic scenarios, like <code>D(16000,200)</code> or <code>D(128000,200)</code>, use the following configuration:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">            </span>--max-time-per-run<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--max-requests-per-run<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;D(16000,200)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;D(32000,200)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--traffic-scenario<span class="w"> </span><span class="s2">&quot;D(128000,200)&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">16</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--num-concurrency<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+
+<h2 id="distributed-benchmark"><a class="toclink" href="#distributed-benchmark">Distributed Benchmark</a><a class="headerlink" href="#distributed-benchmark" title="Permanent link">&para;</a></h2>
+<p>If you see the message below in the genai-bench logs, it indicates that a single process is insufficient to generate the desired load.</p>
+<div class="codehilite"><pre><span></span><code>CPU usage above 90%! This may constrain your throughput and may even give inconsistent response time measurements!
+</code></pre></div>
+
+<p>To address this, you can increase the number of worker processes using the <code>--num-workers</code> option. For example, to spin up 4 worker processes, use:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">    </span>--num-workers<span class="w"> </span><span class="m">4</span>
+<span class="w">    </span>--master-port<span class="w"> </span><span class="m">5577</span>
+</code></pre></div>
+
+<p>This distributes the load across multiple processes on a single machine, improving performance and ensuring your benchmark runs smoothly.</p>
+<h2 id="notes-on-usage"><a class="toclink" href="#notes-on-usage">Notes on Usage</a><a class="headerlink" href="#notes-on-usage" title="Permanent link">&para;</a></h2>
+<ol>
+<li>This feature is experimental, so monitor the system's behavior when enabling multiple workers.</li>
+<li>Recommended Limit: Do <strong>not</strong> set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.</li>
+<li>Ensure your system has sufficient CPU and memory resources to support the desired number of workers.</li>
+<li>Adjust the number of workers based on your target load and system capacity to achieve optimal results.</li>
+</ol>
+<h2 id="using-dataset-configurations"><a class="toclink" href="#using-dataset-configurations">Using Dataset Configurations</a><a class="headerlink" href="#using-dataset-configurations" title="Permanent link">&para;</a></h2>
+<p>Genai-bench supports flexible dataset configurations through two approaches:</p>
+<h2 id="simple-cli-usage-for-basic-datasets"><a class="toclink" href="#simple-cli-usage-for-basic-datasets">Simple CLI Usage (for basic datasets)</a><a class="headerlink" href="#simple-cli-usage-for-basic-datasets" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Local CSV file</span>
+--dataset-path<span class="w"> </span>/path/to/data.csv<span class="w"> </span><span class="se">\</span>
+--dataset-prompt-column<span class="w"> </span><span class="s2">&quot;prompt&quot;</span>
+
+<span class="c1"># HuggingFace dataset with simple options</span>
+--dataset-path<span class="w"> </span>squad<span class="w"> </span><span class="se">\</span>
+--dataset-prompt-column<span class="w"> </span><span class="s2">&quot;question&quot;</span>
+
+<span class="c1"># Local text file (default)</span>
+--dataset-path<span class="w"> </span>/path/to/prompts.txt
+</code></pre></div>
+
+<h2 id="advanced-configuration-files-for-complex-setups"><a class="toclink" href="#advanced-configuration-files-for-complex-setups">Advanced Configuration Files (for complex setups)</a><a class="headerlink" href="#advanced-configuration-files-for-complex-setups" title="Permanent link">&para;</a></h2>
+<p>For advanced HuggingFace configurations, create a JSON config file:</p>
+<p><strong>Important Note for HuggingFace Datasets:</strong>
+When using HuggingFace datasets, you should always check if you need a <code>split</code>, <code>subset</code> parameter to avoid errors. If you don't specify, HuggingFace's <code>load_dataset</code> may return a <code>DatasetDict</code> object instead of a <code>Dataset</code>, which will cause the benchmark to fail.</p>
+<p><strong>config.json:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;huggingface&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ccdv/govreport-summarization&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;huggingface_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;split&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;train&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;revision&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;streaming&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;prompt_column&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;report&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Vision dataset config:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;huggingface&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BLINK-Benchmark/BLINK&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;huggingface_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;split&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Jigsaw&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;prompt_column&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;question&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;image_column&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_1&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Example for the llava-bench-in-the-wild dataset:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;huggingface&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lmms-lab/llava-bench-in-the-wild&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;huggingface_kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;split&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;train&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;prompt_column&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;question&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;image_column&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Then use: <code>--dataset-config config.json</code></p>
+<p><strong>Benefits of config files:</strong>
+- Access to ALL HuggingFace <code>load_dataset</code> parameters
+- Reusable and version-controllable
+- Support for complex configurations
+- Future-proof (no CLI updates needed for new HuggingFace features)</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../getting-started/metrics-definition/" class="btn btn-neutral float-left" title="Metrics Definition"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../run-benchmark-using-docker/" class="btn btn-neutral float-right" title="Run Benchmark with Docker">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../../getting-started/metrics-definition/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../run-benchmark-using-docker/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

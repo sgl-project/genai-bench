@@ -1,422 +1,218 @@
-# Contributing to GenAI Bench
+# Contribution Guideline
 
-Thank you for your interest in contributing to GenAI Bench! This guide will help you get started with development and understand our contribution process.
+Welcome and thank you for your interest in contributing to genai-bench.
 
-## Development Setup
+## Coding Style Guide
 
-### Prerequisites
+genai-bench uses python 3.11, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
 
-- Python 3.11 or 3.12
-- Git
-- Make (optional, for using Makefile commands)
+We use `make format` to format our code using `isort` and `ruff`. The detailed configuration can be found in
+[pyproject.toml](https://github.com/sgl-project/genai-bench/blob/main/pyproject.toml).
 
-### Local Development Environment
+## Pull Requests
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/sgl-project/genai-bench.git
-   cd genai-bench
-   ```
+When submitting a pull request, please:
 
-2. **Set up virtual environment**:
-   ```bash
-   make uv
-   source .venv/bin/activate
-   ```
+1. `git pull origin main` to make sure your code has been rebased on top of the latest commit on the main branch.
+2. Ensure code is properly formatted and passed every lint checks by running `make check`.
+3. Add new test cases to stay robust and correct. In the case of a bug fix, the tests should fail without your code
+changes. For new features, try to cover as many variants as reasonably possible. You can use `make test` to check the
+test coverage. Or use `make test_changed` to test the test coverage for your own branch. We enforce to keep a test
+coverage about 90%.
 
-3. **Install in editable mode**:
-   ```bash
-   make install
-   ```
+### PR Template
 
-4. **Install development dependencies**:
-   ```bash
-   pip install -e ".[dev]"
-   ```
+It is required to classify your PR and make the commit message concise and useful. Prefix the PR title appropriately
+to indicate the type of change. Please use one of the following:
 
-5. **Set up pre-commit hooks**:
-   ```bash
-   pre-commit install
-   ```
+`[Bugfix]` for bug fixes.
 
-### Verify Setup
+`[Core]` for core backend changes. This includes build, version upgrade, changes in user and sampling.
 
-Test that everything is working:
+`[Metrics]` for changes made to metrics.
 
-```bash
-# Run tests
-make test
+`[Frontend]` for UI dashboard and CLI entrypoint related changes.
 
-# Check code quality
-make lint
+`[Docs]` for changes related to documentation.
 
-# Run type checking
-make type-check
+`[CI/Tests]` for unittests and integration tests.
+
+`[Report]` for changes in generating plots and excel reports.
+
+`[Misc]` for PRs that do not fit the above categories. Please use this sparingly.
+
+Open source community also recommends to keep the commit message title within 52 chars and each line in message content
+within 72 chars.
+
+### Code Reviews
+
+All submissions, including submissions by project members, require a code review.
+To make the review process as smooth as possible, please:
+
+1. Keep your changes as concise as possible.
+   If your pull request involves multiple unrelated changes, consider splitting it into separate pull requests.
+2. Respond to all comments within a reasonable time frame.
+   If a comment isn't clear,
+   or you disagree with a suggestion, feel free to ask for clarification or discuss the suggestion.
+3. Provide constructive feedback and meaningful comments. Focus on specific improvements
+   and suggestions that can enhance the code quality or functionality. Remember to
+   acknowledge and respect the work the author has already put into the submission.
+
+
+## Setup Development Environment
+
+### `make`
+
+genai-bench utilizes `make` for a lot of useful commands.
+
+If your laptop doesn't have `GNU make` installed, (check this by typing `make --version` in your terminal),
+you can ask our GenerativeAI's chatbot about how to install it in your system.
+
+### `uv`
+
+Install uv with `make uv` or install it from the [official website](https://docs.astral.sh/uv/).
+If installing from the website, create a project venv with `uv venv -p python3.11`.
+
+Once you have `make` and `uv` installed, you can follow the command below to build genai-bench wheel:
+
+```shell
+# check out commands genai-bench supports
+make help
+#activate virtual env managed by uv
+source .venv/bin/activate
+# install dependencies
+make install
 ```
 
-## Project Structure
+You can utilize wheel to install genai-bench.
 
-```
-genai-bench/
-├── genai_bench/           # Main package
-│   ├── cli/              # Command-line interface
-│   ├── metrics/          # Metrics collection and analysis
-│   ├── sampling/         # Data sampling and tokenization
-│   ├── scenarios/        # Traffic scenarios
-│   ├── ui/               # Web UI components
-│   ├── user/             # API user implementations
-│   ├── auth/             # Authentication modules
-│   ├── analysis/         # Result analysis tools
-│   ├── distributed/      # Distributed benchmarking
-│   └── oci_object_storage/ # OCI integration
-├── tests/                # Test suite
-├── examples/             # Example scripts and configs
-├── docs/                 # Documentation
-├── pyproject.toml        # Project configuration
-├── Makefile              # Development commands
-└── README.md             # Project overview
+```shell
+# build a .whl under genai-bench/dist
+make build
+# send the wheel to your remote machine if applies
+rsync --delete -avz ~/genai-bench/dist/<.wheel> <remote-user>@<remote-ip>:<dest-addr>
 ```
 
-## Development Workflow
+On your remote machine, you can simply use the `pip` to install genai-bench.
 
-### 1. Create a Feature Branch
-
-```bash
-git checkout -b feature/your-feature-name
+```shell
+pip install <dest-addr>/<.wheel>
 ```
 
-### 2. Make Your Changes
+# Development Guide: Adding a New Task in `genai-bench`
 
-Follow our coding standards and make your changes.
+This guide explains how to add support for a new task in `genai-bench`. Follow the steps below to ensure consistency and compatibility with the existing codebase.
 
-### 3. Run Tests
+---
 
-```bash
-# Run all tests
-make test
+## 1. Define the Request and Response in `protocol.py`
 
-# Run specific test file
-pytest tests/test_specific_module.py
+### Steps
 
-# Run with coverage
-make test-cov
-```
+1. Add relevant fields to the appropriate request/response data classes in [`protocol.py`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/protocol.py)
+2. If the new task involves a new input-output modality, create a new request/response class.
+3. Use existing request/response classes (`UserChatRequest`, `UserEmbeddingRequest`, `UserImageChatRequest`, etc.) if they suffice.
 
-### 4. Check Code Quality
-
-```bash
-# Run all quality checks
-make lint
-
-# Run specific checks
-make ruff
-make black
-make isort
-make mypy
-```
-
-### 5. Commit Your Changes
-
-```bash
-git add .
-git commit -m "feat: add new feature description"
-```
-
-### 6. Push and Create Pull Request
-
-```bash
-git push origin feature/your-feature-name
-```
-
-Then create a pull request on GitHub.
-
-## Coding Standards
-
-### Python Style Guide
-
-We follow PEP 8 with some modifications:
-
-- **Line length**: 88 characters (Black default)
-- **Import sorting**: Use isort with Black profile
-- **Type hints**: Required for all public functions
-- **Docstrings**: Use Google style docstrings
-
-### Code Formatting
-
-We use automated tools for code formatting:
-
-```bash
-# Format code
-make format
-
-# Check formatting
-make check-format
-```
-
-### Type Checking
-
-We use MyPy for static type checking:
-
-```bash
-# Run type checking
-make type-check
-
-# Type check specific file
-mypy genai_bench/your_module.py
-```
-
-### Linting
-
-We use Ruff for linting:
-
-```bash
-# Run linter
-make lint
-
-# Fix auto-fixable issues
-make lint-fix
-```
-
-## Testing
-
-### Writing Tests
-
-- Place tests in the `tests/` directory
-- Use pytest as the testing framework
-- Follow the naming convention: `test_*.py`
-- Use descriptive test names
-
-### Test Structure
+### Example
 
 ```python
-import pytest
-from genai_bench.your_module import your_function
-
-
-def test_your_function_basic():
-    """Test basic functionality."""
-    result = your_function("input")
-    assert result == "expected_output"
-
-
-def test_your_function_edge_case():
-    """Test edge case handling."""
-    with pytest.raises(ValueError):
-        your_function("")
-
-
-@pytest.fixture
-def sample_data():
-    """Provide test data."""
-    return {"key": "value"}
-
-
-def test_your_function_with_fixture(sample_data):
-    """Test with fixture data."""
-    result = your_function(sample_data)
-    assert result is not None
+class UserTextToImageRequest(UserRequest):
+    """Represents a request for generating images from text."""
+    prompt: str
+    num_images: int = Field(..., description="Number of images to generate.")
+    image_resolution: Tuple[int, int] = Field(..., description="Resolution of the generated images.")
 ```
 
-### Running Tests
+---
 
-```bash
-# Run all tests
-pytest
+## 2. Update or Create a Sampler
 
-# Run with verbose output
-pytest -v
+### 2.1 If Input Modality Is Supported by an Existing Sampler
 
-# Run specific test
-pytest tests/test_specific.py::test_function
+1. Check if the current [`TextSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/text_sampler.py) or [`ImageSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/image_sampler.py) supports the input-modality.
+2. Add request creation logic in the relevant `TextSampler` or `ImageSampler` class.
+3. Refactor the sampler's `_create_request` method to support the new task.
+4. **Tip:** Avoid adding long `if-else` chains for new tasks. Utilize helper methods or design a request creator pattern if needed.
 
-# Run with coverage
-pytest --cov=genai_bench
+### 2.2 If Input Modality Is Not Supported
 
-# Run integration tests
-pytest tests/integration/
-```
+1. Create a new sampler class inheriting from [`BaseSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/base_sampler.py).
+2. Define the `sample` method to generate requests for the new task.
+3. Refer to `TextSampler` and `ImageSampler` for implementation patterns.
+4. Add utility functions for data preprocessing or validation specific to the new modality if necessary.
 
-## Documentation
-
-### Code Documentation
-
-- Use Google style docstrings for all public functions
-- Include type hints for all parameters and return values
-- Document exceptions that may be raised
-
-Example:
+### Example for a New Sampler
 
 ```python
-def process_data(data: str, config: Dict[str, Any]) -> List[str]:
-    """Process input data according to configuration.
-    
-    Args:
-        data: Input string to process.
-        config: Configuration dictionary.
-        
-    Returns:
-        List of processed strings.
-        
-    Raises:
-        ValueError: If data is empty or invalid.
-        ConfigError: If configuration is invalid.
-    """
-    if not data:
-        raise ValueError("Data cannot be empty")
-    
-    # Implementation here
-    return processed_data
+class AudioSampler(Sampler):
+    input_modality = "audio"
+    supported_tasks = {"audio-to-text", "audio-to-embeddings"}
+
+    def sample(self, scenario: Scenario) -> UserRequest:
+        # Validate scenario
+        self._validate_scenario(scenario)
+
+        if self.output_modality == "text":
+            return self._create_audio_to_text_request(scenario)
+        elif self.output_modality == "embeddings":
+            return self._create_audio_to_embeddings_request(scenario)
+        else:
+            raise ValueError(f"Unsupported output_modality: {self.output_modality}")
 ```
 
-### Documentation Updates
+---
 
-When adding new features:
+## 3. Add Task Support in the User Class
 
-1. Update relevant documentation files in `docs/`
-2. Add examples if applicable
-3. Update API documentation
-4. Ensure all links work correctly
+Each `User` corresponds to one API backend, such as [`OpenAIUser`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/user/openai_user.py) for OpenAI. Users can have multiple tasks, each corresponding to an endpoint.
 
-## Pull Request Process
+### Steps
 
-### Before Submitting
+1. Add the new task to the `supported_tasks` dictionary in the relevant `User` class.
+2. Map the new task to its corresponding function name in the dictionary.
+3. Implement the new function in the `User` class for handling the task logic.
+4. If the new task uses an existing endpoint, refactor the function to support both tasks without duplicating logic.
+5. **Important:** Avoid creating multiple functions for tasks that use the same endpoint.
 
-1. **Ensure tests pass**: Run `make test`
-2. **Check code quality**: Run `make lint`
-3. **Update documentation**: Add/update relevant docs
-4. **Add tests**: Include tests for new functionality
+### Example
 
-### Pull Request Template
+```python
+class OpenAIUser(BaseUser):
+    supported_tasks = {
+        "text-to-text": "chat",
+        "image-text-to-text": "chat",
+        "text-to-embeddings": "embeddings",
+        "audio-to-text": "audio_to_text",  # New task added
+    }
 
-Use this template when creating a PR:
+    def audio_to_text(self):
+        # Implement the logic for audio-to-text task
+        endpoint = "/v1/audio/transcriptions"
+        user_request = self.sample()
 
-```markdown
-## Description
-
-Brief description of the changes.
-
-## Type of Change
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-
-## Testing
-
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] All existing tests pass
-- [ ] I have tested the changes manually
-
-## Checklist
-
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
+        # Add payload and send request
+        payload = {"audio": user_request.audio_file}
+        self.send_request(False, endpoint, payload, self.parse_audio_response)
 ```
 
-### Review Process
+---
 
-1. **Automated checks** must pass
-2. **Code review** by maintainers
-3. **Documentation review** if applicable
-4. **Testing verification** if needed
+## 4. Add Unit Tests
 
-## Areas for Contribution
+### Steps
 
-### High Priority
+1. Add tests for the new task in the appropriate test files.
+2. Include tests for:
+   - Request creation in the sampler.
+   - Task validation in the `User` class.
+   - End-to-end workflow using the new task.
 
-- **Performance improvements**: Optimize existing functionality
-- **Bug fixes**: Fix reported issues
-- **Documentation**: Improve existing docs or add missing sections
-- **Test coverage**: Add tests for uncovered code
+---
 
-### Medium Priority
+## 5. Update Documentation
 
-- **New features**: Add requested functionality
-- **API improvements**: Enhance existing APIs
-- **UI enhancements**: Improve web interface
-- **Integration**: Add support for new backends
+### Steps
 
-### Low Priority
-
-- **Code refactoring**: Improve code structure
-- **Tooling**: Enhance development tools
-- **Examples**: Add more example configurations
-
-## Getting Help
-
-### Communication Channels
-
-- **GitHub Issues**: For bug reports and feature requests
-- **GitHub Discussions**: For questions and general discussion
-- **Pull Requests**: For code contributions
-
-### Before Asking for Help
-
-1. **Check existing issues**: Search for similar problems
-2. **Read documentation**: Check relevant docs
-3. **Try debugging**: Use debug mode and logs
-4. **Provide context**: Include error messages and environment details
-
-### Creating Good Issues
-
-When reporting bugs or requesting features:
-
-1. **Use clear titles**: Descriptive and specific
-2. **Provide context**: Environment, version, steps to reproduce
-3. **Include logs**: Error messages and relevant output
-4. **Add examples**: Code snippets or configuration files
-
-## Release Process
-
-### Version Management
-
-We use semantic versioning (MAJOR.MINOR.PATCH):
-
-- **MAJOR**: Breaking changes
-- **MINOR**: New features, backward compatible
-- **PATCH**: Bug fixes, backward compatible
-
-### Release Checklist
-
-Before a release:
-
-1. **Update version**: Update version in `pyproject.toml`
-2. **Update changelog**: Document changes
-3. **Run full test suite**: Ensure all tests pass
-4. **Update documentation**: Ensure docs are current
-5. **Create release notes**: Summarize changes
-
-## Code of Conduct
-
-### Our Standards
-
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Help others learn and grow
-- Respect different viewpoints
-
-### Enforcement
-
-- Report violations to maintainers
-- Maintainers will address issues promptly
-- Violations may result in temporary or permanent exclusion
-
-## License
-
-By contributing to GenAI Bench, you agree that your contributions will be licensed under the MIT License.
-
-## Acknowledgments
-
-Thank you for contributing to GenAI Bench! Your contributions help make this project better for everyone.
-
-## Next Steps
-
-- Read the [Architecture Guide](architecture.md) to understand the codebase
-- Start with small contributions to understand the system better
-- Join the community discussions for questions and ideas
+1. Add the new task to the list of supported tasks in the [Task Definition guide](../getting-started/task-definition.md).
+2. Provide sample commands and explain any required configuration changes.
+3. Mention the new task in this contributing guide for future developers.

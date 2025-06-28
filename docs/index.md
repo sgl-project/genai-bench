@@ -43,7 +43,7 @@ pip install genai-bench
 genai-bench benchmark --help
 ```
 
-For detailed installation and usage instructions, see our [Getting Started Guide](getting-started/quick-start.md).
+For detailed installation and usage instructions, see our [Installation Guide](getting-started/installation.md).
 
 ## Supported Tasks
 
@@ -59,30 +59,28 @@ GenAI Bench supports multiple benchmark types:
 ## Documentation Sections
 
 ### 🚀 Getting Started
-- [Quick Start](getting-started/quick-start.md) - Get up and running in minutes
 - [Installation](getting-started/installation.md) - Detailed installation guide
-- [Configuration](getting-started/configuration.md) - Configure your environment
+- [Task Definition](getting-started/task-definition.md) - Understanding different benchmark tasks
+- [Command Guidelines](getting-started/command-guidelines.md) - Command usage guidelines
+- [Metrics Definition](getting-started/metrics-definition.md) - Understanding benchmark metrics
 
 ### 📖 User Guide
-- [Overview](user-guide/overview.md) - Understanding GenAI Bench concepts
-- [CLI Reference](user-guide/cli.md) - Complete command-line interface guide
-- [Tasks & Benchmarks](user-guide/tasks.md) - Running different types of benchmarks
-- [Analysis](user-guide/analysis.md) - Understanding your results
-
-### 💡 Examples
-- [Basic Benchmarks](examples/basic-benchmarks.md) - Simple benchmark examples
+- [Run Benchmark](user-guide/run-benchmark.md) - How to run benchmarks
+- [Run Benchmark with Docker](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
+- [Generate Excel Sheet](user-guide/generate-excel-sheet.md) - Creating Excel reports
+- [Generate Plot](user-guide/generate-plot.md) - Creating visualizations
+- [Upload Benchmark Results](user-guide/upload-benchmark-result.md) - Uploading results
 
 ### 🔧 Development
 - [Contributing](development/contributing.md) - How to contribute to GenAI Bench
-- [Architecture](development/architecture.md) - Understanding the codebase
-- [API Reference](api/overview.md) - Developer documentation
 
-## Community
+## Support
 
-- **GitHub**: [sgl-project/genai-bench](https://github.com/sgl-project/genai-bench)
-- **PyPI**: [genai-bench](https://pypi.org/project/genai-bench/)
-- **Issues**: [GitHub Issues](https://github.com/sgl-project/genai-bench/issues)
+If you encounter any issues or have questions, please:
+- Check our documentation for detailed guides
+- Report issues on our GitHub repository
+- Join our community discussions
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/sgl-project/genai-bench/blob/main/LICENSE) file for details. 
+GenAI Bench is open source and available under the MIT License. 

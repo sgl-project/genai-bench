@@ -60,18 +60,8 @@
     <li class="toctree-l2"><a class="reference internal" href="#supported-tasks">Supported Tasks</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#documentation-sections">Documentation Sections</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#getting-started">🚀 Getting Started</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#user-guide">📖 User Guide</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#examples">💡 Examples</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#development">🔧 Development</a>
-    </li>
-        </ul>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#community">Community</a>
+    <li class="toctree-l2"><a class="reference internal" href="#support">Support</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#license">License</a>
     </li>
@@ -80,39 +70,36 @@
               </ul>
               <p class="caption"><span class="caption-text">Getting Started</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="getting-started/quick-start/">Quick Start</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="getting-started/installation/">Installation</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="getting-started/configuration/">Configuration</a>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/metrics-definition/">Metrics Definition</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">User Guide</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="user-guide/overview/">Overview</a>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/run-benchmark/">Run Benchmark</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="user-guide/cli/">Command Line Interface</a>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="user-guide/tasks/">Tasks and Benchmarks</a>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/generate-excel-sheet/">Generate Excel Sheet</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="user-guide/analysis/">Results Analysis</a>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/upload-benchmark-result/">Upload Benchmark Results</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Examples</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="examples/basic-benchmarks/">Basic Benchmarks</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">API Reference</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="api/overview/">Overview</a>
+                  <li class="toctree-l1"><a class="reference internal" href="examples/%20plot-config-examples/">Plot Config Examples</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Development</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="development/contributing/">Contributing</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="development/architecture/">Architecture</a>
                   </li>
               </ul>
       </div>
@@ -170,7 +157,7 @@ pip<span class="w"> </span>install<span class="w"> </span>genai-bench
 genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
 </code></pre></div>
 
-<p>For detailed installation and usage instructions, see our <a href="getting-started/quick-start/">Getting Started Guide</a>.</p>
+<p>For detailed installation and usage instructions, see our <a href="getting-started/installation/">Installation Guide</a>.</p>
 <h2 id="supported-tasks"><a class="toclink" href="#supported-tasks">Supported Tasks</a><a class="headerlink" href="#supported-tasks" title="Permanent link">&para;</a></h2>
 <p>GenAI Bench supports multiple benchmark types:</p>
 <table>
@@ -207,40 +194,35 @@ genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
 <h2 id="documentation-sections"><a class="toclink" href="#documentation-sections">Documentation Sections</a><a class="headerlink" href="#documentation-sections" title="Permanent link">&para;</a></h2>
 <h3 id="getting-started"><a class="toclink" href="#getting-started">🚀 Getting Started</a><a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="getting-started/quick-start/">Quick Start</a> - Get up and running in minutes</li>
 <li><a href="getting-started/installation/">Installation</a> - Detailed installation guide</li>
-<li><a href="getting-started/configuration/">Configuration</a> - Configure your environment</li>
+<li><a href="getting-started/task-definition/">Task Definition</a> - Understanding different benchmark tasks</li>
+<li><a href="getting-started/command-guidelines/">Command Guidelines</a> - Command usage guidelines</li>
+<li><a href="getting-started/metrics-definition/">Metrics Definition</a> - Understanding benchmark metrics</li>
 </ul>
 <h3 id="user-guide"><a class="toclink" href="#user-guide">📖 User Guide</a><a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="user-guide/overview/">Overview</a> - Understanding GenAI Bench concepts</li>
-<li><a href="user-guide/cli/">CLI Reference</a> - Complete command-line interface guide</li>
-<li><a href="user-guide/tasks/">Tasks &amp; Benchmarks</a> - Running different types of benchmarks</li>
-<li><a href="user-guide/analysis/">Analysis</a> - Understanding your results</li>
-</ul>
-<h3 id="examples"><a class="toclink" href="#examples">💡 Examples</a><a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a href="examples/basic-benchmarks/">Basic Benchmarks</a> - Simple benchmark examples</li>
+<li><a href="user-guide/run-benchmark/">Run Benchmark</a> - How to run benchmarks</li>
+<li><a href="user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a> - Docker-based benchmarking</li>
+<li><a href="user-guide/generate-excel-sheet/">Generate Excel Sheet</a> - Creating Excel reports</li>
+<li><a href="user-guide/generate-plot/">Generate Plot</a> - Creating visualizations</li>
+<li><a href="user-guide/upload-benchmark-result/">Upload Benchmark Results</a> - Uploading results</li>
 </ul>
 <h3 id="development"><a class="toclink" href="#development">🔧 Development</a><a class="headerlink" href="#development" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="development/contributing/">Contributing</a> - How to contribute to GenAI Bench</li>
-<li><a href="development/architecture/">Architecture</a> - Understanding the codebase</li>
-<li><a href="api/overview/">API Reference</a> - Developer documentation</li>
 </ul>
-<h2 id="community"><a class="toclink" href="#community">Community</a><a class="headerlink" href="#community" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>GitHub</strong>: <a href="https://github.com/sgl-project/genai-bench">sgl-project/genai-bench</a></li>
-<li><strong>PyPI</strong>: <a href="https://pypi.org/project/genai-bench/">genai-bench</a></li>
-<li><strong>Issues</strong>: <a href="https://github.com/sgl-project/genai-bench/issues">GitHub Issues</a></li>
-</ul>
+<h2 id="support"><a class="toclink" href="#support">Support</a><a class="headerlink" href="#support" title="Permanent link">&para;</a></h2>
+<p>If you encounter any issues or have questions, please:
+- Check our documentation for detailed guides
+- Report issues on our GitHub repository
+- Join our community discussions</p>
 <h2 id="license"><a class="toclink" href="#license">License</a><a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>This project is licensed under the MIT License - see the <a href="https://github.com/sgl-project/genai-bench/blob/main/LICENSE">LICENSE</a> file for details. </p>
+<p>GenAI Bench is open source and available under the MIT License. </p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="getting-started/quick-start/" class="btn btn-neutral float-right" title="Quick Start">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="getting-started/installation/" class="btn btn-neutral float-right" title="Installation">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -269,7 +251,7 @@ genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
     
     
     
-      <span><a href="getting-started/quick-start/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="getting-started/installation/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
@@ -289,5 +271,5 @@ genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-06-28 05:46:32.162970+00:00
+Build Date UTC : 2025-06-28 18:17:01.450550+00:00
 -->

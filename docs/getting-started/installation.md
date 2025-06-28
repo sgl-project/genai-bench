@@ -2,22 +2,6 @@
 
 This guide covers all the ways to install GenAI Bench, from simple PyPI installation to full development setup.
 
-## System Requirements
-
-### Python Version
-- **Required**: Python 3.11 or 3.12
-- **Recommended**: Python 3.12
-
-### Operating Systems
-- **Linux**: Ubuntu 20.04+, CentOS 8+, RHEL 8+
-- **macOS**: 10.15+ (Catalina)
-- **Windows**: Windows 10+ (with WSL2 recommended)
-
-### Hardware Requirements
-- **Minimum**: 4GB RAM, 2 CPU cores
-- **Recommended**: 8GB+ RAM, 4+ CPU cores
-- **For large benchmarks**: 16GB+ RAM, 8+ CPU cores
-
 ## Installation Methods
 
 ### Method 1: PyPI Installation (Recommended)
@@ -38,39 +22,21 @@ pip install genai-bench==0.1.75
 
 For development or to use the latest features:
 
-#### Prerequisites
+1. Please make sure you have Python3.11 installed. You can check out online how to set it up.
+2. Use the virtual environment from uv
 
-1. **Install Python 3.11+**
-   ```bash
-   # Ubuntu/Debian
-   sudo apt update
-   sudo apt install python3.11 python3.11-venv python3.11-pip
-   
-   # macOS (using Homebrew)
-   brew install python@3.11
-   
-   # Windows (download from python.org)
-   ```
+Activate the virtual environment to ensure the dev environment is correctly set up:
 
-2. **Install uv (recommended package manager)**
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-#### Installation Steps
-
-```bash
-# Clone the repository
-git clone https://github.com/sgl-project/genai-bench.git
-cd genai-bench
-
-# Create virtual environment and install dependencies
+```shell
 make uv
-
-# Activate virtual environment
 source .venv/bin/activate
+```
 
-# Install in editable mode
+3. Install the Project in Editable Mode
+
+If not already done, install your project in editable mode using make. This ensures that any changes you make are immediately reflected:
+
+```shell
 make install
 ```
 
@@ -78,13 +44,18 @@ make install
 
 For containerized environments:
 
-```bash
-# Pull the official image
-docker pull ghcr.io/sgl-project/genai-bench:latest
+Pull the latest docker image:
 
-# Run a benchmark
-docker run -it --rm ghcr.io/sgl-project/genai-bench:latest \
-    genai-bench benchmark --help
+```shell
+docker pull ghcr.io/moirai-internal/genai-bench:v0.0.1
+```
+
+### Building from Source
+
+Alternatively, you can build the image locally from the [Dockerfile](https://github.com/sgl-project/genai-bench/blob/main/Dockerfile):
+
+```shell
+docker build . -f Dockerfile -t genai-bench:dev
 ```
 
 ## Verification
@@ -167,15 +138,6 @@ pip install --upgrade pip
 pip install genai-bench[dev]
 ```
 
-#### Network Issues
-```bash
-# Use alternative PyPI mirrors
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple/ genai-bench
-
-# Or use conda
-conda install -c conda-forge genai-bench
-```
-
 ### Getting Help
 
 If you encounter issues:
@@ -192,6 +154,6 @@ If you encounter issues:
 
 After successful installation:
 
-1. Read the [Quick Start Guide](quick-start.md) to run your first benchmark
-2. Explore the [User Guide](../user-guide/overview.md) for detailed usage
-3. Check out [Examples](../examples/basic-benchmarks.md) for practical scenarios 
+1. Read the [Task Definition Guide](task-definition.md) to understand different benchmark tasks
+2. Explore the [User Guide](../user-guide/run-benchmark.md) for detailed usage
+3. Check out [Command Guidelines](command-guidelines.md) for practical scenarios 

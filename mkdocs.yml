@@ -26,21 +26,20 @@ theme:
 nav:
   - Home: index.md
   - Getting Started:
-    - Quick Start: getting-started/quick-start.md
     - Installation: getting-started/installation.md
-    - Configuration: getting-started/configuration.md
+    - Command Guidelines: getting-started/command-guidelines.md
+    - Task Definition: getting-started/task-definition.md
+    - Metrics Definition: getting-started/metrics-definition.md
   - User Guide:
-    - Overview: user-guide/overview.md
-    - Command Line Interface: user-guide/cli.md
-    - Tasks and Benchmarks: user-guide/tasks.md
-    - Results Analysis: user-guide/analysis.md
+    - Run Benchmark: user-guide/run-benchmark.md
+    - Run Benchmark with Docker: user-guide/run-benchmark-using-docker.md
+    - Generate Excel Sheet: user-guide/generate-excel-sheet.md
+    - Generate Plot: user-guide/generate-plot.md
+    - Upload Benchmark Results: user-guide/upload-benchmark-result.md
   - Examples:
-    - Basic Benchmarks: examples/basic-benchmarks.md
-  - API Reference:
-    - Overview: api/overview.md
+    - Plot Config Examples: examples/ plot-config-examples.md
   - Development:
     - Contributing: development/contributing.md
-    - Architecture: development/architecture.md
 
 # Plugins
 plugins:

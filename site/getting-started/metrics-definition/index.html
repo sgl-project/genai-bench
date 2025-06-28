@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/user-guide/metrics/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/getting-started/metrics-definition/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Benchmark Metrics Definition - GenAI Bench</title>
+    <title>Metrics Definition - GenAI Bench</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Benchmark Metrics Definition";
-        var mkdocs_page_input_path = "user-guide/metrics.md";
-        var mkdocs_page_url = "/sgl-project/genai-bench/user-guide/metrics/";
+        var mkdocs_page_name = "Metrics Definition";
+        var mkdocs_page_input_path = "getting-started/metrics-definition.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/getting-started/metrics-definition/";
       </script>
     
     <!--[if lt IE 9]>
@@ -50,23 +50,45 @@
                 <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
                 </li>
               </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Metrics Definition</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#single-request-level-metrics">Single Request Level Metrics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#aggregated-metrics">Aggregated Metrics</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
               <p class="caption"><span class="caption-text">User Guide</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark/">Run Benchmark</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../tasks/">Tasks & Metrics</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-excel-sheet/">Generate Excel Sheet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/upload-benchmark-result/">Upload Benchmark Results</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Examples</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../examples/basic-benchmarks/">Basic Benchmarks</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/%20plot-config-examples/">Plot Config Examples</a>
                   </li>
               </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
               <ul>
-                <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">API Reference</a>
-                </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -82,9 +104,10 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Benchmark Metrics Definition</li>
+          <li class="breadcrumb-item">Getting Started</li>
+      <li class="breadcrumb-item active">Metrics Definition</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/user-guide/metrics.md">Edit on sgl-project/genai-bench</a>
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/getting-started/metrics-definition.md">Edit on sgl-project/genai-bench</a>
     </li>
   </ul>
   <hr/>
@@ -92,12 +115,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="benchmark-metrics-definition"><a class="toclink" href="#benchmark-metrics-definition">Benchmark Metrics Definition</a><a class="headerlink" href="#benchmark-metrics-definition" title="Permanent link">&para;</a></h1>
+                <h1 id="metrics-definition"><a class="toclink" href="#metrics-definition">Metrics Definition</a><a class="headerlink" href="#metrics-definition" title="Permanent link">&para;</a></h1>
 <p>This section puts together the standard metrics required for LLM serving performance analysis. We classify metrics to two types: <strong>single-request level metrics</strong>, representing the metrics collected from one request. And <strong>aggregated level metrics</strong>, summarizing the single-request metrics from one run (with specific traffic scenario and num concurrency).</p>
 <p><strong>NOTE</strong>:</p>
 <ul>
 <li>Each single-request metric includes standard statistics: <strong>percentile</strong>, <strong>min</strong>, <strong>max</strong>, <strong>stddev</strong>, and <strong>mean</strong>.</li>
-<li>The following metrics cover <strong>input</strong>, <strong>output</strong>, and <strong>end-to-end (e2e)</strong> stages. For <em>chat</em> tasks, all stages are relevant for evaluation. For <em>embedding</em> tasks, where there is no output stage, output metrics will be set to 0.</li>
+<li>The following metrics cover <strong>input</strong>, <strong>output</strong>, and <strong>end-to-end (e2e)</strong> stages. For <em>chat</em> tasks, all stages are relevant for evaluation. For <em>embedding</em> tasks, where there is no output stage, output metrics will be set to 0. For details about output metrics collection, please check out <code>OUTPUT_METRICS_FIELDS</code> in <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/metrics/metrics.py">metrics.py</a>.</li>
 </ul>
 <h2 id="single-request-level-metrics"><a class="toclink" href="#single-request-level-metrics">Single Request Level Metrics</a><a class="headerlink" href="#single-request-level-metrics" title="Permanent link">&para;</a></h2>
 <p>The following metrics capture token-level performance for a single request, providing insights into server efficiency for each individual request.</p>
@@ -252,6 +275,10 @@
               
             </div>
           </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../command-guidelines/" class="btn btn-neutral float-left" title="Command Guidelines"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../user-guide/run-benchmark/" class="btn btn-neutral float-right" title="Run Benchmark">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
 
   <hr/>
 
@@ -278,6 +305,10 @@
         </span>
     
     
+      <span><a href="../command-guidelines/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../user-guide/run-benchmark/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

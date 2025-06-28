@@ -1,11 +1,11 @@
-# Benchmark Metrics Definition
+# Metrics Definition
 
 This section puts together the standard metrics required for LLM serving performance analysis. We classify metrics to two types: **single-request level metrics**, representing the metrics collected from one request. And **aggregated level metrics**, summarizing the single-request metrics from one run (with specific traffic scenario and num concurrency).
 
 **NOTE**:
 
 - Each single-request metric includes standard statistics: **percentile**, **min**, **max**, **stddev**, and **mean**.
-- The following metrics cover **input**, **output**, and **end-to-end (e2e)** stages. For *chat* tasks, all stages are relevant for evaluation. For *embedding* tasks, where there is no output stage, output metrics will be set to 0.
+- The following metrics cover **input**, **output**, and **end-to-end (e2e)** stages. For *chat* tasks, all stages are relevant for evaluation. For *embedding* tasks, where there is no output stage, output metrics will be set to 0. For details about output metrics collection, please check out `OUTPUT_METRICS_FIELDS` in [metrics.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/metrics/metrics.py).
 
 ## Single Request Level Metrics
 
@@ -40,4 +40,4 @@ This metrics collection summarizes the metrics relevant to a specific traffic lo
 | Num of Completed Requests | The number of completed requests in one load.                                                                                | <pre><code>if requests.status_code == '200': <br/> num_completed_requests += 1</code></pre> |               |
 | Num of Requests           | The total number of requests processed for one load.                                                                         | `total_requests = num_completed_requests + num_error_requests`                              |               |
 
-[^1]: *Total Chars Per Hour* is derived from a character-to-token ratio based on sonnet.txt and the model's tokenizer. This metric aids in pricing decisions for an LLM serving solution. For tasks with multi-modal inputs, non-text tokens are converted to an equivalent character count using the same character-to-token ratio. 
+[^1]: *Total Chars Per Hour* is derived from a character-to-token ratio based on sonnet.txt and the model's tokenizer. This metric aids in pricing decisions for an LLM serving solution. For tasks with multi-modal inputs, non-text tokens are converted to an equivalent character count using the same character-to-token ratio.
