@@ -42,7 +42,7 @@ It provides detailed insights into model serving performance, offering both a us
 
 ## How to Start
 
-Please check [USER_GUIDE.md](https://github.com/sgl-project/genai-bench/blob/main/USER_GUIDE.md) and [CONTRIBUTING.md](https://github.com/sgl-project/genai-bench/blob/main/CONTRIBUTING.md) for how to install and use genai-bench.
+Please check [User Guide](https://sgl-project.github.io/genai-bench/) and [CONTRIBUTING.md](https://sgl-project.github.io/genai-bench/development/contributing/) for how to install and use genai-bench.
 
 ## Benchmark Metrics Definition
 
