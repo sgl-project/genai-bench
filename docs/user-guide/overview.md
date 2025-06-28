@@ -8,23 +8,33 @@ GenAI Bench is a comprehensive benchmarking tool designed for evaluating the per
 
 ## Core Architecture
 
-```mermaid
-graph TB
-    A[User Input] --> B[CLI Interface]
-    B --> C[Benchmark Engine]
-    C --> D[Sampling Module]
-    C --> E[Traffic Generator]
-    C --> F[Metrics Collector]
-    
-    D --> G[Data Sources]
-    E --> H[API Backends]
-    F --> I[Results Storage]
-    
-    I --> J[Analysis Tools]
-    J --> K[Excel Reports]
-    J --> L[Plots & Visualizations]
-    J --> M[UI Dashboard]
+GenAI Bench follows a modular architecture with the following key components:
+
 ```
+User Input → CLI Interface → Benchmark Engine
+                                 ↓
+                    ┌─────────────┼─────────────┐
+                    ↓             ↓             ↓
+            Sampling Module  Traffic Generator  Metrics Collector
+                    ↓             ↓             ↓
+              Data Sources   API Backends   Results Storage
+                                                 ↓
+                                         Analysis Tools
+                                                 ↓
+                    ┌─────────────┬─────────────┼─────────────┐
+                    ↓             ↓             ↓             ↓
+              Excel Reports  Plots &      UI Dashboard   Custom Reports
+                            Visualizations
+```
+
+**Component Flow:**
+1. **User Input** → Commands and configuration
+2. **CLI Interface** → Validates and processes user requests
+3. **Benchmark Engine** → Orchestrates the entire benchmarking process
+4. **Sampling Module** → Loads and processes datasets
+5. **Traffic Generator** → Simulates user load patterns
+6. **Metrics Collector** → Gathers performance data
+7. **Analysis Tools** → Processes and analyzes results
 
 ## Key Components
 
@@ -105,45 +115,47 @@ These metrics summarize performance across multiple requests:
 ## Data Flow
 
 ### 1. Configuration Phase
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant CLI as CLI
-    participant Config as Config Validator
-    
-    U->>CLI: Run benchmark command
-    CLI->>Config: Validate parameters
-    Config->>CLI: Return validation result
-    CLI->>U: Start benchmark or show errors
+
+**Flow:**
 ```
+User → CLI → Config Validator → CLI → User
+```
+
+**Steps:**
+1. **User** runs benchmark command with parameters
+2. **CLI** receives and parses the command
+3. **Config Validator** validates all parameters and settings
+4. **CLI** receives validation result
+5. **User** gets confirmation to start benchmark or error messages
 
 ### 2. Benchmark Execution
-```mermaid
-sequenceDiagram
-    participant BE as Benchmark Engine
-    participant TG as Traffic Generator
-    participant API as API Backend
-    participant MC as Metrics Collector
-    
-    BE->>TG: Start traffic generation
-    TG->>API: Send requests
-    API->>TG: Return responses
-    TG->>MC: Collect metrics
-    MC->>BE: Store results
+
+**Flow:**
+```
+Benchmark Engine → Traffic Generator → API Backend → Traffic Generator → Metrics Collector → Benchmark Engine
 ```
 
+**Steps:**
+1. **Benchmark Engine** initiates traffic generation
+2. **Traffic Generator** sends requests to API backend
+3. **API Backend** processes requests and returns responses
+4. **Traffic Generator** receives responses
+5. **Metrics Collector** collects performance metrics
+6. **Benchmark Engine** stores results for analysis
+
 ### 3. Analysis Phase
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant CLI as CLI
-    participant Analysis as Analysis Tools
-    
-    U->>CLI: Request analysis
-    CLI->>Analysis: Process results
-    Analysis->>CLI: Generate reports/plots
-    CLI->>U: Return analysis results
+
+**Flow:**
 ```
+User → CLI → Analysis Tools → CLI → User
+```
+
+**Steps:**
+1. **User** requests analysis (Excel reports, plots, etc.)
+2. **CLI** processes the analysis request
+3. **Analysis Tools** process results and generate reports/plots
+4. **CLI** receives generated analysis output
+5. **User** gets analysis results (files, visualizations)
 
 ## Key Features
 
@@ -181,4 +193,4 @@ sequenceDiagram
 - Learn about the [Command Line Interface](cli.md) for detailed usage
 - Explore [Tasks and Benchmarks](tasks.md) for specific scenarios
 - Check out [Results Analysis](analysis.md) for understanding your data
-- See [Examples](examples/basic-benchmarks.md) for practical use cases 
+- See [Examples](../examples/basic-benchmarks.md) for practical use cases 

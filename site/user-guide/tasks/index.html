@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/user-guide/tasks/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Tasks and Benchmarks - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Tasks and Benchmarks";
+        var mkdocs_page_input_path = "user-guide/tasks.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/user-guide/tasks/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/configuration/">Configuration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../overview/">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">Command Line Interface</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Tasks and Benchmarks</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#task-overview">Task Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#supported-tasks">Supported Tasks</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#text-to-text-text-to-text">Text-to-Text (text-to-text)</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#use-cases">Use Cases</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-example">Configuration Example</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#request-format">Request Format</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#text-to-embeddings-text-to-embeddings">Text-to-Embeddings (text-to-embeddings)</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#use-cases_1">Use Cases</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-example_1">Configuration Example</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#request-format_1">Request Format</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#image-text-to-text-image-text-to-text">Image-Text-to-Text (image-text-to-text)</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#use-cases_2">Use Cases</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-example_2">Configuration Example</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#request-format_2">Request Format</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#image-to-embeddings-image-to-embeddings">Image-to-Embeddings (image-to-embeddings)</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#use-cases_3">Use Cases</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-example_3">Configuration Example</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#request-format_3">Request Format</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#task-compatibility">Task Compatibility</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#api-backend-support">API Backend Support</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#model-requirements">Model Requirements</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-to-text-models">Text-to-Text Models</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#embedding-models">Embedding Models</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#vision-models">Vision Models</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dataset-configuration">Dataset Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#built-in-datasets">Built-in Datasets</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#custom-datasets">Custom Datasets</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-datasets">Text Datasets</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#vision-datasets">Vision Datasets</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hugging-face-datasets">Hugging Face Datasets</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-task-configuration">Advanced Task Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#tokenizer-configuration">Tokenizer Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#request-parameters">Request Parameters</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-to-text-parameters">Text-to-Text Parameters</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#embedding-parameters">Embedding Parameters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#task-specific-metrics">Task-Specific Metrics</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-to-text-metrics">Text-to-Text Metrics</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#embedding-metrics">Embedding Metrics</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#vision-metrics">Vision Metrics</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#task-selection">Task Selection</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dataset-preparation">Dataset Preparation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#benchmark-configuration">Benchmark Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#result-interpretation">Result Interpretation</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#task-not-supported">Task Not Supported</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#model-incompatibility">Model Incompatibility</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#dataset-issues">Dataset Issues</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#getting-help">Getting Help</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../analysis/">Results Analysis</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/basic-benchmarks/">Basic Benchmarks</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/architecture/">Architecture</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User Guide</li>
+      <li class="breadcrumb-item active">Tasks and Benchmarks</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/user-guide/tasks.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="tasks-and-benchmarks"><a class="toclink" href="#tasks-and-benchmarks">Tasks and Benchmarks</a><a class="headerlink" href="#tasks-and-benchmarks" title="Permanent link">&para;</a></h1>
+<p>This guide explains the different task types supported by GenAI Bench and how to configure them for various benchmarking scenarios.</p>
+<h2 id="task-overview"><a class="toclink" href="#task-overview">Task Overview</a><a class="headerlink" href="#task-overview" title="Permanent link">&para;</a></h2>
+<p>Tasks in GenAI Bench define the type of benchmark you want to run, based on the input modality (e.g., text, image) and output modality (e.g., text, embeddings). Each task follows the pattern:</p>
+<div class="codehilite"><pre><span></span><code>&lt;input_modality&gt;-to-&lt;output_modality&gt;
+</code></pre></div>
+
+<h2 id="supported-tasks"><a class="toclink" href="#supported-tasks">Supported Tasks</a><a class="headerlink" href="#supported-tasks" title="Permanent link">&para;</a></h2>
+<h3 id="text-to-text-text-to-text"><a class="toclink" href="#text-to-text-text-to-text">Text-to-Text (<code>text-to-text</code>)</a><a class="headerlink" href="#text-to-text-text-to-text" title="Permanent link">&para;</a></h3>
+<p>Generate text responses from text input, such as chat completions or question answering.</p>
+<h4 id="use-cases"><a class="toclink" href="#use-cases">Use Cases</a><a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Chat Applications</strong>: Conversational AI, customer support</li>
+<li><strong>Question Answering</strong>: Knowledge base queries, educational content</li>
+<li><strong>Text Generation</strong>: Content creation, summarization</li>
+<li><strong>Code Generation</strong>: Programming assistance, code completion</li>
+</ul>
+<h4 id="configuration-example"><a class="toclink" href="#configuration-example">Configuration Example</a><a class="headerlink" href="#configuration-example" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h4 id="request-format"><a class="toclink" href="#request-format">Request Format</a><a class="headerlink" href="#request-format" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the capital of France?&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="text-to-embeddings-text-to-embeddings"><a class="toclink" href="#text-to-embeddings-text-to-embeddings">Text-to-Embeddings (<code>text-to-embeddings</code>)</a><a class="headerlink" href="#text-to-embeddings-text-to-embeddings" title="Permanent link">&para;</a></h3>
+<p>Generate embeddings from text input for semantic search and similarity tasks.</p>
+<h4 id="use-cases_1"><a class="toclink" href="#use-cases_1">Use Cases</a><a class="headerlink" href="#use-cases_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Semantic Search</strong>: Document retrieval, content discovery</li>
+<li><strong>Similarity Matching</strong>: Duplicate detection, clustering</li>
+<li><strong>Recommendation Systems</strong>: Content recommendations</li>
+<li><strong>Information Retrieval</strong>: Search engines, knowledge graphs</li>
+</ul>
+<h4 id="configuration-example_1"><a class="toclink" href="#configuration-example_1">Configuration Example</a><a class="headerlink" href="#configuration-example_1" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-embeddings<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h4 id="request-format_1"><a class="toclink" href="#request-format_1">Request Format</a><a class="headerlink" href="#request-format_1" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This is a sample text for embedding generation&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text-embedding-ada-002&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="image-text-to-text-image-text-to-text"><a class="toclink" href="#image-text-to-text-image-text-to-text">Image-Text-to-Text (<code>image-text-to-text</code>)</a><a class="headerlink" href="#image-text-to-text-image-text-to-text" title="Permanent link">&para;</a></h3>
+<p>Generate text responses from images combined with text prompts.</p>
+<h4 id="use-cases_2"><a class="toclink" href="#use-cases_2">Use Cases</a><a class="headerlink" href="#use-cases_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Visual Question Answering</strong>: Image-based Q&amp;A</li>
+<li><strong>Image Captioning</strong>: Descriptive text generation</li>
+<li><strong>Visual Analysis</strong>: Object detection, scene understanding</li>
+<li><strong>Multimodal Chat</strong>: Interactive image-based conversations</li>
+</ul>
+<h4 id="configuration-example_2"><a class="toclink" href="#configuration-example_2">Configuration Example</a><a class="headerlink" href="#configuration-example_2" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-4-vision&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>image-text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;vision-dataset&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h4 id="request-format_2"><a class="toclink" href="#request-format_2">Request Format</a><a class="headerlink" href="#request-format_2" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What do you see in this image?&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;image_url&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;image_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:image/jpeg;base64,...&quot;</span><span class="p">}}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="image-to-embeddings-image-to-embeddings"><a class="toclink" href="#image-to-embeddings-image-to-embeddings">Image-to-Embeddings (<code>image-to-embeddings</code>)</a><a class="headerlink" href="#image-to-embeddings-image-to-embeddings" title="Permanent link">&para;</a></h3>
+<p>Generate embeddings from images for image similarity and search tasks.</p>
+<h4 id="use-cases_3"><a class="toclink" href="#use-cases_3">Use Cases</a><a class="headerlink" href="#use-cases_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Image Similarity</strong>: Duplicate image detection</li>
+<li><strong>Visual Search</strong>: Find similar images</li>
+<li><strong>Content Moderation</strong>: Inappropriate content detection</li>
+<li><strong>Image Clustering</strong>: Organize image collections</li>
+</ul>
+<h4 id="configuration-example_3"><a class="toclink" href="#configuration-example_3">Configuration Example</a><a class="headerlink" href="#configuration-example_3" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;clip-vit-base-patch32&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>image-to-embeddings<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;image-dataset&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h4 id="request-format_3"><a class="toclink" href="#request-format_3">Request Format</a><a class="headerlink" href="#request-format_3" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data:image/jpeg;base64,...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;clip-vit-base-patch32&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="task-compatibility"><a class="toclink" href="#task-compatibility">Task Compatibility</a><a class="headerlink" href="#task-compatibility" title="Permanent link">&para;</a></h2>
+<h3 id="api-backend-support"><a class="toclink" href="#api-backend-support">API Backend Support</a><a class="headerlink" href="#api-backend-support" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>OpenAI</th>
+<th>Cohere</th>
+<th>OCI Cohere</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text-to-text</code></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>text-to-embeddings</code></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>image-text-to-text</code></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>image-to-embeddings</code></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="model-requirements"><a class="toclink" href="#model-requirements">Model Requirements</a><a class="headerlink" href="#model-requirements" title="Permanent link">&para;</a></h3>
+<h4 id="text-to-text-models"><a class="toclink" href="#text-to-text-models">Text-to-Text Models</a><a class="headerlink" href="#text-to-text-models" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Chat Models</strong>: GPT-3.5-turbo, GPT-4, Llama-2, etc.</li>
+<li><strong>Completion Models</strong>: text-davinci-003, etc.</li>
+</ul>
+<h4 id="embedding-models"><a class="toclink" href="#embedding-models">Embedding Models</a><a class="headerlink" href="#embedding-models" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Text Embeddings</strong>: text-embedding-ada-002, Cohere embeddings</li>
+<li><strong>Image Embeddings</strong>: CLIP, DALL-E embeddings</li>
+</ul>
+<h4 id="vision-models"><a class="toclink" href="#vision-models">Vision Models</a><a class="headerlink" href="#vision-models" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Multimodal</strong>: GPT-4V, Claude 3 Vision, etc.</li>
+<li><strong>Image Understanding</strong>: Models with vision capabilities</li>
+</ul>
+<h2 id="dataset-configuration"><a class="toclink" href="#dataset-configuration">Dataset Configuration</a><a class="headerlink" href="#dataset-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="built-in-datasets"><a class="toclink" href="#built-in-datasets">Built-in Datasets</a><a class="headerlink" href="#built-in-datasets" title="Permanent link">&para;</a></h3>
+<p>GenAI Bench provides several built-in datasets:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Text datasets</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;qa_dataset.txt&quot;</span>
+
+<span class="c1"># Vision datasets</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;vision_dataset&quot;</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;image_qa_dataset&quot;</span>
+</code></pre></div>
+
+<h3 id="custom-datasets"><a class="toclink" href="#custom-datasets">Custom Datasets</a><a class="headerlink" href="#custom-datasets" title="Permanent link">&para;</a></h3>
+<h4 id="text-datasets"><a class="toclink" href="#text-datasets">Text Datasets</a><a class="headerlink" href="#text-datasets" title="Permanent link">&para;</a></h4>
+<p>Create a text file with one prompt per line:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># prompts.txt</span>
+What<span class="w"> </span>is<span class="w"> </span>the<span class="w"> </span>capital<span class="w"> </span>of<span class="w"> </span>France?
+Explain<span class="w"> </span>quantum<span class="w"> </span>computing<span class="w"> </span><span class="k">in</span><span class="w"> </span>simple<span class="w"> </span>terms.
+Write<span class="w"> </span>a<span class="w"> </span>short<span class="w"> </span>poem<span class="w"> </span>about<span class="w"> </span>spring.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>--dataset-path<span class="w"> </span><span class="s2">&quot;/path/to/prompts.txt&quot;</span>
+</code></pre></div>
+
+<h4 id="vision-datasets"><a class="toclink" href="#vision-datasets">Vision Datasets</a><a class="headerlink" href="#vision-datasets" title="Permanent link">&para;</a></h4>
+<p>For vision tasks, organize your dataset:</p>
+<div class="codehilite"><pre><span></span><code>vision_dataset/
+├── images/
+│   ├── image1.jpg
+│   ├── image2.png
+│   └── ...
+├── prompts.txt
+└── metadata.json
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>--dataset-path<span class="w"> </span><span class="s2">&quot;/path/to/vision_dataset&quot;</span>
+</code></pre></div>
+
+<h3 id="hugging-face-datasets"><a class="toclink" href="#hugging-face-datasets">Hugging Face Datasets</a><a class="headerlink" href="#hugging-face-datasets" title="Permanent link">&para;</a></h3>
+<p>Use datasets from Hugging Face:</p>
+<div class="codehilite"><pre><span></span><code>--dataset-name<span class="w"> </span><span class="s2">&quot;squad&quot;</span>
+--dataset-split<span class="w"> </span><span class="s2">&quot;train&quot;</span>
+--dataset-column<span class="w"> </span><span class="s2">&quot;question&quot;</span>
+</code></pre></div>
+
+<h2 id="advanced-task-configuration"><a class="toclink" href="#advanced-task-configuration">Advanced Task Configuration</a><a class="headerlink" href="#advanced-task-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="tokenizer-configuration"><a class="toclink" href="#tokenizer-configuration">Tokenizer Configuration</a><a class="headerlink" href="#tokenizer-configuration" title="Permanent link">&para;</a></h3>
+<p>For accurate token counting, specify the tokenizer:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Use model&#39;s tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;/path/to/tokenizer&quot;</span>
+
+<span class="c1"># Use Hugging Face tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>
+
+<span class="c1"># Use specific tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;gpt2&quot;</span>
+</code></pre></div>
+
+<h3 id="request-parameters"><a class="toclink" href="#request-parameters">Request Parameters</a><a class="headerlink" href="#request-parameters" title="Permanent link">&para;</a></h3>
+<p>Customize request parameters for different tasks:</p>
+<h4 id="text-to-text-parameters"><a class="toclink" href="#text-to-text-parameters">Text-to-Text Parameters</a><a class="headerlink" href="#text-to-text-parameters" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Temperature (creativity)</span>
+--temperature<span class="w"> </span><span class="m">0</span>.7
+
+<span class="c1"># Maximum tokens</span>
+--max-tokens<span class="w"> </span><span class="m">100</span>
+
+<span class="c1"># Top-p sampling</span>
+--top-p<span class="w"> </span><span class="m">0</span>.9
+
+<span class="c1"># Frequency penalty</span>
+--frequency-penalty<span class="w"> </span><span class="m">0</span>.1
+
+<span class="c1"># Presence penalty</span>
+--presence-penalty<span class="w"> </span><span class="m">0</span>.1
+</code></pre></div>
+
+<h4 id="embedding-parameters"><a class="toclink" href="#embedding-parameters">Embedding Parameters</a><a class="headerlink" href="#embedding-parameters" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Embedding dimensions</span>
+--embedding-dimensions<span class="w"> </span><span class="m">1536</span>
+
+<span class="c1"># Normalize embeddings</span>
+--normalize-embeddings<span class="w"> </span><span class="nb">true</span>
+</code></pre></div>
+
+<h3 id="task-specific-metrics"><a class="toclink" href="#task-specific-metrics">Task-Specific Metrics</a><a class="headerlink" href="#task-specific-metrics" title="Permanent link">&para;</a></h3>
+<p>Different tasks collect different metrics:</p>
+<h4 id="text-to-text-metrics"><a class="toclink" href="#text-to-text-metrics">Text-to-Text Metrics</a><a class="headerlink" href="#text-to-text-metrics" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>TTFT</strong>: Time to first token</li>
+<li><strong>TPOT</strong>: Time per output token</li>
+<li><strong>Output throughput</strong>: Tokens per second</li>
+<li><strong>Response quality</strong>: Perplexity, accuracy</li>
+</ul>
+<h4 id="embedding-metrics"><a class="toclink" href="#embedding-metrics">Embedding Metrics</a><a class="headerlink" href="#embedding-metrics" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Embedding latency</strong>: Time to generate embeddings</li>
+<li><strong>Embedding quality</strong>: Cosine similarity, clustering quality</li>
+<li><strong>Batch processing</strong>: Throughput for multiple inputs</li>
+</ul>
+<h4 id="vision-metrics"><a class="toclink" href="#vision-metrics">Vision Metrics</a><a class="headerlink" href="#vision-metrics" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Image processing time</strong>: Time to process images</li>
+<li><strong>Multimodal latency</strong>: Combined text + image processing</li>
+<li><strong>Vision accuracy</strong>: Object detection, caption quality</li>
+</ul>
+<h2 id="best-practices"><a class="toclink" href="#best-practices">Best Practices</a><a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="task-selection"><a class="toclink" href="#task-selection">Task Selection</a><a class="headerlink" href="#task-selection" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Match Your Use Case</strong>: Choose the task that matches your application</li>
+<li><strong>Consider Model Capabilities</strong>: Ensure your model supports the task</li>
+<li><strong>Test Compatibility</strong>: Verify API backend support</li>
+</ol>
+<h3 id="dataset-preparation"><a class="toclink" href="#dataset-preparation">Dataset Preparation</a><a class="headerlink" href="#dataset-preparation" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Representative Data</strong>: Use data similar to your production workload</li>
+<li><strong>Appropriate Size</strong>: Balance between coverage and benchmark duration</li>
+<li><strong>Quality Control</strong>: Ensure data quality and consistency</li>
+</ol>
+<h3 id="benchmark-configuration"><a class="toclink" href="#benchmark-configuration">Benchmark Configuration</a><a class="headerlink" href="#benchmark-configuration" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Start Simple</strong>: Begin with basic configurations</li>
+<li><strong>Gradual Scaling</strong>: Increase complexity step by step</li>
+<li><strong>Consistent Parameters</strong>: Use same settings for comparisons</li>
+</ol>
+<h3 id="result-interpretation"><a class="toclink" href="#result-interpretation">Result Interpretation</a><a class="headerlink" href="#result-interpretation" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Task-Specific Metrics</strong>: Focus on relevant metrics for your task</li>
+<li><strong>Context Matters</strong>: Consider your specific use case requirements</li>
+<li><strong>Baseline Comparison</strong>: Compare against known good performance</li>
+</ol>
+<h2 id="troubleshooting"><a class="toclink" href="#troubleshooting">Troubleshooting</a><a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues"><a class="toclink" href="#common-issues">Common Issues</a><a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<h4 id="task-not-supported"><a class="toclink" href="#task-not-supported">Task Not Supported</a><a class="headerlink" href="#task-not-supported" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>Error: Task &#39;unsupported-task&#39; is not supported by backend &#39;openai&#39;
+</code></pre></div>
+
+<p><strong>Solution</strong>: Check task compatibility with your API backend.</p>
+<h4 id="model-incompatibility"><a class="toclink" href="#model-incompatibility">Model Incompatibility</a><a class="headerlink" href="#model-incompatibility" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>Error: Model &#39;text-model&#39; does not support vision tasks
+</code></pre></div>
+
+<p><strong>Solution</strong>: Use a model that supports your task type.</p>
+<h4 id="dataset-issues"><a class="toclink" href="#dataset-issues">Dataset Issues</a><a class="headerlink" href="#dataset-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>Error: Dataset format not compatible with task &#39;image-text-to-text&#39;
+</code></pre></div>
+
+<p><strong>Solution</strong>: Ensure your dataset matches the task requirements.</p>
+<h3 id="getting-help"><a class="toclink" href="#getting-help">Getting Help</a><a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Check the <a href="../cli/">CLI Reference</a> for detailed command options</li>
+<li>Review <a href="../../examples/basic-benchmarks/">Examples</a> for practical scenarios</li>
+<li>Open an <a href="https://github.com/sgl-project/genai-bench/issues">issue</a> for bugs</li>
+</ul>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Learn about <a href="../analysis/">Results Analysis</a> for understanding metrics</li>
+<li>Explore <a href="../../examples/basic-benchmarks/">Examples</a> for practical use cases</li>
+<li>Check out the <a href="../cli/">CLI Reference</a> for complete command documentation </li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../cli/" class="btn btn-neutral float-left" title="Command Line Interface"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../analysis/" class="btn btn-neutral float-right" title="Results Analysis">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../cli/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../analysis/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

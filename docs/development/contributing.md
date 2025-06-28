@@ -418,5 +418,5 @@ Thank you for contributing to GenAI Bench! Your contributions help make this pro
 ## Next Steps
 
 - Read the [Architecture Guide](architecture.md) to understand the codebase
-- Check out [Testing Guide](testing.md) for detailed testing information
-- Explore [Building Guide](building.md) for release processes
+- Start with small contributions to understand the system better
+- Join the community discussions for questions and ideas

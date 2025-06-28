@@ -6,10 +6,10 @@ This section provides comprehensive documentation for GenAI Bench's APIs, interf
 
 GenAI Bench provides several types of APIs:
 
-1. **[CLI API](cli.md)** - Command-line interface for running benchmarks
-2. **[Python API](python.md)** - Programmatic interface for Python applications
-3. **[REST API](rest.md)** - HTTP API for remote access (when using web UI)
-4. **[Extension APIs](extensions.md)** - Interfaces for extending functionality
+1. **CLI API** - Command-line interface for running benchmarks (see [CLI Reference](../user-guide/cli.md))
+2. **Python API** - Programmatic interface for Python applications
+3. **REST API** - HTTP API for remote access (when using web UI)
+4. **Extension APIs** - Interfaces for extending functionality
 
 ## Core Concepts
 
@@ -125,14 +125,14 @@ genai-bench benchmark \
     --max-time-per-run 60
 
 # Export results
-genai-bench export \
-    --results-dir ./results \
-    --output-format excel
+genai-bench excel \
+    --experiment-dir ./experiments/latest \
+    --output-file results.xlsx
 
 # Generate plots
 genai-bench plot \
-    --results-dir ./results \
-    --plot-type latency
+    --experiment-dirs ./experiments/latest \
+    --output-file results.png
 ```
 
 ### REST API
@@ -198,133 +198,65 @@ GenAI Bench follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ### API Keys
 
-All APIs support various authentication methods:
+GenAI Bench supports various authentication methods:
 
 ```python
-# Environment variable
+# Environment variable (recommended)
 import os
-os.environ["OPENAI_API_KEY"] = "your-key"
+config.api_key = os.getenv("OPENAI_API_KEY")
 
-# Direct configuration
-config.api_key = "your-key"
+# Direct assignment
+config.api_key = "your-api-key"
 
-# File-based (for CLI)
-# ~/.genai-bench/credentials
+# File-based
+with open("api_key.txt") as f:
+    config.api_key = f.read().strip()
 ```
 
 ### Security Best Practices
 
 1. **Never hardcode API keys** in source code
-2. **Use environment variables** for credentials
-3. **Rotate keys regularly** for production use
-4. **Use least privilege** access for API keys
+2. **Use environment variables** for sensitive data
+3. **Rotate keys regularly** for production systems
+4. **Limit key permissions** where possible
 
 ## Error Handling
 
-### Error Types
-
-All APIs use consistent error types:
+### Common Error Types
 
 ```python
-class GenAIBenchError(Exception):
-    """Base exception for GenAI Bench."""
-    pass
+from genai_bench.exceptions import (
+    BenchmarkError,
+    ConfigurationError,
+    APIError,
+    DatasetError
+)
 
-class ConfigurationError(GenAIBenchError):
-    """Configuration-related errors."""
-    pass
-
-class APIError(GenAIBenchError):
-    """API communication errors."""
-    pass
-
-class DatasetError(GenAIBenchError):
-    """Dataset-related errors."""
-    pass
-
-class MetricsError(GenAIBenchError):
-    """Metrics collection errors."""
-    pass
+try:
+    results = benchmark.run()
+except ConfigurationError as e:
+    print(f"Configuration error: {e}")
+except APIError as e:
+    print(f"API error: {e}")
+except DatasetError as e:
+    print(f"Dataset error: {e}")
+except BenchmarkError as e:
+    print(f"Benchmark error: {e}")
 ```
 
 ### Error Response Format
 
-```python
-@dataclass
-class ErrorResponse:
-    error_type: str
-    error_message: str
-    error_code: int
-    details: Optional[Dict[str, Any]] = None
-    timestamp: str
-    request_id: Optional[str] = None
-```
-
-## Rate Limiting
-
-### Default Limits
-
-- **CLI**: No built-in rate limiting (respects API limits)
-- **Python API**: Configurable rate limiting
-- **REST API**: 100 requests/minute per client
-
-### Configuration
-
-```python
-# Python API rate limiting
-config.rate_limit = RateLimitConfig(
-    requests_per_second=10,
-    burst_size=20
-)
-```
-
-## Monitoring and Observability
-
-### Logging
-
-All APIs support structured logging:
-
-```python
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-# Enable debug logging
-logging.getLogger('genai_bench').setLevel(logging.DEBUG)
-```
-
-### Metrics Export
-
-```python
-# Export metrics to various formats
-benchmark.export_metrics(
-    format="prometheus",
-    endpoint="http://prometheus:9090"
-)
-
-benchmark.export_metrics(
-    format="json",
-    file_path="./metrics.json"
-)
-```
-
-### Health Checks
-
-```python
-# Check system health
-from genai_bench.health import HealthChecker
-
-health = HealthChecker()
-status = health.check_all()
-
-if status.is_healthy:
-    print("System is healthy")
-else:
-    print(f"Issues found: {status.issues}")
+```json
+{
+  "error": {
+    "type": "ConfigurationError",
+    "message": "Invalid API endpoint",
+    "details": {
+      "field": "api_base",
+      "value": "invalid-url"
+    }
+  }
+}
 ```
 
 ## Integration Examples
@@ -333,16 +265,24 @@ else:
 
 ```yaml
 # GitHub Actions example
-- name: Run GenAI Bench
-  run: |
-    genai-bench benchmark \
-      --config ./benchmark-config.yaml \
-      --output-dir ./results
-    
-    genai-bench export \
-      --results-dir ./results \
-      --output-format json \
-      --output-file ./benchmark-results.json
+name: Performance Benchmark
+on: [push]
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Benchmark
+        run: |
+          pip install genai-bench
+          genai-bench benchmark \
+            --api-backend openai \
+            --api-base "${{ secrets.API_BASE }}" \
+            --api-key "${{ secrets.API_KEY }}" \
+            --api-model-name "test-model" \
+            --task text-to-text \
+            --num-users 2 \
+            --max-time-per-run 60
 ```
 
 ### Docker Integration
@@ -352,10 +292,10 @@ FROM python:3.11-slim
 
 RUN pip install genai-bench
 
-COPY benchmark-config.yaml /config/
-COPY datasets/ /datasets/
+COPY benchmark-config.yaml /app/
+WORKDIR /app
 
-CMD ["genai-bench", "benchmark", "--config", "/config/benchmark-config.yaml"]
+CMD ["genai-bench", "benchmark", "--config", "benchmark-config.yaml"]
 ```
 
 ### Kubernetes Integration
@@ -369,16 +309,22 @@ spec:
   template:
     spec:
       containers:
-      - name: genai-bench
+      - name: benchmark
         image: genai-bench:latest
         env:
-        - name: OPENAI_API_KEY
+        - name: API_KEY
           valueFrom:
             secretKeyRef:
-              name: api-keys
+              name: api-secrets
               key: openai-key
         command: ["genai-bench", "benchmark"]
-        args: ["--config", "/config/benchmark.yaml"]
+        args: [
+          "--api-backend", "openai",
+          "--api-base", "http://model-service:8080",
+          "--task", "text-to-text",
+          "--num-users", "10",
+          "--max-time-per-run", "300"
+        ]
       restartPolicy: Never
 ```
 
@@ -386,77 +332,44 @@ spec:
 
 ### Resource Usage
 
-- **Memory**: ~100MB base + ~1MB per concurrent user
-- **CPU**: Scales with number of users and request rate
-- **Network**: Depends on request/response sizes
-- **Disk**: Results storage scales with benchmark duration
+- **Memory**: Scales with number of concurrent users and dataset size
+- **CPU**: Depends on tokenization and metrics processing
+- **Network**: Proportional to request rate and payload size
 
 ### Optimization Tips
 
-1. **Use appropriate user counts** for your hardware
-2. **Configure timeouts** to prevent hanging requests
-3. **Monitor resource usage** during benchmarks
-4. **Use distributed mode** for large-scale testing
+1. **Use appropriate concurrency** for your target system
+2. **Monitor resource usage** during benchmarks
+3. **Batch requests** when possible
+4. **Cache tokenizers** for repeated use
 
-## Migration Guide
+## Troubleshooting
 
-### From CLI to Python API
+### Common Issues
 
-```python
-# CLI command
-# genai-bench benchmark --api-backend openai --num-users 5
+1. **Connection timeouts**: Check network connectivity and API endpoint
+2. **Authentication errors**: Verify API keys and permissions
+3. **Rate limiting**: Reduce concurrency or add delays
+4. **Memory issues**: Reduce dataset size or concurrency
 
-# Equivalent Python API
-config = BenchmarkConfig(
-    api_backend="openai",
-    num_users=5,
-    # ... other parameters
-)
-benchmark = Benchmark(config)
-results = benchmark.run()
+### Debug Mode
+
+```bash
+# Enable debug logging
+genai-bench benchmark --log-level DEBUG
+
+# Save detailed logs
+genai-bench benchmark --log-file benchmark.log
 ```
-
-### From v1 to v2 (when available)
-
-Migration guides will be provided for major version updates.
-
-## Support and Community
 
 ### Getting Help
 
-1. **Documentation**: Check this documentation first
-2. **GitHub Issues**: Report bugs and request features
-3. **GitHub Discussions**: Ask questions and share ideas
-4. **Examples**: Check the examples directory
+- Check the [User Guide](../user-guide/overview.md) for detailed documentation
+- Review [Examples](../examples/basic-benchmarks.md) for practical use cases
+- Open an [issue](https://github.com/sgl-project/genai-bench/issues) for bugs or questions
 
-### Contributing
+## Next Steps
 
-See the [Contributing Guide](../development/contributing.md) for information on:
-
-- Setting up development environment
-- Code standards and testing
-- Submitting pull requests
-- API design guidelines
-
-## API Reference Links
-
-- **[CLI API Reference](cli.md)** - Complete CLI command documentation
-- **[Python API Reference](python.md)** - Python classes and methods
-- **[REST API Reference](rest.md)** - HTTP endpoints and schemas
-- **[Extension API Reference](extensions.md)** - Extension interfaces
-
-## Changelog
-
-### v0.1.0 (Current)
-
-- Initial API release
-- Core CLI and Python APIs
-- Basic metrics and export functionality
-- OpenAI and Cohere backend support
-
-### Upcoming Features
-
-- Enhanced REST API
-- Plugin system for extensions
-- Advanced metrics and analysis
-- Distributed benchmarking improvements 
+- Explore the [CLI Reference](../user-guide/cli.md) for command-line usage
+- Read about [Tasks and Benchmarks](../user-guide/tasks.md) for different benchmark types
+- Check out [Examples](../examples/basic-benchmarks.md) for practical scenarios 

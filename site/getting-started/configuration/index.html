@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/getting-started/configuration/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Configuration - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Configuration";
+        var mkdocs_page_input_path = "getting-started/configuration.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/getting-started/configuration/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Configuration</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#environment-configuration">Environment Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#python-environment">Python Environment</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#environment-variables">Environment Variables</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#api-backend-configuration">API Backend Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#openai-compatible-backends">OpenAI-Compatible Backends</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-options">Configuration Options</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cohere-backend">Cohere Backend</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#cohere-specific-options">Cohere-Specific Options</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#oci-cohere-backend">OCI Cohere Backend</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#oci-configuration">OCI Configuration</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#model-configuration">Model Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#model-selection">Model Selection</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-to-text-models">Text-to-Text Models</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#embedding-models">Embedding Models</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#vision-models">Vision Models</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#tokenizer-configuration">Tokenizer Configuration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dataset-configuration">Dataset Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#built-in-datasets">Built-in Datasets</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#custom-datasets">Custom Datasets</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-datasets">Text Datasets</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#vision-datasets">Vision Datasets</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#hugging-face-datasets">Hugging Face Datasets</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#traffic-configuration">Traffic Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#traffic-scenarios">Traffic Scenarios</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#constant-load">Constant Load</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#burst-traffic">Burst Traffic</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#ramp-up-traffic">Ramp-up Traffic</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#load-parameters">Load Parameters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-configuration">Advanced Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#request-parameters">Request Parameters</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#text-to-text-parameters">Text-to-Text Parameters</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#embedding-parameters">Embedding Parameters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#server-information">Server Information</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#monitoring-configuration">Monitoring Configuration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-files">Configuration Files</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#yaml-configuration">YAML Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#environment-specific-configs">Environment-Specific Configs</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#development-configuration">Development Configuration</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#production-configuration">Production Configuration</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#security-configuration">Security Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#api-key-management">API Key Management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#network-security">Network Security</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-tuning">Performance Tuning</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#resource-configuration">Resource Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#benchmark-optimization">Benchmark Optimization</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting-configuration">Troubleshooting Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#api-connection-issues">API Connection Issues</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#tokenizer-issues">Tokenizer Issues</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#dataset-issues">Dataset Issues</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-validation">Configuration Validation</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-management">Configuration Management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#security-considerations">Security Considerations</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/overview/">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cli/">Command Line Interface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/tasks/">Tasks and Benchmarks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/analysis/">Results Analysis</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/basic-benchmarks/">Basic Benchmarks</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/architecture/">Architecture</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Getting Started</li>
+      <li class="breadcrumb-item active">Configuration</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/getting-started/configuration.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="configuration-guide"><a class="toclink" href="#configuration-guide">Configuration Guide</a><a class="headerlink" href="#configuration-guide" title="Permanent link">&para;</a></h1>
+<p>This guide explains how to configure GenAI Bench for different environments, API backends, and use cases.</p>
+<h2 id="environment-configuration"><a class="toclink" href="#environment-configuration">Environment Configuration</a><a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="python-environment"><a class="toclink" href="#python-environment">Python Environment</a><a class="headerlink" href="#python-environment" title="Permanent link">&para;</a></h3>
+<p>Ensure you have the correct Python version and dependencies:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check Python version</span>
+python3<span class="w"> </span>--version<span class="w">  </span><span class="c1"># Should be 3.11 or 3.12</span>
+
+<span class="c1"># Install in virtual environment (recommended)</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>genai-bench-env
+<span class="nb">source</span><span class="w"> </span>genai-bench-env/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>genai-bench
+</code></pre></div>
+
+<h3 id="environment-variables"><a class="toclink" href="#environment-variables">Environment Variables</a><a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
+<p>Set these environment variables for optimal performance:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hugging Face token (for tokenizer downloads)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_TOKEN</span><span class="o">=</span><span class="s2">&quot;your-huggingface-token&quot;</span>
+
+<span class="c1"># Disable torch warnings (not needed for benchmarking)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TRANSFORMERS_VERBOSITY</span><span class="o">=</span>error
+
+<span class="c1"># Log level</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">GENAI_BENCH_LOG_LEVEL</span><span class="o">=</span>INFO
+
+<span class="c1"># API keys (set as needed)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-openai-key&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">COHERE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-cohere-key&quot;</span>
+</code></pre></div>
+
+<h2 id="api-backend-configuration"><a class="toclink" href="#api-backend-configuration">API Backend Configuration</a><a class="headerlink" href="#api-backend-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="openai-compatible-backends"><a class="toclink" href="#openai-compatible-backends">OpenAI-Compatible Backends</a><a class="headerlink" href="#openai-compatible-backends" title="Permanent link">&para;</a></h3>
+<p>Configure for OpenAI API, vLLM, or other OpenAI-compatible services:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Basic configuration</span>
+--api-backend<span class="w"> </span>openai
+--api-base<span class="w"> </span><span class="s2">&quot;https://api.openai.com/v1&quot;</span>
+--api-key<span class="w"> </span><span class="s2">&quot;sk-...&quot;</span>
+
+<span class="c1"># vLLM configuration</span>
+--api-backend<span class="w"> </span>openai
+--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span>
+--api-key<span class="w"> </span><span class="s2">&quot;your-vllm-key&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span>
+</code></pre></div>
+
+<h4 id="configuration-options"><a class="toclink" href="#configuration-options">Configuration Options</a><a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--api-base</code></td>
+<td>API endpoint URL</td>
+<td><code>https://api.openai.com/v1</code></td>
+</tr>
+<tr>
+<td><code>--api-key</code></td>
+<td>Authentication key</td>
+<td><code>sk-...</code></td>
+</tr>
+<tr>
+<td><code>--api-model-name</code></td>
+<td>Model identifier</td>
+<td><code>gpt-3.5-turbo</code></td>
+</tr>
+<tr>
+<td><code>--api-version</code></td>
+<td>API version</td>
+<td><code>2024-02-15</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="cohere-backend"><a class="toclink" href="#cohere-backend">Cohere Backend</a><a class="headerlink" href="#cohere-backend" title="Permanent link">&para;</a></h3>
+<p>Configure for Cohere API:</p>
+<div class="codehilite"><pre><span></span><code>--api-backend<span class="w"> </span>cohere
+--api-base<span class="w"> </span><span class="s2">&quot;https://api.cohere.ai&quot;</span>
+--api-key<span class="w"> </span><span class="s2">&quot;your-cohere-key&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;command-r-plus&quot;</span>
+</code></pre></div>
+
+<h4 id="cohere-specific-options"><a class="toclink" href="#cohere-specific-options">Cohere-Specific Options</a><a class="headerlink" href="#cohere-specific-options" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--cohere-embedding-model</code></td>
+<td>Embedding model</td>
+<td><code>embed-english-v3.0</code></td>
+</tr>
+<tr>
+<td><code>--cohere-rerank-model</code></td>
+<td>Rerank model</td>
+<td><code>rerank-english-v2.0</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="oci-cohere-backend"><a class="toclink" href="#oci-cohere-backend">OCI Cohere Backend</a><a class="headerlink" href="#oci-cohere-backend" title="Permanent link">&para;</a></h3>
+<p>Configure for Oracle Cloud Infrastructure Cohere:</p>
+<div class="codehilite"><pre><span></span><code>--api-backend<span class="w"> </span>oci_cohere
+--api-base<span class="w"> </span><span class="s2">&quot;https://inference.generativeai.us-chicago-1.oci.oraclecloud.com&quot;</span>
+--api-key<span class="w"> </span><span class="s2">&quot;your-oci-key&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;cohere.command-r-plus&quot;</span>
+</code></pre></div>
+
+<h4 id="oci-configuration"><a class="toclink" href="#oci-configuration">OCI Configuration</a><a class="headerlink" href="#oci-configuration" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p><strong>Set up OCI CLI</strong>:
+   <code>bash
+   oci setup config</code></p>
+</li>
+<li>
+<p><strong>Configure authentication</strong>:
+   <code>bash
+   export OCI_CONFIG_FILE="~/.oci/config"
+   export OCI_KEY_FILE="~/.oci/oci_api_key.pem"</code></p>
+</li>
+</ol>
+<h2 id="model-configuration"><a class="toclink" href="#model-configuration">Model Configuration</a><a class="headerlink" href="#model-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="model-selection"><a class="toclink" href="#model-selection">Model Selection</a><a class="headerlink" href="#model-selection" title="Permanent link">&para;</a></h3>
+<p>Choose the appropriate model for your task:</p>
+<h4 id="text-to-text-models"><a class="toclink" href="#text-to-text-models">Text-to-Text Models</a><a class="headerlink" href="#text-to-text-models" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI models</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-3.5-turbo&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-4&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-4-turbo&quot;</span>
+
+<span class="c1"># vLLM models</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;mistral-7b&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;codellama-7b&quot;</span>
+
+<span class="c1"># Cohere models</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;command-r-plus&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;command-light&quot;</span>
+</code></pre></div>
+
+<h4 id="embedding-models"><a class="toclink" href="#embedding-models">Embedding Models</a><a class="headerlink" href="#embedding-models" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI embeddings</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;text-embedding-ada-002&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;text-embedding-3-small&quot;</span>
+
+<span class="c1"># Cohere embeddings</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;embed-english-v3.0&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;embed-multilingual-v3.0&quot;</span>
+</code></pre></div>
+
+<h4 id="vision-models"><a class="toclink" href="#vision-models">Vision Models</a><a class="headerlink" href="#vision-models" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI vision models</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-4-vision-preview&quot;</span>
+
+<span class="c1"># Other vision models</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;llava-1.5-7b&quot;</span>
+--api-model-name<span class="w"> </span><span class="s2">&quot;qwen-vl-7b&quot;</span>
+</code></pre></div>
+
+<h3 id="tokenizer-configuration"><a class="toclink" href="#tokenizer-configuration">Tokenizer Configuration</a><a class="headerlink" href="#tokenizer-configuration" title="Permanent link">&para;</a></h3>
+<p>For accurate token counting, specify the tokenizer:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Use model&#39;s tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;/path/to/tokenizer&quot;</span>
+
+<span class="c1"># Use Hugging Face tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>
+
+<span class="c1"># Use specific tokenizer</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;gpt2&quot;</span>
+--model-tokenizer<span class="w"> </span><span class="s2">&quot;cl100k_base&quot;</span>
+</code></pre></div>
+
+<h2 id="dataset-configuration"><a class="toclink" href="#dataset-configuration">Dataset Configuration</a><a class="headerlink" href="#dataset-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="built-in-datasets"><a class="toclink" href="#built-in-datasets">Built-in Datasets</a><a class="headerlink" href="#built-in-datasets" title="Permanent link">&para;</a></h3>
+<p>Use GenAI Bench's built-in datasets:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Text datasets</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;qa_dataset.txt&quot;</span>
+
+<span class="c1"># Vision datasets</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;vision_dataset&quot;</span>
+--dataset-name<span class="w"> </span><span class="s2">&quot;image_qa_dataset&quot;</span>
+</code></pre></div>
+
+<h3 id="custom-datasets"><a class="toclink" href="#custom-datasets">Custom Datasets</a><a class="headerlink" href="#custom-datasets" title="Permanent link">&para;</a></h3>
+<h4 id="text-datasets"><a class="toclink" href="#text-datasets">Text Datasets</a><a class="headerlink" href="#text-datasets" title="Permanent link">&para;</a></h4>
+<p>Create a text file with one prompt per line:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># prompts.txt</span>
+What<span class="w"> </span>is<span class="w"> </span>the<span class="w"> </span>capital<span class="w"> </span>of<span class="w"> </span>France?
+Explain<span class="w"> </span>quantum<span class="w"> </span>computing<span class="w"> </span><span class="k">in</span><span class="w"> </span>simple<span class="w"> </span>terms.
+Write<span class="w"> </span>a<span class="w"> </span>short<span class="w"> </span>poem<span class="w"> </span>about<span class="w"> </span>spring.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>--dataset-path<span class="w"> </span><span class="s2">&quot;/path/to/prompts.txt&quot;</span>
+</code></pre></div>
+
+<h4 id="vision-datasets"><a class="toclink" href="#vision-datasets">Vision Datasets</a><a class="headerlink" href="#vision-datasets" title="Permanent link">&para;</a></h4>
+<p>Organize your vision dataset:</p>
+<div class="codehilite"><pre><span></span><code>vision_dataset/
+├── images/
+│   ├── image1.jpg
+│   ├── image2.png
+│   └── ...
+├── prompts.txt
+└── metadata.json
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>--dataset-path<span class="w"> </span><span class="s2">&quot;/path/to/vision_dataset&quot;</span>
+</code></pre></div>
+
+<h4 id="hugging-face-datasets"><a class="toclink" href="#hugging-face-datasets">Hugging Face Datasets</a><a class="headerlink" href="#hugging-face-datasets" title="Permanent link">&para;</a></h4>
+<p>Use datasets from Hugging Face:</p>
+<div class="codehilite"><pre><span></span><code>--dataset-name<span class="w"> </span><span class="s2">&quot;squad&quot;</span>
+--dataset-split<span class="w"> </span><span class="s2">&quot;train&quot;</span>
+--dataset-column<span class="w"> </span><span class="s2">&quot;question&quot;</span>
+</code></pre></div>
+
+<h2 id="traffic-configuration"><a class="toclink" href="#traffic-configuration">Traffic Configuration</a><a class="headerlink" href="#traffic-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="traffic-scenarios"><a class="toclink" href="#traffic-scenarios">Traffic Scenarios</a><a class="headerlink" href="#traffic-scenarios" title="Permanent link">&para;</a></h3>
+<p>Choose the appropriate traffic pattern:</p>
+<h4 id="constant-load"><a class="toclink" href="#constant-load">Constant Load</a><a class="headerlink" href="#constant-load" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>--traffic-scenario<span class="w"> </span>constant
+--num-users<span class="w"> </span><span class="m">10</span>
+--spawn-rate<span class="w"> </span><span class="m">2</span>
+</code></pre></div>
+
+<h4 id="burst-traffic"><a class="toclink" href="#burst-traffic">Burst Traffic</a><a class="headerlink" href="#burst-traffic" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>--traffic-scenario<span class="w"> </span>burst
+--num-users<span class="w"> </span><span class="m">50</span>
+--spawn-rate<span class="w"> </span><span class="m">10</span>
+--burst-duration<span class="w"> </span><span class="m">30</span>
+</code></pre></div>
+
+<h4 id="ramp-up-traffic"><a class="toclink" href="#ramp-up-traffic">Ramp-up Traffic</a><a class="headerlink" href="#ramp-up-traffic" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code>--traffic-scenario<span class="w"> </span>ramp
+--num-users<span class="w"> </span><span class="m">20</span>
+--spawn-rate<span class="w"> </span><span class="m">1</span>
+--ramp-duration<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h3 id="load-parameters"><a class="toclink" href="#load-parameters">Load Parameters</a><a class="headerlink" href="#load-parameters" title="Permanent link">&para;</a></h3>
+<p>Configure load testing parameters:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Concurrency</span>
+--num-users<span class="w"> </span><span class="m">10</span><span class="w">          </span><span class="c1"># Number of concurrent users</span>
+--spawn-rate<span class="w"> </span><span class="m">2</span><span class="w">          </span><span class="c1"># Users spawned per second</span>
+
+<span class="c1"># Duration</span>
+--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w">  </span><span class="c1"># Maximum run time (seconds)</span>
+--max-requests-per-run<span class="w"> </span><span class="m">1000</span><span class="w">  </span><span class="c1"># Maximum requests per run</span>
+
+<span class="c1"># Limits</span>
+--max-requests-per-user<span class="w"> </span><span class="m">100</span><span class="w">  </span><span class="c1"># Requests per user</span>
+--max-time-per-request<span class="w"> </span><span class="m">60</span><span class="w">    </span><span class="c1"># Timeout per request</span>
+</code></pre></div>
+
+<h2 id="advanced-configuration"><a class="toclink" href="#advanced-configuration">Advanced Configuration</a><a class="headerlink" href="#advanced-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="request-parameters"><a class="toclink" href="#request-parameters">Request Parameters</a><a class="headerlink" href="#request-parameters" title="Permanent link">&para;</a></h3>
+<p>Customize request behavior:</p>
+<h4 id="text-to-text-parameters"><a class="toclink" href="#text-to-text-parameters">Text-to-Text Parameters</a><a class="headerlink" href="#text-to-text-parameters" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Generation parameters</span>
+--temperature<span class="w"> </span><span class="m">0</span>.7
+--max-tokens<span class="w"> </span><span class="m">100</span>
+--top-p<span class="w"> </span><span class="m">0</span>.9
+--frequency-penalty<span class="w"> </span><span class="m">0</span>.1
+--presence-penalty<span class="w"> </span><span class="m">0</span>.1
+
+<span class="c1"># Stop sequences</span>
+--stop-sequences<span class="w"> </span><span class="s2">&quot;END,STOP&quot;</span>
+</code></pre></div>
+
+<h4 id="embedding-parameters"><a class="toclink" href="#embedding-parameters">Embedding Parameters</a><a class="headerlink" href="#embedding-parameters" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Embedding options</span>
+--embedding-dimensions<span class="w"> </span><span class="m">1536</span>
+--normalize-embeddings<span class="w"> </span><span class="nb">true</span>
+--truncate-embeddings<span class="w"> </span><span class="s2">&quot;NONE&quot;</span>
+</code></pre></div>
+
+<h3 id="server-information"><a class="toclink" href="#server-information">Server Information</a><a class="headerlink" href="#server-information" title="Permanent link">&para;</a></h3>
+<p>Provide server details for analysis:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Server configuration</span>
+--server-engine<span class="w"> </span><span class="s2">&quot;vLLM&quot;</span>
+--server-gpu-type<span class="w"> </span><span class="s2">&quot;H100&quot;</span>
+--server-model-size<span class="w"> </span><span class="s2">&quot;7B&quot;</span>
+--server-batch-size<span class="w"> </span><span class="m">32</span>
+</code></pre></div>
+
+<h3 id="monitoring-configuration"><a class="toclink" href="#monitoring-configuration">Monitoring Configuration</a><a class="headerlink" href="#monitoring-configuration" title="Permanent link">&para;</a></h3>
+<p>Configure monitoring and logging:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># UI dashboard</span>
+--ui
+--ui-host<span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span>
+--ui-port<span class="w"> </span><span class="m">8089</span>
+
+<span class="c1"># Logging</span>
+--log-level<span class="w"> </span>INFO
+--log-file<span class="w"> </span><span class="s2">&quot;benchmark.log&quot;</span>
+
+<span class="c1"># Output</span>
+--output-dir<span class="w"> </span><span class="s2">&quot;./experiments&quot;</span>
+--save-raw-data<span class="w"> </span><span class="nb">true</span>
+</code></pre></div>
+
+<h2 id="configuration-files"><a class="toclink" href="#configuration-files">Configuration Files</a><a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h2>
+<h3 id="yaml-configuration"><a class="toclink" href="#yaml-configuration">YAML Configuration</a><a class="headerlink" href="#yaml-configuration" title="Permanent link">&para;</a></h3>
+<p>Create a configuration file for complex setups:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># config.yaml</span>
+<span class="nt">api</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai</span>
+<span class="w">  </span><span class="nt">base</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:8082&quot;</span>
+<span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-api-key&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;llama-2-7b&quot;</span>
+
+<span class="nt">task</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">text-to-text</span>
+<span class="w">  </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+<span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+
+<span class="nt">traffic</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">constant</span>
+<span class="w">  </span><span class="nt">num_users</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">  </span><span class="nt">spawn_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">max_time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+
+<span class="nt">dataset</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sonnet.txt&quot;</span>
+<span class="w">  </span><span class="nt">tokenizer</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>
+
+<span class="nt">monitoring</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ui</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span>
+<span class="w">  </span><span class="nt">output_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./experiments&quot;</span>
+</code></pre></div>
+
+<p>Use the configuration file:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--config<span class="w"> </span>config.yaml
+</code></pre></div>
+
+<h3 id="environment-specific-configs"><a class="toclink" href="#environment-specific-configs">Environment-Specific Configs</a><a class="headerlink" href="#environment-specific-configs" title="Permanent link">&para;</a></h3>
+<p>Create different configurations for different environments:</p>
+<h4 id="development-configuration"><a class="toclink" href="#development-configuration">Development Configuration</a><a class="headerlink" href="#development-configuration" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># dev-config.yaml</span>
+<span class="nt">api</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai</span>
+<span class="w">  </span><span class="nt">base</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:8082&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;llama-2-7b&quot;</span>
+
+<span class="nt">traffic</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">num_users</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">max_time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+
+<span class="nt">monitoring</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEBUG</span>
+</code></pre></div>
+
+<h4 id="production-configuration"><a class="toclink" href="#production-configuration">Production Configuration</a><a class="headerlink" href="#production-configuration" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># prod-config.yaml</span>
+<span class="nt">api</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai</span>
+<span class="w">  </span><span class="nt">base</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://api.openai.com/v1&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gpt-4&quot;</span>
+
+<span class="nt">traffic</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">num_users</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">  </span><span class="nt">max_time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1800</span>
+
+<span class="nt">monitoring</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ui</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span>
+</code></pre></div>
+
+<h2 id="security-configuration"><a class="toclink" href="#security-configuration">Security Configuration</a><a class="headerlink" href="#security-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="api-key-management"><a class="toclink" href="#api-key-management">API Key Management</a><a class="headerlink" href="#api-key-management" title="Permanent link">&para;</a></h3>
+<p>Secure your API keys:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Use environment variables (recommended)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-key&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">COHERE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-key&quot;</span>
+
+<span class="c1"># Use key files</span>
+--api-key-file<span class="w"> </span><span class="s2">&quot;/path/to/api-key.txt&quot;</span>
+
+<span class="c1"># Use key management services</span>
+--api-key-vault<span class="w"> </span><span class="s2">&quot;azure-keyvault://your-vault&quot;</span>
+</code></pre></div>
+
+<h3 id="network-security"><a class="toclink" href="#network-security">Network Security</a><a class="headerlink" href="#network-security" title="Permanent link">&para;</a></h3>
+<p>Configure network settings:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Proxy configuration</span>
+--proxy<span class="w"> </span><span class="s2">&quot;http://proxy.company.com:8080&quot;</span>
+--proxy-auth<span class="w"> </span><span class="s2">&quot;user:pass&quot;</span>
+
+<span class="c1"># SSL verification</span>
+--verify-ssl<span class="w"> </span><span class="nb">true</span>
+--ca-cert<span class="w"> </span><span class="s2">&quot;/path/to/ca-cert.pem&quot;</span>
+
+<span class="c1"># Timeout settings</span>
+--connect-timeout<span class="w"> </span><span class="m">30</span>
+--read-timeout<span class="w"> </span><span class="m">60</span>
+</code></pre></div>
+
+<h2 id="performance-tuning"><a class="toclink" href="#performance-tuning">Performance Tuning</a><a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h2>
+<h3 id="resource-configuration"><a class="toclink" href="#resource-configuration">Resource Configuration</a><a class="headerlink" href="#resource-configuration" title="Permanent link">&para;</a></h3>
+<p>Optimize for your hardware:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Memory settings</span>
+--max-memory<span class="w"> </span><span class="s2">&quot;8GB&quot;</span>
+--memory-fraction<span class="w"> </span><span class="m">0</span>.8
+
+<span class="c1"># CPU settings</span>
+--num-workers<span class="w"> </span><span class="m">4</span>
+--worker-class<span class="w"> </span><span class="s2">&quot;gevent&quot;</span>
+
+<span class="c1"># Network settings</span>
+--connection-pool-size<span class="w"> </span><span class="m">100</span>
+--max-connections<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
+
+<h3 id="benchmark-optimization"><a class="toclink" href="#benchmark-optimization">Benchmark Optimization</a><a class="headerlink" href="#benchmark-optimization" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Sampling optimization</span>
+--sample-size<span class="w"> </span><span class="m">1000</span>
+--sample-strategy<span class="w"> </span><span class="s2">&quot;random&quot;</span>
+
+<span class="c1"># Metrics collection</span>
+--metrics-interval<span class="w"> </span><span class="m">1</span>
+--detailed-metrics<span class="w"> </span><span class="nb">true</span>
+
+<span class="c1"># Result processing</span>
+--compress-results<span class="w"> </span><span class="nb">true</span>
+--save-intermediate<span class="w"> </span><span class="nb">true</span>
+</code></pre></div>
+
+<h2 id="troubleshooting-configuration"><a class="toclink" href="#troubleshooting-configuration">Troubleshooting Configuration</a><a class="headerlink" href="#troubleshooting-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues"><a class="toclink" href="#common-issues">Common Issues</a><a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<h4 id="api-connection-issues"><a class="toclink" href="#api-connection-issues">API Connection Issues</a><a class="headerlink" href="#api-connection-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test API connection</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8082/v1/chat/completions&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;model&quot;:&quot;test&quot;,&quot;messages&quot;:[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;test&quot;}]}&#39;</span>
+</code></pre></div>
+
+<h4 id="tokenizer-issues"><a class="toclink" href="#tokenizer-issues">Tokenizer Issues</a><a class="headerlink" href="#tokenizer-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test tokenizer</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<span class="s2">from transformers import AutoTokenizer</span>
+<span class="s2">tokenizer = AutoTokenizer.from_pretrained(&#39;meta-llama/Llama-2-7b-chat-hf&#39;)</span>
+<span class="s2">print(tokenizer.encode(&#39;test&#39;))</span>
+<span class="s2">&quot;</span>
+</code></pre></div>
+
+<h4 id="dataset-issues"><a class="toclink" href="#dataset-issues">Dataset Issues</a><a class="headerlink" href="#dataset-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Validate dataset</span>
+genai-bench<span class="w"> </span>validate-dataset<span class="w"> </span>--dataset-path<span class="w"> </span><span class="s2">&quot;/path/to/dataset&quot;</span>
+</code></pre></div>
+
+<h3 id="configuration-validation"><a class="toclink" href="#configuration-validation">Configuration Validation</a><a class="headerlink" href="#configuration-validation" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Validate configuration</span>
+genai-bench<span class="w"> </span>validate-config<span class="w"> </span>--config<span class="w"> </span>config.yaml
+
+<span class="c1"># Test configuration</span>
+genai-bench<span class="w"> </span>test-config<span class="w"> </span>--config<span class="w"> </span>config.yaml
+</code></pre></div>
+
+<h2 id="best-practices"><a class="toclink" href="#best-practices">Best Practices</a><a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="configuration-management"><a class="toclink" href="#configuration-management">Configuration Management</a><a class="headerlink" href="#configuration-management" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Use Version Control</strong>: Track configuration changes</li>
+<li><strong>Environment Separation</strong>: Use different configs for dev/prod</li>
+<li><strong>Sensitive Data</strong>: Never commit API keys to version control</li>
+<li><strong>Documentation</strong>: Document configuration decisions</li>
+</ol>
+<h3 id="performance-optimization"><a class="toclink" href="#performance-optimization">Performance Optimization</a><a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Start Simple</strong>: Begin with basic configurations</li>
+<li><strong>Gradual Scaling</strong>: Increase complexity step by step</li>
+<li><strong>Monitor Resources</strong>: Watch CPU, memory, and network usage</li>
+<li><strong>Test Thoroughly</strong>: Validate configurations before production use</li>
+</ol>
+<h3 id="security-considerations"><a class="toclink" href="#security-considerations">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>API Key Rotation</strong>: Regularly rotate API keys</li>
+<li><strong>Network Security</strong>: Use secure connections and firewalls</li>
+<li><strong>Access Control</strong>: Limit access to configuration files</li>
+<li><strong>Audit Logging</strong>: Log configuration changes</li>
+</ol>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Read the <a href="../quick-start/">Quick Start Guide</a> to run your first benchmark</li>
+<li>Explore <a href="../../user-guide/tasks/">Tasks and Benchmarks</a> for specific scenarios</li>
+<li>Check out <a href="../../examples/basic-benchmarks/">Examples</a> for practical configurations </li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../installation/" class="btn btn-neutral float-left" title="Installation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../user-guide/overview/" class="btn btn-neutral float-right" title="Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../installation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../user-guide/overview/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

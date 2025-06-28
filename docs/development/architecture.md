@@ -507,6 +507,6 @@ tests/
 
 ## Next Steps
 
-- Explore the [Contributing Guide](contributing.md) for development setup
-- Check out the [Testing Guide](testing.md) for testing practices
-- Review the [API Documentation](../api/overview.md) for detailed interfaces 
+- Read the [Contributing Guide](contributing.md) for development setup
+- Explore the codebase following this architectural overview
+- Start with small contributions to understand the system better 

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Unified, accurate, and beautiful LLM Benchmarking" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>GenAI Bench</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#what-is-genai-bench">What is GenAI Bench?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#live-ui-dashboard">Live UI Dashboard</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#supported-tasks">Supported Tasks</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#documentation-sections">Documentation Sections</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#getting-started">🚀 Getting Started</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#user-guide">📖 User Guide</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#examples">💡 Examples</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#development">🔧 Development</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#community">Community</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#license">License</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="getting-started/configuration/">Configuration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/overview/">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/cli/">Command Line Interface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/tasks/">Tasks and Benchmarks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="user-guide/analysis/">Results Analysis</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="examples/basic-benchmarks/">Basic Benchmarks</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="api/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="development/contributing/">Contributing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="development/architecture/">Architecture</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/index.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="genai-bench"><a class="toclink" href="#genai-bench">GenAI Bench</a><a class="headerlink" href="#genai-bench" title="Permanent link">&para;</a></h1>
+<p><img src="assets/logo.png" alt="GenAI Bench Logo" width="150"></p>
+<p><strong>Unified, accurate, and beautiful LLM Benchmarking</strong></p>
+<p><a href="https://pypi.org/project/genai-bench/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/genai-bench" /></a>
+<a href="https://github.com/sgl-project/genai-bench"><img alt="Python versions" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fsgl-project%2Fgenai-bench%2Fmain%2Fpyproject.toml" /></a>
+<a href="https://github.com/sgl-project/genai-bench"><img alt="Types - Mypy" src="https://img.shields.io/badge/types-mypy-blue" /></a>
+<a href="https://github.com/sgl-project/genai-bench"><img alt="Coverage - coverage" src="https://img.shields.io/badge/coverage-93%25-brightgreen" /></a>
+<a href="https://github.com/sgl-project/genai-bench/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/sgl-project/genai-bench" /></a></p>
+<hr />
+<h2 id="what-is-genai-bench"><a class="toclink" href="#what-is-genai-bench">What is GenAI Bench?</a><a class="headerlink" href="#what-is-genai-bench" title="Permanent link">&para;</a></h2>
+<p>Genai-bench is a powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems.</p>
+<p>It provides detailed insights into model serving performance, offering both a user-friendly CLI and a live UI for real-time progress monitoring.</p>
+<h2 id="live-ui-dashboard"><a class="toclink" href="#live-ui-dashboard">Live UI Dashboard</a><a class="headerlink" href="#live-ui-dashboard" title="Permanent link">&para;</a></h2>
+<p>GenAI Bench includes a real-time dashboard that provides live monitoring of your benchmarks:</p>
+<p><img alt="GenAI Bench UI Dashboard" src="assets/ui_dashboard.png" /></p>
+<h2 id="key-features"><a class="toclink" href="#key-features">Key Features</a><a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+<ul>
+<li>🛠️ <strong>CLI Tool</strong>: Validates user inputs and initiates benchmarks seamlessly.</li>
+<li>📊 <strong>Live UI Dashboard</strong>: Displays current progress, logs, and real-time metrics.</li>
+<li>📝 <strong>Rich Logs</strong>: Automatically flushed to both terminal and file upon experiment completion.</li>
+<li>📈 <strong>Experiment Analyzer</strong>: Generates comprehensive Excel reports with pricing and raw metrics data, plus flexible plot configurations (default 2x4 grid) that visualize key performance metrics including throughput, latency (TTFT, E2E, TPOT), error rates, and RPS across different traffic scenarios and concurrency levels. Supports custom plot layouts and multi-line comparisons.</li>
+</ul>
+<h2 id="quick-start"><a class="toclink" href="#quick-start">Quick Start</a><a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>Get started with GenAI Bench in minutes:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Install from PyPI</span>
+pip<span class="w"> </span>install<span class="w"> </span>genai-bench
+
+<span class="c1"># Run your first benchmark</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
+</code></pre></div>
+
+<p>For detailed installation and usage instructions, see our <a href="getting-started/quick-start/">Getting Started Guide</a>.</p>
+<h2 id="supported-tasks"><a class="toclink" href="#supported-tasks">Supported Tasks</a><a class="headerlink" href="#supported-tasks" title="Permanent link">&para;</a></h2>
+<p>GenAI Bench supports multiple benchmark types:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Description</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text-to-text</code></td>
+<td>Benchmarks generating text output from text input</td>
+<td>Chat, QA</td>
+</tr>
+<tr>
+<td><code>text-to-embeddings</code></td>
+<td>Benchmarks generating embeddings from text input</td>
+<td>Semantic search</td>
+</tr>
+<tr>
+<td><code>image-text-to-text</code></td>
+<td>Benchmarks generating text from images and text prompts</td>
+<td>Visual question answering</td>
+</tr>
+<tr>
+<td><code>image-to-embeddings</code></td>
+<td>Benchmarks generating embeddings from images</td>
+<td>Image similarity</td>
+</tr>
+</tbody>
+</table>
+<h2 id="documentation-sections"><a class="toclink" href="#documentation-sections">Documentation Sections</a><a class="headerlink" href="#documentation-sections" title="Permanent link">&para;</a></h2>
+<h3 id="getting-started"><a class="toclink" href="#getting-started">🚀 Getting Started</a><a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="getting-started/quick-start/">Quick Start</a> - Get up and running in minutes</li>
+<li><a href="getting-started/installation/">Installation</a> - Detailed installation guide</li>
+<li><a href="getting-started/configuration/">Configuration</a> - Configure your environment</li>
+</ul>
+<h3 id="user-guide"><a class="toclink" href="#user-guide">📖 User Guide</a><a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="user-guide/overview/">Overview</a> - Understanding GenAI Bench concepts</li>
+<li><a href="user-guide/cli/">CLI Reference</a> - Complete command-line interface guide</li>
+<li><a href="user-guide/tasks/">Tasks &amp; Benchmarks</a> - Running different types of benchmarks</li>
+<li><a href="user-guide/analysis/">Analysis</a> - Understanding your results</li>
+</ul>
+<h3 id="examples"><a class="toclink" href="#examples">💡 Examples</a><a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="examples/basic-benchmarks/">Basic Benchmarks</a> - Simple benchmark examples</li>
+</ul>
+<h3 id="development"><a class="toclink" href="#development">🔧 Development</a><a class="headerlink" href="#development" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="development/contributing/">Contributing</a> - How to contribute to GenAI Bench</li>
+<li><a href="development/architecture/">Architecture</a> - Understanding the codebase</li>
+<li><a href="api/overview/">API Reference</a> - Developer documentation</li>
+</ul>
+<h2 id="community"><a class="toclink" href="#community">Community</a><a class="headerlink" href="#community" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>GitHub</strong>: <a href="https://github.com/sgl-project/genai-bench">sgl-project/genai-bench</a></li>
+<li><strong>PyPI</strong>: <a href="https://pypi.org/project/genai-bench/">genai-bench</a></li>
+<li><strong>Issues</strong>: <a href="https://github.com/sgl-project/genai-bench/issues">GitHub Issues</a></li>
+</ul>
+<h2 id="license"><a class="toclink" href="#license">License</a><a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
+<p>This project is licensed under the MIT License - see the <a href="https://github.com/sgl-project/genai-bench/blob/main/LICENSE">LICENSE</a> file for details. </p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="getting-started/quick-start/" class="btn btn-neutral float-right" title="Quick Start">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+    
+      <span><a href="getting-started/quick-start/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-06-28 05:46:32.162970+00:00
+-->

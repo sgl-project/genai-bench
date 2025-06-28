@@ -561,5 +561,5 @@ genai-bench test-config --config config.yaml
 ## Next Steps
 
 - Read the [Quick Start Guide](quick-start.md) to run your first benchmark
-- Explore [Tasks and Benchmarks](user-guide/tasks.md) for specific scenarios
-- Check out [Examples](examples/basic-benchmarks.md) for practical configurations 
+- Explore [Tasks and Benchmarks](../user-guide/tasks.md) for specific scenarios
+- Check out [Examples](../examples/basic-benchmarks.md) for practical configurations 

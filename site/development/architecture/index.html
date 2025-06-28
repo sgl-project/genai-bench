@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/development/architecture/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Architecture - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Architecture";
+        var mkdocs_page_input_path = "development/architecture.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/development/architecture/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/configuration/">Configuration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/overview/">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cli/">Command Line Interface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/tasks/">Tasks and Benchmarks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/analysis/">Results Analysis</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/basic-benchmarks/">Basic Benchmarks</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Architecture</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#design-principles">Design Principles</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-modularity">1. Modularity</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-scalability">2. Scalability</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-extensibility">3. Extensibility</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-reliability">4. Reliability</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#system-architecture">System Architecture</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-cli-interface-genai_benchcli">1. CLI Interface (genai_bench/cli/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-benchmark-orchestrator-genai_bench">2. Benchmark Orchestrator (genai_bench/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-task-management-genai_bench">3. Task Management (genai_bench/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-user-pool-management-genai_benchuser">4. User Pool Management (genai_bench/user/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#5-api-backend-abstraction-genai_benchuser">5. API Backend Abstraction (genai_bench/user/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#6-metrics-collection-genai_benchmetrics">6. Metrics Collection (genai_bench/metrics/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#7-dataset-management-genai_benchsampling">7. Dataset Management (genai_bench/sampling/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#8-traffic-scenarios-genai_benchscenarios">8. Traffic Scenarios (genai_bench/scenarios/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#9-authentication-genai_benchauth">9. Authentication (genai_bench/auth/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#10-analysis-reporting-genai_benchanalysis">10. Analysis &amp; Reporting (genai_bench/analysis/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#11-web-ui-genai_benchui">11. Web UI (genai_bench/ui/)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#12-distributed-execution-genai_benchdistributed">12. Distributed Execution (genai_bench/distributed/)</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-flow">Data Flow</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-benchmark-initialization">1. Benchmark Initialization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-benchmark-execution">2. Benchmark Execution</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-result-processing">3. Result Processing</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#key-design-patterns">Key Design Patterns</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-strategy-pattern">1. Strategy Pattern</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-observer-pattern">2. Observer Pattern</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-factory-pattern">3. Factory Pattern</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-command-pattern">4. Command Pattern</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-management">Configuration Management</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-sources">Configuration Sources</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration-flow">Configuration Flow</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#error-handling-strategy">Error Handling Strategy</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#error-types">Error Types</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#error-handling-approach">Error Handling Approach</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-considerations">Performance Considerations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#optimization-areas">Optimization Areas</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#monitoring">Monitoring</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#security-considerations">Security Considerations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#security-measures">Security Measures</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#testing-architecture">Testing Architecture</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#test-types">Test Types</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#test-structure">Test Structure</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#deployment-architecture">Deployment Architecture</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deployment-options">Deployment Options</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scalability-patterns">Scalability Patterns</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extension-points">Extension Points</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#adding-new-backends">Adding New Backends</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#adding-new-metrics">Adding New Metrics</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#adding-new-tasks">Adding New Tasks</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#future-architecture-considerations">Future Architecture Considerations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#planned-improvements">Planned Improvements</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scalability-roadmap">Scalability Roadmap</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices-for-developers">Best Practices for Developers</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#code-organization">Code Organization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#performance">Performance</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#maintainability">Maintainability</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#debugging-tools">Debugging Tools</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Development</li>
+      <li class="breadcrumb-item active">Architecture</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/development/architecture.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="architecture-guide"><a class="toclink" href="#architecture-guide">Architecture Guide</a><a class="headerlink" href="#architecture-guide" title="Permanent link">&para;</a></h1>
+<p>This guide provides an overview of GenAI Bench's architecture, design principles, and key components to help developers understand the system and contribute effectively.</p>
+<h2 id="overview"><a class="toclink" href="#overview">Overview</a><a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>GenAI Bench is a comprehensive benchmarking framework for Generative AI APIs that focuses on performance, scalability, and ease of use. The architecture is designed to be modular, extensible, and capable of handling various types of AI workloads.</p>
+<h2 id="design-principles"><a class="toclink" href="#design-principles">Design Principles</a><a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h2>
+<h3 id="1-modularity"><a class="toclink" href="#1-modularity">1. Modularity</a><a class="headerlink" href="#1-modularity" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Separation of concerns</strong>: Each component has a specific responsibility</li>
+<li><strong>Pluggable architecture</strong>: Easy to add new backends, metrics, or tasks</li>
+<li><strong>Clean interfaces</strong>: Well-defined APIs between components</li>
+</ul>
+<h3 id="2-scalability"><a class="toclink" href="#2-scalability">2. Scalability</a><a class="headerlink" href="#2-scalability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Concurrent execution</strong>: Support for multiple users and requests</li>
+<li><strong>Distributed testing</strong>: Ability to run across multiple machines</li>
+<li><strong>Resource efficiency</strong>: Optimized for both small and large-scale testing</li>
+</ul>
+<h3 id="3-extensibility"><a class="toclink" href="#3-extensibility">3. Extensibility</a><a class="headerlink" href="#3-extensibility" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Backend agnostic</strong>: Support for multiple API providers</li>
+<li><strong>Task flexibility</strong>: Easy to add new task types</li>
+<li><strong>Metric customization</strong>: Extensible metrics collection</li>
+</ul>
+<h3 id="4-reliability"><a class="toclink" href="#4-reliability">4. Reliability</a><a class="headerlink" href="#4-reliability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Error handling</strong>: Robust error recovery and reporting</li>
+<li><strong>Data integrity</strong>: Accurate metrics collection and storage</li>
+<li><strong>Reproducibility</strong>: Consistent results across runs</li>
+</ul>
+<h2 id="system-architecture"><a class="toclink" href="#system-architecture">System Architecture</a><a class="headerlink" href="#system-architecture" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────────────────────────┐
+│                        GenAI Bench                         │
+├─────────────────────────────────────────────────────────────┤
+│  CLI Interface  │  Web UI  │  Configuration Management     │
+├─────────────────┼──────────┼───────────────────────────────┤
+│                 │          │                               │
+│   Benchmark     │   Task   │    Traffic Scenario          │
+│   Orchestrator  │ Manager  │      Management               │
+│                 │          │                               │
+├─────────────────┼──────────┼───────────────────────────────┤
+│                 │          │                               │
+│   User Pool     │ Dataset  │     Metrics Collection        │
+│   Management    │ Loader   │      &amp; Analysis               │
+│                 │          │                               │
+├─────────────────┼──────────┼───────────────────────────────┤
+│                 │          │                               │
+│   API Backend   │ Auth     │     Result Storage &amp;          │
+│   Abstraction   │ Manager  │      Reporting                │
+│                 │          │                               │
+└─────────────────┴──────────┴───────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │   External APIs │
+                    │ (OpenAI, Cohere,│
+                    │  vLLM, etc.)    │
+                    └─────────────────┘
+</code></pre></div>
+
+<h2 id="core-components"><a class="toclink" href="#core-components">Core Components</a><a class="headerlink" href="#core-components" title="Permanent link">&para;</a></h2>
+<h3 id="1-cli-interface-genai_benchcli"><a class="toclink" href="#1-cli-interface-genai_benchcli">1. CLI Interface (<code>genai_bench/cli/</code>)</a><a class="headerlink" href="#1-cli-interface-genai_benchcli" title="Permanent link">&para;</a></h3>
+<p>The command-line interface is the primary entry point for users.</p>
+<p><strong>Key Files:</strong>
+- <code>main.py</code>: Main CLI entry point
+- <code>benchmark.py</code>: Benchmark command implementation
+- <code>export.py</code>: Export functionality
+- <code>plot.py</code>: Plotting commands</p>
+<p><strong>Responsibilities:</strong>
+- Parse command-line arguments
+- Validate configuration
+- Orchestrate benchmark execution
+- Handle user interactions</p>
+<h3 id="2-benchmark-orchestrator-genai_bench"><a class="toclink" href="#2-benchmark-orchestrator-genai_bench">2. Benchmark Orchestrator (<code>genai_bench/</code>)</a><a class="headerlink" href="#2-benchmark-orchestrator-genai_bench" title="Permanent link">&para;</a></h3>
+<p>The core orchestration logic that coordinates all components.</p>
+<p><strong>Key Files:</strong>
+- <code>benchmark.py</code>: Main benchmark orchestration
+- <code>locust_benchmark.py</code>: Locust-based load testing</p>
+<p><strong>Responsibilities:</strong>
+- Initialize and configure components
+- Manage benchmark lifecycle
+- Coordinate user simulation
+- Handle distributed execution</p>
+<h3 id="3-task-management-genai_bench"><a class="toclink" href="#3-task-management-genai_bench">3. Task Management (<code>genai_bench/</code>)</a><a class="headerlink" href="#3-task-management-genai_bench" title="Permanent link">&para;</a></h3>
+<p>Handles different types of AI tasks and their execution.</p>
+<p><strong>Task Types:</strong>
+- Text-to-text generation
+- Text-to-embeddings
+- Image-text-to-text (vision)
+- Image-to-embeddings</p>
+<p><strong>Responsibilities:</strong>
+- Task definition and validation
+- Request formatting
+- Response processing
+- Task-specific metrics</p>
+<h3 id="4-user-pool-management-genai_benchuser"><a class="toclink" href="#4-user-pool-management-genai_benchuser">4. User Pool Management (<code>genai_bench/user/</code>)</a><a class="headerlink" href="#4-user-pool-management-genai_benchuser" title="Permanent link">&para;</a></h3>
+<p>Simulates concurrent users making API requests.</p>
+<p><strong>Key Files:</strong>
+- <code>base_user.py</code>: Base user class
+- <code>openai_user.py</code>: OpenAI API user
+- <code>cohere_user.py</code>: Cohere API user</p>
+<p><strong>Responsibilities:</strong>
+- User simulation
+- Request execution
+- Error handling
+- Response collection</p>
+<h3 id="5-api-backend-abstraction-genai_benchuser"><a class="toclink" href="#5-api-backend-abstraction-genai_benchuser">5. API Backend Abstraction (<code>genai_bench/user/</code>)</a><a class="headerlink" href="#5-api-backend-abstraction-genai_benchuser" title="Permanent link">&para;</a></h3>
+<p>Provides a unified interface for different API providers.</p>
+<p><strong>Supported Backends:</strong>
+- OpenAI-compatible APIs
+- Cohere API
+- OCI Cohere API
+- Custom backends</p>
+<p><strong>Responsibilities:</strong>
+- API client management
+- Request formatting
+- Response parsing
+- Error handling</p>
+<h3 id="6-metrics-collection-genai_benchmetrics"><a class="toclink" href="#6-metrics-collection-genai_benchmetrics">6. Metrics Collection (<code>genai_bench/metrics/</code>)</a><a class="headerlink" href="#6-metrics-collection-genai_benchmetrics" title="Permanent link">&para;</a></h3>
+<p>Collects, processes, and analyzes performance metrics.</p>
+<p><strong>Key Files:</strong>
+- <code>metrics.py</code>: Core metrics definitions
+- <code>analysis.py</code>: Analysis utilities</p>
+<p><strong>Metric Types:</strong>
+- Latency metrics (TTFT, E2E)
+- Throughput metrics
+- Token metrics
+- Error rates
+- Custom metrics</p>
+<p><strong>Responsibilities:</strong>
+- Real-time metrics collection
+- Statistical analysis
+- Aggregation and summarization
+- Export formatting</p>
+<h3 id="7-dataset-management-genai_benchsampling"><a class="toclink" href="#7-dataset-management-genai_benchsampling">7. Dataset Management (<code>genai_bench/sampling/</code>)</a><a class="headerlink" href="#7-dataset-management-genai_benchsampling" title="Permanent link">&para;</a></h3>
+<p>Handles dataset loading and tokenization.</p>
+<p><strong>Key Files:</strong>
+- <code>tokenizer.py</code>: Tokenization utilities
+- <code>dataset_loader.py</code>: Dataset loading logic</p>
+<p><strong>Dataset Types:</strong>
+- Built-in datasets (sonnet.txt, etc.)
+- Custom text datasets
+- Vision datasets
+- Hugging Face datasets</p>
+<p><strong>Responsibilities:</strong>
+- Dataset loading and validation
+- Tokenization and preprocessing
+- Sampling strategies
+- Format conversion</p>
+<h3 id="8-traffic-scenarios-genai_benchscenarios"><a class="toclink" href="#8-traffic-scenarios-genai_benchscenarios">8. Traffic Scenarios (<code>genai_bench/scenarios/</code>)</a><a class="headerlink" href="#8-traffic-scenarios-genai_benchscenarios" title="Permanent link">&para;</a></h3>
+<p>Defines different traffic patterns for testing.</p>
+<p><strong>Scenario Types:</strong>
+- Constant load
+- Burst traffic
+- Ramp-up patterns
+- Custom scenarios</p>
+<p><strong>Responsibilities:</strong>
+- Traffic pattern definition
+- User spawn rate control
+- Load distribution
+- Timing coordination</p>
+<h3 id="9-authentication-genai_benchauth"><a class="toclink" href="#9-authentication-genai_benchauth">9. Authentication (<code>genai_bench/auth/</code>)</a><a class="headerlink" href="#9-authentication-genai_benchauth" title="Permanent link">&para;</a></h3>
+<p>Manages authentication for different API providers.</p>
+<p><strong>Key Files:</strong>
+- <code>auth.py</code>: Authentication utilities
+- Provider-specific auth modules</p>
+<p><strong>Responsibilities:</strong>
+- API key management
+- Token refresh
+- Authentication validation
+- Security handling</p>
+<h3 id="10-analysis-reporting-genai_benchanalysis"><a class="toclink" href="#10-analysis-reporting-genai_benchanalysis">10. Analysis &amp; Reporting (<code>genai_bench/analysis/</code>)</a><a class="headerlink" href="#10-analysis-reporting-genai_benchanalysis" title="Permanent link">&para;</a></h3>
+<p>Processes results and generates reports.</p>
+<p><strong>Key Files:</strong>
+- <code>analysis.py</code>: Analysis utilities
+- <code>plotting.py</code>: Visualization tools
+- <code>export.py</code>: Export functionality</p>
+<p><strong>Responsibilities:</strong>
+- Result processing
+- Statistical analysis
+- Report generation
+- Visualization creation</p>
+<h3 id="11-web-ui-genai_benchui"><a class="toclink" href="#11-web-ui-genai_benchui">11. Web UI (<code>genai_bench/ui/</code>)</a><a class="headerlink" href="#11-web-ui-genai_benchui" title="Permanent link">&para;</a></h3>
+<p>Provides a web interface for monitoring and control.</p>
+<p><strong>Responsibilities:</strong>
+- Real-time monitoring
+- Interactive control
+- Result visualization
+- Configuration management</p>
+<h3 id="12-distributed-execution-genai_benchdistributed"><a class="toclink" href="#12-distributed-execution-genai_benchdistributed">12. Distributed Execution (<code>genai_bench/distributed/</code>)</a><a class="headerlink" href="#12-distributed-execution-genai_benchdistributed" title="Permanent link">&para;</a></h3>
+<p>Enables distributed benchmarking across multiple machines.</p>
+<p><strong>Responsibilities:</strong>
+- Cluster coordination
+- Load distribution
+- Result aggregation
+- Fault tolerance</p>
+<h2 id="data-flow"><a class="toclink" href="#data-flow">Data Flow</a><a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
+<h3 id="1-benchmark-initialization"><a class="toclink" href="#1-benchmark-initialization">1. Benchmark Initialization</a><a class="headerlink" href="#1-benchmark-initialization" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>Configuration → Validation → Component Setup → Dataset Loading
+</code></pre></div>
+
+<h3 id="2-benchmark-execution"><a class="toclink" href="#2-benchmark-execution">2. Benchmark Execution</a><a class="headerlink" href="#2-benchmark-execution" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>User Spawn → Request Generation → API Calls → Response Collection → Metrics Recording
+</code></pre></div>
+
+<h3 id="3-result-processing"><a class="toclink" href="#3-result-processing">3. Result Processing</a><a class="headerlink" href="#3-result-processing" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>Raw Metrics → Aggregation → Analysis → Report Generation → Export
+</code></pre></div>
+
+<h2 id="key-design-patterns"><a class="toclink" href="#key-design-patterns">Key Design Patterns</a><a class="headerlink" href="#key-design-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="1-strategy-pattern"><a class="toclink" href="#1-strategy-pattern">1. Strategy Pattern</a><a class="headerlink" href="#1-strategy-pattern" title="Permanent link">&para;</a></h3>
+<p>Used for pluggable backends and metrics:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">APIBackend</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenAIBackend</span><span class="p">(</span><span class="n">APIBackend</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="c1"># OpenAI-specific implementation</span>
+        <span class="k">pass</span>
+</code></pre></div>
+
+<h3 id="2-observer-pattern"><a class="toclink" href="#2-observer-pattern">2. Observer Pattern</a><a class="headerlink" href="#2-observer-pattern" title="Permanent link">&para;</a></h3>
+<p>Used for metrics collection:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MetricsCollector</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observer</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">observer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observers</span><span class="p">:</span>
+            <span class="n">observer</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="3-factory-pattern"><a class="toclink" href="#3-factory-pattern">3. Factory Pattern</a><a class="headerlink" href="#3-factory-pattern" title="Permanent link">&para;</a></h3>
+<p>Used for creating users and backends:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UserFactory</span><span class="p">:</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">backend_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseUser</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">backend_type</span> <span class="o">==</span> <span class="s2">&quot;openai&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">OpenAIUser</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">backend_type</span> <span class="o">==</span> <span class="s2">&quot;cohere&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">CohereUser</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="c1"># ...</span>
+</code></pre></div>
+
+<h3 id="4-command-pattern"><a class="toclink" href="#4-command-pattern">4. Command Pattern</a><a class="headerlink" href="#4-command-pattern" title="Permanent link">&para;</a></h3>
+<p>Used for CLI command handling:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkCommand</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Execute benchmark logic</span>
+        <span class="k">pass</span>
+</code></pre></div>
+
+<h2 id="configuration-management"><a class="toclink" href="#configuration-management">Configuration Management</a><a class="headerlink" href="#configuration-management" title="Permanent link">&para;</a></h2>
+<h3 id="configuration-sources"><a class="toclink" href="#configuration-sources">Configuration Sources</a><a class="headerlink" href="#configuration-sources" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Command-line arguments</strong>: Highest priority</li>
+<li><strong>Environment variables</strong>: Medium priority</li>
+<li><strong>Configuration files</strong>: Lowest priority</li>
+<li><strong>Defaults</strong>: Fallback values</li>
+</ol>
+<h3 id="configuration-flow"><a class="toclink" href="#configuration-flow">Configuration Flow</a><a class="headerlink" href="#configuration-flow" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>CLI Args → Env Vars → Config Files → Defaults → Validation → Final Config
+</code></pre></div>
+
+<h2 id="error-handling-strategy"><a class="toclink" href="#error-handling-strategy">Error Handling Strategy</a><a class="headerlink" href="#error-handling-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="error-types"><a class="toclink" href="#error-types">Error Types</a><a class="headerlink" href="#error-types" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Configuration errors</strong>: Invalid settings</li>
+<li><strong>Network errors</strong>: API connectivity issues</li>
+<li><strong>Authentication errors</strong>: Invalid credentials</li>
+<li><strong>Rate limiting</strong>: API quota exceeded</li>
+<li><strong>Timeout errors</strong>: Request timeouts</li>
+<li><strong>Data errors</strong>: Invalid datasets or responses</li>
+</ol>
+<h3 id="error-handling-approach"><a class="toclink" href="#error-handling-approach">Error Handling Approach</a><a class="headerlink" href="#error-handling-approach" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Graceful degradation</strong>: Continue when possible</li>
+<li><strong>Detailed logging</strong>: Comprehensive error information</li>
+<li><strong>User feedback</strong>: Clear error messages</li>
+<li><strong>Recovery mechanisms</strong>: Retry logic and fallbacks</li>
+</ol>
+<h2 id="performance-considerations"><a class="toclink" href="#performance-considerations">Performance Considerations</a><a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="optimization-areas"><a class="toclink" href="#optimization-areas">Optimization Areas</a><a class="headerlink" href="#optimization-areas" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Concurrent execution</strong>: Async/await patterns</li>
+<li><strong>Memory management</strong>: Efficient data structures</li>
+<li><strong>Network optimization</strong>: Connection pooling</li>
+<li><strong>CPU optimization</strong>: Efficient algorithms</li>
+<li><strong>I/O optimization</strong>: Batched operations</li>
+</ol>
+<h3 id="monitoring"><a class="toclink" href="#monitoring">Monitoring</a><a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Resource usage</strong>: CPU, memory, network</li>
+<li><strong>Performance metrics</strong>: Latency, throughput</li>
+<li><strong>Error rates</strong>: Success/failure ratios</li>
+<li><strong>System health</strong>: Component status</li>
+</ol>
+<h2 id="security-considerations"><a class="toclink" href="#security-considerations">Security Considerations</a><a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="security-measures"><a class="toclink" href="#security-measures">Security Measures</a><a class="headerlink" href="#security-measures" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>API key protection</strong>: Secure storage and transmission</li>
+<li><strong>Input validation</strong>: Sanitize all inputs</li>
+<li><strong>Network security</strong>: HTTPS/TLS enforcement</li>
+<li><strong>Access control</strong>: Authentication and authorization</li>
+<li><strong>Data privacy</strong>: Secure data handling</li>
+</ol>
+<h2 id="testing-architecture"><a class="toclink" href="#testing-architecture">Testing Architecture</a><a class="headerlink" href="#testing-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="test-types"><a class="toclink" href="#test-types">Test Types</a><a class="headerlink" href="#test-types" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Unit tests</strong>: Component-level testing</li>
+<li><strong>Integration tests</strong>: Component interaction testing</li>
+<li><strong>End-to-end tests</strong>: Full workflow testing</li>
+<li><strong>Performance tests</strong>: Benchmark validation</li>
+<li><strong>Security tests</strong>: Vulnerability testing</li>
+</ol>
+<h3 id="test-structure"><a class="toclink" href="#test-structure">Test Structure</a><a class="headerlink" href="#test-structure" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>tests/
+├── unit/           # Unit tests
+├── integration/    # Integration tests
+├── e2e/           # End-to-end tests
+├── fixtures/      # Test data
+└── conftest.py    # Pytest configuration
+</code></pre></div>
+
+<h2 id="deployment-architecture"><a class="toclink" href="#deployment-architecture">Deployment Architecture</a><a class="headerlink" href="#deployment-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="deployment-options"><a class="toclink" href="#deployment-options">Deployment Options</a><a class="headerlink" href="#deployment-options" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Local installation</strong>: Single machine setup</li>
+<li><strong>Docker containers</strong>: Containerized deployment</li>
+<li><strong>Kubernetes</strong>: Orchestrated deployment</li>
+<li><strong>Cloud platforms</strong>: Managed services</li>
+</ol>
+<h3 id="scalability-patterns"><a class="toclink" href="#scalability-patterns">Scalability Patterns</a><a class="headerlink" href="#scalability-patterns" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Horizontal scaling</strong>: Multiple instances</li>
+<li><strong>Vertical scaling</strong>: Resource increase</li>
+<li><strong>Load balancing</strong>: Request distribution</li>
+<li><strong>Caching</strong>: Result caching</li>
+</ol>
+<h2 id="extension-points"><a class="toclink" href="#extension-points">Extension Points</a><a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
+<h3 id="adding-new-backends"><a class="toclink" href="#adding-new-backends">Adding New Backends</a><a class="headerlink" href="#adding-new-backends" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Implement <code>BaseUser</code> interface</li>
+<li>Add backend-specific configuration</li>
+<li>Register in factory</li>
+<li>Add tests and documentation</li>
+</ol>
+<h3 id="adding-new-metrics"><a class="toclink" href="#adding-new-metrics">Adding New Metrics</a><a class="headerlink" href="#adding-new-metrics" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Implement metric collection logic</li>
+<li>Add to metrics registry</li>
+<li>Update analysis tools</li>
+<li>Add visualization support</li>
+</ol>
+<h3 id="adding-new-tasks"><a class="toclink" href="#adding-new-tasks">Adding New Tasks</a><a class="headerlink" href="#adding-new-tasks" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Define task interface</li>
+<li>Implement request/response handling</li>
+<li>Add task-specific metrics</li>
+<li>Update documentation</li>
+</ol>
+<h2 id="future-architecture-considerations"><a class="toclink" href="#future-architecture-considerations">Future Architecture Considerations</a><a class="headerlink" href="#future-architecture-considerations" title="Permanent link">&para;</a></h2>
+<h3 id="planned-improvements"><a class="toclink" href="#planned-improvements">Planned Improvements</a><a class="headerlink" href="#planned-improvements" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Plugin system</strong>: Dynamic component loading</li>
+<li><strong>Configuration UI</strong>: Web-based configuration</li>
+<li><strong>Real-time streaming</strong>: Live metrics streaming</li>
+<li><strong>ML integration</strong>: Automated analysis</li>
+<li><strong>Cloud native</strong>: Kubernetes operators</li>
+</ol>
+<h3 id="scalability-roadmap"><a class="toclink" href="#scalability-roadmap">Scalability Roadmap</a><a class="headerlink" href="#scalability-roadmap" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Microservices</strong>: Service decomposition</li>
+<li><strong>Event streaming</strong>: Async communication</li>
+<li><strong>Data pipeline</strong>: Streaming analytics</li>
+<li><strong>Multi-region</strong>: Global deployment</li>
+</ol>
+<h2 id="best-practices-for-developers"><a class="toclink" href="#best-practices-for-developers">Best Practices for Developers</a><a class="headerlink" href="#best-practices-for-developers" title="Permanent link">&para;</a></h2>
+<h3 id="code-organization"><a class="toclink" href="#code-organization">Code Organization</a><a class="headerlink" href="#code-organization" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Single responsibility</strong>: One purpose per module</li>
+<li><strong>Clear interfaces</strong>: Well-defined APIs</li>
+<li><strong>Dependency injection</strong>: Loose coupling</li>
+<li><strong>Error handling</strong>: Comprehensive coverage</li>
+</ol>
+<h3 id="performance"><a class="toclink" href="#performance">Performance</a><a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Async patterns</strong>: Non-blocking operations</li>
+<li><strong>Resource pooling</strong>: Efficient resource use</li>
+<li><strong>Caching</strong>: Appropriate caching strategies</li>
+<li><strong>Profiling</strong>: Regular performance analysis</li>
+</ol>
+<h3 id="maintainability"><a class="toclink" href="#maintainability">Maintainability</a><a class="headerlink" href="#maintainability" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Documentation</strong>: Comprehensive docs</li>
+<li><strong>Testing</strong>: High test coverage</li>
+<li><strong>Logging</strong>: Structured logging</li>
+<li><strong>Monitoring</strong>: Observability</li>
+</ol>
+<h2 id="troubleshooting"><a class="toclink" href="#troubleshooting">Troubleshooting</a><a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues"><a class="toclink" href="#common-issues">Common Issues</a><a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Import errors</strong>: Module path issues</li>
+<li><strong>Configuration errors</strong>: Invalid settings</li>
+<li><strong>Network issues</strong>: Connectivity problems</li>
+<li><strong>Performance issues</strong>: Resource constraints</li>
+</ol>
+<h3 id="debugging-tools"><a class="toclink" href="#debugging-tools">Debugging Tools</a><a class="headerlink" href="#debugging-tools" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Logging</strong>: Debug-level logging</li>
+<li><strong>Profiling</strong>: Performance profiling</li>
+<li><strong>Monitoring</strong>: System monitoring</li>
+<li><strong>Testing</strong>: Isolated testing</li>
+</ol>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Read the <a href="../contributing/">Contributing Guide</a> for development setup</li>
+<li>Explore the codebase following this architectural overview</li>
+<li>Start with small contributions to understand the system better </li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../contributing/" class="btn btn-neutral float-left" title="Contributing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../contributing/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

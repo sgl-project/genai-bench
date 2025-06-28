@@ -361,11 +361,11 @@ Error: Dataset format not compatible with task 'image-text-to-text'
 ### Getting Help
 
 - Check the [CLI Reference](cli.md) for detailed command options
-- Review [Examples](examples/basic-benchmarks.md) for practical scenarios
+- Review [Examples](../examples/basic-benchmarks.md) for practical scenarios
 - Open an [issue](https://github.com/sgl-project/genai-bench/issues) for bugs
 
 ## Next Steps
 
-- Learn about [Traffic Scenarios](scenarios.md) for load testing
-- Explore [Results Analysis](analysis.md) for understanding metrics
-- Check out [Examples](examples/basic-benchmarks.md) for practical use cases 
+- Learn about [Results Analysis](analysis.md) for understanding metrics
+- Explore [Examples](../examples/basic-benchmarks.md) for practical use cases
+- Check out the [CLI Reference](cli.md) for complete command documentation 

@@ -310,11 +310,11 @@ Error: Invalid plot configuration
 ### Getting Help
 
 - Check the [CLI Reference](cli.md) for command options
-- Review [Examples](examples/basic-benchmarks.md) for analysis patterns
+- Review [Examples](../examples/basic-benchmarks.md) for analysis patterns
 - Open an [issue](https://github.com/sgl-project/genai-bench/issues) for bugs
 
 ## Next Steps
 
-- Learn about [Traffic Scenarios](scenarios.md) for load testing
-- Explore [Examples](examples/basic-benchmarks.md) for practical analysis
-- Check out [API Reference](api/core.md) for programmatic access 
+- Learn about [Traffic Scenarios](tasks.md) for load testing
+- Explore [Examples](../examples/basic-benchmarks.md) for practical analysis
+- Check out [API Reference](../api/overview.md) for programmatic access 

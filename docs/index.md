@@ -1,8 +1,6 @@
-# Welcome to GenAI Bench
+# GenAI Bench
 
-<div align="center">
-
-![GenAI Bench Logo](assets/logo.png){ width="200" }
+<img src="assets/logo.png" alt="GenAI Bench Logo" width="150">
 
 **Unified, accurate, and beautiful LLM Benchmarking**
 
@@ -12,45 +10,26 @@
 [![Coverage - coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/sgl-project/genai-bench)
 [![License](https://img.shields.io/github/license/sgl-project/genai-bench)](https://github.com/sgl-project/genai-bench/blob/main/LICENSE)
 
-</div>
+---
 
 ## What is GenAI Bench?
 
-GenAI Bench is a powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems. It provides detailed insights into model serving performance, offering both a user-friendly CLI and a live UI for real-time progress monitoring.
+Genai-bench is a powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems.
+
+It provides detailed insights into model serving performance, offering both a user-friendly CLI and a live UI for real-time progress monitoring.
+
+## Live UI Dashboard
+
+GenAI Bench includes a real-time dashboard that provides live monitoring of your benchmarks:
+
+![GenAI Bench UI Dashboard](assets/ui_dashboard.png)
 
 ## Key Features
 
-<div class="grid" markdown>
-
-<div class="cell" markdown>
-
-### 🛠️ CLI Tool
-Validates user inputs and initiates benchmarks seamlessly with comprehensive command-line options.
-
-</div>
-
-<div class="cell" markdown>
-
-### 📊 Live UI Dashboard
-Displays current progress, logs, and real-time metrics for monitoring benchmark execution.
-
-</div>
-
-<div class="cell" markdown>
-
-### 📝 Rich Logging
-Automatically flushed to both terminal and file upon experiment completion with detailed metrics.
-
-</div>
-
-<div class="cell" markdown>
-
-### 📈 Advanced Analysis
-Generates comprehensive Excel reports with pricing and raw metrics data, plus flexible plot configurations.
-
-</div>
-
-</div>
+- 🛠️ **CLI Tool**: Validates user inputs and initiates benchmarks seamlessly.
+- 📊 **Live UI Dashboard**: Displays current progress, logs, and real-time metrics.
+- 📝 **Rich Logs**: Automatically flushed to both terminal and file upon experiment completion.
+- 📈 **Experiment Analyzer**: Generates comprehensive Excel reports with pricing and raw metrics data, plus flexible plot configurations (default 2x4 grid) that visualize key performance metrics including throughput, latency (TTFT, E2E, TPOT), error rates, and RPS across different traffic scenarios and concurrency levels. Supports custom plot layouts and multi-line comparisons.
 
 ## Quick Start
 
@@ -72,25 +51,17 @@ GenAI Bench supports multiple benchmark types:
 
 | Task | Description | Use Case |
 |------|-------------|----------|
-| `text-to-text` | Generate text from text input | Chat, QA, summarization |
-| `text-to-embeddings` | Generate embeddings from text | Semantic search, similarity |
-| `image-text-to-text` | Generate text from images + text | Visual QA, image understanding |
-| `image-to-embeddings` | Generate embeddings from images | Image similarity, search |
+| `text-to-text` | Benchmarks generating text output from text input | Chat, QA |
+| `text-to-embeddings` | Benchmarks generating embeddings from text input | Semantic search |
+| `image-text-to-text` | Benchmarks generating text from images and text prompts | Visual question answering |
+| `image-to-embeddings` | Benchmarks generating embeddings from images | Image similarity |
 
 ## Documentation Sections
-
-<div class="grid" markdown>
-
-<div class="cell" markdown>
 
 ### 🚀 Getting Started
 - [Quick Start](getting-started/quick-start.md) - Get up and running in minutes
 - [Installation](getting-started/installation.md) - Detailed installation guide
 - [Configuration](getting-started/configuration.md) - Configure your environment
-
-</div>
-
-<div class="cell" markdown>
 
 ### 📖 User Guide
 - [Overview](user-guide/overview.md) - Understanding GenAI Bench concepts
@@ -98,27 +69,13 @@ GenAI Bench supports multiple benchmark types:
 - [Tasks & Benchmarks](user-guide/tasks.md) - Running different types of benchmarks
 - [Analysis](user-guide/analysis.md) - Understanding your results
 
-</div>
-
-<div class="cell" markdown>
-
 ### 💡 Examples
 - [Basic Benchmarks](examples/basic-benchmarks.md) - Simple benchmark examples
-- [Advanced Configurations](examples/advanced-configs.md) - Complex scenarios
-- [Plot Configurations](examples/plot-configs.md) - Customizing visualizations
-
-</div>
-
-<div class="cell" markdown>
 
 ### 🔧 Development
 - [Contributing](development/contributing.md) - How to contribute to GenAI Bench
 - [Architecture](development/architecture.md) - Understanding the codebase
-- [API Reference](api/core.md) - Developer documentation
-
-</div>
-
-</div>
+- [API Reference](api/overview.md) - Developer documentation
 
 ## Community
 

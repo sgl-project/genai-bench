@@ -458,7 +458,7 @@ genai-bench benchmark \
 
 ## Next Steps
 
-- Explore [Advanced Configurations](advanced-configs.md) for complex scenarios
-- Learn about [Plot Configurations](plot-configs.md) for custom visualizations
-- Check out [Dataset Configurations](dataset-configs.md) for data management
-- Read the [User Guide](user-guide/overview.md) for detailed explanations 
+- Read the [User Guide](../user-guide/overview.md) for detailed explanations
+- Learn about [Tasks and Benchmarks](../user-guide/tasks.md) for different task types
+- Check out [Results Analysis](../user-guide/analysis.md) for understanding your metrics
+- Explore the [CLI Reference](../user-guide/cli.md) for complete command documentation 

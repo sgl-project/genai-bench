@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/examples/basic-benchmarks/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Basic Benchmarks - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Basic Benchmarks";
+        var mkdocs_page_input_path = "examples/basic-benchmarks.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/examples/basic-benchmarks/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/configuration/">Configuration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/overview/">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/cli/">Command Line Interface</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/tasks/">Tasks and Benchmarks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/analysis/">Results Analysis</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Basic Benchmarks</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start-examples">Quick Start Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-1-simple-text-to-text-benchmark">Example 1: Simple Text-to-Text Benchmark</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-2-embeddings-benchmark">Example 2: Embeddings Benchmark</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-3-vision-benchmark">Example 3: Vision Benchmark</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#production-ready-examples">Production-Ready Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-4-load-testing">Example 4: Load Testing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-5-model-comparison">Example 5: Model Comparison</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-6-traffic-pattern-testing">Example 6: Traffic Pattern Testing</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#api-specific-examples">API-Specific Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-7-openai-api">Example 7: OpenAI API</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-8-cohere-api">Example 8: Cohere API</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-9-oci-cohere">Example 9: OCI Cohere</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-dataset-examples">Custom Dataset Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-10-custom-text-dataset">Example 10: Custom Text Dataset</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-11-hugging-face-dataset">Example 11: Hugging Face Dataset</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-examples">Advanced Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-12-parameter-tuning">Example 12: Parameter Tuning</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-13-tokenizer-configuration">Example 13: Tokenizer Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-14-server-information">Example 14: Server Information</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#analysis-examples">Analysis Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-15-generate-excel-report">Example 15: Generate Excel Report</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-16-custom-plots">Example 16: Custom Plots</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting-examples">Troubleshooting Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#example-17-debug-mode">Example 17: Debug Mode</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-18-test-connection">Example 18: Test Connection</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#before-running-benchmarks">Before Running Benchmarks</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#during-benchmarks">During Benchmarks</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#after-benchmarks">After Benchmarks</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">Overview</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/architecture/">Architecture</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Examples</li>
+      <li class="breadcrumb-item active">Basic Benchmarks</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/examples/basic-benchmarks.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="basic-benchmarks"><a class="toclink" href="#basic-benchmarks">Basic Benchmarks</a><a class="headerlink" href="#basic-benchmarks" title="Permanent link">&para;</a></h1>
+<p>This guide provides practical examples of basic benchmarks you can run with GenAI Bench to get started quickly.</p>
+<h2 id="quick-start-examples"><a class="toclink" href="#quick-start-examples">Quick Start Examples</a><a class="headerlink" href="#quick-start-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-1-simple-text-to-text-benchmark"><a class="toclink" href="#example-1-simple-text-to-text-benchmark">Example 1: Simple Text-to-Text Benchmark</a><a class="headerlink" href="#example-1-simple-text-to-text-benchmark" title="Permanent link">&para;</a></h3>
+<p>Run a basic chat completion benchmark:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span>
+</code></pre></div>
+
+<p><strong>What this does:</strong>
+- Connects to a local vLLM server
+- Runs a 2-user benchmark for 60 seconds
+- Uses the built-in sonnet dataset
+- Generates text completions</p>
+<h3 id="example-2-embeddings-benchmark"><a class="toclink" href="#example-2-embeddings-benchmark">Example 2: Embeddings Benchmark</a><a class="headerlink" href="#example-2-embeddings-benchmark" title="Permanent link">&para;</a></h3>
+<p>Test embedding generation performance:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-embeddings<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;sonnet.txt&quot;</span>
+</code></pre></div>
+
+<p><strong>What this does:</strong>
+- Tests embedding generation
+- Uses 5 concurrent users
+- Runs for 2 minutes
+- Measures embedding latency and throughput</p>
+<h3 id="example-3-vision-benchmark"><a class="toclink" href="#example-3-vision-benchmark">Example 3: Vision Benchmark</a><a class="headerlink" href="#example-3-vision-benchmark" title="Permanent link">&para;</a></h3>
+<p>Test image-text understanding:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-api-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llava-1.5-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>image-text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">180</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;vision_dataset&quot;</span>
+</code></pre></div>
+
+<p><strong>What this does:</strong>
+- Tests vision-language model
+- Uses single user (vision models are typically slower)
+- Runs for 3 minutes
+- Processes images with text prompts</p>
+<h2 id="production-ready-examples"><a class="toclink" href="#production-ready-examples">Production-Ready Examples</a><a class="headerlink" href="#production-ready-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-4-load-testing"><a class="toclink" href="#example-4-load-testing">Example 4: Load Testing</a><a class="headerlink" href="#example-4-load-testing" title="Permanent link">&para;</a></h3>
+<p>Test system performance under load:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;https://your-production-api.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-production-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-4&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--spawn-rate<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">600</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-requests-per-run<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;production_prompts.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--ui<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./production-benchmark&quot;</span>
+</code></pre></div>
+
+<p><strong>What this does:</strong>
+- Tests production API endpoint
+- Gradually ramps up to 20 users
+- Runs for 10 minutes
+- Limits to 2000 requests
+- Enables UI dashboard
+- Saves results to specific directory</p>
+<h3 id="example-5-model-comparison"><a class="toclink" href="#example-5-model-comparison">Example 5: Model Comparison</a><a class="headerlink" href="#example-5-model-comparison" title="Permanent link">&para;</a></h3>
+<p>Compare multiple models:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Benchmark Model A</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/llama-2-7b&quot;</span>
+
+<span class="c1"># Benchmark Model B</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;mistral-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/mistral-7b&quot;</span>
+
+<span class="c1"># Generate comparison</span>
+genai-bench<span class="w"> </span>plot<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--experiment-dirs<span class="w"> </span><span class="s2">&quot;./experiments/llama-2-7b,./experiments/mistral-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-file<span class="w"> </span><span class="s2">&quot;model_comparison.png&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group-by<span class="w"> </span><span class="s2">&quot;api_model_name&quot;</span>
+</code></pre></div>
+
+<h3 id="example-6-traffic-pattern-testing"><a class="toclink" href="#example-6-traffic-pattern-testing">Example 6: Traffic Pattern Testing</a><a class="headerlink" href="#example-6-traffic-pattern-testing" title="Permanent link">&para;</a></h3>
+<p>Test different traffic scenarios:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Constant load</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--traffic-scenario<span class="w"> </span>constant<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/constant&quot;</span>
+
+<span class="c1"># Burst traffic</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--traffic-scenario<span class="w"> </span>burst<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--spawn-rate<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/burst&quot;</span>
+
+<span class="c1"># Ramp-up traffic</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--traffic-scenario<span class="w"> </span>ramp<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--spawn-rate<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/ramp&quot;</span>
+</code></pre></div>
+
+<h2 id="api-specific-examples"><a class="toclink" href="#api-specific-examples">API-Specific Examples</a><a class="headerlink" href="#api-specific-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-7-openai-api"><a class="toclink" href="#example-7-openai-api">Example 7: OpenAI API</a><a class="headerlink" href="#example-7-openai-api" title="Permanent link">&para;</a></h3>
+<p>Test against OpenAI's hosted API:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;https://api.openai.com/v1&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;sk-your-openai-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--temperature<span class="w"> </span><span class="m">0</span>.7<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-tokens<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+
+<h3 id="example-8-cohere-api"><a class="toclink" href="#example-8-cohere-api">Example 8: Cohere API</a><a class="headerlink" href="#example-8-cohere-api" title="Permanent link">&para;</a></h3>
+<p>Test against Cohere's API:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>cohere<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;https://api.cohere.ai&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-cohere-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;command-r-plus&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h3 id="example-9-oci-cohere"><a class="toclink" href="#example-9-oci-cohere">Example 9: OCI Cohere</a><a class="headerlink" href="#example-9-oci-cohere" title="Permanent link">&para;</a></h3>
+<p>Test against Oracle Cloud Infrastructure Cohere:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>oci_cohere<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;https://inference.generativeai.us-chicago-1.oci.oraclecloud.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-oci-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;cohere.command-r-plus&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h2 id="custom-dataset-examples"><a class="toclink" href="#custom-dataset-examples">Custom Dataset Examples</a><a class="headerlink" href="#custom-dataset-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-10-custom-text-dataset"><a class="toclink" href="#example-10-custom-text-dataset">Example 10: Custom Text Dataset</a><a class="headerlink" href="#example-10-custom-text-dataset" title="Permanent link">&para;</a></h3>
+<p>Use your own prompts:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Create custom dataset</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>my_prompts.txt<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">What is machine learning?</span>
+<span class="s">Explain the benefits of cloud computing.</span>
+<span class="s">Write a short story about a robot.</span>
+<span class="s">How does blockchain technology work?</span>
+<span class="s">EOF</span>
+
+<span class="c1"># Run benchmark with custom dataset</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-path<span class="w"> </span><span class="s2">&quot;./my_prompts.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">180</span>
+</code></pre></div>
+
+<h3 id="example-11-hugging-face-dataset"><a class="toclink" href="#example-11-hugging-face-dataset">Example 11: Hugging Face Dataset</a><a class="headerlink" href="#example-11-hugging-face-dataset" title="Permanent link">&para;</a></h3>
+<p>Use a dataset from Hugging Face:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-name<span class="w"> </span><span class="s2">&quot;squad&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-split<span class="w"> </span><span class="s2">&quot;train&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dataset-column<span class="w"> </span><span class="s2">&quot;question&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h2 id="advanced-examples"><a class="toclink" href="#advanced-examples">Advanced Examples</a><a class="headerlink" href="#advanced-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-12-parameter-tuning"><a class="toclink" href="#example-12-parameter-tuning">Example 12: Parameter Tuning</a><a class="headerlink" href="#example-12-parameter-tuning" title="Permanent link">&para;</a></h3>
+<p>Test different generation parameters:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Conservative generation</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--temperature<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-tokens<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--top-p<span class="w"> </span><span class="m">0</span>.9<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/conservative&quot;</span>
+
+<span class="c1"># Creative generation</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--temperature<span class="w"> </span><span class="m">0</span>.9<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-tokens<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--top-p<span class="w"> </span><span class="m">0</span>.95<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dir<span class="w"> </span><span class="s2">&quot;./experiments/creative&quot;</span>
+</code></pre></div>
+
+<h3 id="example-13-tokenizer-configuration"><a class="toclink" href="#example-13-tokenizer-configuration">Example 13: Tokenizer Configuration</a><a class="headerlink" href="#example-13-tokenizer-configuration" title="Permanent link">&para;</a></h3>
+<p>Use specific tokenizer for accurate token counting:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-tokenizer<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h3 id="example-14-server-information"><a class="toclink" href="#example-14-server-information">Example 14: Server Information</a><a class="headerlink" href="#example-14-server-information" title="Permanent link">&para;</a></h3>
+<p>Include server details for analysis:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--server-engine<span class="w"> </span><span class="s2">&quot;vLLM&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--server-gpu-type<span class="w"> </span><span class="s2">&quot;H100&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--server-model-size<span class="w"> </span><span class="s2">&quot;7B&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--server-batch-size<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">300</span>
+</code></pre></div>
+
+<h2 id="analysis-examples"><a class="toclink" href="#analysis-examples">Analysis Examples</a><a class="headerlink" href="#analysis-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-15-generate-excel-report"><a class="toclink" href="#example-15-generate-excel-report">Example 15: Generate Excel Report</a><a class="headerlink" href="#example-15-generate-excel-report" title="Permanent link">&para;</a></h3>
+<p>Create detailed Excel report:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>excel<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--experiment-dir<span class="w"> </span><span class="s2">&quot;./experiments/my-benchmark&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-file<span class="w"> </span><span class="s2">&quot;detailed_report.xlsx&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--include-raw-data<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--include-pricing
+</code></pre></div>
+
+<h3 id="example-16-custom-plots"><a class="toclink" href="#example-16-custom-plots">Example 16: Custom Plots</a><a class="headerlink" href="#example-16-custom-plots" title="Permanent link">&para;</a></h3>
+<p>Generate custom visualizations:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Create plot configuration</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>plot_config.yaml<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">layout:</span>
+<span class="s">  rows: 2</span>
+<span class="s">  cols: 2</span>
+
+<span class="s">plots:</span>
+<span class="s">  - title: &quot;Throughput vs Concurrency&quot;</span>
+<span class="s">    type: &quot;line&quot;</span>
+<span class="s">    x_axis: &quot;num_users&quot;</span>
+<span class="s">    y_axis: &quot;mean_total_tokens_throughput&quot;</span>
+
+<span class="s">  - title: &quot;Latency vs Concurrency&quot;</span>
+<span class="s">    type: &quot;line&quot;</span>
+<span class="s">    x_axis: &quot;num_users&quot;</span>
+<span class="s">    y_axis: &quot;mean_e2e_latency&quot;</span>
+
+<span class="s">  - title: &quot;Error Rate&quot;</span>
+<span class="s">    type: &quot;bar&quot;</span>
+<span class="s">    x_axis: &quot;num_users&quot;</span>
+<span class="s">    y_axis: &quot;error_rate&quot;</span>
+
+<span class="s">  - title: &quot;Token Distribution&quot;</span>
+<span class="s">    type: &quot;histogram&quot;</span>
+<span class="s">    x_axis: &quot;num_output_tokens&quot;</span>
+<span class="s">    bins: 20</span>
+<span class="s">EOF</span>
+
+<span class="c1"># Generate plots</span>
+genai-bench<span class="w"> </span>plot<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--experiment-dirs<span class="w"> </span><span class="s2">&quot;./experiments/model1,./experiments/model2&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-file<span class="w"> </span><span class="s2">&quot;comparison.png&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--plot-config<span class="w"> </span><span class="s2">&quot;plot_config.yaml&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group-by<span class="w"> </span><span class="s2">&quot;api_model_name&quot;</span>
+</code></pre></div>
+
+<h2 id="troubleshooting-examples"><a class="toclink" href="#troubleshooting-examples">Troubleshooting Examples</a><a class="headerlink" href="#troubleshooting-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-17-debug-mode"><a class="toclink" href="#example-17-debug-mode">Example 17: Debug Mode</a><a class="headerlink" href="#example-17-debug-mode" title="Permanent link">&para;</a></h3>
+<p>Run with detailed logging:</p>
+<div class="codehilite"><pre><span></span><code>genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--log-level<span class="w"> </span>DEBUG<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">60</span>
+</code></pre></div>
+
+<h3 id="example-18-test-connection"><a class="toclink" href="#example-18-test-connection">Example 18: Test Connection</a><a class="headerlink" href="#example-18-test-connection" title="Permanent link">&para;</a></h3>
+<p>Test API connectivity:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test with minimal configuration</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-backend<span class="w"> </span>openai<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-base<span class="w"> </span><span class="s2">&quot;http://localhost:8082&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-key<span class="w"> </span><span class="s2">&quot;your-key&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--api-model-name<span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>text-to-text<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num-users<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-time-per-run<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-requests-per-run<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+
+<h2 id="best-practices"><a class="toclink" href="#best-practices">Best Practices</a><a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="before-running-benchmarks"><a class="toclink" href="#before-running-benchmarks">Before Running Benchmarks</a><a class="headerlink" href="#before-running-benchmarks" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Test API Connection</strong>: Ensure your API endpoint is accessible</li>
+<li><strong>Check Resources</strong>: Verify sufficient CPU, memory, and network capacity</li>
+<li><strong>Start Small</strong>: Begin with low concurrency and short duration</li>
+<li><strong>Monitor System</strong>: Watch system resources during benchmarks</li>
+</ol>
+<h3 id="during-benchmarks"><a class="toclink" href="#during-benchmarks">During Benchmarks</a><a class="headerlink" href="#during-benchmarks" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Use UI Dashboard</strong>: Monitor real-time progress at <code>http://localhost:8089</code></li>
+<li><strong>Check Logs</strong>: Monitor logs for errors or warnings</li>
+<li><strong>Resource Monitoring</strong>: Watch CPU, memory, and network usage</li>
+<li><strong>Error Analysis</strong>: Pay attention to error rates and types</li>
+</ol>
+<h3 id="after-benchmarks"><a class="toclink" href="#after-benchmarks">After Benchmarks</a><a class="headerlink" href="#after-benchmarks" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Generate Reports</strong>: Create Excel reports for detailed analysis</li>
+<li><strong>Create Plots</strong>: Visualize results for better understanding</li>
+<li><strong>Compare Results</strong>: Compare with previous benchmarks</li>
+<li><strong>Document Findings</strong>: Record configuration and results</li>
+</ol>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Read the <a href="../../user-guide/overview/">User Guide</a> for detailed explanations</li>
+<li>Learn about <a href="../../user-guide/tasks/">Tasks and Benchmarks</a> for different task types</li>
+<li>Check out <a href="../../user-guide/analysis/">Results Analysis</a> for understanding your metrics</li>
+<li>Explore the <a href="../../user-guide/cli/">CLI Reference</a> for complete command documentation </li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../user-guide/analysis/" class="btn btn-neutral float-left" title="Results Analysis"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../api/overview/" class="btn btn-neutral float-right" title="Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../../user-guide/analysis/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../api/overview/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

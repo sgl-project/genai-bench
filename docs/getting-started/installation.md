@@ -193,5 +193,5 @@ If you encounter issues:
 After successful installation:
 
 1. Read the [Quick Start Guide](quick-start.md) to run your first benchmark
-2. Explore the [User Guide](user-guide/overview.md) for detailed usage
-3. Check out [Examples](examples/basic-benchmarks.md) for practical scenarios 
+2. Explore the [User Guide](../user-guide/overview.md) for detailed usage
+3. Check out [Examples](../examples/basic-benchmarks.md) for practical scenarios 
