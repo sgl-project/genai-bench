@@ -7,7 +7,7 @@ Welcome and thank you for your interest in contributing to genai-bench.
 genai-bench uses python 3.11, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
 
 We use `make format` to format our code using `isort` and `ruff`. The detailed configuration can be found in
-[pyproject.toml](pyproject.toml).
+[pyproject.toml](https://github.com/sgl-project/genai-bench/blob/main/pyproject.toml).
 
 ## Pull Requests
 
@@ -109,7 +109,7 @@ This guide explains how to add support for a new task in `genai-bench`. Follow t
 
 ### Steps
 
-1. Add relevant fields to the appropriate request/response data classes in [`protocol.py`](genai_bench/protocol.py)
+1. Add relevant fields to the appropriate request/response data classes in [`protocol.py`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/protocol.py)
 2. If the new task involves a new input-output modality, create a new request/response class.
 3. Use existing request/response classes (`UserChatRequest`, `UserEmbeddingRequest`, `UserImageChatRequest`, etc.) if they suffice.
 
@@ -129,14 +129,14 @@ class UserTextToImageRequest(UserRequest):
 
 ### 2.1 If Input Modality Is Supported by an Existing Sampler
 
-1. Check if the current [`TextSampler`](genai_bench/sampling/text_sampler.py) or [`ImageSampler`](genai_bench/sampling/image_sampler.py) supports the input-modality.
+1. Check if the current [`TextSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/text_sampler.py) or [`ImageSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/image_sampler.py) supports the input-modality.
 2. Add request creation logic in the relevant `TextSampler` or `ImageSampler` class.
 3. Refactor the sampler's `_create_request` method to support the new task.
 4. **Tip:** Avoid adding long `if-else` chains for new tasks. Utilize helper methods or design a request creator pattern if needed.
 
 ### 2.2 If Input Modality Is Not Supported
 
-1. Create a new sampler class inheriting from [`BaseSampler`](genai_bench/sampling/base_sampler.py).
+1. Create a new sampler class inheriting from [`BaseSampler`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/base_sampler.py).
 2. Define the `sample` method to generate requests for the new task.
 3. Refer to `TextSampler` and `ImageSampler` for implementation patterns.
 4. Add utility functions for data preprocessing or validation specific to the new modality if necessary.
@@ -164,7 +164,7 @@ class AudioSampler(Sampler):
 
 ## 3. Add Task Support in the User Class
 
-Each `User` corresponds to one API backend, such as [`OpenAIUser`](genai_bench/user/openai_user.py) for OpenAI. Users can have multiple tasks, each corresponding to an endpoint.
+Each `User` corresponds to one API backend, such as [`OpenAIUser`](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/user/openai_user.py) for OpenAI. Users can have multiple tasks, each corresponding to an endpoint.
 
 ### Steps
 
@@ -213,6 +213,6 @@ class OpenAIUser(BaseUser):
 
 ### Steps
 
-1. Add the new task to the list of supported tasks in [`USER_GUIDE.md#task-definition`](USER_GUIDE.md#task-definition).
+1. Add the new task to the list of supported tasks in the [Task Definition guide](../getting-started/task-definition.md).
 2. Provide sample commands and explain any required configuration changes.
-3. Mention the new task in `CONTRIBUTING.md` for future developers.
+3. Mention the new task in this contributing guide for future developers.

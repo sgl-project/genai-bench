@@ -1,0 +1,68 @@
+site_name: GenAI Bench
+site_description: Unified, accurate, and beautiful LLM Benchmarking
+site_author: GenAI Bench Team
+site_url: https://sgl-project.github.io/genai-bench/
+
+
+# Repository
+repo_name: sgl-project/genai-bench
+repo_url: https://github.com/sgl-project/genai-bench
+edit_uri: edit/main/docs/
+
+# Theme
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - python
+    - bash
+    - json
+  navigation_depth: 2
+  include_homepage_in_sidebar: true
+  prev_next_buttons_location: bottom
+  style_external_links: true
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Command Guidelines: getting-started/command-guidelines.md
+    - Task Definition: getting-started/task-definition.md
+    - Metrics Definition: getting-started/metrics-definition.md
+  - User Guide:
+    - Run Benchmark: user-guide/run-benchmark.md
+    - Run Benchmark with Docker: user-guide/run-benchmark-using-docker.md
+    - Generate Excel Sheet: user-guide/generate-excel-sheet.md
+    - Generate Plot: user-guide/generate-plot.md
+    - Upload Benchmark Results: user-guide/upload-benchmark-result.md
+  - Examples:
+    - Plot Config Examples: examples/ plot-config-examples.md
+  - Development:
+    - Contributing: development/contributing.md
+
+# Plugins
+plugins:
+  - search
+
+# Markdown extensions
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - footnotes
+  - meta
+  - toc:
+      anchorlink: true
+      permalink: true
+      title: On this page
+  - tables
+  - fenced_code
+
+# Extra
+extra:
+  version: 1.0.0
+
+# Copyright
+copyright: Copyright &copy; 2024 GenAI Bench Team 
