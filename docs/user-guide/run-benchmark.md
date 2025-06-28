@@ -133,7 +133,7 @@ genai-bench benchmark --api-backend oci-cohere \
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.
 
-## Specify --traffic-scenario and --num-concurrency
+### Specify --traffic-scenario and --num-concurrency
 
 **IMPORTANT**: Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency`
 and `--traffic-scenario`.
@@ -152,7 +152,7 @@ genai-bench benchmark \
 ```
 
 
-## Notes on specific options
+### Notes on specific options
 
 To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. You can find more details in the `manage_run_time` function located in [utils.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py). Combination of `--max-time-per-run` and `--max-requests-per-run` should save overall time of one benchmark.
 
@@ -197,7 +197,7 @@ To address this, you can increase the number of worker processes using the `--nu
 
 This distributes the load across multiple processes on a single machine, improving performance and ensuring your benchmark runs smoothly.
 
-## Notes on Usage
+### Notes on Usage
 
 1. This feature is experimental, so monitor the system's behavior when enabling multiple workers.
 2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
@@ -208,7 +208,7 @@ This distributes the load across multiple processes on a single machine, improvi
 ## Using Dataset Configurations
 Genai-bench supports flexible dataset configurations through two approaches:
 
-## Simple CLI Usage (for basic datasets)
+### Simple CLI Usage (for basic datasets)
 ```shell
 # Local CSV file
 --dataset-path /path/to/data.csv \
@@ -222,7 +222,7 @@ Genai-bench supports flexible dataset configurations through two approaches:
 --dataset-path /path/to/prompts.txt
 ```
 
-## Advanced Configuration Files (for complex setups)
+### Advanced Configuration Files (for complex setups)
 For advanced HuggingFace configurations, create a JSON config file:
 
 **Important Note for HuggingFace Datasets:**

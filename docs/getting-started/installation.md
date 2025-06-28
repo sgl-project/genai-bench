@@ -50,7 +50,7 @@ Pull the latest docker image:
 docker pull ghcr.io/moirai-internal/genai-bench:v0.0.1
 ```
 
-### Building from Source
+#### Building from Source
 
 Alternatively, you can build the image locally from the [Dockerfile](https://github.com/sgl-project/genai-bench/blob/main/Dockerfile):
 
