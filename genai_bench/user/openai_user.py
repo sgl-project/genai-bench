@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional
 import requests
 from requests import Response
 
-from genai_bench.auth.auth_provider import AuthProvider
+from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
@@ -34,14 +34,14 @@ class OpenAIUser(BaseUser):
     }
 
     host: Optional[str] = None
-    auth_provider: Optional[AuthProvider] = None
+    auth_provider: Optional[ModelAuthProvider] = None
     headers = None
 
     def on_start(self):
         if not self.host or not self.auth_provider:
             raise ValueError("API key and base must be set for OpenAIUser.")
         self.headers = {
-            "Authorization": f"Bearer {self.auth_provider.get_auth_credentials()}",
+            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
             "Content-Type": "application/json",
         }
         super().on_start()

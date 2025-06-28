@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Optional
 import requests
 from requests import Response
 
-from genai_bench.auth.auth_provider import AuthProvider
+from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
@@ -32,7 +32,7 @@ class CohereUser(BaseUser):
     }
 
     host: Optional[str] = None
-    auth_provider: Optional[AuthProvider] = None
+    auth_provider: Optional[ModelAuthProvider] = None
     headers = None
 
     def on_start(self):
@@ -42,7 +42,7 @@ class CohereUser(BaseUser):
         # TODO this is not really auth,
         #  we should fix this later by removing it \_(ツ)_/¯
         self.headers = {
-            "Authorization": f"Bearer {self.auth_provider.get_auth_credentials()}",
+            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
             "Content-Type": "application/json",
         }
 
