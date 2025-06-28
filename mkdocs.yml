@@ -1,0 +1,143 @@
+site_name: GenAI Bench
+site_description: Unified, accurate, and beautiful LLM Benchmarking
+site_author: GenAI Bench Team
+site_url: https://github.com/sgl-project/genai-bench
+
+# Repository
+repo_name: sgl-project/genai-bench
+repo_url: https://github.com/sgl-project/genai-bench
+edit_uri: edit/main/docs/
+
+# Theme
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  palette:
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - User Guide:
+    - Overview: user-guide/overview.md
+    - Command Line Interface: user-guide/cli.md
+    - Tasks and Benchmarks: user-guide/tasks.md
+    - Traffic Scenarios: user-guide/scenarios.md
+    - Monitoring and UI: user-guide/monitoring.md
+    - Results Analysis: user-guide/analysis.md
+  - Examples:
+    - Basic Benchmarks: examples/basic-benchmarks.md
+    - Advanced Configurations: examples/advanced-configs.md
+    - Plot Configurations: examples/plot-configs.md
+    - Dataset Configurations: examples/dataset-configs.md
+  - API Reference:
+    - Core Modules: api/core.md
+    - CLI Commands: api/cli.md
+    - Metrics: api/metrics.md
+    - Sampling: api/sampling.md
+    - Scenarios: api/scenarios.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Architecture: development/architecture.md
+    - Testing: development/testing.md
+    - Building: development/building.md
+
+# Plugins
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [genai_bench]
+          options:
+            show_source: true
+            show_root_heading: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+# Markdown extensions
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - footnotes
+  - meta
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      anchorlink: true
+      permalink: true
+      title: On this page
+
+# Extra
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sgl-project/genai-bench
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/genai-bench/
+
+# Copyright
+copyright: Copyright &copy; 2024 GenAI Bench Team 
