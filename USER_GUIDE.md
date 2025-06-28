@@ -19,7 +19,7 @@
   * [Using Dataset Configurations](#using-dataset-configurations)
 * [Generate an Excel sheet](#generate-an-excel-sheet)
 * [Generate a 2x4 Plot](#generate-a-2x4-plot)
-* [Upload Benchmark Results to OCI Object Storage](#uploading-benchmark-results-to-oci-object-storage)
+* [Uploading Benchmark Results to Cloud Storage](#uploading-benchmark-results-to-oci-object-storage)
 * [Running Benchmark Using `genai-bench` Container](#running-benchmark-using-genai-bench-container)
 
 <!-- TOC end -->
@@ -501,17 +501,28 @@ genai-bench plot --experiments-folder <path-to-experiment-folder> --group-key tr
 
 <!-- TOC --><a name="uploading-benchmark-results-to-oci-object-storage"></a>
 
-## Uploading Benchmark Results to OCI Object Storage
-GenAI Bench supports uploading benchmark results directly to OCI Object Storage. This feature is useful for:
+## Uploading Benchmark Results to Cloud Storage
+
+GenAI Bench supports uploading benchmark results to multiple cloud storage providers. This feature is useful for:
 - Storing benchmark results in a centralized location
 - Sharing results with team members
 - Maintaining a historical record of benchmarks
 - Analyzing results across different runs
 
-To enable result uploading, use the following options with the `benchmark` command:
+### Supported Storage Providers
+- OCI Object Storage (default)
+- AWS S3
+- Azure Blob Storage
+- Google Cloud Storage
+- GitHub Releases
+
+### Method 1: OCI Object Storage (Default - Backward Compatible)
+
+For backward compatibility, when you use `--upload-results` without specifying a storage provider, it defaults to OCI Object Storage:
 
 ```bash
 genai-bench benchmark \
+    --api-backend openai \
     --api-base "http://localhost:8082" \
     --api-key "your-openai-api-key" \
     --api-model-name "vllm-model" \
@@ -526,13 +537,151 @@ genai-bench benchmark \
     --upload-results \
     --bucket "your-bucket-name"
 ```
+
 By default, GenAI Bench uses OCI User Principal for authentication and authorization.
 The default namespace is the current tenancy, and the default region is the current region in which the client is positioned.
 You can override the namespace and region using the `--namespace` and `--region` options, respectively.
 Alternatively, you can change the authentication and authorization mechanism using the `--auth` option.
 The default object prefix is empty, but you can specify a prefix using the `--prefix` option.
 
-<!-- TOC --><a name="running-benchmark-using-genai-bench-container"></a>
+### Method 2: Multi-Cloud Storage (New)
+
+You can now explicitly specify any supported storage provider:
+
+#### AWS S3
+```bash
+genai-bench benchmark \
+    --api-backend openai \
+    --api-base "http://localhost:8082" \
+    --api-key "your-openai-api-key" \
+    --api-model-name "vllm-model" \
+    --task text-to-text \
+    --upload-results \
+    --bucket "my-s3-bucket" \
+    --storage-provider aws \
+    --storage-aws-access-key-id "YOUR_ACCESS_KEY" \
+    --storage-aws-secret-access-key "YOUR_SECRET_KEY" \
+    --storage-aws-region "us-east-1"
+```
+
+#### Azure Blob Storage
+```bash
+genai-bench benchmark \
+    --api-backend openai \
+    --api-base "http://localhost:8082" \
+    --api-key "your-openai-api-key" \
+    --api-model-name "vllm-model" \
+    --task text-to-text \
+    --upload-results \
+    --bucket "my-container" \
+    --storage-provider azure \
+    --storage-azure-account-name "myaccount" \
+    --storage-azure-account-key "YOUR_ACCOUNT_KEY"
+```
+
+#### Google Cloud Storage
+```bash
+genai-bench benchmark \
+    --api-backend gcp-vertex \
+    --gcp-project-id "my-project" \
+    --gcp-credentials-path "/path/to/creds.json" \
+    --api-base "https://us-central1-aiplatform.googleapis.com" \
+    --api-model-name "text-bison" \
+    --task text-to-text \
+    --upload-results \
+    --bucket "my-gcs-bucket" \
+    --storage-provider gcp \
+    --storage-gcp-project-id "storage-project" \
+    --storage-gcp-credentials-path "/path/to/storage-creds.json"
+```
+
+#### GitHub Releases
+```bash
+genai-bench benchmark \
+    --api-backend openai \
+    --api-base "http://localhost:8082" \
+    --api-key "your-openai-api-key" \
+    --api-model-name "vllm-model" \
+    --task text-to-text \
+    --upload-results \
+    --storage-provider github \
+    --github-token "ghp_YOUR_TOKEN" \
+    --github-owner "your-username" \
+    --github-repo "benchmark-results"
+```
+
+### Cross-Cloud Scenarios
+
+You can use different cloud providers for model endpoints and storage. For example, use AWS Bedrock for inference with Azure Blob for storage:
+
+```bash
+genai-bench benchmark \
+    --api-backend aws-bedrock \
+    --aws-access-key-id "BEDROCK_KEY" \
+    --aws-secret-access-key "BEDROCK_SECRET" \
+    --aws-region "us-east-1" \
+    --api-base "https://bedrock-runtime.us-east-1.amazonaws.com" \
+    --api-model-name "anthropic.claude-v2" \
+    --task text-to-text \
+    --upload-results \
+    --bucket "azure-results" \
+    --storage-provider azure \
+    --storage-azure-account-name "myazureaccount" \
+    --storage-azure-account-key "AZURE_KEY"
+```
+
+### Authentication Methods
+
+Each storage provider supports multiple authentication methods:
+
+- **OCI**: User Principal, Instance Principal, Security Token, OBO Token
+- **AWS S3**: IAM Credentials, AWS Profile, STS Tokens
+- **Azure Blob**: Connection String, Account Key, SAS Token, Azure AD
+- **GCP Storage**: Service Account JSON, Access Token
+- **GitHub**: Personal Access Token
+
+<!-- TOC --><a name="authentication-methods"></a>
+
+## Authentication Methods
+
+GenAI Bench supports multiple authentication methods for each cloud provider, allowing you to:
+- Use different cloud providers for models and storage
+- Leverage existing cloud credentials and IAM roles
+- Support both key-based and IAM-based authentication
+- Use environment variables for credential management
+
+### Quick Reference Table
+
+#### Model Providers
+
+| Provider          | Authentication Methods                                                      | Key Parameters                                                                                                   |
+|-------------------|-----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| **OpenAI**        | • API Key                                                                   | `--api-key` or `OPENAI_API_KEY`                                                                                  |
+| **AWS Bedrock**   | • IAM Credentials<br>• AWS Profile<br>• Temporary Credentials (STS)         | `--aws-access-key-id`<br>`--aws-secret-access-key`<br>`--aws-session-token`<br>`--aws-profile`<br>`--aws-region` |
+| **Azure OpenAI**  | • API Key<br>• Azure AD Token                                               | `--model-api-key`<br>`--azure-ad-token`<br>`--azure-endpoint`<br>`--azure-deployment`                            |
+| **GCP Vertex AI** | • Service Account (JSON)<br>• API Key<br>• Application Default Credentials  | `--gcp-project-id`<br>`--gcp-credentials-path`<br>`--model-api-key`<br>`--gcp-location`                          |
+| **OCI**           | • User Principal<br>• Instance Principal<br>• Security Token<br>• OBO Token | `--auth [type]`<br>`--config-file`<br>`--profile`<br>`--security-token`<br>`--region`                            |
+| **vLLM/SGLang**   | • API Key (Optional Bearer Token)                                           | `--api-key`                                                                                                      |
+
+#### Storage Providers
+
+| Provider               | Authentication Methods                                                          | Key Parameters                                                                                                                        |
+|------------------------|---------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| **AWS S3**             | • IAM Credentials<br>• AWS Profile<br>• Temporary Credentials (STS)             | `--storage-aws-access-key-id`<br>`--storage-aws-secret-access-key`<br>`--storage-aws-session-token`<br>`--storage-aws-profile`        |
+| **Azure Blob**         | • Connection String<br>• Account Key<br>• SAS Token<br>• Azure AD               | `--storage-azure-connection-string`<br>`--storage-azure-account-name`<br>`--storage-azure-account-key`<br>`--storage-azure-sas-token` |
+| **GCP Storage**        | • Service Account (JSON)<br>• Access Token<br>• Application Default Credentials | `--storage-gcp-project-id`<br>`--storage-gcp-credentials-path`<br>`--storage-gcp-access-token`                                        |
+| **GitHub**             | • Personal Access Token                                                         | `--github-token`<br>`--github-owner`<br>`--github-repo`                                                                               |
+| **OCI Object Storage** | • Same as OCI Model Provider                                                    | Same as OCI Model Provider                                                                                                            |
+
+### Authentication Priority Order
+
+For most providers, the authentication priority is:
+1. **Explicit CLI parameters** (highest priority)
+2. **Environment variables**
+3. **Configuration files** (AWS/OCI profiles, GCP application default credentials)
+4. **Instance metadata** (for cloud VMs with IAM roles/managed identities)
+
+<!-- TOC --><a name="multi-cloud-authentication-guide"></a>
 
 ## Running Benchmark Using `genai-bench` Container
 

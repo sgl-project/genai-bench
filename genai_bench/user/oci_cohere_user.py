@@ -16,7 +16,7 @@ from oci.generative_ai_inference.models import (
     RerankTextDetails,
 )
 
-from genai_bench.auth.auth_provider import AuthProvider
+from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
@@ -43,7 +43,7 @@ class OCICohereUser(BaseUser):
         "image-to-embeddings": "embeddings",
     }
     host: Optional[str] = None
-    auth_provider: Optional[AuthProvider] = None
+    auth_provider: Optional[ModelAuthProvider] = None
 
     def on_start(self):
         """Initialize OCI client on start."""
@@ -52,7 +52,7 @@ class OCICohereUser(BaseUser):
             raise ValueError("Auth is required for OCICohereUser")
         self.client = GenerativeAiInferenceClient(
             config=self.auth_provider.get_config(),
-            signer=self.auth_provider.get_auth_credentials(),
+            signer=self.auth_provider.get_credentials(),
             service_endpoint=self.host,
         )
         logger.debug("Generative AI Inference Client initialized.")
