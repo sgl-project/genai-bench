@@ -17,7 +17,7 @@ theme:
     - python
     - bash
     - json
-  navigation_depth: 4
+  navigation_depth: 2
   include_homepage_in_sidebar: true
   prev_next_buttons_location: bottom
   style_external_links: true
