@@ -133,7 +133,9 @@ genai-bench benchmark --api-backend oci-cohere \
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.
 
+
 ### Specify --traffic-scenario and --num-concurrency
+
 
 **IMPORTANT**: Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency`
 and `--traffic-scenario`.
@@ -152,7 +154,9 @@ genai-bench benchmark \
 ```
 
 
+
 ### Notes on specific options
+
 
 To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. You can find more details in the `manage_run_time` function located in [utils.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py). Combination of `--max-time-per-run` and `--max-requests-per-run` should save overall time of one benchmark.
 

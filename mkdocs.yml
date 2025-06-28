@@ -3,6 +3,7 @@ site_description: Unified, accurate, and beautiful LLM Benchmarking
 site_author: GenAI Bench Team
 site_url: https://sgl-project.github.io/genai-bench/
 
+
 # Repository
 repo_name: sgl-project/genai-bench
 repo_url: https://github.com/sgl-project/genai-bench
