@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/getting-started/installation/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Installation - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Installation";
+        var mkdocs_page_input_path = "getting-started/installation.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/getting-started/installation/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Installation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#installation-methods">Installation Methods</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#environment-setup">Environment Setup</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../metrics-definition/">Metrics Definition</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark/">Run Benchmark</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-excel-sheet/">Generate Excel Sheet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/upload-benchmark-result/">Upload Benchmark Results</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/%20plot-config-examples/">Plot Config Examples</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Getting Started</li>
+      <li class="breadcrumb-item active">Installation</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/getting-started/installation.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="installation-guide"><a class="toclink" href="#installation-guide">Installation Guide</a><a class="headerlink" href="#installation-guide" title="Permanent link">&para;</a></h1>
+<p>This guide covers all the ways to install GenAI Bench, from simple PyPI installation to full development setup.</p>
+<h2 id="installation-methods"><a class="toclink" href="#installation-methods">Installation Methods</a><a class="headerlink" href="#installation-methods" title="Permanent link">&para;</a></h2>
+<h3 id="method-1-pypi-installation-recommended"><a class="toclink" href="#method-1-pypi-installation-recommended">Method 1: PyPI Installation (Recommended)</a><a class="headerlink" href="#method-1-pypi-installation-recommended" title="Permanent link">&para;</a></h3>
+<p>The simplest way to install GenAI Bench:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>genai-bench
+</code></pre></div>
+
+<p>For a specific version:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>genai-bench<span class="o">==</span><span class="m">0</span>.1.75
+</code></pre></div>
+
+<h3 id="method-2-development-installation"><a class="toclink" href="#method-2-development-installation">Method 2: Development Installation</a><a class="headerlink" href="#method-2-development-installation" title="Permanent link">&para;</a></h3>
+<p>For development or to use the latest features:</p>
+<ol>
+<li>Please make sure you have Python3.11 installed. You can check out online how to set it up.</li>
+<li>Use the virtual environment from uv</li>
+</ol>
+<p>Activate the virtual environment to ensure the dev environment is correctly set up:</p>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span>uv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</code></pre></div>
+
+<ol>
+<li>Install the Project in Editable Mode</li>
+</ol>
+<p>If not already done, install your project in editable mode using make. This ensures that any changes you make are immediately reflected:</p>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span>install
+</code></pre></div>
+
+<h3 id="method-3-docker-installation"><a class="toclink" href="#method-3-docker-installation">Method 3: Docker Installation</a><a class="headerlink" href="#method-3-docker-installation" title="Permanent link">&para;</a></h3>
+<p>For containerized environments:</p>
+<p>Pull the latest docker image:</p>
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/moirai-internal/genai-bench:v0.0.1
+</code></pre></div>
+
+<h3 id="building-from-source"><a class="toclink" href="#building-from-source">Building from Source</a><a class="headerlink" href="#building-from-source" title="Permanent link">&para;</a></h3>
+<p>Alternatively, you can build the image locally from the <a href="https://github.com/sgl-project/genai-bench/blob/main/Dockerfile">Dockerfile</a>:</p>
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>.<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>-t<span class="w"> </span>genai-bench:dev
+</code></pre></div>
+
+<h2 id="verification"><a class="toclink" href="#verification">Verification</a><a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<p>After installation, verify that GenAI Bench is working:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check version</span>
+genai-bench<span class="w"> </span>--version
+
+<span class="c1"># Check help</span>
+genai-bench<span class="w"> </span>--help
+
+<span class="c1"># Check benchmark command</span>
+genai-bench<span class="w"> </span>benchmark<span class="w"> </span>--help
+</code></pre></div>
+
+<h2 id="environment-setup"><a class="toclink" href="#environment-setup">Environment Setup</a><a class="headerlink" href="#environment-setup" title="Permanent link">&para;</a></h2>
+<h3 id="environment-variables"><a class="toclink" href="#environment-variables">Environment Variables</a><a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
+<p>Set these environment variables for optimal performance:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># For Hugging Face tokenizer downloads</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HF_TOKEN</span><span class="o">=</span><span class="s2">&quot;your-huggingface-token&quot;</span>
+
+<span class="c1"># Disable torch warnings (not needed for benchmarking)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TRANSFORMERS_VERBOSITY</span><span class="o">=</span>error
+
+<span class="c1"># Optional: Set log level</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">GENAI_BENCH_LOG_LEVEL</span><span class="o">=</span>INFO
+</code></pre></div>
+
+<h3 id="api-keys"><a class="toclink" href="#api-keys">API Keys</a><a class="headerlink" href="#api-keys" title="Permanent link">&para;</a></h3>
+<p>Depending on your backend, you may need API keys:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI-compatible APIs</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span>
+
+<span class="c1"># Cohere API</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">COHERE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-cohere-key&quot;</span>
+
+<span class="c1"># OCI Cohere</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OCI_CONFIG_FILE</span><span class="o">=</span><span class="s2">&quot;~/.oci/config&quot;</span>
+</code></pre></div>
+
+<h2 id="troubleshooting"><a class="toclink" href="#troubleshooting">Troubleshooting</a><a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues"><a class="toclink" href="#common-issues">Common Issues</a><a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<h4 id="python-version-issues"><a class="toclink" href="#python-version-issues">Python Version Issues</a><a class="headerlink" href="#python-version-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check Python version</span>
+python3<span class="w"> </span>--version
+
+<span class="c1"># If you have multiple Python versions, use specific version</span>
+python3.11<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>genai-bench
+</code></pre></div>
+
+<h4 id="permission-issues"><a class="toclink" href="#permission-issues">Permission Issues</a><a class="headerlink" href="#permission-issues" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Use user installation</span>
+pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>genai-bench
+
+<span class="c1"># Or use virtual environment</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>genai-bench-env
+<span class="nb">source</span><span class="w"> </span>genai-bench-env/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>genai-bench
+</code></pre></div>
+
+<h4 id="missing-dependencies"><a class="toclink" href="#missing-dependencies">Missing Dependencies</a><a class="headerlink" href="#missing-dependencies" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Update pip</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+
+<span class="c1"># Install with all dependencies</span>
+pip<span class="w"> </span>install<span class="w"> </span>genai-bench<span class="o">[</span>dev<span class="o">]</span>
+</code></pre></div>
+
+<h3 id="getting-help"><a class="toclink" href="#getting-help">Getting Help</a><a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h3>
+<p>If you encounter issues:</p>
+<ol>
+<li>Check the <a href="https://github.com/sgl-project/genai-bench/issues">GitHub Issues</a></li>
+<li>Search for similar problems</li>
+<li>Create a new issue with:</li>
+<li>Your operating system and Python version</li>
+<li>Installation method used</li>
+<li>Full error message</li>
+<li>Steps to reproduce</li>
+</ol>
+<h2 id="next-steps"><a class="toclink" href="#next-steps">Next Steps</a><a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>After successful installation:</p>
+<ol>
+<li>Read the <a href="../task-definition/">Task Definition Guide</a> to understand different benchmark tasks</li>
+<li>Explore the <a href="../../user-guide/run-benchmark/">User Guide</a> for detailed usage</li>
+<li>Check out <a href="../command-guidelines/">Command Guidelines</a> for practical scenarios </li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../.." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../task-definition/" class="btn btn-neutral float-right" title="Task Definition">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../.." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../task-definition/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -478,7 +478,7 @@ genai-bench also provides the feature to analyze a finished benchmark. You can c
 genai-bench excel --experiment-folder <path-to-experiment-folder> --excel-name <name-of-the-sheet>
 ```
 
-<!-- TOC --><a name="generate-a-2x3-plot"></a>
+<!-- TOC --><a name="generate-a-2x4-plot"></a>
 
 ## Generate a 2x4 Plot
 

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="GenAI Bench Team" /><link rel="canonical" href="https://github.com/sgl-project/genai-bench/development/contributing/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Contributing - GenAI Bench</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Contributing";
+        var mkdocs_page_input_path = "development/contributing.md";
+        var mkdocs_page_url = "/sgl-project/genai-bench/development/contributing/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GenAI Bench
+        </a>
+        <div class="version">
+          1.0.0
+        </div><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/task-definition/">Task Definition</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/command-guidelines/">Command Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../getting-started/metrics-definition/">Metrics Definition</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark/">Run Benchmark</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/run-benchmark-using-docker/">Run Benchmark with Docker</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-excel-sheet/">Generate Excel Sheet</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/generate-plot/">Generate Plot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../user-guide/upload-benchmark-result/">Upload Benchmark Results</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Examples</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../examples/%20plot-config-examples/">Plot Config Examples</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Contributing</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#coding-style-guide">Coding Style Guide</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pull-requests">Pull Requests</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#setup-development-environment">Setup Development Environment</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GenAI Bench</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Development</li>
+      <li class="breadcrumb-item active">Contributing</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/sgl-project/genai-bench/edit/main/docs/development/contributing.md">Edit on sgl-project/genai-bench</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="contribution-guideline"><a class="toclink" href="#contribution-guideline">Contribution Guideline</a><a class="headerlink" href="#contribution-guideline" title="Permanent link">&para;</a></h1>
+<p>Welcome and thank you for your interest in contributing to genai-bench.</p>
+<h2 id="coding-style-guide"><a class="toclink" href="#coding-style-guide">Coding Style Guide</a><a class="headerlink" href="#coding-style-guide" title="Permanent link">&para;</a></h2>
+<p>genai-bench uses python 3.11, and we adhere to <a href="https://google.github.io/styleguide/pyguide.html">Google Python style guide</a>.</p>
+<p>We use <code>make format</code> to format our code using <code>isort</code> and <code>ruff</code>. The detailed configuration can be found in
+<a href="https://github.com/sgl-project/genai-bench/blob/main/pyproject.toml">pyproject.toml</a>.</p>
+<h2 id="pull-requests"><a class="toclink" href="#pull-requests">Pull Requests</a><a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h2>
+<p>When submitting a pull request, please:</p>
+<ol>
+<li><code>git pull origin main</code> to make sure your code has been rebased on top of the latest commit on the main branch.</li>
+<li>Ensure code is properly formatted and passed every lint checks by running <code>make check</code>.</li>
+<li>Add new test cases to stay robust and correct. In the case of a bug fix, the tests should fail without your code
+changes. For new features, try to cover as many variants as reasonably possible. You can use <code>make test</code> to check the
+test coverage. Or use <code>make test_changed</code> to test the test coverage for your own branch. We enforce to keep a test
+coverage about 90%.</li>
+</ol>
+<h3 id="pr-template"><a class="toclink" href="#pr-template">PR Template</a><a class="headerlink" href="#pr-template" title="Permanent link">&para;</a></h3>
+<p>It is required to classify your PR and make the commit message concise and useful. Prefix the PR title appropriately
+to indicate the type of change. Please use one of the following:</p>
+<p><code>[Bugfix]</code> for bug fixes.</p>
+<p><code>[Core]</code> for core backend changes. This includes build, version upgrade, changes in user and sampling.</p>
+<p><code>[Metrics]</code> for changes made to metrics.</p>
+<p><code>[Frontend]</code> for UI dashboard and CLI entrypoint related changes.</p>
+<p><code>[Docs]</code> for changes related to documentation.</p>
+<p><code>[CI/Tests]</code> for unittests and integration tests.</p>
+<p><code>[Report]</code> for changes in generating plots and excel reports.</p>
+<p><code>[Misc]</code> for PRs that do not fit the above categories. Please use this sparingly.</p>
+<p>Open source community also recommends to keep the commit message title within 52 chars and each line in message content
+within 72 chars.</p>
+<h3 id="code-reviews"><a class="toclink" href="#code-reviews">Code Reviews</a><a class="headerlink" href="#code-reviews" title="Permanent link">&para;</a></h3>
+<p>All submissions, including submissions by project members, require a code review.
+To make the review process as smooth as possible, please:</p>
+<ol>
+<li>Keep your changes as concise as possible.
+   If your pull request involves multiple unrelated changes, consider splitting it into separate pull requests.</li>
+<li>Respond to all comments within a reasonable time frame.
+   If a comment isn't clear,
+   or you disagree with a suggestion, feel free to ask for clarification or discuss the suggestion.</li>
+<li>Provide constructive feedback and meaningful comments. Focus on specific improvements
+   and suggestions that can enhance the code quality or functionality. Remember to
+   acknowledge and respect the work the author has already put into the submission.</li>
+</ol>
+<h2 id="setup-development-environment"><a class="toclink" href="#setup-development-environment">Setup Development Environment</a><a class="headerlink" href="#setup-development-environment" title="Permanent link">&para;</a></h2>
+<h3 id="make"><a class="toclink" href="#make"><code>make</code></a><a class="headerlink" href="#make" title="Permanent link">&para;</a></h3>
+<p>genai-bench utilizes <code>make</code> for a lot of useful commands.</p>
+<p>If your laptop doesn't have <code>GNU make</code> installed, (check this by typing <code>make --version</code> in your terminal),
+you can ask our GenerativeAI's chatbot about how to install it in your system.</p>
+<h3 id="uv"><a class="toclink" href="#uv"><code>uv</code></a><a class="headerlink" href="#uv" title="Permanent link">&para;</a></h3>
+<p>Install uv with <code>make uv</code> or install it from the <a href="https://docs.astral.sh/uv/">official website</a>.
+If installing from the website, create a project venv with <code>uv venv -p python3.11</code>.</p>
+<p>Once you have <code>make</code> and <code>uv</code> installed, you can follow the command below to build genai-bench wheel:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># check out commands genai-bench supports</span>
+make<span class="w"> </span><span class="nb">help</span>
+<span class="c1">#activate virtual env managed by uv</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<span class="c1"># install dependencies</span>
+make<span class="w"> </span>install
+</code></pre></div>
+
+<p>You can utilize wheel to install genai-bench.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># build a .whl under genai-bench/dist</span>
+make<span class="w"> </span>build
+<span class="c1"># send the wheel to your remote machine if applies</span>
+rsync<span class="w"> </span>--delete<span class="w"> </span>-avz<span class="w"> </span>~/genai-bench/dist/&lt;.wheel&gt;<span class="w"> </span>&lt;remote-user&gt;@&lt;remote-ip&gt;:&lt;dest-addr&gt;
+</code></pre></div>
+
+<p>On your remote machine, you can simply use the <code>pip</code> to install genai-bench.</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>&lt;dest-addr&gt;/&lt;.wheel&gt;
+</code></pre></div>
+
+<h1 id="development-guide-adding-a-new-task-in-genai-bench"><a class="toclink" href="#development-guide-adding-a-new-task-in-genai-bench">Development Guide: Adding a New Task in <code>genai-bench</code></a><a class="headerlink" href="#development-guide-adding-a-new-task-in-genai-bench" title="Permanent link">&para;</a></h1>
+<p>This guide explains how to add support for a new task in <code>genai-bench</code>. Follow the steps below to ensure consistency and compatibility with the existing codebase.</p>
+<hr />
+<h2 id="1-define-the-request-and-response-in-protocolpy"><a class="toclink" href="#1-define-the-request-and-response-in-protocolpy">1. Define the Request and Response in <code>protocol.py</code></a><a class="headerlink" href="#1-define-the-request-and-response-in-protocolpy" title="Permanent link">&para;</a></h2>
+<h3 id="steps"><a class="toclink" href="#steps">Steps</a><a class="headerlink" href="#steps" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add relevant fields to the appropriate request/response data classes in <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/protocol.py"><code>protocol.py</code></a></li>
+<li>If the new task involves a new input-output modality, create a new request/response class.</li>
+<li>Use existing request/response classes (<code>UserChatRequest</code>, <code>UserEmbeddingRequest</code>, <code>UserImageChatRequest</code>, etc.) if they suffice.</li>
+</ol>
+<h3 id="example"><a class="toclink" href="#example">Example</a><a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UserTextToImageRequest</span><span class="p">(</span><span class="n">UserRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a request for generating images from text.&quot;&quot;&quot;</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">num_images</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of images to generate.&quot;</span><span class="p">)</span>
+    <span class="n">image_resolution</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Resolution of the generated images.&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="2-update-or-create-a-sampler"><a class="toclink" href="#2-update-or-create-a-sampler">2. Update or Create a Sampler</a><a class="headerlink" href="#2-update-or-create-a-sampler" title="Permanent link">&para;</a></h2>
+<h3 id="21-if-input-modality-is-supported-by-an-existing-sampler"><a class="toclink" href="#21-if-input-modality-is-supported-by-an-existing-sampler">2.1 If Input Modality Is Supported by an Existing Sampler</a><a class="headerlink" href="#21-if-input-modality-is-supported-by-an-existing-sampler" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Check if the current <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/text_sampler.py"><code>TextSampler</code></a> or <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/image_sampler.py"><code>ImageSampler</code></a> supports the input-modality.</li>
+<li>Add request creation logic in the relevant <code>TextSampler</code> or <code>ImageSampler</code> class.</li>
+<li>Refactor the sampler's <code>_create_request</code> method to support the new task.</li>
+<li><strong>Tip:</strong> Avoid adding long <code>if-else</code> chains for new tasks. Utilize helper methods or design a request creator pattern if needed.</li>
+</ol>
+<h3 id="22-if-input-modality-is-not-supported"><a class="toclink" href="#22-if-input-modality-is-not-supported">2.2 If Input Modality Is Not Supported</a><a class="headerlink" href="#22-if-input-modality-is-not-supported" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create a new sampler class inheriting from <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/sampling/base_sampler.py"><code>BaseSampler</code></a>.</li>
+<li>Define the <code>sample</code> method to generate requests for the new task.</li>
+<li>Refer to <code>TextSampler</code> and <code>ImageSampler</code> for implementation patterns.</li>
+<li>Add utility functions for data preprocessing or validation specific to the new modality if necessary.</li>
+</ol>
+<h3 id="example-for-a-new-sampler"><a class="toclink" href="#example-for-a-new-sampler">Example for a New Sampler</a><a class="headerlink" href="#example-for-a-new-sampler" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AudioSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+    <span class="n">input_modality</span> <span class="o">=</span> <span class="s2">&quot;audio&quot;</span>
+    <span class="n">supported_tasks</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;audio-to-text&quot;</span><span class="p">,</span> <span class="s2">&quot;audio-to-embeddings&quot;</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">:</span> <span class="n">Scenario</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserRequest</span><span class="p">:</span>
+        <span class="c1"># Validate scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_scenario</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_audio_to_text_request</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span> <span class="o">==</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_audio_to_embeddings_request</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported output_modality: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_modality</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-add-task-support-in-the-user-class"><a class="toclink" href="#3-add-task-support-in-the-user-class">3. Add Task Support in the User Class</a><a class="headerlink" href="#3-add-task-support-in-the-user-class" title="Permanent link">&para;</a></h2>
+<p>Each <code>User</code> corresponds to one API backend, such as <a href="https://github.com/sgl-project/genai-bench/blob/main/genai_bench/user/openai_user.py"><code>OpenAIUser</code></a> for OpenAI. Users can have multiple tasks, each corresponding to an endpoint.</p>
+<h3 id="steps_1"><a class="toclink" href="#steps_1">Steps</a><a class="headerlink" href="#steps_1" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add the new task to the <code>supported_tasks</code> dictionary in the relevant <code>User</code> class.</li>
+<li>Map the new task to its corresponding function name in the dictionary.</li>
+<li>Implement the new function in the <code>User</code> class for handling the task logic.</li>
+<li>If the new task uses an existing endpoint, refactor the function to support both tasks without duplicating logic.</li>
+<li><strong>Important:</strong> Avoid creating multiple functions for tasks that use the same endpoint.</li>
+</ol>
+<h3 id="example_1"><a class="toclink" href="#example_1">Example</a><a class="headerlink" href="#example_1" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OpenAIUser</span><span class="p">(</span><span class="n">BaseUser</span><span class="p">):</span>
+    <span class="n">supported_tasks</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;text-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;chat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;image-text-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;chat&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;text-to-embeddings&quot;</span><span class="p">:</span> <span class="s2">&quot;embeddings&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;audio-to-text&quot;</span><span class="p">:</span> <span class="s2">&quot;audio_to_text&quot;</span><span class="p">,</span>  <span class="c1"># New task added</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">audio_to_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Implement the logic for audio-to-text task</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;/v1/audio/transcriptions&quot;</span>
+        <span class="n">user_request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+
+        <span class="c1"># Add payload and send request</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;audio&quot;</span><span class="p">:</span> <span class="n">user_request</span><span class="o">.</span><span class="n">audio_file</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_request</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_audio_response</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-add-unit-tests"><a class="toclink" href="#4-add-unit-tests">4. Add Unit Tests</a><a class="headerlink" href="#4-add-unit-tests" title="Permanent link">&para;</a></h2>
+<h3 id="steps_2"><a class="toclink" href="#steps_2">Steps</a><a class="headerlink" href="#steps_2" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add tests for the new task in the appropriate test files.</li>
+<li>Include tests for:</li>
+<li>Request creation in the sampler.</li>
+<li>Task validation in the <code>User</code> class.</li>
+<li>End-to-end workflow using the new task.</li>
+</ol>
+<hr />
+<h2 id="5-update-documentation"><a class="toclink" href="#5-update-documentation">5. Update Documentation</a><a class="headerlink" href="#5-update-documentation" title="Permanent link">&para;</a></h2>
+<h3 id="steps_3"><a class="toclink" href="#steps_3">Steps</a><a class="headerlink" href="#steps_3" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Add the new task to the list of supported tasks in the <a href="../../getting-started/task-definition/">Task Definition guide</a>.</li>
+<li>Provide sample commands and explain any required configuration changes.</li>
+<li>Mention the new task in this contributing guide for future developers.</li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../examples/%20plot-config-examples/" class="btn btn-neutral float-left" title="Plot Config Examples"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Copyright &copy; 2024 GenAI Bench Team</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/sgl-project/genai-bench" class="fa fa-code-fork" style="color: #fcfcfc"> sgl-project/genai-bench</a>
+        </span>
+    
+    
+      <span><a href="../../examples/%20plot-config-examples/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
