@@ -83,6 +83,7 @@ class TextSampler(Sampler):
             # Use scenario-based sampling
             self._validate_scenario(scenario)
             num_input_tokens, num_output_tokens = scenario.sample()
+
             prompt = self._sample_text(num_input_tokens)
             max_tokens = num_output_tokens
             num_prefill_tokens = self.get_token_length(prompt)
@@ -211,15 +212,15 @@ class TextSampler(Sampler):
             raise ValueError("Prefix length must be shorter than total input length")
 
         # Generate the prefix if it hasn't been created yet
-        if len(self.prefix) != self.prefix_length:
+        if self.get_token_length(self.prefix) != self.prefix_length:
             self.prefix = self._generate_prefix()
 
         # Prepend the prefix to all prompts with a 4 randomly picked digits
         prompt = f"{self.prefix}{random.randint(1000,9999)}"
-        left_tokens_to_sample = num_input_tokens - len(prompt)
+        left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
 
         if left_tokens_to_sample < 0:
-            return prompt[: len(prompt) + left_tokens_to_sample]
+            return prompt[: self.get_token_length(prompt) + left_tokens_to_sample]
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
