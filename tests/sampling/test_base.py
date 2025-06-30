@@ -23,9 +23,13 @@ def mock_vision_dataset():
 def test_sampler_factory(mock_vision_dataset):
     text_data = ["Sample text 1", "Sample text 2"]
 
+    # Create a tokenizer mock that returns a list of token ids so len() works
+    tokenizer = Mock()
+    tokenizer.encode.return_value = [1, 2, 3]
+
     sampler = Sampler.create(
         task="text-to-text",
-        tokenizer=Mock(),
+        tokenizer=tokenizer,
         model="gpt-3",
         data=text_data,
         use_scenario=True,
@@ -34,7 +38,7 @@ def test_sampler_factory(mock_vision_dataset):
 
     sampler = Sampler.create(
         task="text-to-embeddings",
-        tokenizer=Mock(),
+        tokenizer=tokenizer,
         model="gpt-3",
         data=text_data,
         use_scenario=True,
@@ -43,7 +47,7 @@ def test_sampler_factory(mock_vision_dataset):
 
     sampler = Sampler.create(
         task="image-text-to-text",
-        tokenizer=Mock(),
+        tokenizer=tokenizer,
         model="gpt-3",
         data=mock_vision_dataset,
         use_scenario=False,
@@ -52,7 +56,7 @@ def test_sampler_factory(mock_vision_dataset):
 
     sampler = Sampler.create(
         task="image-to-embeddings",
-        tokenizer=Mock(),
+        tokenizer=tokenizer,
         model="gpt-3",
         data=mock_vision_dataset,
     )
