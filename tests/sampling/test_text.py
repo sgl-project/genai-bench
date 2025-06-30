@@ -153,6 +153,7 @@ class TestTextSampler(unittest.TestCase):
             [1] * 14,
             [1] * 14,
             [1] * 14,
+            [1] * 14,
         ]
         scenario = NormalDistribution(
             mean_input_tokens=20,
@@ -178,6 +179,43 @@ class TestTextSampler(unittest.TestCase):
         # The prompt should start with the generated prefix and a 4-digit number
         self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
         self.assertEqual(len(result.prompt), 20)
+
+    def test_sample_chat_prefix_ratio_request(self):
+        """Test prefix generation using ratio instead of fixed length."""
+        self.tokenizer.encode.side_effect = [
+            [1] * 0,
+            [1] * 20,
+            [1] * 14,
+            [1] * 14,
+            [1] * 14,
+            [1] * 14,
+            [1] * 14,
+        ]
+        scenario = NormalDistribution(
+            mean_input_tokens=20,
+            stddev_input_tokens=0,
+            mean_output_tokens=20,
+            stddev_output_tokens=0,
+        )
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            use_scenario=True,
+            prefix_length_ratio=0.5,  # 50% of 20 tokens = 10 tokens
+        )
+        # Mock the char_token_ratio since the tokenizer is mocked
+        prefix_sampler.char_token_ratio = 1.0
+        result = prefix_sampler.sample(scenario)
+        self.assertIsInstance(result, UserChatRequest)
+        self.assertEqual(result.model, self.model)
+        self.assertTrue(isinstance(result.prompt, str))
+        self.assertGreater(len(result.prompt), 0)
+        self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
+        self.assertEqual(len(result.prompt), 20)
+        # Verify the calculated prefix length is correct
+        self.assertEqual(prefix_sampler._current_prefix_length, 10)
 
     def test_short_prompt_request(self):
         self.tokenizer.encode.return_value = [1] * 10

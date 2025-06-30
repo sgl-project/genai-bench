@@ -212,7 +212,9 @@ class TextSampler(Sampler):
 
         # Calculate actual prefix length based on ratio or fixed length
         if self.prefix_length_ratio > 0.0:
-            self._current_prefix_length = int(num_input_tokens * self.prefix_length_ratio)
+            self._current_prefix_length = int(
+                num_input_tokens * self.prefix_length_ratio
+            )
         else:
             self._current_prefix_length = self.prefix_length
 
