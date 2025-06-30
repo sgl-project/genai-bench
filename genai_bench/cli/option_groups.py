@@ -14,7 +14,27 @@ from genai_bench.cli.validation import (
     validate_object_storage_options,
     validate_task,
     validate_traffic_scenario_callback,
+    validate_prefix_options,
 )
+
+
+def validate_prefix_options(ctx, param, value):
+    """Validate that only one prefix option is used."""
+    if param.name == "prompt_prefix_length":
+        prompt_prefix_length_ratio = ctx.params.get("prompt_prefix_length_ratio", 0.0)
+        if value > 0 and prompt_prefix_length_ratio > 0.0:
+            raise click.BadParameter(
+                "Cannot use both --prompt-prefix-length and --prompt-prefix-length-ratio. "
+                "Use only one of these options."
+            )
+    elif param.name == "prompt_prefix_length_ratio":
+        prompt_prefix_length = ctx.params.get("prompt_prefix_length", 0)
+        if value > 0.0 and prompt_prefix_length > 0:
+            raise click.BadParameter(
+                "Cannot use both --prompt-prefix-length and --prompt-prefix-length-ratio. "
+                "Use only one of these options."
+            )
+    return value
 
 
 # Group API-related options
@@ -223,8 +243,19 @@ def experiment_options(func):
         "--prompt-prefix-length",
         type=int,
         default=0,
+        callback=validate_prefix_options,
         help="The length of the common prefix to prepend "
         "to all inputs to test prefix caching.",
+    )(func)
+    func = click.option(
+        "--prompt-prefix-length-ratio",
+        type=click.FloatRange(0.0, 1.0),
+        default=0.0,
+        callback=validate_prefix_options,
+        help="The ratio of prefix length to overall input length "
+        "to prepend to all inputs to test prefix caching. "
+        "Value should be between 0.0 and 1.0. "
+        "Cannot be used with --prompt-prefix-length.",
     )(func)
     func = click.option(
         "--experiment-folder-name",

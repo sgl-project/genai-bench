@@ -334,3 +334,22 @@ def validate_object_storage_options(ctx, param, value):
     if param.name == "upload_results" and value and not ctx.params.get("bucket"):
         raise click.UsageError("You must provide a bucket name when uploading results.")
     return value
+
+
+def validate_prefix_options(ctx, param, value):
+    """Validate that only one prefix option is used."""
+    if param.name == "prompt_prefix_length":
+        prompt_prefix_length_ratio = ctx.params.get("prompt_prefix_length_ratio", 0.0)
+        if value > 0 and prompt_prefix_length_ratio > 0.0:
+            raise click.BadParameter(
+                "Cannot use both --prompt-prefix-length and --prompt-prefix-length-ratio. "
+                "Use only one of these options."
+            )
+    elif param.name == "prompt_prefix_length_ratio":
+        prompt_prefix_length = ctx.params.get("prompt_prefix_length", 0)
+        if value > 0.0 and prompt_prefix_length > 0:
+            raise click.BadParameter(
+                "Cannot use both --prompt-prefix-length and --prompt-prefix-length-ratio. "
+                "Use only one of these options."
+            )
+    return value

@@ -101,6 +101,7 @@ def benchmark(
     namespace,
     prefix,
     prompt_prefix_length,
+    prompt_prefix_length_ratio,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -184,15 +185,22 @@ def benchmark(
     data, use_scenario = DataLoaderFactory.load_data_for_task(task, dataset_config_obj)
 
     # Create sampler with preloaded data
-    sampler = Sampler.create(
-        task=task,
-        tokenizer=tokenizer,
-        model=api_model_name,
-        data=data,
-        use_scenario=use_scenario,
-        additional_request_params=additional_request_params,
-        prefix_length=prompt_prefix_length,
-    )
+    sampler_kwargs = {
+        "task": task,
+        "tokenizer": tokenizer,
+        "model": api_model_name,
+        "data": data,
+        "use_scenario": use_scenario,
+        "additional_request_params": additional_request_params,
+    }
+    
+    # Use ratio if specified, otherwise use fixed length
+    if prompt_prefix_length_ratio > 0.0:
+        sampler_kwargs["prefix_length_ratio"] = prompt_prefix_length_ratio
+    else:
+        sampler_kwargs["prefix_length"] = prompt_prefix_length
+    
+    sampler = Sampler.create(**sampler_kwargs)
 
     if not sampler.use_scenario:
         logger.info(
