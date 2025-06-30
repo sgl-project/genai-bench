@@ -47,6 +47,7 @@ def calculate_char_token_ratio(
     char_token_ratio = total_chars / total_tokens if total_tokens > 0 else 0
     return char_token_ratio
 
+
 def calculate_sonnet_char_token_ratio(tokenizer: PreTrainedTokenizer) -> float:
     """Calculate the ratio of character to token using model tokenizer."""
     sonnet_file = Path(__file__).parent.resolve() / "data/sonnet.txt"

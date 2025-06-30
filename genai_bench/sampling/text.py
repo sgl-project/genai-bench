@@ -183,7 +183,7 @@ class TextSampler(Sampler):
                 if tokens > left_tokens_to_sample:
                     # This will cut off a line in the middle of a word, but
                     # that's ok since a llm should be able to handle that.
-                    prompt += line[:int(left_tokens_to_sample * self.char_token_ratio)]
+                    prompt += line[: int(left_tokens_to_sample * self.char_token_ratio)]
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= tokens
