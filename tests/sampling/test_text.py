@@ -265,7 +265,13 @@ class TestTextSampler(unittest.TestCase):
         # Verify decode was called with truncated tokens
         self.tokenizer.decode.assert_called_with(line_tokens[:requested_tokens])
     def test_sample_chat_prefix_request(self):
-        self.tokenizer.encode.return_value = [1] * 10
+        self.tokenizer.encode.side_effect = [
+            [1] * 0,
+            [1] * 20,
+            [1] * 14,
+            [1] * 20,
+            [1] * 20,
+        ]
         scenario = NormalDistribution(
             mean_input_tokens=20,
             stddev_input_tokens=0,
