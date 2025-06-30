@@ -150,8 +150,9 @@ class TestTextSampler(unittest.TestCase):
             [1] * 0,
             [1] * 20,
             [1] * 14,
-            [1] * 20,
-            [1] * 20,
+            [1] * 14,
+            [1] * 14,
+            [1] * 14,
         ]
         scenario = NormalDistribution(
             mean_input_tokens=20,
@@ -167,6 +168,8 @@ class TestTextSampler(unittest.TestCase):
             use_scenario=True,
             prefix_length=10,  # Set a prefix length for testing
         )
+        # Mock the char_token_ratio since the tokenizer is mocked
+        prefix_sampler.char_token_ratio = 1.0
         result = prefix_sampler.sample(scenario)
         self.assertIsInstance(result, UserChatRequest)
         self.assertEqual(result.model, self.model)
