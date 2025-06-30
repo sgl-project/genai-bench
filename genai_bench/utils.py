@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from transformers import PreTrainedTokenizer
-from typing import List
 
 
 def sanitize_string(input_str: str):
@@ -35,7 +34,7 @@ def is_single_experiment_folder(folder_name: str) -> bool:
 
 def calculate_char_token_ratio(
     tokenizer: PreTrainedTokenizer,
-    data: List[str],
+    data: str,
     add_special_tokens: bool = False,
 ) -> float:
     """
