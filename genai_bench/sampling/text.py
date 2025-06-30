@@ -10,6 +10,7 @@ from genai_bench.protocol import (
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDistribution
+from genai_bench.utils import calculate_char_token_ratio
 
 logger = init_logger(__name__)
 
@@ -38,6 +39,7 @@ class TextSampler(Sampler):
 
         self.data = data
         self.use_scenario = use_scenario
+        self.char_token_ratio = calculate_char_token_ratio(tokenizer, data)
 
         # Set ignore_eos based on scenario usage
         if use_scenario:
@@ -181,7 +183,7 @@ class TextSampler(Sampler):
                 if tokens > left_tokens_to_sample:
                     # This will cut off a line in the middle of a word, but
                     # that's ok since a llm should be able to handle that.
-                    prompt += line[:left_tokens_to_sample]
+                    prompt += line[: int(left_tokens_to_sample * self.char_token_ratio)]
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= tokens
