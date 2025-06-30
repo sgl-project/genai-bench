@@ -183,7 +183,7 @@ class TextSampler(Sampler):
                 if prefix_tokens + tokens > self.prefix_length:
                     # Truncate the line if it exceeds the remaining prefix length
                     remaining_prefix_len = self.prefix_length - prefix_tokens
-                    prefix += line[:remaining_prefix_len]
+                    prefix += line[:int(remaining_prefix_len * self.char_token_ratio)]
                     prefix_tokens += remaining_prefix_len
                     break
                 prefix += line
