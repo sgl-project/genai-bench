@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
+from typing import List
 
 from transformers import PreTrainedTokenizer
-from typing import List
 
 
 def sanitize_string(input_str: str):
