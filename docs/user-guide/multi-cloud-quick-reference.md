@@ -129,7 +129,7 @@ genai-bench benchmark \
   --storage-provider azure \
   --storage-bucket my-container \
   --storage-azure-account-name myaccount \
-  --storage-azure-account-key KEY
+  --storage-azure-account-key YOUR_ACCOUNT_KEY
 ```
 
 ### Upload to GCP Cloud Storage
