@@ -1,4 +1,5 @@
-# Generate Plot
+# Performance Visualization & Plotting
+
 ## Quick Start
 You can check out `genai-bench plot --help` to find how to generate a 2x4 Plot containing:
 
@@ -16,9 +17,10 @@ You can check out `genai-bench plot --help` to find how to generate a 2x4 Plot c
 ```shell
 genai-bench plot --experiments-folder <path-to-experiment-folder> --group-key traffic_scenario
 ```
-## Plot Configuration Examples
 
-This directory contains example plot configurations for the flexible plotting system in genai-bench.
+## Advanced Plot Configuration
+
+This section provides comprehensive configuration examples and templates for customizing GenAI Bench's flexible plotting system to meet your specific analysis needs.
 
 ### Usage
 
@@ -54,14 +56,14 @@ genai-bench plot --experiments-folder /path/to/experiments \
 
 ### Available Configurations
 
-#### custom_2x2.json
+#### [custom_2x2.json](https://github.com/sgl-project/genai-bench/blob/main/examples/plot_configs/custom_2x2.json)
 A simple 2x2 grid layout focusing on key performance metrics:
 - Throughput vs Mean Latency
 - RPS vs P99 Latency
 - Concurrency vs TTFT
 - Error Rate Analysis
 
-#### performance_focused.json
+#### [performance_focused.json](https://github.com/sgl-project/genai-bench/blob/main/examples/plot_configs/performance_focused.json)
 A comprehensive 2x3 grid for detailed performance analysis:
 - Token generation speed analysis
 - Time to first token trends
@@ -70,14 +72,14 @@ A comprehensive 2x3 grid for detailed performance analysis:
 - Request success rates
 - Throughput scaling
 
-#### multi_line_latency.json
+#### [multi_line_latency.json](https://github.com/sgl-project/genai-bench/blob/main/examples/plot_configs/multi_line_latency.json)
 Demonstrates multi-line plotting capabilities with a 2x2 layout:
 - **Latency Percentiles Comparison**: Multiple latency percentiles (mean, P90, P99) on one plot
 - **TTFT Performance Analysis**: Mean and P95 TTFT comparison
 - **Token Processing Speed**: Output speed vs input throughput comparison
 - **Request Success Metrics**: Single-line error rate plot
 
-#### comprehensive_multi_line.json
+#### [comprehensive_multi_line.json](https://github.com/sgl-project/genai-bench/blob/main/examples/plot_configs/comprehensive_multi_line.json)
 Advanced multi-line example with 1x3 layout showcasing complex comparisons:
 - **E2E Latency Distribution**: All percentiles (P25, P50, P75, P90, P99) with custom colors
 - **Throughput Components**: Input, output, and total throughput comparison
