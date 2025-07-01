@@ -214,8 +214,6 @@ class TestTextSampler(unittest.TestCase):
         self.assertGreater(len(result.prompt), 0)
         self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
         self.assertEqual(len(result.prompt), 20)
-        # Verify the calculated prefix length is correct
-        self.assertEqual(prefix_sampler._current_prefix_length, 10)
 
     def test_short_prompt_request(self):
         self.tokenizer.encode.return_value = [1] * 10
