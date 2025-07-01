@@ -1,79 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/api/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/api/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/development/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/development/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/development/contributing/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/development/contributing/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/examples/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/examples/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/examples/plot-config-examples/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/examples/plot-config-examples/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/getting-started/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/getting-started/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/getting-started/command-guidelines/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/getting-started/command-guidelines/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/getting-started/installation/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/getting-started/installation/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/getting-started/metrics-definition/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/getting-started/metrics-definition/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/getting-started/task-definition/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/getting-started/task-definition/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/generate-excel-sheet/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/generate-excel-sheet/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/generate-plot/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/generate-plot/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/multi-cloud-auth-storage/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/multi-cloud-auth-storage/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/multi-cloud-quick-reference/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/multi-cloud-quick-reference/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/run-benchmark-using-docker/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/run-benchmark-using-docker/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/run-benchmark/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/run-benchmark/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
     <url>
-         <loc>https://sgl-project.github.io/genai-bench/user-guide/upload-benchmark-result/</loc>
+         <loc>https://docs.sglang.ai/genai-bench/user-guide/upload-benchmark-result/</loc>
          <lastmod>2025-07-01</lastmod>
     </url>
 </urlset>
