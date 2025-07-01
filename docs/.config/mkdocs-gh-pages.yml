@@ -1,4 +1,4 @@
-INHERIT: mkdocs.yml
+INHERIT: ./mkdocs.yml
 
 # Override for GitHub Pages deployment
-site_url: https://sgl-project.github.io/genai-bench
+site_url: https://docs.sglang.ai/genai-bench
