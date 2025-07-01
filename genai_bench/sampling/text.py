@@ -53,7 +53,6 @@ class TextSampler(Sampler):
         self.prefix_length = prefix_length
         self.prefix_length_ratio = prefix_length_ratio
         self.prefix = ""
-        self._current_prefix_length = 0  # Will be calculated dynamically
 
     def sample(self, scenario: Scenario) -> UserRequest:
         """
@@ -168,9 +167,9 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
-    def _generate_prefix(self) -> str:
+    def _generate_prefix(self, current_prefix_length) -> str:
         """
-        Generates prefix of length self._current_prefix_length to be
+        Generates prefix of length current_prefix_length to be
         prepended to all input prompts.
         """
 
@@ -182,13 +181,13 @@ class TextSampler(Sampler):
         prefix = ""
         prefix_tokens = 0
         # Generate the prefix
-        while prefix_tokens < self._current_prefix_length:
+        while prefix_tokens < current_prefix_length:
             random.shuffle(data_copy)
             for line in data_copy:
                 tokens = self.get_token_length(line)
-                if prefix_tokens + tokens > self._current_prefix_length:
+                if prefix_tokens + tokens > current_prefix_length:
                     # Truncate the line if it exceeds the remaining prefix length
-                    remaining_prefix_len = self._current_prefix_length - prefix_tokens
+                    remaining_prefix_len = current_prefix_length - prefix_tokens
                     # Always add at least one char to prevent infinite loop
                     truncate = max(int(remaining_prefix_len * self.char_token_ratio), 1)
                     prefix += line[:truncate]
@@ -216,24 +215,23 @@ class TextSampler(Sampler):
         """
 
         # Calculate actual prefix length based on ratio or fixed length
+        current_prefix_length = 0
         if self.prefix_length_ratio > 0.0:
-            self._current_prefix_length = int(
-                num_input_tokens * self.prefix_length_ratio
-            )
+            current_prefix_length = int(num_input_tokens * self.prefix_length_ratio)
         else:
-            self._current_prefix_length = self.prefix_length
+            current_prefix_length = self.prefix_length
 
         data_copy = self.data.copy()
 
         if not self.data:
             raise ValueError("Cannot sample text from an empty dataset")
 
-        if num_input_tokens <= self._current_prefix_length:
+        if num_input_tokens <= current_prefix_length:
             raise ValueError("Prefix length must be shorter than total input length")
 
         # Generate the prefix if it hasn't been created yet
-        if self.get_token_length(self.prefix) != self._current_prefix_length:
-            self.prefix = self._generate_prefix()
+        if self.get_token_length(self.prefix) != current_prefix_length:
+            self.prefix = self._generate_prefix(current_prefix_length)
 
         # Prepend the prefix to all prompts with a 4 randomly picked digits
         prompt = f"{self.prefix}{random.randint(1000,9999)}"
