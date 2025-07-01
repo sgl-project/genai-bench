@@ -192,7 +192,7 @@ genai-bench benchmark \
   --api-base https://myresource.openai.azure.com \
   --azure-endpoint https://myresource.openai.azure.com \
   --azure-deployment my-deployment \
-  --model-api-key AZURE_KEY \
+  --model-api-key YOUR_API_KEY
   --api-model-name gpt-4 \
   --model-tokenizer gpt2 \
   --task text-to-text \
