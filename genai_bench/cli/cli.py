@@ -119,6 +119,8 @@ def benchmark(
     master_port,
     upload_results,
     namespace,
+    prompt_prefix_length,
+    prompt_prefix_length_ratio,
     # Storage auth options
     storage_provider,
     storage_bucket,
@@ -138,8 +140,6 @@ def benchmark(
     github_token,
     github_owner,
     github_repo,
-    prompt_prefix_length,
-    prompt_prefix_length_ratio,
 ):
     """
     Run a benchmark based on user defined scenarios.
