@@ -176,6 +176,9 @@ class TextSampler(Sampler):
 
         data_copy = self.data.copy()
 
+        if not self.data:
+            raise ValueError("Cannot generate prefix from an empty dataset")
+
         prefix = ""
         prefix_tokens = 0
         # Generate the prefix
@@ -186,7 +189,9 @@ class TextSampler(Sampler):
                 if prefix_tokens + tokens > self._current_prefix_length:
                     # Truncate the line if it exceeds the remaining prefix length
                     remaining_prefix_len = self._current_prefix_length - prefix_tokens
-                    prefix += line[: int(remaining_prefix_len * self.char_token_ratio)]
+                    # Always add at least one char to prevent infinite loop
+                    truncate = max(int(remaining_prefix_len * self.char_token_ratio), 1)
+                    prefix += line[:truncate]
                     prefix_tokens += remaining_prefix_len
                     break
                 prefix += line
@@ -219,6 +224,9 @@ class TextSampler(Sampler):
             self._current_prefix_length = self.prefix_length
 
         data_copy = self.data.copy()
+
+        if not self.data:
+            raise ValueError("Cannot sample text from an empty dataset")
 
         if num_input_tokens <= self._current_prefix_length:
             raise ValueError("Prefix length must be shorter than total input length")
