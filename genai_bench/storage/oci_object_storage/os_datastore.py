@@ -8,8 +8,8 @@ from oci.object_storage import ObjectStorageClient, UploadManager
 
 from genai_bench.auth.auth_provider import AuthProvider
 from genai_bench.logging import init_logger
-from genai_bench.oci_object_storage.datastore import DataStore
-from genai_bench.oci_object_storage.object_uri import ObjectURI
+from genai_bench.storage.oci_object_storage.datastore import DataStore
+from genai_bench.storage.oci_object_storage.object_uri import ObjectURI
 
 MB = 1024 * 1024  # 1 MB in bytes
 logger = init_logger(__name__)
@@ -27,7 +27,7 @@ class OSDataStore(DataStore):
         self.auth = auth
         self.config = auth.get_config()
         self.client = ObjectStorageClient(
-            config=self.config, signer=auth.get_auth_credentials()
+            config=self.config, signer=auth.get_credentials()
         )
 
     def set_region(self, region: str) -> None:
@@ -231,3 +231,23 @@ class OSDataStore(DataStore):
 
                 logger.info(f"Uploading {file_path} to {bucket}/{object_name}")
                 self.upload(str(file_path), target)
+
+    def delete_object(self, target: ObjectURI) -> None:
+        """Delete an object from OCI Object Storage.
+
+        Args:
+            target: Target object URI
+        """
+        logger.info(f"Deleting object {target}")
+
+        if not target.namespace:
+            namespace = self.get_namespace()
+            target.namespace = namespace
+            logger.debug(f"Using namespace: {namespace}")
+
+        self.client.delete_object(
+            namespace_name=target.namespace,
+            bucket_name=target.bucket_name,
+            object_name=target.object_name,
+        )
+        logger.info(f"Successfully deleted {target}")

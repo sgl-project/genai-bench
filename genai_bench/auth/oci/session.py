@@ -50,7 +50,7 @@ class OCISessionAuth(AuthProvider):
                 )
         return self._config or {}
 
-    def get_auth_credentials(self) -> oci.signer.AbstractBaseSigner:
+    def get_credentials(self) -> oci.signer.AbstractBaseSigner:
         """Get OCI signer using security token authentication.
 
         Returns:

@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from genai_bench.oci_object_storage.object_uri import ObjectURI
+from genai_bench.storage.oci_object_storage.object_uri import ObjectURI
 
 
 def test_object_uri_creation():

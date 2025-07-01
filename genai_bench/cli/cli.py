@@ -14,15 +14,17 @@ from genai_bench.analysis.plot_report import (
     plot_experiment_data,
     plot_single_scenario_inference_speed_vs_throughput,
 )
-from genai_bench.auth.factory import AuthFactory
+from genai_bench.auth.unified_factory import UnifiedAuthFactory
 from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
     experiment_options,
+    model_auth_options,
     object_storage_options,
     oci_auth_options,
     sampling_options,
     server_options,
+    storage_auth_options,
 )
 from genai_bench.cli.report import excel, plot
 from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
@@ -31,9 +33,9 @@ from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.logging import LoggingManager, init_logger
-from genai_bench.oci_object_storage.os_datastore import OSDataStore
 from genai_bench.protocol import ExperimentMetadata
 from genai_bench.sampling.base import Sampler
+from genai_bench.storage.factory import StorageFactory
 from genai_bench.ui.dashboard import create_dashboard
 from genai_bench.utils import calculate_sonnet_char_token_ratio, sanitize_string
 from genai_bench.version import __version__ as GENAI_BENCH_VERSION
@@ -56,12 +58,14 @@ def cli(ctx):
 
 @click.command(context_settings={"show_default": True})
 @api_options
+@model_auth_options
 @oci_auth_options
 @server_options
 @experiment_options
 @sampling_options
 @distributed_locust_options
 @object_storage_options
+@storage_auth_options
 @click.pass_context
 def benchmark(
     ctx,
@@ -77,6 +81,28 @@ def benchmark(
     batch_size,
     traffic_scenario,
     additional_request_params,
+    # Model auth options
+    model_auth_type,
+    model_api_key,
+    aws_access_key_id,
+    aws_secret_access_key,
+    aws_session_token,
+    aws_profile,
+    aws_region,
+    azure_endpoint,
+    azure_deployment,
+    azure_api_version,
+    azure_ad_token,
+    gcp_project_id,
+    gcp_location,
+    gcp_credentials_path,
+    # OCI auth options
+    config_file,
+    profile,
+    auth,
+    security_token,
+    region,
+    # Server options
     server_engine,
     server_version,
     server_gpu_type,
@@ -89,17 +115,29 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
-    config_file,
-    profile,
-    auth,
-    security_token,
-    region,
     num_workers,
     master_port,
     upload_results,
-    bucket,
     namespace,
-    prefix,
+    # Storage auth options
+    storage_provider,
+    storage_bucket,
+    storage_prefix,
+    storage_auth_type,
+    storage_aws_access_key_id,
+    storage_aws_secret_access_key,
+    storage_aws_session_token,
+    storage_aws_region,
+    storage_aws_profile,
+    storage_azure_account_name,
+    storage_azure_account_key,
+    storage_azure_connection_string,
+    storage_azure_sas_token,
+    storage_gcp_project_id,
+    storage_gcp_credentials_path,
+    github_token,
+    github_owner,
+    github_repo,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -126,21 +164,75 @@ def benchmark(
     # Authentication Section
     # -------------------------------------
 
-    auth_provider = None
-    if api_backend != "openai":
-        # Initialize OCI auth provider
-        auth_provider = AuthFactory.create_oci_auth(
-            auth_type=auth,  # Auth types already match internal types
-            config_path=config_file,
-            profile=profile,
-            token=security_token,
-            region=region,
+    # Create model authentication based on API backend
+    auth_kwargs = {}
+
+    if api_backend == "openai":
+        # OpenAI uses API key from --api-key for backward compatibility
+        # or --model-api-key for consistency with multi-cloud
+        auth_kwargs["api_key"] = model_api_key or api_key
+
+    elif api_backend in ["oci-cohere", "cohere"]:
+        # OCI uses its own auth system
+        auth_kwargs.update(
+            {
+                "auth_type": auth,
+                "config_path": config_file,
+                "profile": profile,
+                "token": security_token,
+                "region": region,
+            }
         )
-        logger.info(f"Using OCI authentication: {auth}")
-    else:
-        # Initialize OpenAI auth provider
-        auth_provider = AuthFactory.create_openai_auth(api_key)
-        logger.info("Using OpenAI authentication")
+
+    elif api_backend == "aws-bedrock":
+        auth_kwargs.update(
+            {
+                "access_key_id": aws_access_key_id,
+                "secret_access_key": aws_secret_access_key,
+                "session_token": aws_session_token,
+                "profile": aws_profile,
+                "region": aws_region,
+            }
+        )
+
+    elif api_backend == "azure-openai":
+        auth_kwargs.update(
+            {
+                "api_key": model_api_key,
+                "api_version": azure_api_version,
+                "azure_endpoint": azure_endpoint,
+                "azure_deployment": azure_deployment,
+                "use_azure_ad": bool(azure_ad_token),
+                "azure_ad_token": azure_ad_token,
+            }
+        )
+
+    elif api_backend == "gcp-vertex":
+        auth_kwargs.update(
+            {
+                "project_id": gcp_project_id,
+                "location": gcp_location,
+                "credentials_path": gcp_credentials_path,
+                "api_key": model_api_key,
+            }
+        )
+
+    elif api_backend in ["vllm", "sglang"]:
+        # vLLM and SGLang use OpenAI-compatible API
+        auth_kwargs["api_key"] = model_api_key or api_key
+
+    # Map backend names for auth factory
+    auth_backend_map = {
+        "oci-cohere": "oci",
+        "cohere": "oci",
+        "vllm": "openai",
+        "sglang": "openai",
+    }
+    auth_backend = auth_backend_map.get(api_backend, api_backend)
+
+    # Create authentication provider
+    auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
+    logger.info(f"Using {api_backend} authentication")
 
     # Rebuild the cmd_line from ctx.params
     cmd_line_parts = [sys.argv[0]]
@@ -370,8 +462,8 @@ def benchmark(
 
                 dashboard.update_total_progress_bars(total_runs)
 
-                # Sleep for 5 secs for server to clear aborted requests
-                time.sleep(5)
+                # Sleep for 1 sec for server to clear aborted requests
+                time.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
             plot_single_scenario_inference_speed_vs_throughput(
@@ -382,8 +474,8 @@ def benchmark(
                 iteration_type,
             )
 
-        # Sleep for 5 secs before the UI disappears
-        time.sleep(5)
+        # Sleep for 2 secs before the UI disappears
+        time.sleep(2)
 
     # Final cleanup
     runner.cleanup()
@@ -420,29 +512,92 @@ def benchmark(
     if not upload_results:
         return
 
-    # instead of relying on existing inference auth provider
-    # create a new oci auth provider for data store
-    data_store_auth_provider = AuthFactory.create_oci_auth(
-        auth_type=auth,
-        config_path=config_file,
-        profile=profile,
-        token=security_token,
-        region=region,
-    )
-    casper = OSDataStore(data_store_auth_provider)
+    # Determine storage provider and bucket
+    # For backward compatibility, use OCI if storage_provider not specified
+    storage_provider_final = storage_provider or "oci"
+    storage_bucket_final = storage_bucket
+    storage_prefix_final = storage_prefix
 
-    # Override regions/namespace if provided
-    casper.set_region(region) if region else None
-    namespace = namespace or casper.get_namespace()
+    # Create storage authentication
+    storage_auth_kwargs = {}
+
+    if storage_provider_final == "oci":
+        storage_auth_kwargs.update(
+            {
+                "auth_type": storage_auth_type or auth,
+                "config_path": config_file,
+                "profile": profile,
+                "token": security_token,
+                "region": region,
+            }
+        )
+
+    elif storage_provider_final == "aws":
+        storage_auth_kwargs.update(
+            {
+                "access_key_id": storage_aws_access_key_id,
+                "secret_access_key": storage_aws_secret_access_key,
+                "session_token": storage_aws_session_token,
+                "region": storage_aws_region,
+                "profile": storage_aws_profile,
+            }
+        )
+
+    elif storage_provider_final == "azure":
+        storage_auth_kwargs.update(
+            {
+                "account_name": storage_azure_account_name,
+                "account_key": storage_azure_account_key,
+                "connection_string": storage_azure_connection_string,
+                "sas_token": storage_azure_sas_token,
+            }
+        )
+
+    elif storage_provider_final == "gcp":
+        storage_auth_kwargs.update(
+            {
+                "project_id": storage_gcp_project_id,
+                "credentials_path": storage_gcp_credentials_path,
+            }
+        )
+
+    elif storage_provider_final == "github":
+        storage_auth_kwargs.update(
+            {
+                "token": github_token,
+                "owner": github_owner,
+                "repo": github_repo,
+            }
+        )
+
+    # Create storage auth provider
+    storage_auth_provider = UnifiedAuthFactory.create_storage_auth(
+        storage_provider_final, **storage_auth_kwargs
+    )
+
+    # Create storage instance
+    storage_kwargs = {}
+    if storage_provider_final == "oci" and namespace:
+        storage_kwargs["namespace"] = namespace
+
+    storage = StorageFactory.create_storage(
+        storage_provider_final, storage_auth_provider, **storage_kwargs
+    )
 
     logger.info(
         f"Uploading experiment results from {experiment_folder_abs_path} "
-        f"to bucket: {bucket} in namespace {namespace}"
+        f"to {storage_provider_final} bucket: {storage_bucket_final}"
     )
-    casper.upload_folder(
-        experiment_folder_abs_path, bucket, prefix=prefix, namespace=namespace
+
+    # Upload folder
+    storage.upload_folder(
+        experiment_folder_abs_path, storage_bucket_final, prefix=storage_prefix_final
     )
-    logger.info(f"Successfully uploaded experiment results to bucket: {bucket}")
+
+    logger.info(
+        f"Successfully uploaded experiment results to {storage_provider_final} "
+        f"bucket: {storage_bucket_final}"
+    )
 
 
 cli.add_command(benchmark)

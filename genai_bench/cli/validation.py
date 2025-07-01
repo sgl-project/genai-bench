@@ -8,7 +8,10 @@ from transformers import AutoTokenizer
 from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.scenarios.base import Scenario
+from genai_bench.user.aws_bedrock_user import AWSBedrockUser
+from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
+from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -18,7 +21,11 @@ API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
     CohereUser.BACKEND_NAME: CohereUser,
-    # Add other API backends here as needed
+    AWSBedrockUser.BACKEND_NAME: AWSBedrockUser,
+    AzureOpenAIUser.BACKEND_NAME: AzureOpenAIUser,
+    GCPVertexUser.BACKEND_NAME: GCPVertexUser,
+    "vllm": OpenAIUser,  # vLLM uses OpenAI-compatible API
+    "sglang": OpenAIUser,  # SGLang uses OpenAI-compatible API
 }
 
 DEFAULT_NUM_CONCURRENCIES = [1, 2, 4, 8, 16, 32, 64, 128, 256]
@@ -224,15 +231,29 @@ def validate_api_key(ctx, param, value):
     if not api_backend:
         raise click.BadParameter("api_backend must be specified before api_key")
 
-    if api_backend == OpenAIUser.BACKEND_NAME:
+    # Backends that require API key
+    api_key_required = [OpenAIUser.BACKEND_NAME, "vllm", "sglang"]
+
+    # Backends that don't use traditional API key
+    no_api_key = [
+        OCICohereUser.BACKEND_NAME,
+        CohereUser.BACKEND_NAME,
+        AWSBedrockUser.BACKEND_NAME,
+        GCPVertexUser.BACKEND_NAME,
+    ]
+
+    # Azure OpenAI can use API key or Azure AD
+    if api_backend in api_key_required:
         if not value:
-            raise click.BadParameter("API key is required for OpenAI backend")
-    elif api_backend == OCICohereUser.BACKEND_NAME:
-        # Cohere uses OCI auth, so API key is not needed
+            raise click.BadParameter(f"API key is required for {api_backend} backend")
+    elif api_backend == AzureOpenAIUser.BACKEND_NAME:
+        # Azure can use API key or Azure AD - validated in model auth options
+        pass
+    elif api_backend in no_api_key:
         if value:
             click.echo(
-                "Warning: API key is not used for Cohere backend "
-                "as it uses OCI authentication",
+                f"Warning: API key is not used for {api_backend} backend "
+                f"as it uses cloud-specific authentication",
                 err=True,
             )
         return None
@@ -331,6 +352,13 @@ def validate_filter_criteria(ctx, param, value):
 
 def validate_object_storage_options(ctx, param, value):
     """Validate object storage options."""
-    if param.name == "upload_results" and value and not ctx.params.get("bucket"):
-        raise click.UsageError("You must provide a bucket name when uploading results.")
+    if (
+        param.name == "upload_results"
+        and value
+        and not ctx.params.get("storage_bucket")
+    ):
+        raise click.UsageError(
+            "You must provide a storage bucket name (--storage-bucket) "
+            "when uploading results."
+        )
     return value

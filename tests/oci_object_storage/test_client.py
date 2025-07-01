@@ -9,8 +9,8 @@ from oci.response import Response
 from oci.signer import AbstractBaseSigner
 
 from genai_bench.auth.auth_provider import AuthProvider
-from genai_bench.oci_object_storage.object_uri import ObjectURI
-from genai_bench.oci_object_storage.os_datastore import OSDataStore
+from genai_bench.storage.oci_object_storage.object_uri import ObjectURI
+from genai_bench.storage.oci_object_storage.os_datastore import OSDataStore
 
 
 class MockSigner(AbstractBaseSigner):
@@ -42,7 +42,7 @@ class MockAuthProvider(AuthProvider):
             "key_content": "dummy_key_content",
         }
 
-    def get_auth_credentials(self):
+    def get_credentials(self):
         return MockSigner()
 
 
@@ -60,7 +60,7 @@ def mock_client():
 
 @pytest.fixture
 @patch("oci.config.validate_config")
-@patch("genai_bench.oci_object_storage.os_datastore.ObjectStorageClient")
+@patch("genai_bench.storage.oci_object_storage.os_datastore.ObjectStorageClient")
 def test_store(mock_client_class, mock_validate_config, mock_client):
     """Create a CasperDataStore with mock client."""
     mock_client_class.return_value = mock_client
@@ -70,7 +70,7 @@ def test_store(mock_client_class, mock_validate_config, mock_client):
 
 
 @patch("oci.config.validate_config")
-@patch("genai_bench.oci_object_storage.os_datastore.ObjectStorageClient")
+@patch("genai_bench.storage.oci_object_storage.os_datastore.ObjectStorageClient")
 def test_initialization(mock_client_class, mock_validate_config, mock_client):
     """Test CasperDataStore initialization."""
     # Setup test data
@@ -353,7 +353,7 @@ def mock_upload_manager():
     return mock
 
 
-@patch("genai_bench.oci_object_storage.os_datastore.UploadManager")
+@patch("genai_bench.storage.oci_object_storage.os_datastore.UploadManager")
 def test_upload_large_file(
     mock_upload_manager_class, mock_upload_manager, test_store, tmp_path
 ):
@@ -387,7 +387,7 @@ def test_upload_large_file(
     )
 
 
-@patch("genai_bench.oci_object_storage.os_datastore.UploadManager")
+@patch("genai_bench.storage.oci_object_storage.os_datastore.UploadManager")
 def test_upload_large_file_error(
     mock_upload_manager_class, mock_upload_manager, test_store, tmp_path
 ):

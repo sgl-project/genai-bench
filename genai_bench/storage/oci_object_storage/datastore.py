@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from genai_bench.oci_object_storage.object_uri import ObjectURI
+from genai_bench.storage.oci_object_storage.object_uri import ObjectURI
 
 
 class DataStore(ABC):

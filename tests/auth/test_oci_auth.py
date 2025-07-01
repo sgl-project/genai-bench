@@ -108,23 +108,21 @@ class TestOCIUserPrincipalAuth:
 
     @patch("oci.signer.Signer.from_config")
     @patch("oci.config.from_file")
-    def test_get_auth_credentials(
-        self, mock_from_file, mock_from_config, mock_config_file
-    ):
+    def test_get_credentials(self, mock_from_file, mock_from_config, mock_config_file):
         """Test getting OCI signer."""
         mock_from_file.return_value = MOCK_CONFIG.copy()
         mock_signer = MockOCISigner()
         mock_from_config.return_value = mock_signer
 
         auth = OCIUserPrincipalAuth(config_path=mock_config_file)
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
 
         assert signer == mock_signer
         mock_from_file.assert_called_once_with(mock_config_file, "DEFAULT")
         mock_from_config.assert_called_once_with(MOCK_CONFIG)
 
         # Second call should use cached signer
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
         assert signer == mock_signer
         mock_from_file.assert_called_once()
         mock_from_config.assert_called_once()
@@ -151,19 +149,19 @@ class TestOCIInstancePrincipalAuth:
         assert auth._signer is None
 
     @patch("oci.auth.signers.InstancePrincipalsSecurityTokenSigner")
-    def test_get_auth_credentials(self, mock_signer_class):
+    def test_get_credentials(self, mock_signer_class):
         """Test getting instance principal signer."""
         mock_signer = MockOCISigner()
         mock_signer_class.return_value = mock_signer
 
         auth = OCIInstancePrincipalAuth()
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
 
         assert signer == mock_signer
         mock_signer_class.assert_called_once()
 
         # Second call should use cached signer
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
         assert signer == mock_signer
         mock_signer_class.assert_called_once()
 
@@ -203,19 +201,19 @@ class TestOCIOBOTokenAuth:
         assert auth._signer is None
 
     @patch("oci.auth.signers.SecurityTokenSigner")
-    def test_get_auth_credentials(self, mock_signer_class):
+    def test_get_credentials(self, mock_signer_class):
         """Test getting security token signer."""
         mock_signer = MockOCISigner()
         mock_signer_class.return_value = mock_signer
 
         auth = OCIOBOTokenAuth(token=MOCK_TOKEN, region=MOCK_REGION)
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
 
         assert signer == mock_signer
         mock_signer_class.assert_called_once_with(MOCK_TOKEN, region=MOCK_REGION)
 
         # Second call should use cached signer
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
         assert signer == mock_signer
         mock_signer_class.assert_called_once()
 

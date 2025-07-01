@@ -12,7 +12,7 @@ class MockAuthProvider(AuthProvider):
     def get_config(self):
         return {}
 
-    def get_auth_credentials(self):
+    def get_credentials(self):
         return "mock-credentials"
 
 
@@ -55,7 +55,7 @@ class TestOpenAIAuth:
         auth = OpenAIAuth(api_key=MOCK_API_KEY)
         assert auth.get_config() == {}
 
-    def test_get_auth_credentials(self):
+    def test_get_credentials(self):
         """Test getting OpenAI credentials."""
         auth = OpenAIAuth(api_key=MOCK_API_KEY)
-        assert auth.get_auth_credentials() == MOCK_API_KEY
+        assert auth.get_credentials() == MOCK_API_KEY

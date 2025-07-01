@@ -18,7 +18,7 @@ from genai_bench.user.openai_user import OpenAIUser
 def mock_openai_user():
     # Set up mock auth provider
     mock_auth = MagicMock()
-    mock_auth.get_auth_credentials.return_value = "fake_api_key"
+    mock_auth.get_credentials.return_value = "fake_api_key"
     mock_auth.get_config.return_value = {
         "api_base": "http://example.com",
         "api_key": "fake_api_key",
