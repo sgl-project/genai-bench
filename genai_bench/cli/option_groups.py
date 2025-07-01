@@ -74,12 +74,158 @@ def api_options(func):
     )(func)
     func = click.option(
         "--api-backend",
-        type=click.Choice(["openai", "oci-cohere", "cohere"], case_sensitive=False),
+        type=click.Choice(
+            [
+                "openai",
+                "oci-cohere",
+                "cohere",
+                "aws-bedrock",
+                "azure-openai",
+                "gcp-vertex",
+                "vllm",
+                "sglang",
+            ],
+            case_sensitive=False,
+        ),
         required=True,
         prompt=True,
         callback=validate_api_backend,
-        help="The API backend to use.",
+        help="The API backend to use. Supports major cloud providers and "
+        "open-source servers.",
     )(func)
+    return func
+
+
+# Model endpoint authentication options
+def model_auth_options(func):
+    """Model endpoint authentication options.
+
+    Supports authentication for various model providers:
+    - OpenAI: API key authentication
+    - OCI: Multiple auth methods (user_principal, instance_principal, etc.)
+    - AWS Bedrock: IAM credentials or profile
+    - Azure OpenAI: API key or Azure AD
+    - GCP Vertex: Service account or API key
+    - vLLM/SGLang: Optional bearer token
+    """
+    # Model provider selection (determines which auth options are relevant)
+    func = click.option(
+        "--model-auth-type",
+        type=str,
+        default=None,
+        help="Authentication type for the model provider. "
+        "Options depend on --api-backend.",
+    )(func)
+
+    # OpenAI and general API key auth
+    func = click.option(
+        "--model-api-key",
+        type=str,
+        default=None,
+        envvar="MODEL_API_KEY",
+        help="API key for model authentication "
+        "(OpenAI, Azure OpenAI, GCP with API key).",
+    )(func)
+
+    # AWS Bedrock auth options
+    func = click.option(
+        "--aws-access-key-id",
+        type=str,
+        default=None,
+        envvar="AWS_ACCESS_KEY_ID",
+        help="AWS access key ID for Bedrock authentication.",
+    )(func)
+
+    func = click.option(
+        "--aws-secret-access-key",
+        type=str,
+        default=None,
+        envvar="AWS_SECRET_ACCESS_KEY",
+        help="AWS secret access key for Bedrock authentication.",
+    )(func)
+
+    func = click.option(
+        "--aws-session-token",
+        type=str,
+        default=None,
+        envvar="AWS_SESSION_TOKEN",
+        help="AWS session token for temporary credentials.",
+    )(func)
+
+    func = click.option(
+        "--aws-profile",
+        type=str,
+        default=None,
+        envvar="AWS_PROFILE",
+        help="AWS profile name to use from credentials file.",
+    )(func)
+
+    func = click.option(
+        "--aws-region",
+        type=str,
+        default=None,
+        envvar="AWS_DEFAULT_REGION",
+        help="AWS region for Bedrock.",
+    )(func)
+
+    # Azure OpenAI auth options
+    func = click.option(
+        "--azure-endpoint",
+        type=str,
+        default=None,
+        envvar="AZURE_OPENAI_ENDPOINT",
+        help="Azure OpenAI endpoint URL.",
+    )(func)
+
+    func = click.option(
+        "--azure-deployment",
+        type=str,
+        default=None,
+        envvar="AZURE_OPENAI_DEPLOYMENT",
+        help="Azure OpenAI deployment name.",
+    )(func)
+
+    func = click.option(
+        "--azure-api-version",
+        type=str,
+        default="2024-02-01",
+        envvar="AZURE_OPENAI_API_VERSION",
+        help="Azure OpenAI API version.",
+    )(func)
+
+    func = click.option(
+        "--azure-ad-token",
+        type=str,
+        default=None,
+        envvar="AZURE_AD_TOKEN",
+        help="Azure AD token for authentication.",
+    )(func)
+
+    # GCP Vertex AI auth options
+    func = click.option(
+        "--gcp-project-id",
+        type=str,
+        default=None,
+        envvar="GCP_PROJECT_ID",
+        help="GCP project ID for Vertex AI.",
+    )(func)
+
+    func = click.option(
+        "--gcp-location",
+        type=str,
+        default="us-central1",
+        envvar="GCP_LOCATION",
+        help="GCP location/region for Vertex AI.",
+    )(func)
+
+    func = click.option(
+        "--gcp-credentials-path",
+        type=str,
+        default=None,
+        envvar="GOOGLE_APPLICATION_CREDENTIALS",
+        help="Path to GCP service account JSON file.",
+    )(func)
+
     return func
 
 
@@ -447,31 +593,183 @@ def distributed_locust_options(func):
     return func
 
 
+# Storage provider authentication options
+def storage_auth_options(func):
+    """Storage provider authentication options.
+
+    Supports various storage providers:
+    - OCI Object Storage
+    - AWS S3
+    - Azure Blob Storage
+    - GCP Cloud Storage
+    - GitHub Releases/Artifacts
+    """
+    # Storage provider selection
+    func = click.option(
+        "--storage-provider",
+        type=click.Choice(
+            ["oci", "aws", "azure", "gcp", "github"], case_sensitive=False
+        ),
+        default="oci",
+        help="Storage provider for uploading results. "
+        "Defaults to OCI for backward compatibility.",
+    )(func)
+
+    # Generic storage options
+    func = click.option(
+        "--storage-bucket",
+        type=str,
+        help="Bucket/container name for storage provider.",
+    )(func)
+
+    func = click.option(
+        "--storage-prefix",
+        type=str,
+        default="",
+        help="Prefix for uploaded objects in the bucket.",
+    )(func)
+
+    # Storage auth type
+    func = click.option(
+        "--storage-auth-type",
+        type=str,
+        default=None,
+        help="Authentication type for storage provider. "
+        "Options depend on --storage-provider.",
+    )(func)
+
+    # AWS S3 storage auth options
+    func = click.option(
+        "--storage-aws-access-key-id",
+        type=str,
+        default=None,
+        envvar="AWS_ACCESS_KEY_ID",
+        help="AWS access key ID for S3 storage.",
+    )(func)
+
+    func = click.option(
+        "--storage-aws-secret-access-key",
+        type=str,
+        default=None,
+        envvar="AWS_SECRET_ACCESS_KEY",
+        help="AWS secret access key for S3 storage.",
+    )(func)
+
+    func = click.option(
+        "--storage-aws-session-token",
+        type=str,
+        default=None,
+        envvar="AWS_SESSION_TOKEN",
+        help="AWS session token for S3 storage.",
+    )(func)
+
+    func = click.option(
+        "--storage-aws-region",
+        type=str,
+        default=None,
+        envvar="AWS_DEFAULT_REGION",
+        help="AWS region for S3 storage.",
+    )(func)
+
+    func = click.option(
+        "--storage-aws-profile",
+        type=str,
+        default=None,
+        envvar="AWS_PROFILE",
+        help="AWS profile for S3 storage.",
+    )(func)
+
+    # Azure Blob storage auth options
+    func = click.option(
+        "--storage-azure-account-name",
+        type=str,
+        default=None,
+        envvar="AZURE_STORAGE_ACCOUNT_NAME",
+        help="Azure storage account name.",
+    )(func)
+
+    func = click.option(
+        "--storage-azure-account-key",
+        type=str,
+        default=None,
+        envvar="AZURE_STORAGE_ACCOUNT_KEY",
+        help="Azure storage account key.",
+    )(func)
+
+    func = click.option(
+        "--storage-azure-connection-string",
+        type=str,
+        default=None,
+        envvar="AZURE_STORAGE_CONNECTION_STRING",
+        help="Azure storage connection string (overrides account name/key).",
+    )(func)
+
+    func = click.option(
+        "--storage-azure-sas-token",
+        type=str,
+        default=None,
+        envvar="AZURE_STORAGE_SAS_TOKEN",
+        help="Azure storage SAS token.",
+    )(func)
+
+    # GCP Cloud Storage auth options
+    func = click.option(
+        "--storage-gcp-project-id",
+        type=str,
+        default=None,
+        envvar="GCP_PROJECT_ID",
+        help="GCP project ID for Cloud Storage.",
+    )(func)
+
+    func = click.option(
+        "--storage-gcp-credentials-path",
+        type=str,
+        default=None,
+        envvar="GOOGLE_APPLICATION_CREDENTIALS",
+        help="Path to GCP service account JSON for Cloud Storage.",
+    )(func)
+
+    # GitHub storage options
+    func = click.option(
+        "--github-token",
+        type=str,
+        default=None,
+        envvar="GITHUB_TOKEN",
+        help="GitHub personal access token.",
+    )(func)
+
+    func = click.option(
+        "--github-owner",
+        type=str,
+        default=None,
+        envvar="GITHUB_OWNER",
+        help="GitHub repository owner (user or org).",
+    )(func)
+
+    func = click.option(
+        "--github-repo",
+        type=str,
+        default=None,
+        envvar="GITHUB_REPO",
+        help="GitHub repository name.",
+    )(func)
+
+    return func
+
+
 # Group object storage upload options
 def object_storage_options(func):
     """Object Storage related options for uploading benchmark results."""
     func = click.option(
-        "--prefix",
-        type=str,
-        default="",
-        help="Prefix for uploaded objects in the bucket",
-    )(func)
-    func = click.option(
         "--namespace",
         type=str,
-        help="OCI Object Storage namespace",
-    )(func)
-    func = click.option(
-        "--bucket",
-        type=str,
-        is_eager=True,  # Process this option before others
-        help="OCI Object Storage bucket name",
+        help="OCI Object Storage namespace (OCI-specific)",
     )(func)
     func = click.option(
         "--upload-results",
         is_flag=True,
         default=False,
         callback=validate_object_storage_options,
-        help="Whether to upload benchmark results to OCI Object Storage",
+        help="Whether to upload benchmark results to storage",
     )(func)
     return func

@@ -1,0 +1,1 @@
+"""OCI authentication adapter tests."""

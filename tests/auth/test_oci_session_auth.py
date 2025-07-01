@@ -84,7 +84,7 @@ class TestOCISessionAuth:
     @patch("oci.config.from_file")
     @patch("oci.signer.load_private_key_from_file")
     @patch("builtins.open", new_callable=mock_open, read_data=MOCK_SECURITY_TOKEN)
-    def test_get_auth_credentials(
+    def test_get_credentials(
         self, mock_file, mock_load_key, mock_from_file, mock_config_file
     ):
         """Test getting OCI signer with security token."""
@@ -95,12 +95,12 @@ class TestOCISessionAuth:
         mock_load_key.return_value = private_key
 
         auth = OCISessionAuth(config_path=mock_config_file)
-        signer = auth.get_auth_credentials()
+        signer = auth.get_credentials()
 
         assert isinstance(signer, oci.auth.signers.SecurityTokenSigner)
         mock_load_key.assert_called_once_with(MOCK_CONFIG["key_file"], None)
         mock_file.assert_called_once_with(MOCK_CONFIG["security_token_file"])
 
         # Test caching
-        signer2 = auth.get_auth_credentials()
+        signer2 = auth.get_credentials()
         assert signer2 is signer  # Should return cached signer

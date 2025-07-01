@@ -516,11 +516,11 @@ def test_benchmark_command_with_traffic_scenarios(cli_runner, default_options, c
 )
 def test_benchmark_command_with_oci_auth(cli_runner, default_options, caplog):
     """Test benchmark command with OCI authentication."""
-    with patch("genai_bench.cli.cli.AuthFactory") as mock_auth_factory:
-        # Mock AuthFactory
+    with patch("genai_bench.cli.cli.UnifiedAuthFactory") as mock_auth_factory:
+        # Mock UnifiedAuthFactory
         mock_auth = MagicMock()
         mock_auth.get_config.return_value = {"auth_type": "instance_principal"}
-        mock_auth_factory.create_oci_auth.return_value = mock_auth
+        mock_auth_factory.create_model_auth.return_value = mock_auth
 
         with caplog.at_level(logging.INFO):
             result = cli_runner.invoke(
@@ -561,8 +561,9 @@ def test_benchmark_command_with_oci_auth(cli_runner, default_options, caplog):
                 ],
             )
             assert result.exit_code == 0, f"Command failed with output: {result.output}"
-            assert "Using OCI authentication: instance_principal" in caplog.text
-            mock_auth_factory.create_oci_auth.assert_called_once_with(
+            assert "Using oci-cohere authentication" in caplog.text
+            mock_auth_factory.create_model_auth.assert_called_once_with(
+                "oci",
                 auth_type="instance_principal",
                 config_path="~/.oci/config",
                 profile="DEFAULT",

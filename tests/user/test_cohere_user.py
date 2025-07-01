@@ -35,7 +35,7 @@ def cohere_user(mock_env):
 
     # Set up mock auth provider
     mock_auth = MagicMock()
-    mock_auth.get_auth_credentials.return_value = "test-key"
+    mock_auth.get_credentials.return_value = "test-key"
     mock_auth.get_config.return_value = {
         "api_base": "https://api.cohere.com",
         "api_key": "test-key",

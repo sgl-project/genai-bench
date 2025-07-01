@@ -29,13 +29,13 @@ class OCIInstancePrincipalAuth(AuthProvider):
         Raises:
             Exception: If instance principal auth is not configured
         """
-        signer = self.get_auth_credentials()
+        signer = self.get_credentials()
         config = {"region": signer.region, "tenancy": signer.tenancy_id}
         if self.region:
             config["region"] = self.region
         return config
 
-    def get_auth_credentials(self) -> oci.signer.AbstractBaseSigner:
+    def get_credentials(self) -> oci.signer.AbstractBaseSigner:
         """Get OCI instance principal signer.
 
         Returns:
