@@ -119,7 +119,6 @@ def benchmark(
     master_port,
     upload_results,
     namespace,
-    prefix,
     prompt_prefix_length,
     prompt_prefix_length_ratio,
     # Storage auth options
