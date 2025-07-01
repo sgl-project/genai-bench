@@ -245,3 +245,21 @@ class TestTextSampler(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             prefix_sampler.sample(scenario)
+
+    def test_empty_dataset(self):
+        """Test sampling from an empty dataset."""
+        empty_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=[],
+            use_scenario=True,
+        )
+        scenario = NormalDistribution(10, 0, 10, 0)
+
+        with self.assertRaises(ValueError) as context:
+            empty_sampler.sample(scenario)
+
+        self.assertEqual(
+            str(context.exception), "Cannot sample text from an empty dataset"
+        )
