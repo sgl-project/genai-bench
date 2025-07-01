@@ -77,6 +77,24 @@ lint: ## Run linters using ruff.
 .PHONY: check
 check: format lint ## Run format and lint.
 
+##@ Documentation
+
+.PHONY: docs
+docs: ## Install documentation dependencies.
+	uv pip install ".[docs]"
+
+.PHONY: docs-serve
+docs-serve: ## Serve documentation locally with live reload.
+	uv run mkdocs serve -f docs/.config/mkdocs.yml
+
+.PHONY: docs-build
+docs-build: ## Build documentation to site/ directory.
+	uv run mkdocs build -f docs/.config/mkdocs.yml
+
+.PHONY: docs-deploy
+docs-deploy: ## Deploy documentation to GitHub Pages.
+	uv run mkdocs gh-deploy --config-file docs/.config/mkdocs-gh-pages.yml
+
 ##@ Build
 
 .PHONY: build

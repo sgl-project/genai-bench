@@ -1,0 +1,137 @@
+site_name: GenAI Bench
+site_description: Unified, accurate, and beautiful LLM Benchmarking
+site_url: ""  # Empty for local development
+repo_url: https://github.com/sgl-project/genai-bench
+repo_name: sgl-project/genai-bench
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024 GenAI Bench Contributors
+docs_dir: ../
+site_dir: ../../site
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Palette toggle for dark mode (default)
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.prune
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - header.autohide
+    - announce.dismiss
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+
+plugins:
+  - search:
+      separator: '[\s\-\_\.]'
+
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sgl-project/genai-bench
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/genai-bench/
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Task Definition: getting-started/task-definition.md
+    - Command Guidelines: getting-started/command-guidelines.md
+    - Metrics Definition: getting-started/metrics-definition.md
+  - User Guide:
+    - user-guide/index.md
+    - Run Benchmark: user-guide/run-benchmark.md
+    - Multi-Cloud Authentication: user-guide/multi-cloud-auth-storage.md
+    - Quick Reference: user-guide/multi-cloud-quick-reference.md
+    - Docker Deployment: user-guide/run-benchmark-using-docker.md
+    - Excel Reports: user-guide/generate-excel-sheet.md
+    - Visualizations: user-guide/generate-plot.md
+    - Upload Results: user-guide/upload-benchmark-result.md
+  - Examples:
+    - examples/index.md
+    - Plot Configuration: examples/plot-config-examples.md
+  - Development:
+    - development/index.md
+    - Contributing: development/contributing.md
+  - API Reference:
+    - api/index.md
