@@ -375,7 +375,7 @@ def experiment_options(func):
         "to all inputs to test prefix caching.",
     )(func)
     func = click.option(
-        "--prompt-prefix-length-ratio",
+        "--prompt-prefix-ratio",
         type=click.FloatRange(0.0, 1.0),
         default=0.0,
         callback=validate_prefix_options,
