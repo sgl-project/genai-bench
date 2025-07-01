@@ -1,5 +1,6 @@
 # Run Benchmark
 
+> **Note**: GenAI Bench now supports multiple cloud providers for both model endpoints and storage. For detailed multi-cloud configuration, see the [Multi-Cloud Authentication & Storage Guide](multi-cloud-auth-storage.md) or the [Quick Reference](multi-cloud-quick-reference.md).
 
 ## Start a chat benchmark
 

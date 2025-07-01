@@ -66,6 +66,8 @@ GenAI Bench supports multiple benchmark types:
 
 ### 📖 User Guide
 - [Run Benchmark](user-guide/run-benchmark.md) - How to run benchmarks
+- [Multi-Cloud Authentication & Storage](user-guide/multi-cloud-auth-storage.md) - Comprehensive guide for cloud provider authentication
+- [Multi-Cloud Quick Reference](user-guide/multi-cloud-quick-reference.md) - Quick examples for common scenarios
 - [Run Benchmark with Docker](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
 - [Generate Excel Sheet](user-guide/generate-excel-sheet.md) - Creating Excel reports
 - [Generate Plot](user-guide/generate-plot.md) - Creating visualizations
