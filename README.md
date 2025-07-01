@@ -20,7 +20,7 @@ Unified, accurate, and beautiful LLM Benchmarking
 </div>
 
 <p align="center">
-| <a href="https://docs.sglang.ai/genai-bench/"><b>User Guide</b></a> | <a href="https://docs.sglang.ai/genai-bench/development/contributing/"><b>Contribution Guideline</b></a> |
+| <a href="https://sgl-project.github.io/genai-bench/"><b>User Guide</b></a> | <a href="https://sgl-project.github.io/genai-bench/development/contributing/"><b>Contribution Guideline</b></a> |
 </p>
 
 </div>
