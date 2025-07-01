@@ -2,20 +2,6 @@
 
 This section provides practical examples and configurations for GenAI Bench.
 
-## Available Examples
-
-<div class="grid cards" markdown>
-
--   :material-chart-box:{ .lg .middle } **Plot Configuration**
-
-    ---
-
-    Learn how to customize visualization plots
-
-    [:octicons-arrow-right-24: Plot Examples](plot-config-examples.md)
-
-</div>
-
 ## Quick Examples
 
 ### OpenAI GPT-4 Benchmark
