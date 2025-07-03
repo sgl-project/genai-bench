@@ -31,6 +31,8 @@ class TextSampler(Sampler):
         output_modality: str,
         data: List[str],
         use_scenario: bool = True,
+        prefix_length: int = 0,
+        prefix_length_ratio: float = 0.0,
         additional_request_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -46,6 +48,9 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = False
 
         self.batch_size = 1  # Default batch size
+        self.prefix_length = prefix_length
+        self.prefix_length_ratio = prefix_length_ratio
+        self.prefix = ""
 
     def sample(self, scenario: Scenario) -> UserRequest:
         """
@@ -78,6 +83,7 @@ class TextSampler(Sampler):
             # Use scenario-based sampling
             self._validate_scenario(scenario)
             num_input_tokens, num_output_tokens = scenario.sample()
+
             prompt = self._sample_text(num_input_tokens)
             max_tokens = num_output_tokens
             num_prefill_tokens = self.get_token_length(prompt)
@@ -159,6 +165,37 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
+    def _generate_prefix(self, current_prefix_length) -> str:
+        """
+        Generates prefix of length current_prefix_length to be
+        prepended to all input prompts.
+        """
+
+        data_copy = self.data.copy()
+
+        if not self.data:
+            raise ValueError("Cannot generate prefix from an empty dataset")
+
+        prefix = ""
+        prefix_tokens = 0
+        # Generate the prefix
+        while prefix_tokens < current_prefix_length:
+            random.shuffle(data_copy)
+            for line in data_copy:
+                tokens = self.get_token_length(line)
+                if prefix_tokens + tokens > current_prefix_length:
+                    # Truncate the line if it exceeds the remaining prefix length
+                    remaining_prefix_len = current_prefix_length - prefix_tokens
+                    # Always add at least one char to prevent infinite loop
+                    truncate = max(int(remaining_prefix_len * self.char_token_ratio), 1)
+                    prefix += line[:truncate]
+                    prefix_tokens += remaining_prefix_len
+                    break
+                prefix += line
+                prefix_tokens += tokens
+
+        return prefix
+
     def _sample_text(self, num_input_tokens: int) -> str:
         """
         Samples text from a list of lines based on the specified number of
@@ -167,13 +204,39 @@ class TextSampler(Sampler):
         Args:
             num_input_tokens (int): The target number of input tokens.
 
+        Raises:
+            ValueError: if the prompt length is shorter than the prefix
+                length.
+
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
-        data_copy = self.data.copy()
-        prompt = ""
-        left_tokens_to_sample = num_input_tokens
 
+        # Calculate actual prefix length based on ratio or fixed length
+        current_prefix_length = 0
+        if self.prefix_length_ratio > 0.0:
+            current_prefix_length = int(num_input_tokens * self.prefix_length_ratio)
+        else:
+            current_prefix_length = self.prefix_length
+
+        data_copy = self.data.copy()
+
+        if not self.data:
+            raise ValueError("Cannot sample text from an empty dataset")
+
+        if num_input_tokens <= current_prefix_length:
+            raise ValueError("Prefix length must be shorter than total input length")
+
+        # Generate the prefix if it hasn't been created yet
+        if self.get_token_length(self.prefix) != current_prefix_length:
+            self.prefix = self._generate_prefix(current_prefix_length)
+
+        # Prepend the prefix to all prompts with a 4 randomly picked digits
+        prompt = f"{self.prefix}{random.randint(1000,9999)}"
+        left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
+
+        if left_tokens_to_sample < 0:
+            return prompt[: self.get_token_length(prompt) + left_tokens_to_sample]
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
