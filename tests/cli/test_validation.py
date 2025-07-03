@@ -150,13 +150,20 @@ def test_validate_tokenizer_with_hf_api(monkeypatch):
 
 
 def test_validate_tokenizer_no_hf_token(monkeypatch):
+    """Ensure validator succeeds anonymously when HF_TOKEN is absent and the model is public."""
     monkeypatch.setattr(Path, "exists", lambda self: False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
-    model_name = "bert-base-uncased"
+    mock_tokenizer = MagicMock()
 
-    with pytest.raises(click.BadParameter):
-        validate_tokenizer(model_name)
+    with patch(
+        "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
+    ) as mock_from_pretrained:
+        model_name = "bert-base-uncased"
+        tokenizer = validate_tokenizer(model_name)
+
+        mock_from_pretrained.assert_called_once_with(model_name, token=None)
+        assert tokenizer == mock_tokenizer
 
 
 def test_set_model_from_tokenizer():

@@ -4,6 +4,12 @@ from pathlib import Path
 
 import click
 from transformers import AutoTokenizer
+try:
+    # huggingface_hub >= 0.20
+    from huggingface_hub.utils import HfHubHTTPError
+except ImportError:  # pragma: no cover
+    # Older versions
+    from huggingface_hub.utils._errors import HfHubHTTPError
 
 from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
@@ -141,22 +147,30 @@ def validate_traffic_scenario_callback(ctx, param, value):
 
 
 def validate_tokenizer(model_tokenizer):
-    """Validate and load the tokenizer, either locally or from HuggingFace."""
+    """Validate and load the tokenizer, either locally or from HuggingFace.
+
+    The function now tries an **anonymous** download first to support public
+    repositories without requiring an ``HF_TOKEN``. Authentication is only
+    enforced when the Hugging Face Hub returns *401* or *403* errors.
+    """
+    # 1. Local path – always preferred when it exists
     if isinstance(model_tokenizer, str) and Path(model_tokenizer).exists():
-        # Load the tokenizer directly from the local path
-        tokenizer = AutoTokenizer.from_pretrained(model_tokenizer)
-    else:
-        hf_token = os.environ.get("HF_TOKEN")
-        if hf_token is None:
+        return AutoTokenizer.from_pretrained(model_tokenizer)
+
+    # 2. Remote repository – attempt to download (token may be *None*)
+    hf_token = os.environ.get("HF_TOKEN")
+
+    try:
+        return AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
+    except HfHubHTTPError as e:
+        # If authentication is required (private/gated repo) but no token is supplied
+        if e.response is not None and e.response.status_code in {401, 403} and hf_token is None:
             raise click.BadParameter(
-                "The HF_TOKEN environment variable is not set. "
-                "It is a required parameter to download tokenizer from "
-                "HuggingFace."
-            )
-
-        tokenizer = AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
-
-    return tokenizer
+                "Hugging Face requires authentication for this tokenizer. "
+                "Please export HF_TOKEN with a valid access token and retry."
+            ) from e
+        # Propagate all other errors unchanged
+        raise
 
 
 def validate_iteration_params(ctx, param, value) -> str:
