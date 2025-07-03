@@ -101,11 +101,12 @@ class HuggingFaceDatasetSource(DatasetSource):
 
         # Verify dataset exists
         try:
-            dataset_info(self.config.path, token=os.environ.get("HF_TOKEN"))
+            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+            dataset_info(self.config.path, token=hf_token)
         except DatasetNotFoundError as e:
             raise ValueError(
                 f"Dataset '{self.config.path}' not found on HuggingFace Hub. "
-                f"If it's a gated repo, please set HF_TOKEN environment "
+                f"If it's a gated repo, please set HF_TOKEN or HUGGINGFACE_API_KEY environment "
                 f"variable."
             ) from e
 
