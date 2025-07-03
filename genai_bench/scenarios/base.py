@@ -88,9 +88,9 @@ class Scenario(ABC):
         cls.validate(scenario_str)
         type_identifier = scenario_str[0]
         scenario_class = cls._registry.get(type_identifier)
-        assert (
-            scenario_class is not None
-        ), "scenario_class should not be None at this step"
+        assert scenario_class is not None, (
+            "scenario_class should not be None at this step"
+        )
         return scenario_class.parse(scenario_str[1:])
 
     @classmethod

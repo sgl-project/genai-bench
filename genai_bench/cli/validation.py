@@ -4,12 +4,13 @@ from pathlib import Path
 
 import click
 from transformers import AutoTokenizer
+
 try:
     # huggingface_hub >= 0.20
     from huggingface_hub.utils import HfHubHTTPError
 except ImportError:  # pragma: no cover
     # Older versions
-    from huggingface_hub.utils._errors import HfHubHTTPError
+    from huggingface_hub.utils._errors import HfHubHTTPError  # type: ignore[no-redef]
 
 from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
@@ -163,10 +164,15 @@ def validate_tokenizer(model_tokenizer):
     try:
         return AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
     except HfHubHTTPError as e:
-        if e.response is not None and e.response.status_code in {401, 403} and hf_token is None:
+        if (
+            e.response is not None
+            and e.response.status_code in {401, 403}
+            and hf_token is None
+        ):
             raise click.BadParameter(
                 "Hugging Face requires authentication for this tokenizer. "
-                "Please export HF_TOKEN or HUGGINGFACE_API_KEY with a valid access token and retry."
+                "Please export HF_TOKEN or HUGGINGFACE_API_KEY with a valid access "
+                "token and retry."
             ) from e
         raise
 

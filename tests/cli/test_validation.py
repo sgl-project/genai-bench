@@ -150,7 +150,8 @@ def test_validate_tokenizer_with_hf_api(monkeypatch):
 
 
 def test_validate_tokenizer_no_hf_token(monkeypatch):
-    """Ensure validator succeeds anonymously when HF_TOKEN is absent and the model is public."""
+    """Ensure validator passes anonymously when HF_TOKEN is absent
+    and the model is public."""
     monkeypatch.setattr(Path, "exists", lambda self: False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
