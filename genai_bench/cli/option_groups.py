@@ -446,7 +446,7 @@ def experiment_options(func):
                    - Format: E(max_tokens_per_document)
                    - Examples: E(1024)
 
-                Supported scenarios for  are:
+                Supported scenarios are:
 
                 \b
                 1.  **ReRank (R)**: Documents and query is input.
