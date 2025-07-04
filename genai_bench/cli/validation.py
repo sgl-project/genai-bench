@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import click
+from huggingface_hub.utils import HfHubHTTPError
 from transformers import AutoTokenizer
 
 from genai_bench.data.config import DatasetConfig
@@ -141,22 +142,39 @@ def validate_traffic_scenario_callback(ctx, param, value):
 
 
 def validate_tokenizer(model_tokenizer):
-    """Validate and load the tokenizer, either locally or from HuggingFace."""
+    """Validate and load the tokenizer, either locally or from HuggingFace.
+
+    The function now tries an **anonymous** download first to support public
+    repositories without requiring an ``HF_TOKEN``. Authentication is only
+    enforced when the Hugging Face Hub returns *401* or *403* errors.
+    """
     if isinstance(model_tokenizer, str) and Path(model_tokenizer).exists():
-        # Load the tokenizer directly from the local path
-        tokenizer = AutoTokenizer.from_pretrained(model_tokenizer)
-    else:
-        hf_token = os.environ.get("HF_TOKEN")
-        if hf_token is None:
+        return AutoTokenizer.from_pretrained(model_tokenizer)
+    hf_token = os.environ.get("HF_TOKEN")
+
+    try:
+        return AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
+    except (HfHubHTTPError, OSError) as e:
+        is_auth_error = False
+
+        if isinstance(e, OSError):
+            if (
+                "gated repo" in str(e)
+                or "private repository" in str(e)
+                and "make sure to pass a token" in str(e)
+            ):
+                is_auth_error = True
+        elif isinstance(e, HfHubHTTPError) and e.response is not None:
+            is_auth_error = e.response.status_code in {401, 403, 404}
+
+        if is_auth_error and hf_token is None:
             raise click.BadParameter(
-                "The HF_TOKEN environment variable is not set. "
-                "It is a required parameter to download tokenizer from "
-                "HuggingFace."
-            )
+                "Hugging Face requires authentication for this tokenizer. "
+                "Please export HF_TOKEN with a valid access token and retry."
+            ) from e
 
-        tokenizer = AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
-
-    return tokenizer
+        # Propagate all other errors unchanged
+        raise
 
 
 def validate_iteration_params(ctx, param, value) -> str:
