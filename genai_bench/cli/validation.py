@@ -157,17 +157,21 @@ def validate_tokenizer(model_tokenizer):
 
     try:
         return AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
-    except HfHubHTTPError as e:
-        # If authentication is required (private/gated repo) but no token is supplied
-        if (
-            e.response is not None
-            and e.response.status_code in {401, 403}
-            and hf_token is None
-        ):
+    except (HfHubHTTPError, OSError) as e:
+        # Check if this is an authentication error and no token is provided
+        is_auth_error = False
+
+        if isinstance(e, OSError) and "gated repo" in str(e):
+            is_auth_error = True
+        elif isinstance(e, HfHubHTTPError) and e.response is not None:
+            is_auth_error = e.response.status_code in {401, 403}
+
+        if is_auth_error and hf_token is None:
             raise click.BadParameter(
                 "Hugging Face requires authentication for this tokenizer. "
                 "Please export HF_TOKEN with a valid access token and retry."
             ) from e
+
         # Propagate all other errors unchanged
         raise
 
