@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import click
 import pytest
-from huggingface_hub.utils import HfHubHTTPError
 from transformers import BertTokenizerFast
 
 from genai_bench.cli.validation import (
@@ -151,37 +150,43 @@ def test_validate_tokenizer_with_hf_api(monkeypatch):
 
 
 def test_validate_tokenizer_no_hf_token(monkeypatch):
-    """Ensure validator passes anonymously when HF_TOKEN is absent
-    and the model is public."""
+    """Test tokenizer validation with public model succeeds without token."""
     monkeypatch.setattr(Path, "exists", lambda self: False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
     mock_tokenizer = MagicMock()
-
     with patch(
         "transformers.AutoTokenizer.from_pretrained", return_value=mock_tokenizer
     ) as mock_from_pretrained:
         model_name = "bert-base-uncased"
         tokenizer = validate_tokenizer(model_name)
-
         mock_from_pretrained.assert_called_once_with(model_name, token=None)
         assert tokenizer == mock_tokenizer
 
 
-def test_validate_tokenizer_private_model_no_token(monkeypatch):
-    """Ensure validator raises BadParameter for private models without a token."""
+def test_validate_tokenizer_access_errors(monkeypatch):
+    """Test tokenizer validation catches access errors for restricted repos."""
     monkeypatch.setattr(Path, "exists", lambda self: False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
-    # Mock the HTTP error
-    mock_response = MagicMock()
-    mock_response.status_code = 401
-    mock_error = HfHubHTTPError("Unauthorized", response=mock_response)
+    # Test gated repo error
+    gated_error = OSError(
+        "You are trying to access a gated repo.\n"
+        "Make sure to have access to it at https://huggingface.co/meta-llama/Meta-Llama-3-8B."
+    )
+    with patch("transformers.AutoTokenizer.from_pretrained", side_effect=gated_error):
+        with pytest.raises(click.BadParameter) as exc_info:
+            validate_tokenizer("meta-llama/Meta-Llama-3-8B")
+        assert "Hugging Face requires authentication" in str(exc_info.value)
 
-    with patch("transformers.AutoTokenizer.from_pretrained", side_effect=mock_error):
+    # Test private repo error
+    private_error = OSError(
+        "private/model is not a local folder and is not a valid model identifier\n"
+        "If this is a private repository, make sure to pass a token"
+    )
+    with patch("transformers.AutoTokenizer.from_pretrained", side_effect=private_error):
         with pytest.raises(click.BadParameter) as exc_info:
             validate_tokenizer("private/model")
-
         assert "Hugging Face requires authentication" in str(exc_info.value)
 
 
