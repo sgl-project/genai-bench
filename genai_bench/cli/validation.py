@@ -148,16 +148,17 @@ def validate_tokenizer(model_tokenizer):
     repositories without requiring an ``HF_TOKEN``. Authentication is only
     enforced when the Hugging Face Hub returns *401* or *403* errors.
     """
-
+    # 1. Local path – always preferred when it exists
     if isinstance(model_tokenizer, str) and Path(model_tokenizer).exists():
         return AutoTokenizer.from_pretrained(model_tokenizer)
 
-    # Check for both HF_TOKEN and HUGGINGFACE_API_KEY environment variables
-    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    # 2. Remote repository – attempt to download (token may be *None*)
+    hf_token = os.environ.get("HF_TOKEN")
 
     try:
         return AutoTokenizer.from_pretrained(model_tokenizer, token=hf_token)
     except HfHubHTTPError as e:
+        # If authentication is required (private/gated repo) but no token is supplied
         if (
             e.response is not None
             and e.response.status_code in {401, 403}
@@ -167,6 +168,7 @@ def validate_tokenizer(model_tokenizer):
                 "Hugging Face requires authentication for this tokenizer. "
                 "Please export HF_TOKEN with a valid access token and retry."
             ) from e
+        # Propagate all other errors unchanged
         raise
 
 

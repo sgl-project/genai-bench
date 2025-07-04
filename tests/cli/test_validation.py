@@ -172,7 +172,6 @@ def test_validate_tokenizer_private_model_no_token(monkeypatch):
     """Ensure validator raises BadParameter for private models without a token."""
     monkeypatch.setattr(Path, "exists", lambda self: False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
 
     # Mock the HTTP error
     mock_response = MagicMock()
