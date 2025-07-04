@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import click
 import pytest
+from huggingface_hub.utils import HfHubHTTPError
 from transformers import BertTokenizerFast
 
 from genai_bench.cli.validation import (
@@ -165,6 +166,24 @@ def test_validate_tokenizer_no_hf_token(monkeypatch):
 
         mock_from_pretrained.assert_called_once_with(model_name, token=None)
         assert tokenizer == mock_tokenizer
+
+
+def test_validate_tokenizer_private_model_no_token(monkeypatch):
+    """Ensure validator raises BadParameter for private models without a token."""
+    monkeypatch.setattr(Path, "exists", lambda self: False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+
+    # Mock the HTTP error
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_error = HfHubHTTPError("Unauthorized", response=mock_response)
+
+    with patch("transformers.AutoTokenizer.from_pretrained", side_effect=mock_error):
+        with pytest.raises(click.BadParameter) as exc_info:
+            validate_tokenizer("private/model")
+
+        assert "Hugging Face requires authentication" in str(exc_info.value)
 
 
 def test_set_model_from_tokenizer():

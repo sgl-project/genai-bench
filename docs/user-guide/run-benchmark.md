@@ -13,7 +13,7 @@ Below is a sample command you can use to start a benchmark. The command will con
 
 ```shell
 # Optional. Only needed for private/gated repositories or higher rate-limits
-# export HF_TOKEN="<your-token>"
+export HF_TOKEN="<your-token>"
 # HF transformers will log a warning about torch not installed, since benchmark doesn't really need torch
 # and cuda, we use this env to disable the warning
 export TRANSFORMERS_VERBOSITY=error
