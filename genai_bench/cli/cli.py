@@ -282,6 +282,7 @@ def benchmark(
         data=data,
         use_scenario=use_scenario,
         additional_request_params=additional_request_params,
+        dataset_character_to_token_ratio=sonnet_character_token_ratio,
     )
 
     if not sampler.use_scenario:

@@ -38,6 +38,7 @@ class TextSampler(Sampler):
 
         self.data = data
         self.use_scenario = use_scenario
+        self.dataset_character_to_token_ratio = kwargs.get("dataset_character_to_token_ratio", 1)
 
         # Set ignore_eos based on scenario usage
         if use_scenario:
