@@ -129,7 +129,6 @@ nav:
     - Upload Results: user-guide/upload-benchmark-result.md
   - Examples:
     - examples/index.md
-    - Plot Configuration: examples/plot-config-examples.md
   - Development:
     - development/index.md
     - Contributing: development/contributing.md

@@ -20,7 +20,7 @@ Unified, accurate, and beautiful LLM Benchmarking
 </div>
 
 <p align="center">
-| <a href="https://sgl-project.github.io/genai-bench/"><b>User Guide</b></a> | <a href="https://sgl-project.github.io/genai-bench/development/contributing/"><b>Contribution Guideline</b></a> |
+| <a href="https://docs.sglang.ai/genai-bench/user-guide/"><b>User Guide</b></a> | <a href="https://docs.sglang.ai/genai-bench/development/contributing/"><b>Contribution Guideline</b></a> |
 </p>
 
 </div>
@@ -42,7 +42,7 @@ It provides detailed insights into model serving performance, offering both a us
 
 ## How to Start
 
-Please check [User Guide](https://sgl-project.github.io/genai-bench/) and [CONTRIBUTING.md](https://sgl-project.github.io/genai-bench/development/contributing/) for how to install and use genai-bench.
+Please check [User Guide](https://docs.sglang.ai/genai-bench/user-guide/) and [CONTRIBUTING.md](https://docs.sglang.ai/genai-bench/development/contributing/) for how to install and use genai-bench.
 
 ## Benchmark Metrics Definition
 
