@@ -31,8 +31,7 @@ class TextSampler(Sampler):
         output_modality: str,
         data: List[str],
         use_scenario: bool = True,
-        prefix_length: int = 0,
-        prefix_length_ratio: float = 0.0,
+        prompt_prefix_ratio: float = 0.0,
         additional_request_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
@@ -48,8 +47,7 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = False
 
         self.batch_size = 1  # Default batch size
-        self.prefix_length = prefix_length
-        self.prefix_length_ratio = prefix_length_ratio
+        self.prompt_prefix_ratio = prompt_prefix_ratio
         self.prefix = ""
 
     def sample(self, scenario: Scenario) -> UserRequest:
@@ -179,22 +177,20 @@ class TextSampler(Sampler):
             raise ValueError("Cannot generate prefix from an empty dataset")
 
         prefix = ""
-        prefix_tokens = 0
+        prefix_tokens_len = 0
         # Generate the prefix
-        while prefix_tokens < current_prefix_length:
+        while prefix_tokens_len < current_prefix_length:
             random.shuffle(data_copy)
             for line in data_copy:
-                tokens = self.get_token_length(line)
-                if prefix_tokens + tokens > current_prefix_length:
-                    # Truncate the line if it exceeds the remaining prefix length
-                    remaining_prefix_len = current_prefix_length - prefix_tokens
-                    # Always add at least one char to prevent infinite loop
-                    truncate = max(int(remaining_prefix_len * self.char_token_ratio), 1)
-                    prefix += line[:truncate]
-                    prefix_tokens += remaining_prefix_len
-                    break
+                line_tokens_len = self.get_token_length(line)
+                if prefix_tokens_len + line_tokens_len > current_prefix_length:
+                    remaining_prefix_len = current_prefix_length - prefix_tokens_len
+                    prefix += line[
+                        :remaining_prefix_len
+                    ]  # TODO: use char length to truncate
+                    return prefix
                 prefix += line
-                prefix_tokens += tokens
+                prefix_tokens_len += line_tokens_len
 
         return prefix
 
@@ -216,10 +212,8 @@ class TextSampler(Sampler):
 
         # Calculate actual prefix length based on ratio or fixed length
         current_prefix_length = 0
-        if self.prefix_length_ratio > 0.0:
-            current_prefix_length = int(num_input_tokens * self.prefix_length_ratio)
-        else:
-            current_prefix_length = self.prefix_length
+        if self.prompt_prefix_ratio > 0.0:
+            current_prefix_length = round(num_input_tokens * self.prompt_prefix_ratio)
 
         data_copy = self.data.copy()
 
@@ -233,8 +227,8 @@ class TextSampler(Sampler):
         if self.get_token_length(self.prefix) != current_prefix_length:
             self.prefix = self._generate_prefix(current_prefix_length)
 
-        # Prepend the prefix to all prompts with a 4 randomly picked digits
-        prompt = f"{self.prefix}{random.randint(1000,9999)}"
+        # Prepend the prefix to all prompts with a randomly picked 7 digits
+        prompt = f"{self.prefix}{random.randint(1000000,9999999)}"
         left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
 
         if left_tokens_to_sample < 0:
