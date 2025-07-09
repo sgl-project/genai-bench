@@ -213,7 +213,7 @@ class TextSampler(Sampler):
             tolerance (int, optional): Number of tokens to consider for discrepancies.
 
         Raises:
-            Warning: If the discrepancy exceeds threshold * num_input_tokens 
+            Warning: If the discrepancy exceeds threshold * num_input_tokens
             or is greater than tolerance tokens.
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
