@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import List
 
 from transformers import PreTrainedTokenizer
 
