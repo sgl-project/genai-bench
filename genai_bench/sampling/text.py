@@ -102,7 +102,7 @@ class TextSampler(Sampler):
         num_prefill_tokens = sum(self.get_token_length(doc) for doc in documents)
         num_expected_tokens = tokens_per_document * self.batch_size
 
-        self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 20)
+        self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 0.2, 20)
 
         return UserEmbeddingRequest(
             model=self.model,
@@ -217,7 +217,7 @@ class TextSampler(Sampler):
             or is greater than tolerance tokens.
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
-        if discrepancy > threshold * num_input_tokens and discrepancy > tolerance:
+        if discrepancy > threshold * num_input_tokens or discrepancy > tolerance:
             logger.warning(
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
