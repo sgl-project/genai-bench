@@ -165,7 +165,7 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
-    def _generate_prefix(self, current_prefix_length) -> str:
+    def _sample_prefix(self, current_prefix_length) -> str:
         """
         Generates prefix of length current_prefix_length to be
         prepended to all input prompts.
@@ -192,6 +192,35 @@ class TextSampler(Sampler):
                 prefix_tokens_len += line_tokens_len
 
         return prefix
+
+    def _get_current_prefix(self, prefix_length: int) -> str:
+        """
+        Returns the prefix for the current prompt of the specified length.
+
+        Args:
+            current_prefix_length (int): The desired length of the prefix.
+        """
+
+        # Prefix of the current prompt being generated
+        current_prefix: str = self.prefix
+
+        # Get the difference in length between the existing
+        # prefix and the desired prefix length
+
+        current_prefix_length = self.get_token_length(current_prefix)
+        prefix_length_diff: int = prefix_length - current_prefix_length
+
+        # Generate the prefix if it hasn't been created yet, or add
+        # to its length if it's not long enough
+        if prefix_length_diff > 0:
+            self.prefix += self._sample_prefix(prefix_length_diff)
+            current_prefix = self.prefix
+
+        elif prefix_length_diff < 0:
+            # If the prefix is longer than needed, truncate it
+            char_to_token_ratio = len(current_prefix) / current_prefix_length
+            current_prefix = self.prefix[: int(prefix_length * char_to_token_ratio)]
+        return current_prefix
 
     def _sample_text(self, num_input_tokens: int) -> str:
         """
@@ -222,24 +251,8 @@ class TextSampler(Sampler):
         if num_input_tokens <= current_prefix_length:
             raise ValueError("Prefix length must be shorter than total input length")
 
-        # Prefix of the current prompt being generated
-        current_prefix: str = self.prefix
-
-        # Get the difference in length between the current
-        # prefix and the desired prefix length
-        prefix_length_diff: int = current_prefix_length - self.get_token_length(
-            current_prefix
-        )
-
-        # Generate the prefix if it hasn't been created yet, or add
-        # to its length if it's not long enough
-        if prefix_length_diff > 0:
-            self.prefix += self._generate_prefix(prefix_length_diff)
-            current_prefix = self.prefix
-
-        elif prefix_length_diff < 0:
-            # If the prefix is longer than needed, truncate it using character length
-            current_prefix = self.prefix[:current_prefix_length]
+        # Get the prompt prefix
+        current_prefix: str = self._get_current_prefix(current_prefix_length)
 
         # Prepend the prefix to all prompts with a randomly picked 4 digits
         prompt = f"{current_prefix}{random.randint(1000,9999)}"
