@@ -201,7 +201,7 @@ class TextSampler(Sampler):
         num_input_tokens: int,
         num_prefill_tokens: int,
         threshold: float = 0.1,
-        diff: int = 10,
+        tolerance: int = 10,
     ) -> None:
         """
         Checks for and logs large discrepancies in token counts.
@@ -210,14 +210,14 @@ class TextSampler(Sampler):
             num_input_tokens (int): Expected number of input tokens.
             num_prefill_tokens (int): Actual number of input tokens.
             threshold (float, optional): Threshold for discrepancies.
-            diff (int, optional): Number of tokens to consider for discrepancies.
+            tolerance (int, optional): Number of tokens to consider for discrepancies.
 
         Raises:
             Warning: If the discrepancy exceeds threshold * num_input_tokens 
-            or is greater than diff tokens.
+            or is greater than tolerance tokens.
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
-        if discrepancy > threshold * num_input_tokens and discrepancy > diff:
+        if discrepancy > threshold * num_input_tokens and discrepancy > tolerance:
             logger.warning(
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
