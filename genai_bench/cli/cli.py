@@ -119,7 +119,6 @@ def benchmark(
     master_port,
     upload_results,
     namespace,
-    prompt_prefix_length,
     prompt_prefix_ratio,
     # Storage auth options
     storage_provider,
@@ -288,9 +287,7 @@ def benchmark(
 
     # Use ratio if specified, otherwise use fixed length
     if prompt_prefix_ratio > 0.0:
-        sampler_kwargs["prefix_length_ratio"] = prompt_prefix_ratio
-    else:
-        sampler_kwargs["prefix_length"] = prompt_prefix_length
+        sampler_kwargs["prompt_prefix_ratio"] = prompt_prefix_ratio
 
     sampler = Sampler.create(**sampler_kwargs)
 
