@@ -227,8 +227,8 @@ class TextSampler(Sampler):
         if self.get_token_length(self.prefix) != current_prefix_length:
             self.prefix = self._generate_prefix(current_prefix_length)
 
-        # Prepend the prefix to all prompts with a randomly picked 7 digits
-        prompt = f"{self.prefix}{random.randint(1000000,9999999)}"
+        # Prepend the prefix to all prompts with a randomly picked 4 digits
+        prompt = f"{self.prefix}{random.randint(1000,9999)}"
         left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
 
         if left_tokens_to_sample < 0:
