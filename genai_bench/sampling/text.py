@@ -221,12 +221,27 @@ class TextSampler(Sampler):
         if num_input_tokens <= current_prefix_length:
             raise ValueError("Prefix length must be shorter than total input length")
 
-        # Generate the prefix if it hasn't been created yet
-        if self.get_token_length(self.prefix) != current_prefix_length:
-            self.prefix = self._generate_prefix(current_prefix_length)
+        # Prefix of the current prompt being generated
+        current_prefix: str = self.prefix
+
+        # Get the difference in length between the current
+        # prefix and the desired prefix length
+        prefix_length_diff: int = current_prefix_length - self.get_token_length(
+            current_prefix
+        )
+
+        # Generate the prefix if it hasn't been created yet, or add
+        # to its length if it's not long enough
+        if prefix_length_diff > 0:
+            self.prefix += self._generate_prefix(prefix_length_diff)
+            current_prefix = self.prefix
+
+        elif prefix_length_diff < 0:
+            # If the prefix is longer than needed, truncate it using character length
+            current_prefix = self.prefix[:current_prefix_length]
 
         # Prepend the prefix to all prompts with a randomly picked 4 digits
-        prompt = f"{self.prefix}{random.randint(1000,9999)}"
+        prompt = f"{current_prefix}{random.randint(1000,9999)}"
         left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
 
         if left_tokens_to_sample < 0:
