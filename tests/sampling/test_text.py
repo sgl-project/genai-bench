@@ -286,10 +286,8 @@ class TestTextSampler(unittest.TestCase):
             output_modality=self.output_modality,
             data=self.test_data,
             use_scenario=True,
-            prefix_length=10,  # Set a prefix length for testing
+            prompt_prefix_ratio=0.5,  # Set a prefix ratio for testing
         )
-        # Mock the char_token_ratio since the tokenizer is mocked
-        prefix_sampler.char_token_ratio = 1.0
         result = prefix_sampler.sample(scenario)
         self.assertIsInstance(result, UserChatRequest)
         self.assertEqual(result.model, self.model)
@@ -322,10 +320,8 @@ class TestTextSampler(unittest.TestCase):
             output_modality=self.output_modality,
             data=self.test_data,
             use_scenario=True,
-            prefix_length_ratio=0.5,  # 50% of 20 tokens = 10 tokens
+            prompt_prefix_ratio=0.5,  # 50% of 20 tokens = 10 tokens
         )
-        # Mock the char_token_ratio since the tokenizer is mocked
-        prefix_sampler.char_token_ratio = 1.0
         result = prefix_sampler.sample(scenario)
         self.assertIsInstance(result, UserChatRequest)
         self.assertEqual(result.model, self.model)
@@ -346,22 +342,6 @@ class TestTextSampler(unittest.TestCase):
         # The prompt will be the 4-digit number, truncated to 1 char
         self.assertEqual(result.prompt, str(result.prompt)[0])
         self.assertGreater(len(result.prompt), 0)
-
-    def test_short_prompt_prefix_request(self):
-        # Prefix length is 10, but scenario asks for only 1 input token
-        self.tokenizer.encode.return_value = [1] * 10
-        test_data = ["2"]
-        scenario = NormalDistribution(1, 0, 1, 0)
-        prefix_sampler = TextSampler(
-            tokenizer=self.tokenizer,
-            model=self.model,
-            output_modality=self.output_modality,
-            data=test_data,
-            use_scenario=True,
-            prefix_length=10,
-        )
-        with self.assertRaises(ValueError):
-            prefix_sampler.sample(scenario)
 
     def test_empty_dataset(self):
         """Test sampling from an empty dataset."""
