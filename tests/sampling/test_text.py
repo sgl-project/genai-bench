@@ -340,7 +340,7 @@ class TestTextSampler(unittest.TestCase):
         result = self.sampler.sample(scenario)
         self.assertIsInstance(result, UserChatRequest)
         # The prompt will be the 4-digit number, truncated to 1 char
-        self.assertEqual(result.prompt, str(result.prompt)[0])
+        self.assertEqual(len(result.prompt), 1)
         self.assertGreater(len(result.prompt), 0)
 
     def test_empty_dataset(self):
