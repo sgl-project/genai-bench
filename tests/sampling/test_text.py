@@ -148,12 +148,12 @@ class TestTextSampler(unittest.TestCase):
     def test_sample_chat_prefix_request(self):
         self.tokenizer.encode.side_effect = [
             [1] * 0,
-            [1] * 20,
+            [1] * 11,
             [1] * 14,
-            [1] * 14,
-            [1] * 14,
-            [1] * 14,
-            [1] * 14,
+            [1] * 11,
+            [1] * 11,
+            [1] * 11,
+            [1] * 11,
         ]
         scenario = NormalDistribution(
             mean_input_tokens=20,
@@ -182,12 +182,12 @@ class TestTextSampler(unittest.TestCase):
         """Test prefix generation using ratio instead of fixed length."""
         self.tokenizer.encode.side_effect = [
             [1] * 0,
-            [1] * 20,
+            [1] * 11,
             [1] * 14,
-            [1] * 14,
-            [1] * 14,
-            [1] * 14,
-            [1] * 14,
+            [1] * 11,
+            [1] * 11,
+            [1] * 11,
+            [1] * 11,
         ]
         scenario = NormalDistribution(
             mean_input_tokens=20,

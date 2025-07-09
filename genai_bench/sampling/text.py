@@ -183,9 +183,8 @@ class TextSampler(Sampler):
                 line_tokens_len = self.get_token_length(line)
                 if prefix_tokens_len + line_tokens_len > current_prefix_length:
                     remaining_prefix_len = current_prefix_length - prefix_tokens_len
-                    prefix += line[
-                        :remaining_prefix_len
-                    ]  # TODO: use char length to truncate
+                    char_to_token_ratio = len(line) / line_tokens_len
+                    prefix += line[: int(remaining_prefix_len * char_to_token_ratio)]
                     return prefix
                 prefix += line
                 prefix_tokens_len += line_tokens_len
@@ -253,7 +252,8 @@ class TextSampler(Sampler):
                 if tokens > left_tokens_to_sample:
                     # This will cut off a line in the middle of a word, but
                     # that's ok since a llm should be able to handle that.
-                    prompt += line[:left_tokens_to_sample]
+                    char_to_token_ratio = len(line) / tokens
+                    prompt += line[: int(left_tokens_to_sample * char_to_token_ratio)]
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= tokens
