@@ -187,7 +187,7 @@ class TextSampler(Sampler):
                     prefix += line[: int(remaining_prefix_len * char_to_token_ratio)]
                     return prefix
                 prefix += line
-                prefix_tokens_len += line_tokens_len
+                prefix_tokens_len = self.get_token_length(prefix)
 
         return prefix
 
@@ -269,7 +269,7 @@ class TextSampler(Sampler):
                     prompt += line[: int(left_tokens_to_sample * char_to_token_ratio)]
                     return prompt
                 prompt += line
-                left_tokens_to_sample -= tokens
+                left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
         return prompt
 
     def _sample_prompt(self) -> str:
