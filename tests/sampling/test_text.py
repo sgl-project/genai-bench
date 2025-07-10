@@ -85,7 +85,13 @@ class TestTextSampler(unittest.TestCase):
             data=self.test_data,
             use_scenario=False,
         )
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+
+        def mock_get_token_length(text, add_special_tokens=False):
+            return len(text) // 4  # Simple approximation: 4 chars per token
+
+        # Override the get_token_length method with our mock
+        no_scenario_sampler.get_token_length = mock_get_token_length
+
         scenario = NormalDistribution(
             mean_input_tokens=10,
             stddev_input_tokens=2,

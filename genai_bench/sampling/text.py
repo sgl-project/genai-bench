@@ -189,7 +189,7 @@ class TextSampler(Sampler):
                     prefix += line[: int(remaining_prefix_len * char_to_token_ratio)]
                     return prefix
                 prefix += line
-                prefix_tokens_len += line_tokens_len
+                prefix_tokens_len = self.get_token_length(prefix)
 
         return prefix
 
