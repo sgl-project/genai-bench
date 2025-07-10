@@ -119,6 +119,7 @@ def benchmark(
     master_port,
     upload_results,
     namespace,
+    prompt_prefix_ratio,
     # Storage auth options
     storage_provider,
     storage_bucket,
@@ -275,14 +276,20 @@ def benchmark(
     data, use_scenario = DataLoaderFactory.load_data_for_task(task, dataset_config_obj)
 
     # Create sampler with preloaded data
-    sampler = Sampler.create(
-        task=task,
-        tokenizer=tokenizer,
-        model=api_model_name,
-        data=data,
-        use_scenario=use_scenario,
-        additional_request_params=additional_request_params,
-    )
+    sampler_kwargs = {
+        "task": task,
+        "tokenizer": tokenizer,
+        "model": api_model_name,
+        "data": data,
+        "use_scenario": use_scenario,
+        "additional_request_params": additional_request_params,
+    }
+
+    # Use ratio if specified, otherwise use fixed length
+    if prompt_prefix_ratio > 0.0:
+        sampler_kwargs["prompt_prefix_ratio"] = prompt_prefix_ratio
+
+    sampler = Sampler.create(**sampler_kwargs)
 
     if not sampler.use_scenario:
         logger.info(
