@@ -60,7 +60,12 @@ class TestTextSampler(unittest.TestCase):
             logger.removeHandler(ch)
 
     def test_sample_chat_request(self):
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        def mock_get_token_length(text, add_special_tokens=False):
+            return len(text) // 4  # Simple approximation: 4 chars per token
+
+        # Override the get_token_length method with our mock
+        self.sampler.get_token_length = mock_get_token_length
+
         scenario = NormalDistribution(
             mean_input_tokens=10,
             stddev_input_tokens=2,
@@ -84,7 +89,13 @@ class TestTextSampler(unittest.TestCase):
             data=self.test_data,
             use_scenario=False,
         )
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+
+        def mock_get_token_length(text, add_special_tokens=False):
+            return len(text) // 4  # Simple approximation: 4 chars per token
+
+        # Override the get_token_length method with our mock
+        no_scenario_sampler.get_token_length = mock_get_token_length
+
         scenario = NormalDistribution(
             mean_input_tokens=10,
             stddev_input_tokens=2,
@@ -102,13 +113,18 @@ class TestTextSampler(unittest.TestCase):
         )  # Should be None for non-scenario sampling
 
     def test_sample_embedding_request(self):
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        def mock_get_token_length(text, add_special_tokens=False):
+            return len(text) // 4  # Simple approximation: 4 chars per token
+
         embedding_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
             output_modality="embeddings",
             data=self.test_data,
         )
+        # Override the get_token_length method with our mock
+        embedding_sampler.get_token_length = mock_get_token_length
+
         scenario = EmbeddingScenario(tokens_per_document=1024)
 
         request = embedding_sampler.sample(scenario)
@@ -119,13 +135,20 @@ class TestTextSampler(unittest.TestCase):
         self.assertTrue(len(request.documents) > 0)
 
     def test_sample_rerank_request(self):
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        # Mock get_token_length to return different values based on input length
+        # This prevents infinite loops in _sample_text()
+        def mock_get_token_length(text, add_special_tokens=False):
+            return len(text) // 2  # Simple approximation: 2 chars per token
+
         rerank_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
             output_modality="rerank",
             data=self.test_data,
         )
+        # Override the get_token_length method with our mock
+        rerank_sampler.get_token_length = mock_get_token_length
+
         scenario = ReRankScenario(tokens_per_document=1024, tokens_per_query=100)
 
         request = rerank_sampler.sample(scenario)
