@@ -102,9 +102,9 @@ def test_plot_single_scenario_success(
         ax=mock_ax,
         x_data=[100.0, 200.0],
         y_data=[10.0, 20.0],
-        x_label="Output Throughput of Server (tokens/s)",
-        y_label="Output Inference Speed per Request (tokens/s)",
-        title="Output Inference Speed per Request vs Output Throughput of Server "
+        x_label="Server Output Throughput (tokens/s)",
+        y_label="Per-Request Inference Speed (tokens/s)",
+        title="Per-Request Inference Speed vs Server Output Throughput "
         "- test_scenario",
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
@@ -144,9 +144,9 @@ def test_plot_single_scenario_with_missing_data(
         ax=mock_ax,
         x_data=[100.0, 200.0],  # Only data from concurrency levels 1 and 2
         y_data=[10.0, 20.0],
-        x_label="Output Throughput of Server (tokens/s)",
-        y_label="Output Inference Speed per Request (tokens/s)",
-        title="Output Inference Speed per Request vs Output Throughput of Server "
+        x_label="Server Output Throughput (tokens/s)",
+        y_label="Per-Request Inference Speed (tokens/s)",
+        title="Per-Request Inference Speed vs Server Output Throughput "
         "- test_scenario",
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
@@ -574,6 +574,7 @@ def test_plot_error_rates():
     ax.set_ylabel.assert_called_with("Error Rate")
     ax.set_title.assert_called_with("Error Rates by HTTP Status vs Concurrency")
     ax.set_ylim.assert_called()  # Ensuring y-limit is set (with bottom=0)
+    ax.set_xlim.assert_called()
     ax.legend.assert_called()
     ax.grid.assert_called_with(True)
 
