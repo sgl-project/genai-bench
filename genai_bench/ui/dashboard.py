@@ -249,7 +249,7 @@ class RichLiveDashboard:
         self.layout["output_latency_vs_output_throughput"].update(
             Panel(
                 output_latency_scatter_plot,
-                title="Output Latency vs Output Throughput of Server",
+                title="Output Latency vs Server Output Throughput",
                 border_style="bold blue",
                 expand=True,
             )
@@ -332,7 +332,7 @@ class RichLiveDashboard:
         self.layout["output_latency_vs_output_throughput"].update(
             Panel(
                 Text(),
-                title="Output Latency vs Output Throughput of Server",
+                title="Output Latency vs Server Output Throughput",
                 border_style="bold blue",
                 expand=True,
             )
