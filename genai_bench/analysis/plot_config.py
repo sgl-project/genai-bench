@@ -176,19 +176,19 @@ class PlotConfigManager:
                 },
                 {
                     "title": "Per-Request Inference Speed vs "
-                    "Total Throughput (Input + Output) of Server",
+                    "Server Total Throughput (Input + Output)",
                     "x_field": "mean_total_tokens_throughput_tokens_per_s",
                     "y_field": "stats.output_inference_speed.mean",
-                    "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
+                    "x_label": "Server Total Throughput (Input + Output) (tokens/s)",
                     "y_label": "Per-Request Inference Speed (tokens/s)",
                     "plot_type": "line",
                     "position": [1, 0],
                 },
                 {
-                    "title": "TTFT vs Total Throughput (Input + Output) of Server",
+                    "title": "TTFT vs Server Total Throughput (Input + Output)",
                     "x_field": "mean_total_tokens_throughput_tokens_per_s",
                     "y_field": "stats.ttft.mean",
-                    "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
+                    "x_label": "Server Total Throughput (Input + Output) (tokens/s)",
                     "y_label": "TTFT",
                     "plot_type": "line",
                     "position": [1, 1],

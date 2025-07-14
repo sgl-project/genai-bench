@@ -182,7 +182,7 @@ def _create_appendix_sheet_common(
             [
                 "End-to-End Latency per Request (s)",
                 "Request Throughput (RPS)",
-                "Total Throughput (Input + Output) of Server (tokens/s)",
+                "Server Total Throughput (Input + Output) (tokens/s)",
             ]
         )
     else:
@@ -192,7 +192,7 @@ def _create_appendix_sheet_common(
                 "Server Output Throughput (tokens/s)",
                 "End-to-End Latency per Request (s)",
                 "Request Throughput (RPS)",
-                "Total Throughput (Input + Output) of Server (tokens/s)",
+                "Server Total Throughput (Input + Output) (tokens/s)",
             ]
         )
 

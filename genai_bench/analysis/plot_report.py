@@ -159,8 +159,7 @@ def plot_metrics(
                 ],
                 "x_label": "Server Output Throughput (tokens/s)",
                 "y_label": "Per-Request Inference Speed (tokens/s)",
-                "title": "Per-Request Inference Speed "
-                "vs Server Output Throughput",
+                "title": "Per-Request Inference Speed vs Server Output Throughput",
                 "plot_type": "line",
                 "ax": axs[0, 0],
             },
@@ -210,10 +209,10 @@ def plot_metrics(
                     ].mean_total_tokens_throughput_tokens_per_s
                     for c in concurrency_levels
                 ],
-                "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
+                "x_label": "Server Total Throughput (Input + Output) (tokens/s)",
                 "y_label": "Per-Request Inference Speed (tokens/s)",
                 "title": "Per-Request Inference Speed vs "
-                "Total Throughput (Input + Output) of Server",
+                "Server Total Throughput (Input + Output)",
                 "plot_type": "line",
                 "ax": axs[1, 0],
             },
@@ -228,9 +227,9 @@ def plot_metrics(
                     ].mean_total_tokens_throughput_tokens_per_s
                     for c in concurrency_levels
                 ],
-                "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
+                "x_label": "Server Total Throughput (Input + Output) (tokens/s)",
                 "y_label": "TTFT",
-                "title": "TTFT vs Total Throughput (Input + Output) of Server",
+                "title": "TTFT vs Server Total Throughput (Input + Output)",
                 "plot_type": "line",
                 "ax": axs[1, 1],
             },

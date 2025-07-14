@@ -574,7 +574,7 @@ def test_plot_error_rates():
     ax.set_ylabel.assert_called_with("Error Rate")
     ax.set_title.assert_called_with("Error Rates by HTTP Status vs Concurrency")
     ax.set_ylim.assert_called()  # Ensuring y-limit is set (with bottom=0)
-    ax.set_xlim.assert_called()
+    ax.set_xlim.assert_called_with(left=0)
     ax.legend.assert_called()
     ax.grid.assert_called_with(True)
 
