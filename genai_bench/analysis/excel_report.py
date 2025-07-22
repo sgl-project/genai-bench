@@ -117,7 +117,7 @@ def _create_summary_sheet_common(
 
         iteration_key = experiment_metadata.iteration_type
 
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][
                 "aggregated_metrics"
             ]
@@ -211,7 +211,7 @@ def _create_appendix_sheet_common(
     for scenario in merged_scenarios:
         num_rows = 0  # Count rows for this scenario
 
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][
                 "aggregated_metrics"
             ]
@@ -337,7 +337,7 @@ def create_aggregated_metrics_sheet(
     merged_scenarios = reorder_scenarios(SCENARIO_MAP, experiment_metadata)
 
     for scenario in merged_scenarios:
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
                 "aggregated_metrics"
             ]
@@ -384,7 +384,7 @@ def create_single_request_metrics_sheet(
     for scenario in merged_scenarios:
         rows_for_scenario = 0
         start_row_iteration = start_row
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             row_for_iteration = 0
             metrics: List[RequestLevelMetrics] = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
                 "individual_request_metrics"

@@ -261,7 +261,29 @@ class OpenAIUser(BaseUser):
                 num_prefill_tokens, num_prompt_tokens, tokens_received = (
                     self._get_usage_info(data, num_prefill_tokens)
                 )
-                time_at_first_token = time.monotonic()
+                if not time_at_first_token:
+                    choices = data["choices"]
+                    if len(choices) > 0:
+                        delta = choices[0]["delta"]
+                        content, usage = (
+                            delta.get("content", None),
+                            delta.get("usage", None),
+                        )
+                        if usage:
+                            tokens_received = usage["completion_tokens"]
+                    else:
+                        usage = data["usage"]
+                        if usage:
+                            tokens_received = usage["completion_tokens"]
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                        time_at_first_token = time.monotonic()
+                    else:
+                        raise Exception("Invalid Response")
                 break
 
             try:
