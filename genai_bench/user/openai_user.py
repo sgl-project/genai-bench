@@ -261,6 +261,7 @@ class OpenAIUser(BaseUser):
                 num_prefill_tokens, num_prompt_tokens, tokens_received = (
                     self._get_usage_info(data, num_prefill_tokens)
                 )
+                time_at_first_token = time.monotonic()
                 break
 
             try:
@@ -311,6 +312,7 @@ class OpenAIUser(BaseUser):
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}"
         )
+
         if not tokens_received:
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False
