@@ -55,7 +55,7 @@ class TestOCIModelAuthAdapter:
         adapter = OCIModelAuthAdapter(mock_oci_auth)
 
         credentials = adapter.get_credentials()
-        assert credentials is mock_oci_auth
+        assert credentials is mock_oci_auth.get_credentials()
 
     @pytest.mark.parametrize(
         "class_name,expected_auth_type",
@@ -109,7 +109,7 @@ class TestOCIModelAuthAdapter:
         assert "auth_type" in config
         assert "region" in config
         assert "oci_auth" not in config  # Should not include non-serializable object
-        assert adapter.get_credentials() is mock_oci_auth
+        assert adapter.get_credentials() is mock_oci_auth.get_credentials()
         assert adapter.get_auth_type().startswith("oci_")
 
     def test_error_handling(self):
@@ -140,5 +140,5 @@ class TestOCIModelAuthAdapter:
 
         assert adapter1.get_auth_type() == "oci_user_principal"
         assert adapter2.get_auth_type() == "oci_instance_principal"
-        assert adapter1.get_credentials() is mock_oci_auth1
-        assert adapter2.get_credentials() is mock_oci_auth2
+        assert adapter1.get_credentials() is mock_oci_auth1.get_credentials()
+        assert adapter2.get_credentials() is mock_oci_auth2.get_credentials()
