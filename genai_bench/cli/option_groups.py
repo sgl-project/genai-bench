@@ -77,6 +77,7 @@ def api_options(func):
             [
                 "openai",
                 "oci-cohere",
+                "oci-genai",
                 "cohere",
                 "aws-bedrock",
                 "azure-openai",
