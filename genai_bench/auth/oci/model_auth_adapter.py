@@ -62,9 +62,11 @@ class OCIModelAuthAdapter(ModelAuthProvider):
             return "oci_unknown"
 
     def get_credentials(self) -> Any:
-        """Get the underlying OCI auth provider.
+        """Get the credentials of the underlying OCI auth provider.
+
+        This is used to authenticate with the OCI model service.
 
         Returns:
-            The OCI auth provider instance
+            The credentials of the underlying OCI auth provider
         """
         return self.oci_auth.get_credentials()
