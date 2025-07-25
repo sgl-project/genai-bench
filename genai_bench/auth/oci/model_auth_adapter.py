@@ -67,4 +67,4 @@ class OCIModelAuthAdapter(ModelAuthProvider):
         Returns:
             The OCI auth provider instance
         """
-        return self.oci_auth
+        return self.oci_auth.get_credentials()
