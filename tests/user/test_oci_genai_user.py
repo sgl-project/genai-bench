@@ -11,7 +11,6 @@ from oci.generative_ai_inference.models import (
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
-    UserResponse,
 )
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 
@@ -40,11 +39,25 @@ def test_chat_openai_format(mock_client_class, test_genai_user):
     # Mock the chat method
     mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.return_value.status = 200
+    # Prepare test streaming response data
+    hello_msg = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": "Hello"}]}}'
+    )
+    world_msg = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": " world"}]}}'
+    )
+    exclamation_msg = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": "!"}]}}'
+    )
+
     mock_client_instance.chat.return_value.data.events.return_value = iter(
         [
-            MagicMock(data='{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "Hello"}]}}'),
-            MagicMock(data='{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": " world"}]}}'),
-            MagicMock(data='{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "!"}]}}'),
+            MagicMock(data=hello_msg),
+            MagicMock(data=world_msg),
+            MagicMock(data=exclamation_msg),
             MagicMock(data='{"finishReason": "stop"}'),
         ]
     )
@@ -73,10 +86,9 @@ def test_chat_openai_format(mock_client_class, test_genai_user):
             serving_mode=OnDemandServingMode(model_id="gpt-4"),
             chat_request=GenericChatRequest(
                 api_format="GENERIC",
-                messages=[{
-                    "role": "USER",
-                    "content": [{"text": "Hello", "type": "TEXT"}]
-                }],
+                messages=[
+                    {"role": "USER", "content": [{"text": "Hello", "type": "TEXT"}]}
+                ],
                 max_tokens=10,
                 is_stream=True,
                 temperature=0.75,
@@ -88,7 +100,7 @@ def test_chat_openai_format(mock_client_class, test_genai_user):
             ),
         )
     )
-    
+
     # Verify metrics were collected
     metrics_collector_mock.assert_called_once()
     args, _ = metrics_collector_mock.call_args
@@ -123,13 +135,10 @@ def test_chat_with_system_message(mock_client_class, test_genai_user):
     chat_request = mock_client_instance.chat.call_args[0][0].chat_request
     expected_messages = [
         {
-            "role": "SYSTEM", 
-            "content": [{"text": "You are a helpful assistant.", "type": "TEXT"}]
+            "role": "SYSTEM",
+            "content": [{"text": "You are a helpful assistant.", "type": "TEXT"}],
         },
-        {
-            "role": "USER", 
-            "content": [{"text": "Hello", "type": "TEXT"}]
-        }
+        {"role": "USER", "content": [{"text": "Hello", "type": "TEXT"}]},
     ]
     assert chat_request.messages == expected_messages
 
@@ -144,7 +153,7 @@ def test_chat_with_chat_history(mock_client_class, test_genai_user):
     test_genai_user.on_start()
     chat_history = [
         {"role": "user", "content": "Previous message"},
-        {"role": "assistant", "content": "Previous response"}
+        {"role": "assistant", "content": "Previous response"},
     ]
     test_genai_user.sample = lambda: UserChatRequest(
         model="gpt-4",
@@ -162,18 +171,12 @@ def test_chat_with_chat_history(mock_client_class, test_genai_user):
 
     chat_request = mock_client_instance.chat.call_args[0][0].chat_request
     expected_messages = [
+        {"role": "USER", "content": [{"text": "Previous message", "type": "TEXT"}]},
         {
-            "role": "USER", 
-            "content": [{"text": "Previous message", "type": "TEXT"}]
+            "role": "ASSISTANT",
+            "content": [{"text": "Previous response", "type": "TEXT"}],
         },
-        {
-            "role": "ASSISTANT", 
-            "content": [{"text": "Previous response", "type": "TEXT"}]
-        },
-        {
-            "role": "USER", 
-            "content": [{"text": "Hello", "type": "TEXT"}]
-        }
+        {"role": "USER", "content": [{"text": "Hello", "type": "TEXT"}]},
     ]
     assert chat_request.messages == expected_messages
 
@@ -221,7 +224,9 @@ def test_chat_missing_endpoint_id_for_dedicated(mock_client_class, test_genai_us
         max_tokens=10,
     )
 
-    with pytest.raises(ValueError, match="endpointId must be provided for DEDICATED servingType"):
+    with pytest.raises(
+        ValueError, match="endpointId must be provided for DEDICATED servingType"
+    ):
         test_genai_user.chat()
 
 
@@ -240,7 +245,9 @@ def test_chat_missing_compartment_id(mock_client_class, test_genai_user):
         max_tokens=10,
     )
 
-    with pytest.raises(ValueError, match="compartmentId missing in additional request params"):
+    with pytest.raises(
+        ValueError, match="compartmentId missing in additional request params"
+    ):
         test_genai_user.chat()
 
 
@@ -297,11 +304,21 @@ def test_chat_json_decode_error(mock_client_class, test_genai_user):
     """Test handling of JSON decode errors in streaming response."""
     mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.return_value.status = 200
+    # Prepare test data with JSON decode error
+    hello_response = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": "Hello"}]}}'
+    )
+    world_response = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": " world"}]}}'
+    )
+
     mock_client_instance.chat.return_value.data.events.return_value = iter(
         [
-            MagicMock(data='{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "Hello"}]}}'),
-            MagicMock(data='invalid json'),  # This should cause JSON decode error
-            MagicMock(data='{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": " world"}]}}'),
+            MagicMock(data=hello_response),
+            MagicMock(data="invalid json"),  # This should cause JSON decode error
+            MagicMock(data=world_response),
             MagicMock(data='{"finishReason": "stop"}'),
         ]
     )
@@ -323,7 +340,7 @@ def test_chat_json_decode_error(mock_client_class, test_genai_user):
 
     # Should handle the JSON error gracefully
     response = test_genai_user.chat()
-    
+
     assert response.status_code == 200
     assert "Hello world" in response.generated_text
 
@@ -338,33 +355,27 @@ def test_build_messages_with_all_components(test_genai_user):
             "system_message": "You are helpful.",
             "chat_history": [
                 {"role": "user", "content": "Previous user message"},
-                {"role": "assistant", "content": "Previous assistant message"}
-            ]
+                {"role": "assistant", "content": "Previous assistant message"},
+            ],
         },
         max_tokens=10,
     )
 
     messages = test_genai_user.build_messages(user_request)
-    
+
     expected_messages = [
+        {"role": "SYSTEM", "content": [{"text": "You are helpful.", "type": "TEXT"}]},
         {
-            "role": "SYSTEM", 
-            "content": [{"text": "You are helpful.", "type": "TEXT"}]
+            "role": "USER",
+            "content": [{"text": "Previous user message", "type": "TEXT"}],
         },
         {
-            "role": "USER", 
-            "content": [{"text": "Previous user message", "type": "TEXT"}]
+            "role": "ASSISTANT",
+            "content": [{"text": "Previous assistant message", "type": "TEXT"}],
         },
-        {
-            "role": "ASSISTANT", 
-            "content": [{"text": "Previous assistant message", "type": "TEXT"}]
-        },
-        {
-            "role": "USER", 
-            "content": [{"text": "Current message", "type": "TEXT"}]
-        }
+        {"role": "USER", "content": [{"text": "Current message", "type": "TEXT"}]},
     ]
-    
+
     assert messages == expected_messages
 
 
@@ -379,12 +390,9 @@ def test_build_messages_minimal(test_genai_user):
     )
 
     messages = test_genai_user.build_messages(user_request)
-    
+
     expected_messages = [
-        {
-            "role": "USER", 
-            "content": [{"text": "Hello", "type": "TEXT"}]
-        }
+        {"role": "USER", "content": [{"text": "Hello", "type": "TEXT"}]}
     ]
     assert messages == expected_messages
 
@@ -405,6 +413,6 @@ def test_on_start_without_auth():
     """Test on_start raises error without auth provider."""
     user = OCIGenAIUser(environment=MagicMock())
     user.auth_provider = None
-    
+
     with pytest.raises(ValueError, match="Auth is required for OCIGenAIUser"):
-        user.on_start() 
+        user.on_start()

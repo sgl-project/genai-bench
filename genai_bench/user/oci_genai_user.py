@@ -2,8 +2,7 @@ from locust import task
 
 import json
 import time
-from typing import Any, Callable, Optional
-import oci.config
+from typing import Any, Optional
 
 from oci.generative_ai_inference import GenerativeAiInferenceClient
 from oci.generative_ai_inference.models import (
@@ -42,11 +41,11 @@ class OCIGenAIUser(BaseUser):
         super().on_start()
         if not self.auth_provider:
             raise ValueError("Auth is required for OCIGenAIUser")
-        
+
         # Get config and signer from auth provider
         config = self.auth_provider.get_config()
         signer = self.auth_provider.get_credentials()
-        
+
         self.client = GenerativeAiInferenceClient(
             config=config,
             signer=signer,
@@ -110,7 +109,7 @@ class OCIGenAIUser(BaseUser):
 
         # Construct chat request for OpenAI/Grok format using GENERIC API format
         messages = self.build_messages(user_request)
-        
+
         chat_request = GenericChatRequest(
             api_format="GENERIC",
             messages=messages,
@@ -134,7 +133,7 @@ class OCIGenAIUser(BaseUser):
             serving_mode=serving_mode,
             chat_request=chat_request,
         )
-        
+
         return self.send_request(
             endpoint="chat",
             payload=chat_detail,
@@ -145,20 +144,17 @@ class OCIGenAIUser(BaseUser):
     def build_messages(self, user_request: UserChatRequest) -> list:
         """Build messages array in OCI GenAI format."""
         messages = []
-        
+
         # Add system message if provided
         system_message = user_request.additional_request_params.get("system_message")
         if system_message:
-            messages.append({
-                "role": "SYSTEM",
-                "content": [
-                    {
-                        "text": system_message,
-                        "type": "TEXT"
-                    }
-                ]
-            })
-        
+            messages.append(
+                {
+                    "role": "SYSTEM",
+                    "content": [{"text": system_message, "type": "TEXT"}],
+                }
+            )
+
         # Add conversation history if provided
         chat_history = user_request.additional_request_params.get("chat_history", [])
         for msg in chat_history:
@@ -167,29 +163,18 @@ class OCIGenAIUser(BaseUser):
                 # Convert simple string content to OCI format
                 oci_msg = {
                     "role": msg["role"].upper(),
-                    "content": [
-                        {
-                            "text": msg["content"],
-                            "type": "TEXT"
-                        }
-                    ]
+                    "content": [{"text": msg["content"], "type": "TEXT"}],
                 }
             else:
                 # Assume it's already in OCI format
                 oci_msg = msg
             messages.append(oci_msg)
-        
+
         # Add current user message
-        messages.append({
-            "role": "USER",
-            "content": [
-                {
-                    "text": user_request.prompt,
-                    "type": "TEXT"
-                }
-            ]
-        })
-        
+        messages.append(
+            {"role": "USER", "content": [{"text": user_request.prompt, "type": "TEXT"}]}
+        )
+
         return messages
 
     def get_compartment_id(self, user_request: UserRequest):
@@ -202,7 +187,7 @@ class OCIGenAIUser(BaseUser):
         params = user_request.additional_request_params
         model_id = user_request.model
         serving_type = params.get("servingType", "ON_DEMAND")
-        
+
         if serving_type == "DEDICATED":
             endpoint_id = params.get("endpointId")
             if not endpoint_id:
@@ -229,7 +214,7 @@ class OCIGenAIUser(BaseUser):
         _: float,
     ) -> UserResponse:
         """
-        Parses the streaming response from OpenAI/Grok models using OCI's GENERIC format.
+        Parses the streaming response from OpenAI/Grok models using OCI's format.
 
         Args:
             request (ChatDetails): OCI GenAI Chat request.
@@ -256,7 +241,7 @@ class OCIGenAIUser(BaseUser):
                 parsed_data = json.loads(event_data)
                 finish_reason = parsed_data.get("finishReason", None)
                 if not finish_reason:
-                    # Extract text content from OCI GenAI format: message.content[0].text
+                    # Extract text content from OCI GenAI format
                     message = parsed_data.get("message", {})
                     content_array = message.get("content", [])
                     if content_array and len(content_array) > 0:
@@ -265,10 +250,15 @@ class OCIGenAIUser(BaseUser):
                             # Capture the time at the first token
                             if not time_at_first_token:
                                 time_at_first_token = time.monotonic()
-                                logger.debug(f"First token received at: {time_at_first_token}")
+                                logger.debug(
+                                    f"First token received at: {time_at_first_token}"
+                                )
                             generated_text += text_segment
                             tokens_received += 1  # each event contains one token
-                            logger.debug(f"Text: '{text_segment}', tokens received: {tokens_received}")
+                            logger.debug(
+                                f"Text: '{text_segment}', "
+                                f"tokens received: {tokens_received}"
+                            )
                     # Track the previous data for debugging purposes
                     previous_data = parsed_data
                 else:
