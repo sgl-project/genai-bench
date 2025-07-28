@@ -262,19 +262,9 @@ class OpenAIUser(BaseUser):
                     self._get_usage_info(data, num_prefill_tokens)
                 )
                 if not time_at_first_token:
-                    choices = data["choices"]
-                    if len(choices) > 0:
-                        delta = choices[0]["delta"]
-                        content, usage = (
-                            delta.get("content", None),
-                            delta.get("usage", None),
-                        )
-                        if usage:
-                            tokens_received = usage["completion_tokens"]
-                    else:
-                        usage = data["usage"]
-                        if usage:
-                            tokens_received = usage["completion_tokens"]
+                    usage = data["usage"]
+                    if usage:
+                        tokens_received = usage["completion_tokens"]
                     if tokens_received > 1:
                         logger.warning(
                             f"🚨🚨🚨 The first chunk the server returned "
