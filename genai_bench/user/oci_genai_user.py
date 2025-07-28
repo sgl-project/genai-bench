@@ -27,7 +27,7 @@ logger = init_logger(__name__)
 
 
 class OCIGenAIUser(BaseUser):
-    """User class for Grok models API with OCI authentication."""
+    """User class for OCI GenAI models API with OCI authentication."""
 
     BACKEND_NAME = "oci-genai"
     supported_tasks = {
@@ -95,7 +95,7 @@ class OCIGenAIUser(BaseUser):
 
     @task
     def chat(self):
-        """Send a chat completion request using Grok format."""
+        """Send a chat completion request using OCI GenAI Service format."""
         user_request = self.sample()
 
         if not isinstance(user_request, UserChatRequest):
@@ -107,7 +107,7 @@ class OCIGenAIUser(BaseUser):
         compartment_id = self.get_compartment_id(user_request)
         serving_mode = self.get_serving_mode(user_request)
 
-        # Construct chat request for Grok format using GENERIC API format
+        # Construct chat request for OCI GenAI Service format using GENERIC API format
         messages = self.build_messages(user_request)
 
         chat_request = GenericChatRequest(
@@ -214,7 +214,7 @@ class OCIGenAIUser(BaseUser):
         _: float,
     ) -> UserResponse:
         """
-        Parses the streaming response from Grok models using OCI's format.
+        Parses the streaming response from OCI GenAI Service using OCI's format.
 
         Args:
             request (ChatDetails): OCI GenAI Chat request.

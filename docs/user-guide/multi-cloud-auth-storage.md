@@ -104,7 +104,7 @@ genai-bench benchmark \
 
 ### OCI GenAI
 
-OCI GenAI provides access to Grok models through Oracle Cloud Infrastructure's Generative AI service. It uses the same authentication methods as OCI Cohere.
+OCI GenAI provides access to Pretrained Foundational Models([Available Models](https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm)) through Oracle Cloud Infrastructure's Generative AI service. It uses the same authentication methods as OCI Cohere.
 
 **Authentication types:**
 - `user_principal`: Default, uses OCI config file
