@@ -61,6 +61,7 @@ class TestTextSampler(unittest.TestCase):
 
     def test_sample_chat_request(self):
         self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        self.tokenizer.decode.return_value = "Test prompt text"
         scenario = NormalDistribution(
             mean_input_tokens=10,
             stddev_input_tokens=2,
@@ -103,6 +104,7 @@ class TestTextSampler(unittest.TestCase):
 
     def test_sample_embedding_request(self):
         self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        self.tokenizer.decode.return_value = "Test document text"
         embedding_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
@@ -120,6 +122,7 @@ class TestTextSampler(unittest.TestCase):
 
     def test_sample_rerank_request(self):
         self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        self.tokenizer.decode.return_value = "Test text"
         rerank_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
