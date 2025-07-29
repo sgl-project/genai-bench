@@ -169,6 +169,7 @@ genai-bench benchmark \
   --max-requests-per-run 100 \
   --max-time-per-run 10
 ```
+**Note:** for Dedicated model, the `--api-model-name` is just a placeholder, the model depends on the the endpointId you provided 
 
 **Advanced features:**
 ```bash
@@ -510,7 +511,7 @@ genai-bench benchmark \
   --storage-azure-connection-string "DefaultEndpointsProtocol=..."
 ```
 
-**Benchmark OCI GenAI (Grok models) and store in AWS S3:**
+**Benchmark OCI GenAI (Grok models) and store in OCI Object storage**
 ```bash
 genai-bench benchmark \
   --api-backend oci-genai \
@@ -525,10 +526,9 @@ genai-bench benchmark \
   --max-requests-per-run 100 \
   --max-time-per-run 10 \
   --upload-results \
-  --storage-provider aws \
+  --storage-provider oci \
   --storage-bucket oci-genai-benchmarks \
-  --storage-aws-profile storage-user \
-  --storage-aws-region us-east-1
+  --namespace my-namespace
 ```
 
 ### Multi-Modal Tasks
