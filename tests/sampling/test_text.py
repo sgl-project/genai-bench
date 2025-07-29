@@ -103,33 +103,67 @@ class TestTextSampler(unittest.TestCase):
         )  # Should be None for non-scenario sampling
 
     def test_sample_embedding_request(self):
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        # Set batch size for testing
+        batch_size = 3
+        tokens_per_doc = 10
+
+        # Mock tokenizer to return exact token counts
+        self.tokenizer.encode.return_value = list(range(tokens_per_doc))
         self.tokenizer.decode.return_value = "Test document text"
+
         embedding_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
             output_modality="embeddings",
             data=self.test_data,
         )
+        embedding_sampler.batch_size = batch_size
+
+        # Mock scenario to return fixed token count
         scenario = EmbeddingScenario(tokens_per_document=1024)
+        scenario.sample = MagicMock(return_value=tokens_per_doc)
 
         request = embedding_sampler.sample(scenario)
 
         self.assertIsInstance(request, UserEmbeddingRequest)
         self.assertEqual(request.model, "mock_model")
         self.assertIsInstance(request.documents, list)
-        self.assertTrue(len(request.documents) > 0)
+        self.assertEqual(len(request.documents), batch_size)
+
+        # Verify each document is unique (not duplicates)
+        self.assertEqual(len(set(id(doc) for doc in request.documents)), batch_size)
+
+        # Verify total token count matches expected
+        expected_tokens = tokens_per_doc * batch_size
+        self.assertEqual(request.num_prefill_tokens, expected_tokens)
 
     def test_sample_rerank_request(self):
-        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        # Set batch size for testing
+        batch_size = 4
+        tokens_per_doc = 8
+        tokens_per_query = 5
+
+        # Mock tokenizer to return predictable token counts
+        def mock_encode(text, add_special_tokens=True):
+            if text == "Test text":  # Query or document text
+                return list(range(tokens_per_query))  # Default for query
+            else:
+                return list(range(tokens_per_doc))  # Default for documents
+
+        self.tokenizer.encode.side_effect = mock_encode
         self.tokenizer.decode.return_value = "Test text"
+
         rerank_sampler = TextSampler(
             tokenizer=self.tokenizer,
             model=self.model,
             output_modality="rerank",
             data=self.test_data,
         )
+        rerank_sampler.batch_size = batch_size
+
+        # Mock scenario to return fixed token counts
         scenario = ReRankScenario(tokens_per_document=1024, tokens_per_query=100)
+        scenario.sample = MagicMock(return_value=(tokens_per_doc, tokens_per_query))
 
         request = rerank_sampler.sample(scenario)
 
@@ -137,6 +171,15 @@ class TestTextSampler(unittest.TestCase):
         self.assertEqual(request.model, "mock_model")
         self.assertIsInstance(request.documents, list)
         self.assertIsInstance(request.query, str)
+        self.assertEqual(len(request.documents), batch_size)
+
+        # Verify each document is unique (not duplicates)
+        self.assertEqual(len(set(id(doc) for doc in request.documents)), batch_size)
+
+        # Verify total token count matches expected
+        # First call to _sample_text is for query, rest are for documents
+        expected_tokens = tokens_per_query + (tokens_per_doc * batch_size)
+        self.assertEqual(request.num_prefill_tokens, expected_tokens)
 
     def test_validate_scenario_invalid(self):
         with self.assertRaises(ValueError):
