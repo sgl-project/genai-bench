@@ -147,3 +147,77 @@ class TestTextSampler(unittest.TestCase):
         invalid_scenario.scenario_type = "invalid"
         with self.assertRaises(ValueError):
             self.sampler._validate_scenario(invalid_scenario)
+
+    def test_sample_text_exact_token_count(self):
+        """
+        Test that _sample_text returns text with exact number of tokens
+        requested.
+        """
+
+        # Set up consistent tokenization behavior
+        # Each line in test_data has a predictable token count
+        def mock_encode(text):
+            # Map our test lines to token counts
+            token_map = {
+                "Test line 1": [0, 1, 2],  # 3 tokens
+                "Test line 2": [0, 1],  # 2 tokens
+                "Test line 3": [0, 1, 2, 3],  # 4 tokens
+            }
+            # For decoded text (when truncated)
+            if text in token_map:
+                return token_map[text]
+            else:
+                # For decoded truncated text, return tokens based on length
+                words = text.split()
+                return list(range(len(words)))
+
+        self.tokenizer.encode.side_effect = mock_encode
+        # Decode returns a string with same number of words as tokens
+        self.tokenizer.decode.side_effect = lambda tokens: " ".join(
+            ["word"] * len(tokens)
+        )
+
+        # Test requesting exact token counts
+        test_cases = [2, 3, 5, 7]
+
+        for num_tokens in test_cases:
+            result = self.sampler._sample_text(num_tokens)
+
+            # Count actual tokens in result
+            # Need to handle mixed content (original lines + decoded text)
+            total_tokens = 0
+            # Split by our test lines to count tokens properly
+            remaining = result
+            for line in self.test_data:
+                if line in remaining:
+                    total_tokens += len(mock_encode(line))
+                    remaining = remaining.replace(line, "", 1)
+
+            # Any remaining text is decoded text
+            if remaining:
+                total_tokens += len(remaining.split())
+
+            self.assertEqual(
+                total_tokens,
+                num_tokens,
+                f"Expected {num_tokens} tokens, got {total_tokens} for result: "
+                f"{repr(result)}",
+            )
+
+    def test_sample_text_truncation(self):
+        """
+        Test that _sample_text correctly truncates when line has more tokens than
+        needed.
+        """
+        # Set up tokenizer to return specific token counts
+        line_tokens = list(range(10))
+
+        self.tokenizer.encode.return_value = line_tokens
+        self.tokenizer.decode.return_value = "truncated text"
+
+        # Request fewer tokens than the line has
+        requested_tokens = 5
+        _ = self.sampler._sample_text(requested_tokens)
+
+        # Verify decode was called with truncated tokens
+        self.tokenizer.decode.assert_called_with(line_tokens[:requested_tokens])
