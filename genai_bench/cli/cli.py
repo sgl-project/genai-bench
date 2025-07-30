@@ -284,11 +284,8 @@ def benchmark(
         "data": data,
         "use_scenario": use_scenario,
         "additional_request_params": additional_request_params,
+        "prompt_prefix_ratio": prompt_prefix_ratio,
     }
-
-    # Use ratio if specified, otherwise use fixed length
-    if prompt_prefix_ratio > 0.0:
-        sampler_kwargs["prompt_prefix_ratio"] = prompt_prefix_ratio
 
     sampler = Sampler.create(**sampler_kwargs)
 
