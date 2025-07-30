@@ -304,16 +304,22 @@ class TestTextSampler(unittest.TestCase):
         self.assertEqual(len(result.prompt), 20)
 
     def test_sample_chat_prefix_ratio_request(self):
-        """Test prefix generation using ratio instead of fixed length."""
-        self.tokenizer.encode.side_effect = [
-            [1] * 0,
-            [1] * 11,
-            [1] * 14,
-            [1] * 11,
-            [1] * 11,
-            [1] * 11,
-            [1] * 11,
-        ]
+        """Test prefix generation using ratio."""
+
+        # Mock encode to return list with length equal to number of characters in input
+        def mock_encode(text, add_special_tokens=False):
+            return [1] * len(text)
+
+        self.tokenizer.encode = mock_encode
+
+        # Mock decode to return the original text
+        def mock_decode(tokens):
+            if isinstance(tokens, list):
+                return "a" * len(tokens)  # Return 'a' repeated for the token count
+            return "decoded_text"
+
+        self.tokenizer.decode = mock_decode
+
         scenario = NormalDistribution(
             mean_input_tokens=20,
             stddev_input_tokens=0,
