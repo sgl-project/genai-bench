@@ -182,14 +182,17 @@ class TextSampler(Sampler):
         while prefix_tokens_len < current_prefix_length:
             random.shuffle(data_copy)
             for line in data_copy:
-                line_tokens_len = self.get_token_length(line)
-                if prefix_tokens_len + line_tokens_len > current_prefix_length:
+                line_tokens = self.tokenizer.encode(line)
+                num_line_tokens = len(line_tokens)
+                if prefix_tokens_len + num_line_tokens > current_prefix_length:
                     remaining_prefix_len = current_prefix_length - prefix_tokens_len
-                    char_to_token_ratio = len(line) / line_tokens_len
-                    prefix += line[: int(remaining_prefix_len * char_to_token_ratio)]
+                    truncated_text = self.tokenizer.decode(
+                        line_tokens[:remaining_prefix_len]
+                    )
+                    prefix += truncated_text
                     return prefix
                 prefix += line
-                prefix_tokens_len = self.get_token_length(prefix)
+                prefix_tokens_len = len(self.tokenizer.encode(prefix))
 
         return prefix
 
