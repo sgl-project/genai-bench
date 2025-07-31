@@ -40,7 +40,7 @@ class TextSampler(Sampler):
         self.use_scenario = use_scenario
 
         # Set ignore_eos based on scenario usage
-        if use_scenario:
+        if use_scenario and self.output_modality == "text":
             self.additional_request_params["ignore_eos"] = True
         else:
             self.additional_request_params["ignore_eos"] = False
@@ -95,10 +95,11 @@ class TextSampler(Sampler):
         """Samples an embedding request based on the scenario and batch size"""
         self._validate_scenario(scenario)
         tokens_per_document = scenario.sample()
-        document = self._sample_text(tokens_per_document)
 
-        # Use batch_size to create multiple copies of the document
-        documents = [document] * self.batch_size
+        # Sample different documents for each batch item
+        documents = [
+            self._sample_text(tokens_per_document) for _ in range(self.batch_size)
+        ]
         num_prefill_tokens = sum(self.get_token_length(doc) for doc in documents)
         num_expected_tokens = tokens_per_document * self.batch_size
 
@@ -115,14 +116,15 @@ class TextSampler(Sampler):
         """Samples a rerank request based on the scenario and batch size"""
         self._validate_scenario(scenario)
         tokens_per_document, tokens_per_query = scenario.sample()
-        document = self._sample_text(tokens_per_document)
         query = self._sample_text(tokens_per_query)
 
-        # Use batch_size to create multiple copies of the document
-        documents = [document] * self.batch_size
-        num_prefill_tokens = self.batch_size * (
-            self.get_token_length(document) + self.get_token_length(document)
-        )
+        # Sample different documents for each batch item
+        documents = [
+            self._sample_text(tokens_per_document) for _ in range(self.batch_size)
+        ]
+        num_prefill_tokens = sum(
+            self.get_token_length(doc) for doc in documents
+        ) + self.get_token_length(query)
 
         return UserReRankRequest(
             model=self.model,
@@ -177,14 +179,17 @@ class TextSampler(Sampler):
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
-                tokens = self.get_token_length(line)
-                if tokens > left_tokens_to_sample:
-                    # This will cut off a line in the middle of a word, but
-                    # that's ok since a llm should be able to handle that.
-                    prompt += line[:left_tokens_to_sample]
+                line_tokens = self.tokenizer.encode(line)
+                num_line_tokens = len(line_tokens)
+                if num_line_tokens > left_tokens_to_sample:
+                    # Truncate at token level, decode only needed tokens
+                    truncated_text = self.tokenizer.decode(
+                        line_tokens[:left_tokens_to_sample]
+                    )
+                    prompt += truncated_text
                     return prompt
                 prompt += line
-                left_tokens_to_sample -= tokens
+                left_tokens_to_sample -= num_line_tokens
         return prompt
 
     def _sample_prompt(self) -> str:
