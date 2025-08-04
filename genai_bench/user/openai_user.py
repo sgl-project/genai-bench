@@ -262,9 +262,7 @@ class OpenAIUser(BaseUser):
                     self._get_usage_info(data, num_prefill_tokens)
                 )
                 if not time_at_first_token:
-                    usage = data["usage"]
-                    if usage:
-                        tokens_received = usage["completion_tokens"]
+                    tokens_received = data["usage"].get("completion_tokens", 0)
                     if tokens_received > 1:
                         logger.warning(
                             f"🚨🚨🚨 The first chunk the server returned "
