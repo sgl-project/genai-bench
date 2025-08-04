@@ -59,7 +59,7 @@ class DatasetLoader(ABC):
                     f"{self.media_type} loader."
                 )
 
-    def load_request(self) -> Union[List[str], List[Tuple[str, Image]]]:
+    def load_request(self) -> Union[List[str], List[Tuple[str, Any]]]:
         """Load data from the dataset source."""
         data = self.dataset_source.load()
         return self._process_loaded_data(data)

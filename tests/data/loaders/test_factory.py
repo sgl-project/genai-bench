@@ -75,7 +75,7 @@ def test_load_data_for_image_task():
         )
 
         assert data == [("prompt1", "image1"), ("prompt2", "image2")]
-        assert use_scenario is False  # images don't use scenario-based sampling
+        assert use_scenario is True  # images use scenario-based sampling
 
 
 def test_load_data_for_invalid_task():

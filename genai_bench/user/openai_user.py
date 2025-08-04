@@ -63,7 +63,7 @@ class OpenAIUser(BaseUser):
             image_content = [
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                    "image_url": {"url": image},
                 }
                 for image in user_request.image_content
             ]

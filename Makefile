@@ -43,7 +43,7 @@ install: ## Install project dependencies.
 
 .PHONY: dev
 dev: ## Install development dependencies.
-	uv pip install ".[dev]"
+	uv pip install ".[dev,multi-cloud]"
 
 .PHONY: test
 test: ## Run tests.

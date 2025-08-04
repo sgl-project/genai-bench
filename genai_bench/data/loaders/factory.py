@@ -1,9 +1,7 @@
 """Factory for creating appropriate data loaders and loading data."""
 
 from pathlib import Path
-from typing import List, Tuple, Union, cast
-
-from PIL.Image import Image
+from typing import Any, List, Tuple, Union, cast
 
 from genai_bench.data.config import DatasetConfig, DatasetSourceConfig
 from genai_bench.data.loaders.image import ImageDatasetLoader
@@ -19,7 +17,7 @@ class DataLoaderFactory:
     @staticmethod
     def load_data_for_task(
         task: str, dataset_config: DatasetConfig
-    ) -> Tuple[Union[List[str], List[Tuple[str, Image]]], bool]:
+    ) -> Tuple[Union[List[str], List[Tuple[str, Any]]], bool]:
         """Load data for a specific task.
 
         Args:
@@ -34,7 +32,7 @@ class DataLoaderFactory:
         if input_modality == "text":
             return DataLoaderFactory._load_text_data(dataset_config, output_modality)
         elif "image" in input_modality:
-            return DataLoaderFactory._load_image_data(dataset_config), False
+            return DataLoaderFactory._load_image_data(dataset_config)
         else:
             raise ValueError(f"Unsupported input modality: {input_modality}")
 
@@ -78,9 +76,10 @@ class DataLoaderFactory:
         return text_data, use_scenario
 
     @staticmethod
-    def _load_image_data(dataset_config: DatasetConfig) -> List[Tuple[str, Image]]:
+    def _load_image_data(
+        dataset_config: DatasetConfig,
+    ) -> Tuple[List[Tuple[str, Any]], bool]:
         """Load image data."""
         loader = ImageDatasetLoader(dataset_config)
         data = loader.load_request()
-        # ImageDatasetLoader always returns List[Tuple[str, Image]]
-        return data  # type: ignore
+        return data, True  # type: ignore

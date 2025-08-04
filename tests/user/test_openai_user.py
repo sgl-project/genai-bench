@@ -120,7 +120,7 @@ def test_vision(mock_post, mock_openai_user):
         prompt="what's in the image?",
         num_prefill_tokens=5,
         image_content=[
-            "UklGRhowDgBXRUJQVlA4WAoAAAAgAAAA/wkAhAYASUNDUAwCAAAAAAIMbGNtcwIQAABtbnRyUkdCIFhZWiAH3AABABkAAwApADlhY3NwQVBQTAAAAAAA"
+            "data:image/jpeg;base64,UklGRhowDgBXRUJQVlA4WAoAAAAgAAAA/wkAhAYASUNDUAwCAAAAAAIMbGNtcwIQAABtbnRyUkdCIFhZWiAH3AABABkAAwApADlhY3NwQVBQTAAAAAAA"
         ],  # noqa:E501
         num_images=1,
         max_tokens=None,
@@ -506,7 +506,7 @@ def test_chat_vision_without_prefill_tokens(mock_post, mock_openai_user):
         model="gpt-4-vision",
         prompt="Describe this image",
         num_prefill_tokens=None,  # Vision request without prefill tokens
-        image_content=["base64_image_content"],
+        image_content=["data:image/jpeg;base64,base64_image_content"],
         num_images=1,
         additional_request_params={},
         max_tokens=10,
