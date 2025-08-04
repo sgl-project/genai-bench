@@ -19,7 +19,7 @@ class ImageDatasetLoader(DatasetLoader):
     }
     media_type = "Image"
 
-    def _process_loaded_data(self, data: Any) -> List[Tuple[str, Image]]:
+    def _process_loaded_data(self, data: Any) -> List[Tuple[str, Any]]:
         """Process data loaded from dataset source with flexible configuration."""
         sampled_requests: List[Tuple[str, Image]] = []
         config = self.dataset_config
