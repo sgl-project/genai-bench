@@ -126,7 +126,7 @@ ignore = [
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py310']
 exclude = '\.venv|build|dist'
 
 [tool.isort]
