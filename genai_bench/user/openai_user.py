@@ -261,6 +261,8 @@ class OpenAIUser(BaseUser):
                 num_prefill_tokens, num_prompt_tokens, tokens_received = (
                     self._get_usage_info(data, num_prefill_tokens)
                 )
+                # Additional check for time_at_first_token when the response is
+                # too short
                 if not time_at_first_token:
                     tokens_received = data["usage"].get("completion_tokens", 0)
                     if tokens_received > 1:
