@@ -2,123 +2,123 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
-    - name: Update pip and install uv
-      run: |
-        python -m pip install -U pip hatchling
-        python -m pip install -U uv
+      - name: Update pip and install uv
+        run: |
+          python -m pip install -U pip hatchling
+          python -m pip install -U uv
 
-    - name: Check uv version
-      run: python -m uv version
+      - name: Check uv version
+        run: python -m uv version
 
-    - name: Install dependencies
-      run: |
-        python -m uv pip install --system .
-        python -m uv pip install --system ".[dev,multi-cloud]"
+      - name: Install dependencies
+        run: |
+          python -m uv pip install --system .
+          python -m uv pip install --system ".[dev,multi-cloud]"
 
-    - name: Run tests with coverage
-      run: |
-        uv run --no-reinstall pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
+      - name: Run tests with coverage
+        run: |
+          uv run --no-reinstall pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
 
-    - name: Check coverage threshold
-      run: |
-        uv run --no-reinstall coverage report --show-missing --fail-under=93
+      - name: Check coverage threshold
+        run: |
+          uv run --no-reinstall coverage report --show-missing --fail-under=93
 
-    # Optional: If you want to see coverage in CI logs
-    - name: Display coverage
-      run: |
-        uv run --no-reinstall coverage report
+      # Optional: If you want to see coverage in CI logs
+      - name: Display coverage
+        run: |
+          uv run --no-reinstall coverage report
 
-    - name: Generate and display coverage info
-      if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
-      run: |
-        # Extract coverage percentage
-        COVERAGE=$(uv run --no-reinstall coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
-        echo "Coverage: $COVERAGE%"
-        echo "Update README badge with: https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
+      - name: Generate and display coverage info
+        if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
+        run: |
+          # Extract coverage percentage
+          COVERAGE=$(uv run --no-reinstall coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+          echo "Coverage: $COVERAGE%"
+          echo "Update README badge with: https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
 
   lint:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
-    - name: Update pip and install uv
-      run: |
-        python -m pip install -U pip hatchling
-        python -m pip install -U uv
+      - name: Update pip and install uv
+        run: |
+          python -m pip install -U pip hatchling
+          python -m pip install -U uv
 
-    - name: Install dependencies
-      run: |
-        python -m uv pip install --system .
-        python -m uv pip install --system ".[dev,multi-cloud]"
+      - name: Install dependencies
+        run: |
+          python -m uv pip install --system .
+          python -m uv pip install --system ".[dev,multi-cloud]"
 
-    - name: Check formatting with ruff
-      run: |
-        uv run --no-reinstall ruff format --diff genai_bench tests
+      - name: Check formatting with ruff
+        run: |
+          uv run --no-reinstall ruff format --diff genai_bench tests
 
-    - name: Lint with ruff
-      run: |
-        uv run --no-reinstall ruff check genai_bench tests
+      - name: Lint with ruff
+        run: |
+          uv run --no-reinstall ruff check genai_bench tests
 
-    - name: Type check with mypy
-      run: |
-        uv run --no-reinstall mypy genai_bench --config-file=mypy.ini
+      - name: Type check with mypy
+        run: |
+          uv run --no-reinstall mypy genai_bench --config-file=mypy.ini
 
   build:
     runs-on: ubuntu-latest
     needs: [test, lint]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
-    - name: Update pip and install uv
-      run: |
-        python -m pip install -U pip hatchling
-        python -m pip install -U uv
+      - name: Update pip and install uv
+        run: |
+          python -m pip install -U pip hatchling
+          python -m pip install -U uv
 
-    - name: Install dependencies
-      run: |
-        python -m uv pip install --no-color -vvv .
-        python -m uv pip install ".[dev,multi-cloud]"
+      - name: Install dependencies
+        run: |
+          python -m uv pip install --no-color -vvv .
+          python -m uv pip install ".[dev,multi-cloud]"
 
-    - name: Build package
-      run: |
-        python -m uv build -vvv
+      - name: Build package
+        run: |
+          python -m uv build -vvv
