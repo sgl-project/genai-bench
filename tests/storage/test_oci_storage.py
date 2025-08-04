@@ -11,14 +11,13 @@ from genai_bench.auth.oci.storage_auth_adapter import OCIStorageAuthAdapter
 @pytest.fixture(autouse=True)
 def mock_oci_imports():
     """Mock OCI imports to avoid SDK dependencies."""
-    with patch.dict(
-        "sys.modules",
-        {
-            "oci": MagicMock(),
-            "oci.data_science": MagicMock(),
-            "oci.data_science.data_science": MagicMock(),
-        },
-    ):
+    # Mock the OCI ObjectStorageClient to prevent config validation
+    with patch(
+        "genai_bench.storage.oci_object_storage.os_datastore.ObjectStorageClient"
+    ) as mock_client_class:
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+
         with patch("genai_bench.storage.oci_storage.ObjectURI") as mock_uri:
             # Make it return a mock instance when instantiated
             mock_instance = MagicMock()
@@ -35,6 +34,8 @@ def mock_oci_imports():
                     "object_uri": mock_uri,
                     "datastore_class": mock_ds,
                     "datastore": mock_ds_instance,
+                    "oci_client_class": mock_client_class,
+                    "oci_client": mock_client_instance,
                 }
 
 
