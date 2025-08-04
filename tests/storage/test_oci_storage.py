@@ -12,10 +12,12 @@ from genai_bench.auth.oci.storage_auth_adapter import OCIStorageAuthAdapter
 def mock_oci_imports():
     """Mock OCI imports to avoid SDK dependencies."""
     # Mock the OCI ObjectStorageClient to prevent config validation
-    with patch("genai_bench.storage.oci_object_storage.os_datastore.ObjectStorageClient") as mock_client_class:
+    with patch(
+        "genai_bench.storage.oci_object_storage.os_datastore.ObjectStorageClient"
+    ) as mock_client_class:
         mock_client_instance = MagicMock()
         mock_client_class.return_value = mock_client_instance
-        
+
         with patch("genai_bench.storage.oci_storage.ObjectURI") as mock_uri:
             # Make it return a mock instance when instantiated
             mock_instance = MagicMock()
