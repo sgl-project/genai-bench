@@ -80,6 +80,7 @@ def benchmark(
     num_concurrency,
     batch_size,
     traffic_scenario,
+    disable_streaming,
     additional_request_params,
     # Model auth options
     model_auth_type,
@@ -221,6 +222,10 @@ def benchmark(
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
 
+    elif api_backend == "baseten":
+        # Baseten uses API key authentication
+        auth_kwargs["api_key"] = model_api_key or api_key
+
     # Map backend names for auth factory
     auth_backend_map = {
         "oci-cohere": "oci",
@@ -228,6 +233,7 @@ def benchmark(
         "oci-genai": "oci",
         "vllm": "openai",
         "sglang": "openai",
+        "baseten": "baseten",
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
 
@@ -253,6 +259,7 @@ def benchmark(
     # Set authentication and API configuration for the user class
     user_class.auth_provider = auth_provider
     user_class.host = api_base
+    user_class.disable_streaming = disable_streaming
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)

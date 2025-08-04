@@ -36,6 +36,7 @@ class OpenAIUser(BaseUser):
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
+    disable_streaming: bool = False
 
     def on_start(self):
         if not self.host or not self.auth_provider:
@@ -90,19 +91,31 @@ class OpenAIUser(BaseUser):
                 "ignore_eos",
                 bool(user_request.max_tokens),
             ),
-            "stream": True,
-            "stream_options": {
-                "include_usage": True,
-            },
+            "stream": not self.disable_streaming,
             **user_request.additional_request_params,
         }
-        self.send_request(
-            True,
-            endpoint,
-            payload,
-            self.parse_chat_response,
-            user_request.num_prefill_tokens,
-        )
+        
+        # Only add stream_options if streaming is enabled
+        if not self.disable_streaming:
+            payload["stream_options"] = {
+                "include_usage": True,
+            }
+        if self.disable_streaming:
+            self.send_request(
+                False,
+                endpoint,
+                payload,
+                self.parse_non_streaming_chat_response,
+                user_request.num_prefill_tokens,
+            )
+        else:
+            self.send_request(
+                True,
+                endpoint,
+                payload,
+                self.parse_chat_response,
+                user_request.num_prefill_tokens,
+            )
 
     @task
     def embeddings(self):
@@ -377,3 +390,79 @@ class OpenAIUser(BaseUser):
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
         )
+
+    def parse_non_streaming_chat_response(
+        self,
+        response: Response,
+        start_time: float,
+        num_prefill_tokens: int,
+        _: float,
+    ) -> UserResponse:
+        """
+        Parses a non-streaming chat response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            num_prefill_tokens (int): The num of tokens in the prefill/prompt.
+            _ (float): Placeholder for an unused var, to keep parse_*_response
+                have the same interface.
+
+        Returns:
+            UserChatResponse: A response object with metrics and generated text.
+        """
+        data = response.json()
+        
+        # Handle error response
+        if data.get("error") is not None:
+            return UserResponse(
+                status_code=data["error"].get("code", -1),
+                error_message=data["error"].get(
+                    "message", "Unknown error, please check server logs"
+                ),
+            )
+
+        # Extract response content
+        generated_text = data["choices"][0]["message"]["content"]
+        finish_reason = data["choices"][0].get("finish_reason", None)
+        
+        # Get usage information
+        num_prefill_tokens, num_prompt_tokens, tokens_received = (
+            self._get_usage_info(data, num_prefill_tokens)
+        )
+        
+        end_time = time.monotonic()
+        
+        # For non-streaming, we can't measure TTFT, so we use a small offset
+        # This prevents division by zero in metrics calculation
+        time_at_first_token = start_time + 0.001  # 1ms offset
+        
+        logger.debug(
+            f"Generated text: {generated_text} \n"
+            f"Finish reason: {finish_reason}\n"
+            f"Prompt Tokens: {num_prompt_tokens} \n"
+            f"Completion Tokens: {tokens_received}\n"
+            f"Start Time: {start_time}\n"
+            f"End Time: {end_time}"
+        )
+        
+        if not tokens_received:
+            tokens_received = self.environment.sampler.get_token_length(
+                generated_text, add_special_tokens=False
+            )
+            logger.warning(
+                "🚨🚨🚨 There is no usage info returned from the model "
+                "server. Estimated tokens_received based on the model "
+                "tokenizer."
+            )
+            
+        return UserChatResponse(
+            status_code=200,
+            generated_text=generated_text,
+            tokens_received=tokens_received,
+            time_at_first_token=time_at_first_token,
+            num_prefill_tokens=num_prefill_tokens,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
