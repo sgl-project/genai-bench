@@ -1,3 +1,4 @@
+import re
 from typing import Any, List, Set, Tuple
 
 from PIL.Image import Image
@@ -46,16 +47,19 @@ class ImageDatasetLoader(DatasetLoader):
 
     def _safe_eval_prompt(self, prompt_template: str, item: dict) -> str:
         """
-        Safely evaluate lambda expressions like: lambda x:
-        x["conversations"][0]["content"]
+        Safely evaluate lambda expressions using asteval.
+        Supports: lambda x: x["conversations"][0]["content"]
         """
 
         # Handle lambda expressions
         if prompt_template.strip().startswith("lambda"):
             try:
                 expr = prompt_template.split(":", 1)[1].strip()
+                lambda_part, expr = prompt_template.split(":", 1)
+                var_name = lambda_part.replace("lambda", "").strip()
+                expr = expr.strip()
                 # Replace x with context
-                expr = expr.replace("x", "context")
+                expr = re.sub(rf"\b{re.escape(var_name)}\b", "context", expr)
                 # Safe evaluation by restricting allowed functions
                 safe_dict = {"context": item, "str": str, "len": len}
                 result = eval(expr, {"__builtins__": {}}, safe_dict)

@@ -110,7 +110,7 @@ def test_load_requests_override_prompt(mock_factory, mock_dataset, dataset_confi
     mock_source = MagicMock()
     mock_source.load.return_value = mock_dataset
     mock_factory.return_value = mock_source
-    dataset_config.prompt_lambda = 'lambda item: "Fixed prompt for all"'
+    dataset_config.prompt_lambda = 'lambda x: "Fixed prompt for all"'
 
     results = ImageDatasetLoader(dataset_config).load_request()
 
