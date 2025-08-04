@@ -172,7 +172,7 @@ class ImageSampler(Sampler):
     @staticmethod
     def process_image(image: Any, resize: tuple = None) -> str:
         """
-        Process a single image input and return a multimedia content dictionary.
+        Process a single image input and return a data URL or HTTP(S) URL.
 
         Supports three input types:
         1. Dictionary with raw image bytes

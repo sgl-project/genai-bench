@@ -435,6 +435,10 @@ class GCPVertexUser(BaseUser):
                                 }
                             }
                         )
+                    else:
+                        raise ValueError(
+                            f"Unsupported image format for GCP Vertex AI: {type(image)}"
+                        )
 
                 contents.append({"parts": parts})
             else:

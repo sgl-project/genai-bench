@@ -30,8 +30,7 @@ class ImageDatasetLoader(DatasetLoader):
                     continue
 
                 if config.prompt_lambda:
-                    prompt_func = eval(config.prompt_lambda)
-                    prompt = prompt_func(item)
+                    prompt = self._safe_eval_prompt(config.prompt_lambda, item)
                 elif config.prompt_column:
                     prompt = item[config.prompt_column]
                 else:
@@ -44,3 +43,28 @@ class ImageDatasetLoader(DatasetLoader):
                 f"Cannot extract image data from dataset: {type(data)}, error: {str(e)}"
             ) from e
         return sampled_requests
+
+    def _safe_eval_prompt(self, prompt_template: str, item: dict) -> str:
+        """
+        Safely evaluate lambda expressions like: lambda x:
+        x["conversations"][0]["content"]
+        """
+
+        # Handle lambda expressions
+        if prompt_template.strip().startswith("lambda"):
+            try:
+                expr = prompt_template.split(":", 1)[1].strip()
+                # Replace x with context
+                expr = expr.replace("x", "context")
+                # Safe evaluation by restricting allowed functions
+                safe_dict = {"context": item, "str": str, "len": len}
+                result = eval(expr, {"__builtins__": {}}, safe_dict)
+                return str(result) if result is not None else ""
+            except Exception:
+                return ""
+
+        # Simple field access
+        if prompt_template in item:
+            return str(item[prompt_template])
+
+        return prompt_template
