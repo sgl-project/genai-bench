@@ -87,8 +87,6 @@ def test_image_sampler_with_invalid_scenario(mock_tokenizer, mock_vision_dataset
     ):
         sampler.sample(mock_scenario)
 
-    with pytest.raises(
-        ValueError,
-        match="A scenario is required for image sampling",
-    ):
-        sampler.sample(None)
+    # None scenario is now supported (dataset-only mode)
+    request = sampler.sample(None)
+    assert request is not None

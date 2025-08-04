@@ -268,10 +268,7 @@ class OCICohereUser(BaseUser):
                     f"image but, the value provided in traffic"
                     f"scenario is requesting {num_sampled_images}"
                 )
-            return [
-                f"data:image/jpeg;base64,{image}"
-                for image in user_request.image_content
-            ]
+            return user_request.image_content
         return user_request.documents
 
     def get_serving_mode(self, user_request: UserRequest) -> Any:

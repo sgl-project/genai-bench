@@ -319,7 +319,7 @@ def test_image_embeddings(mock_client_class, test_cohere_user):
     mock_client_instance.embed_text.return_value.status = 200
 
     test_cohere_user.on_start()
-    images = ["BASE64Image1"]
+    images = ["data:image/jpeg;base64,BASE64Image1"]
     model = "cohere-embed-v3"
     test_cohere_user.sample = lambda: UserImageEmbeddingRequest(
         documents=[],
@@ -340,7 +340,7 @@ def test_image_embeddings(mock_client_class, test_cohere_user):
 
     mock_client_instance.embed_text.assert_called_once_with(
         EmbedTextDetails(
-            inputs=[f"data:image/jpeg;base64,{images[0]}"],
+            inputs=images,
             input_type="IMAGE",
             compartment_id="compartmentId",
             serving_mode=OnDemandServingMode(model_id=model),

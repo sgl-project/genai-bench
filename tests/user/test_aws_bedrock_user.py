@@ -183,7 +183,7 @@ class TestAWSBedrockUser:
             prompt="Describe this image",
             model="anthropic.claude-v2",
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             num_prefill_tokens=10,
         )

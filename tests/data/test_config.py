@@ -58,8 +58,9 @@ def test_dataset_config_defaults():
         type="file", path="/path/to/file.txt", file_format="txt"
     )
     config = DatasetConfig(source=source_config)
-    assert config.prompt_column == "prompt"
-    assert config.image_column == "image"
+    assert config.prompt_column is None
+    assert config.image_column is None
+    assert config.prompt_lambda is None
 
 
 def test_invalid_dataset_source_type():

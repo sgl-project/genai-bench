@@ -206,7 +206,7 @@ class TestGCPVertexUser:
             prompt="Describe this image",
             model="gemini-pro-vision",
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_prefill_tokens=10,
             num_images=1,
         )

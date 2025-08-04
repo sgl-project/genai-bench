@@ -297,14 +297,16 @@ def sampling_options(func):
     func = click.option(
         "--dataset-image-column",
         type=str,
-        default="image",
+        default=None,
         help="Column name containing images (for multimodal datasets).",
     )(func)
     func = click.option(
         "--dataset-prompt-column",
         type=str,
-        default="prompt",
-        help="Column name containing prompts (for CSV/HuggingFace datasets).",
+        default=None,
+        help="Column name containing prompts (for CSV/HuggingFace datasets). "
+        "If not specified, empty prompts will be used. For advanced usage, please"
+        "check out DatasetConfig.",
     )(func)
     func = click.option(
         "--dataset-path",
