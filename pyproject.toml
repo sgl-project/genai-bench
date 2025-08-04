@@ -3,7 +3,7 @@ name = "genai-bench"
 version = "0.0.1"
 description = "A powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems."
 authors = [{ name = "Chang Su", email = "chang.s.su@oracle.com" }]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.10,<3.13"
 readme = "README.md"
 license = {text = "MIT"}
 classifiers = [
@@ -89,7 +89,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py310"
 line-length = 88
 extend-exclude = [
 ]
