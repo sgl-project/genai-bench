@@ -62,7 +62,7 @@ class ImageSampler(Sampler):
         else:
             # Dataset-only mode
             prompt, image_content = self._sample_image_and_text()
-            num_images = 1
+            num_images = len(image_content)
             num_output_tokens = None
 
         # TODO: create Delegated Request Creator to replace if-else
