@@ -305,8 +305,8 @@ def sampling_options(func):
         type=str,
         default=None,
         help="Column name containing prompts (for CSV/HuggingFace datasets). "
-        "If not specified, empty prompts will be used. "
-        "If specified, it will override the prompt column in the dataset config file.",
+        "If not specified, empty prompts will be used. For advanced usage, please"
+        "check out DatasetConfig.",
     )(func)
     func = click.option(
         "--dataset-path",

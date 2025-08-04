@@ -3,15 +3,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from oci.generative_ai_inference.models import (
     ChatDetails,
-    GenericChatRequest,
     DedicatedServingMode,
+    GenericChatRequest,
     OnDemandServingMode,
 )
 
-from genai_bench.protocol import (
-    UserChatRequest,
-    UserEmbeddingRequest,
-)
+from genai_bench.protocol import UserChatRequest, UserEmbeddingRequest
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 
 

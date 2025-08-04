@@ -8,8 +8,8 @@ from oci.generative_ai_inference import GenerativeAiInferenceClient
 from oci.generative_ai_inference.models import (
     ChatDetails,
     ChatResult,
-    GenericChatRequest,
     DedicatedServingMode,
+    GenericChatRequest,
     OnDemandServingMode,
 )
 
