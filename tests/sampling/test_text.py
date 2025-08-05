@@ -235,6 +235,11 @@ class TestTextSampler(unittest.TestCase):
             # Count actual tokens in result
             # Need to handle mixed content (original lines + decoded text)
             total_tokens = 0
+
+            # All prompts start with 4 numbers, which are 1 token
+            total_tokens += 1
+            result = result[4:]
+
             # Split by our test lines to count tokens properly
             remaining = result
             for line in self.test_data:
@@ -270,38 +275,6 @@ class TestTextSampler(unittest.TestCase):
 
         # Verify decode was called with truncated tokens
         self.tokenizer.decode.assert_called_with(line_tokens[:requested_tokens])
-    def test_sample_chat_prefix_request(self):
-        self.tokenizer.encode.side_effect = [
-            [1] * 0,
-            [1] * 11,
-            [1] * 14,
-            [1] * 11,
-            [1] * 11,
-            [1] * 11,
-            [1] * 11,
-        ]
-        scenario = NormalDistribution(
-            mean_input_tokens=20,
-            stddev_input_tokens=0,
-            mean_output_tokens=20,
-            stddev_output_tokens=0,
-        )
-        prefix_sampler = TextSampler(
-            tokenizer=self.tokenizer,
-            model=self.model,
-            output_modality=self.output_modality,
-            data=self.test_data,
-            use_scenario=True,
-            prompt_prefix_ratio=0.5,  # Set a prefix ratio for testing
-        )
-        result = prefix_sampler.sample(scenario)
-        self.assertIsInstance(result, UserChatRequest)
-        self.assertEqual(result.model, self.model)
-        self.assertTrue(isinstance(result.prompt, str))
-        self.assertGreater(len(result.prompt), 0)
-        # The prompt should start with the generated prefix and a 4-digit number
-        self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
-        self.assertEqual(len(result.prompt), 20)
 
     def test_sample_chat_prefix_ratio_request(self):
         """Test prefix generation using ratio."""
@@ -343,7 +316,21 @@ class TestTextSampler(unittest.TestCase):
         self.assertEqual(len(result.prompt), 20)
 
     def test_short_prompt_request(self):
-        self.tokenizer.encode.return_value = [1] * 10
+        """Test that short prompts are handled correctly."""
+
+        def mock_encode(text, add_special_tokens=False):
+            return [1] * len(text)
+
+        self.tokenizer.encode = mock_encode
+
+        # Mock decode to return the original text
+        def mock_decode(tokens):
+            if isinstance(tokens, list):
+                return "a" * len(tokens)  # Return 'a' repeated for the token count
+            return "decoded_text"
+
+        self.tokenizer.decode = mock_decode
+
         self.sampler.data = ["2"]
 
         # Scenario asks for only 1 input token

@@ -210,7 +210,8 @@ class TextSampler(Sampler):
         # Get the difference in length between the existing
         # prefix and the desired prefix length
 
-        current_prefix_length = self.get_token_length(current_prefix)
+        current_prefix_tokens = self.tokenizer.encode(current_prefix)
+        current_prefix_length = len(current_prefix_tokens)
         prefix_length_diff: int = prefix_length - current_prefix_length
 
         # Generate the prefix if it hasn't been created yet, or add
@@ -221,8 +222,9 @@ class TextSampler(Sampler):
 
         elif prefix_length_diff < 0:
             # If the prefix is longer than needed, truncate it
-            char_to_token_ratio = len(current_prefix) / current_prefix_length
-            current_prefix = self.prefix[: int(prefix_length * char_to_token_ratio)]
+            current_prefix = self.tokenizer.decode(
+                current_prefix_tokens[:prefix_length]
+            )
         return current_prefix
 
     def _sample_text(self, num_input_tokens: int) -> str:
@@ -259,10 +261,12 @@ class TextSampler(Sampler):
 
         # Prepend the prefix to all prompts with a randomly picked 4 digits
         prompt = f"{current_prefix}{random.randint(1000,9999)}"
-        left_tokens_to_sample = num_input_tokens - self.get_token_length(prompt)
+
+        prompt_tokens = self.tokenizer.encode(prompt)
+        left_tokens_to_sample = num_input_tokens - len(prompt_tokens)
 
         if left_tokens_to_sample < 0:
-            return prompt[: self.get_token_length(prompt) + left_tokens_to_sample]
+            return self.tokenizer.decode(prompt_tokens[:num_input_tokens])
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
