@@ -45,8 +45,8 @@ class RequestMetricsCollector:
 
         # Calculate prefill throughput
         self.metrics.input_throughput = (
-            self.metrics.num_input_tokens / self.metrics.e2e_latency
-            if self.metrics.e2e_latency > 0
+            self.metrics.num_input_tokens / self.metrics.ttft
+            if self.metrics.ttft
             else 0
         )
 
@@ -74,8 +74,8 @@ class RequestMetricsCollector:
             )
             self.metrics.output_inference_speed = 1 / self.metrics.tpot
             self.metrics.output_throughput = (
-                (self.metrics.num_output_tokens - 1) / self.metrics.e2e_latency
-                if self.metrics.e2e_latency > 0
+                (self.metrics.num_output_tokens - 1) / self.metrics.output_latency
+                if self.metrics.output_latency
                 else 0
             )
         else:
