@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from genai_bench.analysis.experiment_loader import ExperimentMetrics, MetricsData
 from genai_bench.logging import init_logger
 from genai_bench.protocol import ExperimentMetadata
+from genai_bench.time_units import TimeUnitConverter
 from genai_bench.utils import sanitize_string
 
 logger = init_logger(__name__)
@@ -27,6 +28,7 @@ def plot_graph(
     concurrency_levels: List[int],
     label: str,
     plot_type: str = "line",
+    time_unit: str = "s",
 ) -> None:
     """
     Generalized plotting function that can handle both line and scatter plots.
@@ -42,6 +44,15 @@ def plot_graph(
         label (str): Label for the legend.
         plot_type (str): Type of plot, either "line" or "scatter".
     """
+    # Convert time data and update labels if needed
+    is_time_data = any(kw in y_label.lower() for kw in TimeUnitConverter.LATENCY_FIELDS)
+    if is_time_data:
+        y_data = [
+            TimeUnitConverter.convert_value(val, "s", time_unit) for val in y_data
+        ]
+        y_label = TimeUnitConverter.get_unit_label(y_label, time_unit)
+        title = TimeUnitConverter.get_unit_label(title, time_unit)
+
     if x_label == "Concurrency":
         # Set x-axis for concurrency levels to have even spacing
         x_positions = range(len(concurrency_levels))
@@ -111,6 +122,7 @@ def plot_metrics(
     concurrency_data_list: List[Dict[int, MetricsData]],
     label_to_concurrency_map: Dict[str, List[int]],
     labels: List[str],
+    time_unit: str = "s",
 ) -> None:
     """
     Plots various metrics on provided axes and saves each plot individually.
@@ -267,6 +279,7 @@ def plot_metrics(
                 concurrency_levels=concurrency_levels,
                 label=labels[i],
                 plot_type=spec["plot_type"],
+                time_unit=time_unit,
             )
 
         # Add stacked error rate plot
@@ -323,13 +336,19 @@ def plot_experiment_data(
             f"Invalid group_key '{group_key}' in ExperimentMetadata fields."
         )
 
+    # Extract time unit from experiment metadata (all experiments should use the
+    # same unit)
+    time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+
     if group_key == "traffic_scenario":
         fig, axs = plt.subplots(2, 4, figsize=(32, 12))
         fig.suptitle("Grouped by Traffic Scenario", fontsize=14)
         label_to_concurrency_map, concurrency_data_list, labels = get_scenario_data(
             run_data_list
         )
-        plot_metrics(axs, concurrency_data_list, label_to_concurrency_map, labels)
+        plot_metrics(
+            axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+        )
         finalize_and_save_plots(axs, fig, labels, experiment_folder, "traffic_scenario")
     else:
         traffic_scenarios = extract_traffic_scenarios(run_data_list)
@@ -339,7 +358,9 @@ def plot_experiment_data(
             label_to_concurrency_map, concurrency_data_list, labels = get_group_data(
                 run_data_list, traffic_scenario, group_key
             )
-            plot_metrics(axs, concurrency_data_list, label_to_concurrency_map, labels)
+            plot_metrics(
+                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+            )
             finalize_and_save_plots(
                 axs,
                 fig,
@@ -631,6 +652,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
         concurrency_levels=valid_concurrency,
         label=f"Scenario: {scenario_label}",
         plot_type="line",
+        time_unit="s",
     )
 
     ax.legend()

@@ -11,6 +11,7 @@ from genai_bench.analysis.experiment_loader import ExperimentMetrics
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
 from genai_bench.protocol import ExperimentMetadata
+from genai_bench.time_units import TimeUnitConverter
 
 logger = init_logger(__name__)
 
@@ -30,10 +31,15 @@ def create_workbook(
     output_file: PathLike | str,
     percentile: str = "mean",
 ):
+    # Extract time unit from experiment metadata
+    time_unit = experiment_metadata.time_unit
+
     wb = Workbook()
 
     create_summary_sheet(wb, experiment_metadata, run_data, percentile=percentile)
-    create_appendix_sheet(wb, experiment_metadata, run_data, percentile=percentile)
+    create_appendix_sheet(
+        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+    )
     create_experiment_metadata_sheet(wb, experiment_metadata)
     create_aggregated_metrics_sheet(wb, run_data, experiment_metadata)
     create_single_request_metrics_sheet(wb, run_data, experiment_metadata)
@@ -177,6 +183,7 @@ def _create_appendix_sheet_common(
     run_data: dict,
     is_embedding: bool = False,
     percentile: str = "mean",
+    time_unit: str = "s",
 ) -> None:
     """Creates appendix sheet with common logic for both chat and embedding."""
     iteration_header_map = {
@@ -187,13 +194,15 @@ def _create_appendix_sheet_common(
         "GPU Type",
         "Use Case",
         iteration_header_map[experiment_metadata.iteration_type],
-        "TTFT",
+        TimeUnitConverter.get_unit_label("TTFT (s)", time_unit),
     ]
 
     if is_embedding:
         headers.extend(
             [
-                "End-to-End Latency per Request (s)",
+                TimeUnitConverter.get_unit_label(
+                    "End-to-End Latency per Request (s)", time_unit
+                ),
                 "Request Throughput (RPS)",
                 "Total Throughput (Input + Output) of Server (tokens/s)",
             ]
@@ -203,7 +212,9 @@ def _create_appendix_sheet_common(
             [
                 "Output Inference Speed per Request (tokens/s)",
                 "Output Throughput of Server (tokens/s)",
-                "End-to-End Latency per Request (s)",
+                TimeUnitConverter.get_unit_label(
+                    "End-to-End Latency per Request (s)", time_unit
+                ),
                 "Request Throughput (RPS)",
                 "Total Throughput (Input + Output) of Server (tokens/s)",
             ]
@@ -300,10 +311,11 @@ def create_appendix_sheet(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     percentile: str = "mean",
+    time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
     _create_appendix_sheet_common(
-        wb, experiment_metadata, run_data, is_embedding, percentile
+        wb, experiment_metadata, run_data, is_embedding, percentile, time_unit
     )
 
 

@@ -273,7 +273,7 @@ class PlotConfigManager:
                         },
                     ],
                     "x_label": "Requests Per Second",
-                    "y_label": "Latency (seconds)",
+                    "y_label": "Latency (s)",
                     "plot_type": "line",
                     "position": [0, 0],
                 },
