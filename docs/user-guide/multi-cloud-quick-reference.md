@@ -206,7 +206,7 @@ genai-bench benchmark \
 
 ## Multi-Modal Tasks
 
-### Image-to-Text Benchmarking
+### Image-text-to-Text Benchmarking
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \

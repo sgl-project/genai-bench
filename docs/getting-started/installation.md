@@ -15,7 +15,7 @@ pip install genai-bench
 For a specific version:
 
 ```bash
-pip install genai-bench==0.1.75
+pip install genai-bench==0.0.1
 ```
 
 ### Method 2: Development Installation
@@ -23,12 +23,15 @@ pip install genai-bench==0.1.75
 For development or to use the latest features:
 
 1. Please make sure you have Python3.11 installed. You can check out online how to set it up.
-2. Use the virtual environment from uv
+2. Use the virtual environment from uv. You can install it with: 
+
+```shell
+make uv
+```
 
 Activate the virtual environment to ensure the dev environment is correctly set up:
 
 ```shell
-make uv
 source .venv/bin/activate
 ```
 
@@ -47,7 +50,7 @@ For containerized environments:
 Pull the latest docker image:
 
 ```shell
-docker pull ghcr.io/moirai-internal/genai-bench:v0.0.1
+docker pull ghcr.io/moirai-internal/genai-bench:v0.0.2
 ```
 
 

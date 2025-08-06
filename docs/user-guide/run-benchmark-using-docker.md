@@ -5,7 +5,7 @@
 Pull the latest docker image:
 
 ```shell
-docker pull ghcr.io/moirai-internal/genai-bench:v0.0.1
+docker pull ghcr.io/moirai-internal/genai-bench:v0.0.2
 ```
 
 ## Building from Source
@@ -84,7 +84,7 @@ docker run \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
-    --task image-to-text \
+    --task image-text-to-text \
     --max-time-per-run 10 \
     --max-requests-per-run 100 \
     --server-engine "SGLang" \
@@ -133,7 +133,7 @@ docker run \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
-    --task image-to-text \
+    --task image-text-to-text \
     --max-time-per-run 10 \
     --max-requests-per-run 100 \
     --server-engine "SGLang" \

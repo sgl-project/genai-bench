@@ -35,10 +35,10 @@ When you specify a task, the appropriate sampler (`TextSampler` or `ImageSampler
     genai-bench benchmark --task text-to-text ...
     ```
 
-* For an **image-to-text** task (e.g., generating a response for an image and text interleave message):
+* For an **image-text-to-text** task (e.g., generating a response for an image and text interleave message):
 
     ```bash
-    genai-bench benchmark --task image-to-text ...
+    genai-bench benchmark --task image-text-to-text ...
     ```
 
 * For an **image-to-embeddings** task (e.g., generating embeddings for similarity search):

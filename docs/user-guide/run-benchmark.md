@@ -47,10 +47,10 @@ genai-bench benchmark \
             --api-base "http://localhost:8180" \
             --api-model-name "/models/Phi-3-vision-128k-instruct" \
             --model-tokenizer "/models/Phi-3-vision-128k-instruct" \
-            --task image-to-text \
+            --task image-text-to-text \
             --max-time-per-run 15 \
             --max-requests-per-run 300 \
-            --server-engine vLLM \
+            --server-engine "vLLM" \
             --server-gpu-type A100-80G \
             --server-version "v0.6.0" \
             --server-gpu-count 4 \

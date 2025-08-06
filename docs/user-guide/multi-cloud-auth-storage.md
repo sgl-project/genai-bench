@@ -533,7 +533,7 @@ genai-bench benchmark \
 
 ### Multi-Modal Tasks
 
-**Image-to-text with GCP Vertex AI:**
+**Image-text-to-text with GCP Vertex AI:**
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \
