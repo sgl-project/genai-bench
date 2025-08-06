@@ -592,3 +592,122 @@ def test_benchmark_help_doesnt_prompt(cli_runner):
     )
     assert "Api backend (openai, oci-cohere, cohere):" not in result.output
     assert result.exit_code == 0, f"Command failed with output: {result.output}"
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_command_with_spawn_rate(cli_runner, default_options, mock_report_and_plot):
+    """Test benchmark command with spawn-rate option."""
+    result = cli_runner.invoke(
+        benchmark,
+        [
+            *default_options,
+            "--spawn-rate",
+            "50",
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+
+    # Verify report generation like other basic tests
+    assert mock_report_and_plot["load_experiment"].called
+    assert mock_report_and_plot["create_workbook"].called
+    assert mock_report_and_plot["plot_experiment_data"].called
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_command_with_spawn_rate_and_workers(cli_runner, default_options, mock_runner_stats):
+    """Test benchmark command with both spawn-rate and num-workers options."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+        mock_runner = MagicMock()
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--num-workers",
+                "4",
+                "--spawn-rate",
+                "25",
+            ],
+        )
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        mock_runner_class.assert_called_once()
+        mock_runner.setup.assert_called_once()
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_spawn_rate_passed_to_runner_start(cli_runner, default_options, mock_runner_stats):
+    """Test that spawn-rate parameter is correctly passed to environment.runner.start."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+        mock_runner = MagicMock()
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        
+        # Mock the runner.start method to capture its arguments
+        mock_runner.environment.runner.start = MagicMock()
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--num-concurrency",
+                "100",
+                "--spawn-rate",
+                "25",
+            ],
+        )
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        
+        # Verify that runner.start was called with the correct spawn_rate
+        mock_runner.environment.runner.start.assert_called_with(100, spawn_rate=25)
+
+
+def test_spawn_rate_option_in_help(cli_runner):
+    """Test that spawn-rate option appears in the CLI help output."""
+    result = cli_runner.invoke(benchmark, ["--help"])
+    assert result.exit_code == 0
+    assert "--spawn-rate" in result.output
+    assert "Number of users to spawn per second" in result.output
