@@ -28,7 +28,7 @@ class AWSBedrockUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        "image-to-text": "chat",  # Same method handles both text and image
+        "image-text-to-text": "chat",  # Same method handles both text and image
     }
 
     host: Optional[str] = None
