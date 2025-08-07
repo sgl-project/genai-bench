@@ -50,9 +50,9 @@ genai-bench benchmark \
             --task image-text-to-text \
             --max-time-per-run 15 \
             --max-requests-per-run 300 \
-            --server-engine "vLLM" \
+            --server-engine "SGLang" \
             --server-gpu-type A100-80G \
-            --server-version "v0.6.0" \
+            --server-version "v0.4.10" \
             --server-gpu-count 4 \
             --traffic-scenario "I(256,256)" \
             --traffic-scenario "I(1024,1024)" \
