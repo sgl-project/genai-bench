@@ -406,8 +406,13 @@ def benchmark(
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
                 # Use custom spawn rate if provided, otherwise use concurrency
-                actual_spawn_rate = spawn_rate if spawn_rate is not None else concurrency
-                logger.info(f"Starting benchmark with concurrency={concurrency}, spawn_rate={actual_spawn_rate}")
+                actual_spawn_rate = (
+                    spawn_rate if spawn_rate is not None else concurrency
+                )
+                logger.info(
+                    f"Starting benchmark with concurrency={concurrency}, "
+                    f"spawn_rate={actual_spawn_rate}"
+                )
                 environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
 
                 total_run_time = manage_run_time(

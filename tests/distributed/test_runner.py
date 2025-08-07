@@ -237,7 +237,7 @@ def test_worker_process_failure(mock_environment, mock_dashboard):
     # The worker process should now catch the exception and return gracefully
     # instead of re-raising it
     result = runner._worker_process(0)
-    
+
     # Verify that the function returns None (graceful exit)
     assert result is None
 

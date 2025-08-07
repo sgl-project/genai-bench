@@ -158,7 +158,7 @@ class DistributedRunner:
         )
         # Create collector only for master in distributed mode
         self.metrics_collector = AggregatedMetricsCollector()
-        
+
         time.sleep(self.config.wait_time)
         self._register_message_handlers()
 
@@ -229,10 +229,12 @@ class DistributedRunner:
                 master_host=self.config.master_host, master_port=self.config.master_port
             )
             self._register_message_handlers()
-            
+
             # Add periodic health check logging
-            logger.info(f"Worker {worker_id} started successfully and connected to master")
-            
+            logger.info(
+                f"Worker {worker_id} started successfully and connected to master"
+            )
+
             runner.greenlet.join()
         except Exception as e:
             logger.error(f"Worker {worker_id} failed: {str(e)}")
@@ -327,7 +329,7 @@ class DistributedRunner:
                     logger.info(f"Terminating worker {i}")
                     process.terminate()
                     process.join(timeout=10)  # Wait up to 10 seconds
-                    
+
                     # Force kill if still alive
                     if process.is_alive():
                         logger.warning(f"Force killing worker {i}")

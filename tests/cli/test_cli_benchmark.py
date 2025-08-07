@@ -605,7 +605,9 @@ def test_benchmark_help_doesnt_prompt(cli_runner):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_benchmark_command_with_spawn_rate(cli_runner, default_options, mock_report_and_plot):
+def test_benchmark_command_with_spawn_rate(
+    cli_runner, default_options, mock_report_and_plot
+):
     """Test benchmark command with spawn-rate option."""
     result = cli_runner.invoke(
         benchmark,
@@ -634,7 +636,9 @@ def test_benchmark_command_with_spawn_rate(cli_runner, default_options, mock_rep
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_benchmark_command_with_spawn_rate_and_workers(cli_runner, default_options, mock_runner_stats):
+def test_benchmark_command_with_spawn_rate_and_workers(
+    cli_runner, default_options, mock_runner_stats
+):
     """Test benchmark command with both spawn-rate and num-workers options."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -673,8 +677,10 @@ def test_benchmark_command_with_spawn_rate_and_workers(cli_runner, default_optio
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_spawn_rate_passed_to_runner_start(cli_runner, default_options, mock_runner_stats):
-    """Test that spawn-rate parameter is correctly passed to environment.runner.start."""
+def test_spawn_rate_passed_to_runner_start(
+    cli_runner, default_options, mock_runner_stats
+):
+    """Test that spawn-rate parameter is correctly passed to runner.start."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
         patch("genai_bench.cli.cli.Environment") as mock_env_class,
@@ -685,7 +691,7 @@ def test_spawn_rate_passed_to_runner_start(cli_runner, default_options, mock_run
         mock_runner_class.return_value = mock_runner
         mock_runner.environment = mock_env
         mock_runner.environment.runner.stats = mock_runner_stats
-        
+
         # Mock the runner.start method to capture its arguments
         mock_runner.environment.runner.start = MagicMock()
 
@@ -700,7 +706,7 @@ def test_spawn_rate_passed_to_runner_start(cli_runner, default_options, mock_run
             ],
         )
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
-        
+
         # Verify that runner.start was called with the correct spawn_rate
         mock_runner.environment.runner.start.assert_called_with(100, spawn_rate=25)
 
