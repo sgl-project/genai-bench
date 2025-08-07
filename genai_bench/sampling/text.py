@@ -186,7 +186,7 @@ class TextSampler(Sampler):
                     truncated_text = self.tokenizer.decode(
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
-                    prompt += " " + truncated_text
+                    prompt += (" " if prompt else "") + truncated_text
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
