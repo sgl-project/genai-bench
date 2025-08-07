@@ -61,6 +61,8 @@ genai-bench benchmark \
             --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
 
+For complex setups, we recommend use of [dataset configs](#using-dataset-configurations).
+
 ## Start an embedding benchmark
 
 Below is a sample command to trigger an embedding benchmark task. Note: when running an embedding benchmark, it is recommended to set `--num-concurrency` to 1.
@@ -280,7 +282,25 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
 }
 ```
 
-Then use: `--dataset-config config.json`
+Then use: `--dataset-config config.json`.
+
+**Benchmarking with large images:**
+When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the arguement "unsafe_allow_large_images", which disables the warning.
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "zhang0jhon/Aesthetic-4K",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "text",
+  "image_column": "image",
+  "unsafe_allow_large_images": true
+}
+```
 
 **Benefits of config files:**
 
