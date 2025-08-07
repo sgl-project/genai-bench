@@ -138,7 +138,7 @@ Documentation uses MkDocs Material:
 pip install mkdocs-material
 
 # Serve docs locally
-mkdocs serve
+mkdocs serve -f docs/.config/mkdocs.yml
 
 # Build docs
 mkdocs build
