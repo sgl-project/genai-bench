@@ -235,6 +235,8 @@ For advanced HuggingFace configurations, create a JSON config file:
 **Important Note for HuggingFace Datasets:**
 When using HuggingFace datasets, you should always check if you need a `split`, `subset` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail.
 
+To specify a dataset config, use: `--dataset-config config.json`.
+
 **config.json:**
 ```json
 {
@@ -281,8 +283,6 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
   "image_column": "image"
 }
 ```
-
-Then use: `--dataset-config config.json`.
 
 **Benchmarking with large images:**
 When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the arguement "unsafe_allow_large_images", which disables the warning.
