@@ -135,13 +135,13 @@ Documentation uses MkDocs Material:
 
 ```bash
 # Install docs dependencies
-pip install mkdocs-material
+make docs
 
 # Serve docs locally
-mkdocs serve -f docs/.config/mkdocs.yml
+make docs-serve
 
 # Build docs
-mkdocs build
+make docs-build
 ```
 
 ## Code Style
