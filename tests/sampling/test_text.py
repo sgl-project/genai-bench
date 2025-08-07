@@ -199,7 +199,7 @@ class TestTextSampler(unittest.TestCase):
 
         # Set up consistent tokenization behavior
         # Each line in test_data has a predictable token count
-        def mock_encode(text):
+        def mock_encode(text, add_special_tokens=False):
             # Map our test lines to token counts
             token_map = {
                 "Test line 1": [0, 1, 2],  # 3 tokens
@@ -216,8 +216,8 @@ class TestTextSampler(unittest.TestCase):
 
         self.tokenizer.encode.side_effect = mock_encode
         # Decode returns a string with same number of words as tokens
-        self.tokenizer.decode.side_effect = lambda tokens: " ".join(
-            ["word"] * len(tokens)
+        self.tokenizer.decode.side_effect = (
+            lambda tokens, skip_special_tokens=True: " ".join(["word"] * len(tokens))
         )
 
         # Test requesting exact token counts
@@ -263,4 +263,6 @@ class TestTextSampler(unittest.TestCase):
         _ = self.sampler._sample_text(requested_tokens)
 
         # Verify decode was called with truncated tokens
-        self.tokenizer.decode.assert_called_with(line_tokens[:requested_tokens])
+        self.tokenizer.decode.assert_called_with(
+            line_tokens[:requested_tokens], skip_special_tokens=True
+        )
