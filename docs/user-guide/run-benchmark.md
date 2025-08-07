@@ -245,8 +245,7 @@ To specify a dataset config, use: `--dataset-config config.json`.
     "path": "ccdv/govreport-summarization",
     "huggingface_kwargs": {
       "split": "train",
-      "revision": "main",
-      "streaming": true
+      "revision": "main"
     }
   },
   "prompt_column": "report"
