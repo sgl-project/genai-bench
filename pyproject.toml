@@ -19,7 +19,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "locust>=2.32.4,<3.0.0",
+    "locust>=2.37.14,<3.0.0",
     "numpy>=1.26.4",
     "requests>=2.32.3,<3.0.0",
     "transformers>=4.44.2,<5.0.0",

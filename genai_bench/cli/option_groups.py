@@ -574,6 +574,14 @@ def distributed_locust_options(func):
         help="Number of worker processes to spawn for the load test. "
         "By default it runs as a single process.",
     )(func)
+    func = click.option(
+        "--spawn-rate",
+        type=int,
+        default=None,
+        required=False,
+        help="Number of users to spawn per second. Defaults to concurrency value. "
+        "Use lower values (e.g., 10-50) for LLM workloads to prevent worker overload.",
+    )(func)
     return func
 
 

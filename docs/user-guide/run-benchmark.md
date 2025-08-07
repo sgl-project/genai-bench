@@ -202,12 +202,31 @@ To address this, you can increase the number of worker processes using the `--nu
 
 This distributes the load across multiple processes on a single machine, improving performance and ensuring your benchmark runs smoothly.
 
+### Controlling User Spawn Rate
+
+When running high-concurrency benchmarks with large payloads (e.g., 20k+ tokens), workers may become overwhelmed if all users are spawned immediately. This can cause worker heartbeat failures and restarts.
+
+To prevent this, use the `--spawn-rate` option to control how quickly users are spawned:
+
+```shell
+    --num-concurrency 500 \
+    --num-workers 16 \
+    --spawn-rate 50
+```
+
+**Examples:**
+- `--spawn-rate 50`: Spawn 50 users per second (takes 10 seconds to reach 500 users)
+- `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
+- `--spawn-rate 500`: Spawn all users immediately (default behavior)
+
+
 ### Notes on Usage
 
 1. This feature is experimental, so monitor the system's behavior when enabling multiple workers.
 2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
 3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers.
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
+5. For high-concurrency tests with large payloads, use `--spawn-rate` to prevent worker overload.
 
 
 ## Using Dataset Configurations
