@@ -285,7 +285,7 @@ To specify a dataset config, use: `--dataset-config config.json`.
 ```
 
 **Benchmarking with large images:**
-When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the arguement "unsafe_allow_large_images", which disables the warning.
+When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the argument "unsafe_allow_large_images", which disables the warning.
 
 ```json
 {
