@@ -65,6 +65,10 @@ class DatasetConfig(BaseModel):
         description="Lambda expression string, "
         'e.g. \'lambda item: f"Question: {item["question"]}"\'',
     )
+    unsafe_allow_large_images: bool = Field(
+        False,
+        description="Overrides pillows internal DDOS protection",
+    )
 
     @classmethod
     def from_file(cls, config_path: str) -> "DatasetConfig":
@@ -117,4 +121,5 @@ class DatasetConfig(BaseModel):
             prompt_column=prompt_column,
             image_column=image_column,
             prompt_lambda=None,
+            unsafe_allow_large_images=False,
         )
