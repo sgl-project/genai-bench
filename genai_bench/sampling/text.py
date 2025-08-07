@@ -81,7 +81,7 @@ class TextSampler(Sampler):
             prompt = self._sample_text(num_input_tokens)
             max_tokens = num_output_tokens
             num_prefill_tokens = self.get_token_length(prompt)
-            self._check_discrepancy(num_input_tokens, num_prefill_tokens)
+            self._check_discrepancy(num_input_tokens, num_prefill_tokens, 0.15, 20)
 
         return UserChatRequest(
             model=self.model,
@@ -179,14 +179,14 @@ class TextSampler(Sampler):
         while left_tokens_to_sample > 0:
             random.shuffle(data_copy)
             for line in data_copy:
-                line_tokens = self.tokenizer.encode(line)
+                line_tokens = self.tokenizer.encode(line, add_special_tokens=False)
                 num_line_tokens = len(line_tokens)
                 if num_line_tokens > left_tokens_to_sample:
                     # Truncate at token level, decode only needed tokens
                     truncated_text = self.tokenizer.decode(
-                        line_tokens[:left_tokens_to_sample]
+                        line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
-                    prompt += truncated_text
+                    prompt += " " + truncated_text
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
