@@ -81,7 +81,9 @@ class TextSampler(Sampler):
             prompt = self._sample_text(num_input_tokens)
             max_tokens = num_output_tokens
             num_prefill_tokens = self.get_token_length(prompt)
-            self._check_discrepancy(num_input_tokens, num_prefill_tokens, threshold=0.15, tolerance=20)
+            self._check_discrepancy(
+                num_input_tokens, num_prefill_tokens, threshold=0.15, tolerance=20
+            )
 
         return UserChatRequest(
             model=self.model,
