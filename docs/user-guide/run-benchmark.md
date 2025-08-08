@@ -47,12 +47,12 @@ genai-bench benchmark \
             --api-base "http://localhost:8180" \
             --api-model-name "/models/Phi-3-vision-128k-instruct" \
             --model-tokenizer "/models/Phi-3-vision-128k-instruct" \
-            --task image-to-text \
+            --task image-text-to-text \
             --max-time-per-run 15 \
             --max-requests-per-run 300 \
-            --server-engine vLLM \
+            --server-engine "SGLang" \
             --server-gpu-type A100-80G \
-            --server-version "v0.6.0" \
+            --server-version "v0.4.10" \
             --server-gpu-count 4 \
             --traffic-scenario "I(256,256)" \
             --traffic-scenario "I(1024,1024)" \
@@ -60,6 +60,8 @@ genai-bench benchmark \
             --num-concurrency 8 \
             --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
+
+For complex setups, we recommend use of [dataset configs](#using-dataset-configurations).
 
 ## Start an embedding benchmark
 
@@ -250,7 +252,9 @@ Genai-bench supports flexible dataset configurations through two approaches:
 For advanced HuggingFace configurations, create a JSON config file:
 
 **Important Note for HuggingFace Datasets:**
-When using HuggingFace datasets, you should always check if you need a `split`, `subset` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail.
+When using HuggingFace datasets, you should always check if you need a `split`, `subset`, or `name` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail. Some datasets require additional configuration parameters like `name` to specify which subset of the dataset to load.
+
+To specify a dataset config, use: `--dataset-config config.json`.
 
 **config.json:**
 ```json
@@ -260,8 +264,7 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
     "path": "ccdv/govreport-summarization",
     "huggingface_kwargs": {
       "split": "train",
-      "revision": "main",
-      "streaming": true
+      "revision": "main"
     }
   },
   "prompt_column": "report"
@@ -299,9 +302,45 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
 }
 ```
 
-Then use: `--dataset-config config.json`
+**Benchmarking with large images:**
+When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the argument `unsafe_allow_large_images`, which disables the warning.
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "zhang0jhon/Aesthetic-4K",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "text",
+  "image_column": "image",
+  "unsafe_allow_large_images": true
+}
+```
+
+**Using prompt lambdas (vision tasks only):**
+If you want to benchmark a specific portion of a vision dataset, you can use the `prompt_lambda` argument to select only the desired section. When using `prompt_lambda`, you don't need to specify `prompt_column` as the lambda function generates the prompts dynamically. Note that `prompt_lambda` is only available for vision/multimodal tasks.
+
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "lmms-lab/LLaVA-OneVision-Data",
+    "huggingface_kwargs": {
+      "split": "train",
+      "name": "CLEVR-Math(MathV360K)"
+    }
+  },
+  "image_column": "image",
+  "prompt_lambda": "lambda x: x['conversations'][0]['value'] if len(x['conversations']) > 1 else ''"
+}
+```
 
 **Benefits of config files:**
+
 - Access to ALL HuggingFace `load_dataset` parameters
 - Reusable and version-controllable
 - Support for complex configurations

@@ -4,6 +4,7 @@
 
 ## OCI Object Storage (Legacy)
 GenAI Bench supports uploading benchmark results directly to OCI Object Storage. This feature is useful for:
+
 - Storing benchmark results in a centralized location
 - Sharing results with team members
 - Maintaining a historical record of benchmarks
@@ -37,6 +38,7 @@ The default object prefix is empty, but you can specify a prefix using the `--st
 ## Multi-Cloud Storage Support
 
 GenAI Bench now supports multiple cloud storage providers:
+
 - **AWS S3**: Use `--storage-provider aws`
 - **Azure Blob Storage**: Use `--storage-provider azure`
 - **GCP Cloud Storage**: Use `--storage-provider gcp`
