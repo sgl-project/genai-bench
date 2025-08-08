@@ -42,7 +42,7 @@ class ImageSampler(Sampler):
         super().__init__(tokenizer, model, output_modality, additional_request_params)
         self.data = data
 
-    def sample(self, scenario: Optional[Scenario] = None) -> UserRequest:
+    def sample(self, scenario: Scenario) -> UserRequest:
         """
         Samples a request based on the scenario or dataset configuration.
 
@@ -53,17 +53,9 @@ class ImageSampler(Sampler):
         Returns:
             UserRequest: A request object for the task.
         """
-        if scenario is not None:
-            self._validate_scenario(scenario)
-            image_dimension, num_images, num_output_tokens = scenario.sample()
-            prompt, image_content = self._sample_image_and_text(
-                image_dimension, num_images
-            )
-        else:
-            # Dataset-only mode
-            prompt, image_content = self._sample_image_and_text()
-            num_images = len(image_content)
-            num_output_tokens = None
+        self._validate_scenario(scenario)
+        image_dimension, num_images, num_output_tokens = scenario.sample()
+        prompt, image_content = self._sample_image_and_text(image_dimension, num_images)
 
         # TODO: create Delegated Request Creator to replace if-else
         if self.output_modality == "text":

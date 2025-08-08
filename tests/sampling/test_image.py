@@ -86,7 +86,3 @@ def test_image_sampler_with_invalid_scenario(mock_tokenizer, mock_vision_dataset
         match="Expected MultiModality for image tasks, got <class 'str'>",
     ):
         sampler.sample(mock_scenario)
-
-    # None scenario is now supported (dataset-only mode)
-    request = sampler.sample(None)
-    assert request is not None

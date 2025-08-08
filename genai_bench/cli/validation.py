@@ -42,6 +42,13 @@ DEFAULT_SCENARIOS_FOR_CHAT = [
     "D(7800,200)",
 ]
 
+
+DEFAULT_SCENARIOS_FOR_VISION = [
+    "I(512,512)",
+    "I(1024,512)",
+    "I(2048,2048)",
+]
+
 DEFAULT_SCENARIOS_FOR_EMBEDDING = [
     "E(64)",
     "E(128)",
@@ -63,7 +70,9 @@ DEFAULT_SCENARIOS_FOR_RERANK = [
 DEFAULT_SCENARIOS_BY_TASK = {
     "text-to-text": DEFAULT_SCENARIOS_FOR_CHAT,
     "text-to-rerank": DEFAULT_SCENARIOS_FOR_RERANK,
+    "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
+    "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,
     # add other tasks and default scenarios as needed
 }
 
