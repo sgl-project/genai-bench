@@ -284,7 +284,7 @@ To specify a dataset config, use: `--dataset-config config.json`.
 ```
 
 **Benchmarking with large images:**
-When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the argument "unsafe_allow_large_images", which disables the warning.
+When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the argument `unsafe_allow_large_images`, which disables the warning.
 
 ```json
 {
@@ -302,7 +302,7 @@ When benchmarking with very large images, the pillow library throws an exception
 ```
 
 **Using prompt lambdas (vision tasks only):**
-If you want to benchmark a specific portion of a vision dataset, you can use the "prompt_lambda" argument to select only the desired section. When using `prompt_lambda`, you don't need to specify `prompt_column` as the lambda function generates the prompts dynamically. Note that `prompt_lambda` is only available for vision/multimodal tasks.
+If you want to benchmark a specific portion of a vision dataset, you can use the `prompt_lambda` argument to select only the desired section. When using `prompt_lambda`, you don't need to specify `prompt_column` as the lambda function generates the prompts dynamically. Note that `prompt_lambda` is only available for vision/multimodal tasks.
 
 
 ```json
@@ -318,8 +318,7 @@ If you want to benchmark a specific portion of a vision dataset, you can use the
   "image_column": "image",
   "prompt_lambda": "lambda x: x['conversations'][0]['value'] if len(x['conversations']) > 1 else ''"
 }
-
-3. **Check the dataset page on HuggingFace Hub** to see what configuration parameters are required.
+```
 
 **Benefits of config files:**
 
