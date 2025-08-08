@@ -30,6 +30,7 @@ class Sampler(ABC):
         model: str,
         output_modality: str,
         additional_request_params: Optional[dict] = None,
+        dataset_config=None,
         **kwargs,
     ):
         """Initializes the Sampler.
@@ -52,6 +53,7 @@ class Sampler(ABC):
             tokenizer.encode(text, add_special_tokens=add_special_tokens)
         )
         self.batch_size = 1  # Default batch size
+        self.dataset_config = dataset_config
 
     def _is_dataset_mode(self, scenario: Optional[Scenario]) -> bool:
         """Return True when sampler should use raw dataset without token shaping.

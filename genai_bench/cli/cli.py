@@ -283,6 +283,7 @@ def benchmark(
         model=api_model_name,
         data=data,
         additional_request_params=additional_request_params,
+        dataset_config=dataset_config_obj,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode

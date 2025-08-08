@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 from transformers import PreTrainedTokenizer
@@ -44,3 +45,33 @@ def calculate_sonnet_char_token_ratio(tokenizer: PreTrainedTokenizer) -> float:
 
     char_token_ratio = total_chars / total_tokens if total_tokens > 0 else 0
     return char_token_ratio
+
+
+def safe_eval_prompt(prompt_template: str, item: dict) -> str:
+    """
+    Safely evaluate a prompt template over a dataset row.
+
+    Supports lambda expressions like: lambda x: x["conversations"][0]["content"]
+    and simple field access (prompt_template is a key in the item dict).
+    """
+    # Handle lambda expressions
+    template = prompt_template.strip()
+    if template.startswith("lambda"):
+        try:
+            lambda_part, expr = template.split(":", 1)
+            var_name = lambda_part.replace("lambda", "").strip()
+            expr = expr.strip()
+            # Replace x with context
+            expr = re.sub(rf"\b{re.escape(var_name)}\b", "context", expr)
+            # Safe evaluation by restricting allowed functions
+            safe_dict = {"context": item, "str": str, "len": len}
+            result = eval(expr, {"__builtins__": {}}, safe_dict)
+            return str(result) if result is not None else ""
+        except Exception:
+            return ""
+
+    # Simple field access
+    if template in item:
+        return str(item[template])
+
+    return prompt_template
