@@ -112,7 +112,7 @@ def _create_summary_sheet_common(
     rows = []
 
     for scenario in merged_scenarios:
-        summary_value = -9999
+        summary_value = -1
         summary_total_chars_per_hour = 0.0
 
         iteration_key = experiment_metadata.iteration_type
@@ -128,7 +128,7 @@ def _create_summary_sheet_common(
             )
             if metric_value is not None and metric_value > threshold:
                 if (
-                    summary_value != -9999
+                    summary_value != -1
                     and getattr(metrics, iteration_key) > summary_value
                 ):
                     prev_metrics = run_data[scenario][summary_value][
@@ -140,12 +140,24 @@ def _create_summary_sheet_common(
                 summary_value = max(summary_value, getattr(metrics, iteration_key))
                 summary_total_chars_per_hour = metrics.mean_total_chars_per_hour
 
+        if summary_value == -1:
+            logger.warning(
+                f"For scenario '{scenario}', couldn't find a concurrency that meets "
+                f"the minimum output inference speed requirement: {threshold} tokens/s."
+                f" Please add lower concurrency test cases (e.g., concurrency=1), or "
+                f"check if the model service is running properly."
+            )
+            display_summary_value = "N/A"
+            display_total_chars_per_hour = "N/A"
+        else:
+            display_summary_value = str(summary_value)
+            display_total_chars_per_hour = str(summary_total_chars_per_hour)
         rows.append(
             [
                 gpu_type_value,
                 SCENARIO_MAP.get(scenario, scenario),
-                summary_value,
-                summary_total_chars_per_hour,
+                display_summary_value,
+                display_total_chars_per_hour,
             ]
         )
 
