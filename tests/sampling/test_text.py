@@ -7,7 +7,7 @@ from genai_bench.protocol import (
     UserReRankRequest,
 )
 from genai_bench.sampling.text import TextSampler
-from genai_bench.scenarios import EmbeddingScenario, NormalDistribution
+from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
 from genai_bench.scenarios.text import ReRankScenario
 
 
@@ -23,7 +23,6 @@ class TestTextSampler(unittest.TestCase):
             model=self.model,
             output_modality=self.output_modality,
             data=self.test_data,
-            use_scenario=True,
         )
 
     def test_check_discrepancy(self):
@@ -83,16 +82,9 @@ class TestTextSampler(unittest.TestCase):
             model=self.model,
             output_modality=self.output_modality,
             data=self.test_data,
-            use_scenario=False,
         )
         self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
-        scenario = NormalDistribution(
-            mean_input_tokens=10,
-            stddev_input_tokens=2,
-            mean_output_tokens=20,
-            stddev_output_tokens=5,
-        )
-
+        scenario = DatasetScenario()
         request = no_scenario_sampler.sample(scenario)
 
         self.assertIsInstance(request, UserChatRequest)

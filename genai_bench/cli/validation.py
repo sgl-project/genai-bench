@@ -135,6 +135,9 @@ def validate_traffic_scenario_callback(ctx, param, value):
         )
     if value:
         return [validate_scenario_callback(v) for v in value]
+    # If user provided a dataset and no scenario, prefer dataset mode (no data shaping)
+    if ctx.params.get("dataset_path") or ctx.params.get("dataset_config"):
+        return ["dataset"]
     if task not in DEFAULT_SCENARIOS_BY_TASK:
         raise click.BadParameter(
             f"No default traffic scenarios defined for task '{task}'"

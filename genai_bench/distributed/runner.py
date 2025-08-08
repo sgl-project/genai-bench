@@ -30,7 +30,11 @@ class DistributedConfig:
     master_host: str = "127.0.0.1"
     master_port: int = 5557
     wait_time: int = 2
-    pin_to_cores: bool = True  # Enable CPU pinning by default
+
+    # Experimental:
+    # CPU pinning is not supported on all platforms, so we disable it by default
+    # If you want to enable it, you may need to set the cpu_affinity_map
+    pin_to_cores: bool = False
     cpu_affinity_map: Optional[Dict[int, int]] = None  # Custom worker->CPU mapping
 
     def __post_init__(self):
@@ -243,6 +247,7 @@ class DistributedRunner:
 
     def _set_cpu_affinity(self, worker_id: int) -> None:
         """Set CPU affinity for worker process"""
+        # NOTE: only works on Linux
         process = psutil.Process()
         cpu_count = multiprocessing.cpu_count()
 

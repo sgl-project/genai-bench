@@ -274,7 +274,7 @@ def benchmark(
         )
 
     # Load data using the factory
-    data, use_scenario = DataLoaderFactory.load_data_for_task(task, dataset_config_obj)
+    data = DataLoaderFactory.load_data_for_task(task, dataset_config_obj)
 
     # Create sampler with preloaded data
     sampler = Sampler.create(
@@ -282,17 +282,16 @@ def benchmark(
         tokenizer=tokenizer,
         model=api_model_name,
         data=data,
-        use_scenario=use_scenario,
         additional_request_params=additional_request_params,
     )
 
-    if not sampler.use_scenario:
+    # If user did not provide scenarios but provided a dataset, default to dataset mode
+    if not traffic_scenario and (dataset_path or dataset_config):
         logger.info(
-            f"No traffic scenario needed for dataset source type "
-            f"{dataset_config_obj.source.type} and task {task}. Setting scenario to a "
-            f"no-op placeholder 'F' (No Effect)."
+            "No traffic scenarios provided. Using dataset mode: sample raw entries "
+            "from the dataset."
         )
-        traffic_scenario = ["F"]
+        traffic_scenario = ["dataset"]
 
     max_time_per_run *= 60
 
