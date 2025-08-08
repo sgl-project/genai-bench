@@ -3,7 +3,7 @@
 ## Quick Start
 You can check out `genai-bench plot --help` to find how to generate a 2x4 Plot containing:
 
-1. Output Inference Speed (tokens/s) vs Server Output Throughput (tokens/s)
+1. Per-Request Inference Speed (tokens/s) vs Server Output Throughput (tokens/s)
 2. TTFT (s) vs Server Output Throughput (tokens/s)
 3. Mean E2E Latency (s) per Request vs RPS
 4. Error Rates by HTTP Status vs Concurrency
