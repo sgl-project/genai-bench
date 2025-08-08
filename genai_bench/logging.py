@@ -111,7 +111,6 @@ class LoggingManager:
         self.layout = layout
         self.live = live
         self.delayed_handler = None
-        self.console_handler = None
         self.init_logging()
 
     def init_logging(self):
@@ -196,14 +195,7 @@ class LoggingManager:
         return rich_handler
 
     def init_ui_logging(self):
-        """Initialize UI logging handlers for 'benchmark'.
-
-        Strategy:
-        - Before entering Live dashboard: attach console + panel handlers so logs
-          appear immediately in terminal and are mirrored to the dashboard's log panel.
-        - When entering Live dashboard: swap console handler for a delayed handler
-          that buffers logs and flushes them after the dashboard exits.
-        """
+        """Initialize UI logging handlers for 'benchmark'."""
         date_format = "%Y-%m-%d %H:%M:%S.%f"
 
         # Panel handler to stream logs to the logs panel in dashboard
@@ -217,10 +209,7 @@ class LoggingManager:
         )
         panel_handler.setFormatter(panel_formatter)
 
-        # Console handler for immediate terminal output BEFORE Live starts
-        self.console_handler = self.get_console_handler()
-
-        # Prepare (but do not attach yet) delayed handler for AFTER Live starts
+        # Delayed handler to flush logs after dashboard exits
         self.delayed_handler = DelayedRichHandler(
             live=self.live,
             console=Console(),
@@ -229,23 +218,7 @@ class LoggingManager:
         delayed_formatter = logging.Formatter("%(message)s", style="%")
         self.delayed_handler.setFormatter(delayed_formatter)
 
-        # Attach panel + console initially
-        return [panel_handler, self.console_handler]
-
-    def enter_live_mode(self):
-        """Switch logging to Live dashboard mode.
-
-        - Remove console handler to avoid interfering with Live output.
-        - Attach delayed handler to buffer logs and flush them after Live exits.
-        """
-        root_logger = logging.getLogger()
-        # Detach console handler if present
-        if self.console_handler and self.console_handler in root_logger.handlers:
-            root_logger.removeHandler(self.console_handler)
-
-        # Attach delayed handler if not already attached
-        if self.delayed_handler and self.delayed_handler not in root_logger.handlers:
-            root_logger.addHandler(self.delayed_handler)
+        return [panel_handler, self.delayed_handler]
 
 
 class WorkerLoggingManager:

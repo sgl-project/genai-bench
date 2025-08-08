@@ -372,9 +372,6 @@ def benchmark(
     # and run the experiment
     iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
-
-    # Switch logging into Live mode right before creating the Live screen
-    logging_manager.enter_live_mode()
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
