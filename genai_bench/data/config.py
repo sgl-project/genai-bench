@@ -100,7 +100,7 @@ class DatasetConfig(BaseModel):
                     file_format = "csv"
                 elif path.suffix == ".txt":
                     file_format = "txt"
-                else:
+                elif path.suffix == ".json":
                     file_format = "json"
             else:
                 # Assume it's a HuggingFace ID
