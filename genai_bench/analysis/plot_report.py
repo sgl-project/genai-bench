@@ -52,24 +52,9 @@ def plot_graph(
         x_positions = x_data  # type: ignore[assignment]
 
     # If this is TTFT or E2E latency, filter out values outside [0.1, 100]
-    valid_x = []
-    valid_y = []
-    valid_concurrency = []
-
-    should_cap = any(
-        kw in y_label.lower() for kw in ["ttft", "mean e2e", "p90 e2e", "p99 e2e"]
-    )
-
-    if should_cap:
-        for xx, yy, cc in zip(x_data, y_data, concurrency_levels, strict=False):
-            if 0.1 <= yy <= 100:
-                valid_x.append(xx)
-                valid_y.append(yy)
-                valid_concurrency.append(cc)
-    else:
-        valid_x = x_data
-        valid_y = y_data
-        valid_concurrency = concurrency_levels
+    valid_x = x_data
+    valid_y = y_data
+    valid_concurrency = concurrency_levels
 
     # Plot data
     if plot_type == "line":
@@ -101,11 +86,7 @@ def plot_graph(
             mticker.LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100)
         )
 
-    # Cap the y-limits if needed
-    if should_cap:
-        ax.set_ylim([0.1, 100])
-    else:
-        ax.set_ylim(bottom=0)
+    ax.set_ylim(bottom=0)
     ax.set_xlim(left=0)
 
     ax.set_xlabel(x_label)
