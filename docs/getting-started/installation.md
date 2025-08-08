@@ -12,12 +12,6 @@ The simplest way to install GenAI Bench:
 pip install genai-bench
 ```
 
-For a specific version:
-
-```bash
-pip install genai-bench==0.0.1
-```
-
 ### Method 2: Development Installation
 
 For development or to use the latest features:
