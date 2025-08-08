@@ -30,6 +30,7 @@ class Sampler(ABC):
         model: str,
         output_modality: str,
         additional_request_params: Optional[dict] = None,
+        dataset_config=None,
         **kwargs,
     ):
         """Initializes the Sampler.
@@ -53,6 +54,7 @@ class Sampler(ABC):
         )
         self.use_scenario = True
         self.batch_size = 1  # Default batch size
+        self.dataset_config = dataset_config
 
     @abstractmethod
     def sample(self, scenario: Scenario) -> UserRequest:
