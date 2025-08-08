@@ -284,6 +284,7 @@ def benchmark(
         data=data,
         use_scenario=use_scenario,
         additional_request_params=additional_request_params,
+        dataset_config=dataset_config_obj,
     )
 
     if not sampler.use_scenario:
