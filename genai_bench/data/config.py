@@ -102,6 +102,8 @@ class DatasetConfig(BaseModel):
                     file_format = "txt"
                 elif path.suffix == ".json":
                     file_format = "json"
+                else:
+                    raise ValueError(f"Unsupported file format: {path.suffix}")
             else:
                 # Assume it's a HuggingFace ID
                 source_type = "huggingface"
