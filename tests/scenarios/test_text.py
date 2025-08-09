@@ -3,7 +3,6 @@
 from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
-    NoOpScenario,
     NormalDistribution,
     ReRankScenario,
     UniformDistribution,
@@ -69,14 +68,6 @@ def test_rerank_scenario():
     assert query_tokens == 64
 
 
-def test_noop_scenario():
-    """Test NoOpScenario."""
-    scenario = NoOpScenario()
-
-    result = scenario.sample()
-    assert result == (None, None)
-
-
 def test_normal_distribution_to_string():
     """Test NormalDistribution string representation."""
     scenario = NormalDistribution(
@@ -118,9 +109,3 @@ def test_rerank_scenario_to_string():
     """Test ReRankScenario string representation."""
     scenario = ReRankScenario(tokens_per_document=1024, tokens_per_query=100)
     assert scenario.to_string() == "R(1024,100)"
-
-
-def test_noop_scenario_to_string():
-    """Test NoOpScenario string representation."""
-    scenario = NoOpScenario()
-    assert scenario.to_string() == "F"

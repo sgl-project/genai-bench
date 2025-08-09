@@ -1,11 +1,10 @@
 import pytest
 
-from genai_bench.scenarios import ImageModality
+from genai_bench.scenarios import DatasetScenario, ImageModality
 from genai_bench.scenarios.base import Scenario
 from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
-    NoOpScenario,
     NormalDistribution,
     ReRankScenario,
     UniformDistribution,
@@ -229,25 +228,20 @@ def test_scenario_to_string():
     assert scenario.to_string() == "R(1024,100)"
 
 
-def test_scenario_from_string_file():
-    scenario = Scenario.from_string("F")
-    assert isinstance(scenario, NoOpScenario)
+def test_dataset_scenario_from_string():
+    scenario = Scenario.from_string("dataset")
+    assert isinstance(scenario, DatasetScenario)
 
 
-def test_file_distribution_sample():
-    scenario = NoOpScenario()
-    sample = scenario.sample()
-    assert sample == (None, None)
+def test_dataset_scenario_sample():
+    scenario = DatasetScenario()
+    with pytest.raises(NotImplementedError):
+        _ = scenario.sample()
 
 
-def test_file_distribution_to_string():
-    scenario = NoOpScenario()
-    assert scenario.to_string() == "F"
-
-
-def test_file_distribution_parse():
-    scenario = NoOpScenario.parse("F")
-    assert isinstance(scenario, NoOpScenario)
+def test_dataset_scenario_to_string():
+    scenario = DatasetScenario()
+    assert scenario.to_string() == "dataset"
 
 
 def test_rerank_from_string():

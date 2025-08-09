@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -155,30 +155,6 @@ class DeterministicDistribution(Scenario):
             num_input_tokens=num_input,
             num_output_tokens=num_output,
         )
-
-
-class NoOpScenario(Scenario):
-    """
-    A scenario that effectively performs no operation. Can be used for
-    placeholders in various contexts. For example, when no input/output
-    token sampling is required.
-
-    e.g.
-    F
-    """
-
-    scenario_type = TextDistribution.FILE
-    validation_pattern = r"F$"
-
-    def sample(self) -> Tuple[Any, Any]:
-        return None, None
-
-    def to_string(self) -> str:
-        return "F"
-
-    @classmethod
-    def parse(cls, params_str: str) -> "NoOpScenario":
-        return NoOpScenario()
 
 
 class EmbeddingScenario(Scenario):

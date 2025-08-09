@@ -30,24 +30,15 @@ class TextSampler(Sampler):
         model: str,
         output_modality: str,
         data: List[str],
-        use_scenario: bool = True,
         additional_request_params: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         super().__init__(tokenizer, model, output_modality, additional_request_params)
 
         self.data = data
-        self.use_scenario = use_scenario
-
-        # Set ignore_eos based on scenario usage
-        if use_scenario and self.output_modality == "text":
-            self.additional_request_params["ignore_eos"] = True
-        else:
-            self.additional_request_params["ignore_eos"] = False
-
         self.batch_size = 1  # Default batch size
 
-    def sample(self, scenario: Scenario) -> UserRequest:
+    def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
         Samples a request based on the scenario.
 
@@ -67,20 +58,21 @@ class TextSampler(Sampler):
         else:
             raise ValueError(f"Unsupported output modality: {self.output_modality}")
 
-    def _sample_chat_request(self, scenario: Scenario) -> UserChatRequest:
+    def _sample_chat_request(self, scenario: Optional[Scenario]) -> UserChatRequest:
         """Samples a chat request based on the scenario."""
-        if not self.use_scenario:
-            # Sample directly from a CSV dataset
-            prompt = self._sample_prompt()
-            max_tokens = None
-            num_prefill_tokens = self.get_token_length(prompt)
+        if self._is_dataset_mode(scenario):
+            # Use dataset-mode sampling
+            num_input_tokens, num_output_tokens = None, None
+            self.additional_request_params["ignore_eos"] = False
         else:
             # Use scenario-based sampling
             self._validate_scenario(scenario)
             num_input_tokens, num_output_tokens = scenario.sample()
-            prompt = self._sample_text(num_input_tokens)
-            max_tokens = num_output_tokens
-            num_prefill_tokens = self.get_token_length(prompt)
+            self.additional_request_params["ignore_eos"] = True
+
+        prompt = self._sample_text(num_input_tokens)
+        num_prefill_tokens = self.get_token_length(prompt)
+        if num_input_tokens is not None:
             self._check_discrepancy(
                 num_input_tokens, num_prefill_tokens, threshold=0.15, tolerance=20
             )
@@ -89,23 +81,28 @@ class TextSampler(Sampler):
             model=self.model,
             prompt=prompt,
             num_prefill_tokens=num_prefill_tokens,
-            max_tokens=max_tokens,
+            max_tokens=num_output_tokens,
             additional_request_params=self.additional_request_params,
         )
 
-    def _sample_embedding_request(self, scenario: Scenario) -> UserEmbeddingRequest:
+    def _sample_embedding_request(
+        self, scenario: Optional[Scenario]
+    ) -> UserEmbeddingRequest:
         """Samples an embedding request based on the scenario and batch size"""
-        self._validate_scenario(scenario)
-        tokens_per_document = scenario.sample()
+        if self._is_dataset_mode(scenario):
+            tokens_per_document = None
+        else:
+            self._validate_scenario(scenario)
+            tokens_per_document = scenario.sample()
 
         # Sample different documents for each batch item
         documents = [
             self._sample_text(tokens_per_document) for _ in range(self.batch_size)
         ]
         num_prefill_tokens = sum(self.get_token_length(doc) for doc in documents)
-        num_expected_tokens = tokens_per_document * self.batch_size
-
-        self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 0.2, 20)
+        if tokens_per_document is not None:
+            num_expected_tokens = tokens_per_document * self.batch_size
+            self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 0.2, 20)
 
         return UserEmbeddingRequest(
             model=self.model,
@@ -114,12 +111,15 @@ class TextSampler(Sampler):
             additional_request_params=self.additional_request_params,
         )
 
-    def _sample_rerank_request(self, scenario: Scenario) -> UserReRankRequest:
+    def _sample_rerank_request(self, scenario: Optional[Scenario]) -> UserReRankRequest:
         """Samples a rerank request based on the scenario and batch size"""
-        self._validate_scenario(scenario)
-        tokens_per_document, tokens_per_query = scenario.sample()
-        query = self._sample_text(tokens_per_query)
+        if self._is_dataset_mode(scenario):
+            tokens_per_document, tokens_per_query = None, None
+        else:
+            self._validate_scenario(scenario)
+            tokens_per_document, tokens_per_query = scenario.sample()
 
+        query = self._sample_text(tokens_per_query)
         # Sample different documents for each batch item
         documents = [
             self._sample_text(tokens_per_document) for _ in range(self.batch_size)
@@ -163,10 +163,11 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
-    def _sample_text(self, num_input_tokens: int) -> str:
+    def _sample_text(self, num_input_tokens: Optional[int]) -> str:
         """
         Samples text from a list of lines based on the specified number of
-        input tokens.
+        input tokens. If num_input_tokens is None, samples a random line
+        from `self.data`.
 
         Args:
             num_input_tokens (int): The target number of input tokens.
@@ -174,6 +175,9 @@ class TextSampler(Sampler):
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
+        if not num_input_tokens:
+            return random.choice(self.data)
+
         data_copy = self.data.copy()
         prompt = ""
         left_tokens_to_sample = num_input_tokens
@@ -193,15 +197,6 @@ class TextSampler(Sampler):
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
         return prompt
-
-    def _sample_prompt(self) -> str:
-        """
-        Samples a single prompt from the loaded data.
-
-        Returns:
-            str: A single prompt.
-        """
-        return random.choice(self.data)
 
     def _check_discrepancy(
         self,

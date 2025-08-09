@@ -321,6 +321,11 @@ def test_validate_traffic_scenarios():
         exc.value
     )
 
+    # Test with dataset-mode
+    ctx.params = {"task": "text-to-text", "dataset_path": "path/to/dataset"}
+    result = validate_traffic_scenario_callback(ctx, param, None)
+    assert result == ["dataset"]
+
 
 def test_validate_iteration_params():
     """Test validation of iteration parameters for different tasks."""
