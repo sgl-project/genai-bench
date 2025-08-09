@@ -132,8 +132,8 @@ class Scenario(ABC):
 class DatasetScenario(Scenario):
     """
     A generic no-op scenario used to indicate dataset/direct sampling mode.
-    Not registered in the scenario registry; created via human-friendly alias
-    in Scenario.from_string (e.g., "dataset").
+    It is registered in the scenario registry and created via its human-friendly
+    alias in Scenario.from_string (e.g., "dataset").
     """
 
     scenario_type = SpecialScenario.DATASET
