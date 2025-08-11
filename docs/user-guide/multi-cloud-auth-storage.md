@@ -7,6 +7,7 @@ genai-bench now supports comprehensive multi-cloud authentication for both model
 - [Model Provider Authentication](#model-provider-authentication)
   - [OpenAI](#openai)
   - [OCI Cohere](#oci-cohere)
+  - [OCI GenAI](#oci-genai)
   - [AWS Bedrock](#aws-bedrock)
   - [Azure OpenAI](#azure-openai)
   - [GCP Vertex AI](#gcp-vertex-ai)
@@ -36,6 +37,7 @@ This separation allows you to benchmark models from one provider while storing r
 OpenAI uses API key authentication.
 
 **Required parameters:**
+
 - `--api-backend openai`
 - `--api-key` or `--model-api-key`: Your OpenAI API key
 
@@ -63,12 +65,14 @@ genai-bench benchmark --api-backend openai ...
 OCI supports multiple authentication methods.
 
 **Authentication types:**
+
 - `user_principal`: Default, uses OCI config file
 - `instance_principal`: For compute instances
 - `security_token`: For delegation tokens
 - `instance_obo_user`: Instance principal with user delegation
 
 **Required parameters:**
+
 - `--api-backend oci-cohere` or `--api-backend cohere`
 - `--auth`: Authentication type (default: user_principal)
 
@@ -101,6 +105,96 @@ genai-bench benchmark \
   --max-time-per-run 10
 ```
 
+### OCI GenAI
+
+OCI GenAI provides access to Pretrained Foundational Models ([Available Models](https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm)) through Oracle Cloud Infrastructure's Generative AI service. It uses the same authentication methods as OCI Cohere.
+
+**Authentication types:**
+
+- `user_principal`: Default, uses OCI config file
+- `instance_principal`: For compute instances
+- `security_token`: For delegation tokens
+- `instance_obo_user`: Instance principal with user delegation
+
+**Required parameters:**
+
+- `--api-backend oci-genai`
+- `--auth`: Authentication type (default: user_principal)
+- `--additional-request-params`: Must include `compartmentId` and `servingType`
+
+**Supported tasks:**
+
+- `text-to-text`: Chat completion
+
+**Serving modes:**
+
+- `ON_DEMAND`: Uses model_id for on-demand inference
+- `DEDICATED`: Uses endpointId for dedicated endpoints
+
+**User Principal example (Grok):**
+```bash
+genai-bench benchmark \
+  --api-backend oci-genai \
+  --api-base https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com \
+  --auth user_principal \
+  --config-file ~/.oci/config \
+  --profile DEFAULT \
+  --api-model-name xai.grok-3-mini-fast \
+  --model-tokenizer gpt2 \
+  --task text-to-text \
+  --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..example", "servingType": "ON_DEMAND"}' \
+  --max-requests-per-run 100 \
+  --max-time-per-run 10
+```
+
+**Security Token example (Grok):**
+```bash
+genai-bench benchmark \
+  --api-backend oci-genai \
+  --api-base https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com \
+  --auth security_token \
+  --config-file ~/.oci/config \
+  --profile DEFAULT \
+  --api-model-name xai.grok-3-mini-fast \
+  --model-tokenizer gpt2 \
+  --task text-to-text \
+  --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..example", "servingType": "ON_DEMAND"}' \
+  --max-requests-per-run 100 \
+  --max-time-per-run 10
+```
+
+**Dedicated Endpoint example:**
+```bash
+genai-bench benchmark \
+  --api-backend oci-genai \
+  --api-base https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com \
+  --auth user_principal \
+  --api-model-name xai.grok-3-mini-fast \
+  --model-tokenizer gpt2 \
+  --task text-to-text \
+  --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..example", "servingType": "DEDICATED", "endpointId": "ocid1.endpoint.oc1..example"}' \
+  --max-requests-per-run 100 \
+  --max-time-per-run 10
+```
+**Note:** for Dedicated model, the `--api-model-name` is just a placeholder, the model depends on the the endpointId you provided 
+
+**Advanced features:**
+```bash
+# With system message and chat history
+genai-bench benchmark \
+  --api-backend oci-genai \
+  --api-base https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com \
+  --auth user_principal \
+  --api-model-name xai.grok-3-mini-fast \
+  --model-tokenizer gpt2 \
+  --task text-to-text \
+  --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..example", "servingType": "ON_DEMAND", "system_message": "You are a helpful assistant.", "temperature": 0.7, "top_p": 0.9}' \
+  --max-requests-per-run 100 \
+  --max-time-per-run 10
+```
+
+**Note:** The OCI GenAI service requires access to the specific models you want to benchmark. Ensure your tenancy has the necessary service limits and permissions configured.
+
 ### AWS Bedrock
 
 AWS Bedrock supports IAM credentials and profiles.
@@ -111,6 +205,7 @@ AWS Bedrock supports IAM credentials and profiles.
 3. **Environment variables**: AWS SDK default behavior
 
 **Required parameters:**
+
 - `--api-backend aws-bedrock`
 - `--aws-region`: AWS region for Bedrock
 
@@ -161,6 +256,7 @@ Azure OpenAI supports API key and Azure AD authentication.
 2. **Azure AD**: Azure Active Directory token
 
 **Required parameters:**
+
 - `--api-backend azure-openai`
 - `--azure-endpoint`: Your Azure OpenAI endpoint
 - `--azure-deployment`: Your deployment name
@@ -206,6 +302,7 @@ GCP Vertex AI supports service account and API key authentication.
 3. **Application Default Credentials**: GCP SDK default
 
 **Required parameters:**
+
 - `--api-backend gcp-vertex`
 - `--gcp-project-id`: Your GCP project ID
 - `--gcp-location`: GCP region (default: us-central1)
@@ -238,6 +335,7 @@ genai-bench benchmark --api-backend gcp-vertex ...
 vLLM and SGLang use OpenAI-compatible APIs with optional authentication.
 
 **Required parameters:**
+
 - `--api-backend sglang` or `--api-backend vllm`
 - `--api-base`: Your server endpoint
 - `--api-key` or `--model-api-key`: Optional API key if authentication is enabled
@@ -262,6 +360,7 @@ Storage authentication is configured separately from model authentication, allow
 ### Common Storage Parameters
 
 All storage providers share these common parameters:
+
 - `--upload-results`: Flag to enable result upload
 - `--storage-provider`: Storage provider type (oci, aws, azure, gcp, github)
 - `--storage-bucket`: Bucket/container name
@@ -369,6 +468,7 @@ genai-bench benchmark \
 GitHub storage uploads results as release artifacts.
 
 **Required parameters:**
+
 - `--github-token`: Personal access token with repo permissions
 - `--github-owner`: Repository owner (user or organization)
 - `--github-repo`: Repository name
@@ -424,9 +524,29 @@ genai-bench benchmark \
   --storage-azure-connection-string "DefaultEndpointsProtocol=..."
 ```
 
+**Benchmark OCI GenAI (Grok models) and store in OCI Object storage**
+```bash
+genai-bench benchmark \
+  --api-backend oci-genai \
+  --api-base https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com \
+  --auth security_token \
+  --config-file ~/.oci/config \
+  --profile DEFAULT \
+  --api-model-name xai.grok-3-mini-fast \
+  --model-tokenizer gpt2 \
+  --task text-to-text \
+  --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..example", "servingType": "ON_DEMAND"}' \
+  --max-requests-per-run 100 \
+  --max-time-per-run 10 \
+  --upload-results \
+  --storage-provider oci \
+  --storage-bucket oci-genai-benchmarks \
+  --namespace my-namespace
+```
+
 ### Multi-Modal Tasks
 
-**Image-to-text with GCP Vertex AI:**
+**Image-text-to-text with GCP Vertex AI:**
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \
@@ -447,6 +567,7 @@ genai-bench benchmark \
 genai-bench supports environment variables for sensitive credentials:
 
 ### Model Authentication
+
 - `MODEL_API_KEY`: API key for OpenAI, Azure OpenAI, or GCP
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`: AWS credentials
 - `AWS_PROFILE`, `AWS_DEFAULT_REGION`: AWS configuration
@@ -484,17 +605,23 @@ genai-bench supports environment variables for sensitive credentials:
 ### Important Notes
 
 1. **Task-specific behavior**:
-   - For `text-to-embeddings` and `text-to-rerank` tasks, the iteration type automatically switches to `batch_size`
-   - For other tasks, `num_concurrency` iteration is used
-   - This is handled automatically by the CLI
+    - For `text-to-embeddings` and `text-to-rerank` tasks, the iteration type automatically switches to `batch_size`
+    - For other tasks, `num_concurrency` iteration is used
+    - This is handled automatically by the CLI
 
-2. **Image format requirements**:
-   - Image inputs are expected to be in JPEG format for multi-modal tasks
-   - Base64 encoding is handled automatically
+2. **OCI GenAI requirements**:
+    - Only supports `text-to-text` task (chat completion) for Grok models
+    - Requires `compartmentId` in `additional-request-params`
+    - Supports both `ON_DEMAND` and `DEDICATED` serving types
+    - For dedicated endpoints, `endpointId` is required
 
-3. **Token counting**:
-   - Different providers may use different tokenization methods
-   - Token estimates for embeddings tasks may vary by provider
+3. **Image format requirements**:
+    - Image inputs are expected to be in JPEG format for multi-modal tasks
+    - Base64 encoding is handled automatically
+
+4. **Token counting**:
+    - Different providers may use different tokenization methods
+    - Token estimates for embeddings tasks may vary by provider
 
 ### Troubleshooting
 1. **Check credentials**: Verify authentication credentials are correct
@@ -527,6 +654,7 @@ genai-bench benchmark \
 ```
 
 The main changes are:
+
 - `--bucket` → `--storage-bucket`
 - `--prefix` → `--storage-prefix`
 - Add `--storage-provider oci` (though OCI is the default for backward compatibility)

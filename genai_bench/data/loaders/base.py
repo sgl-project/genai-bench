@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, List, Set, Tuple, Union
 
-from PIL.Image import Image
+from PIL import Image as PILImage
 
 from genai_bench.data.config import DatasetConfig
 from genai_bench.data.sources import DatasetSourceFactory
@@ -34,6 +34,11 @@ class DatasetLoader(ABC):
         self._validate_source_format()
         self.dataset_source = DatasetSourceFactory.create(dataset_config.source)
 
+    def _disable_pillow_decompresion_check(self):
+        if self.dataset_config.unsafe_allow_large_images:
+            logger.info("Disabling pillows decompression bomb protection.")
+            PILImage.MAX_IMAGE_PIXELS = None
+
     def _validate_source_format(self):
         """Validate that the source format is supported by this loader."""
         source_type = self.dataset_config.source.type
@@ -59,15 +64,16 @@ class DatasetLoader(ABC):
                     f"{self.media_type} loader."
                 )
 
-    def load_request(self) -> Union[List[str], List[Tuple[str, Image]]]:
+    def load_request(self) -> Union[List[str], List[Tuple[str, Any]]]:
         """Load data from the dataset source."""
+        self._disable_pillow_decompresion_check()
         data = self.dataset_source.load()
         return self._process_loaded_data(data)
 
     @abstractmethod
     def _process_loaded_data(
         self, data: Any
-    ) -> Union[List[str], List[Tuple[str, Image]]]:
+    ) -> Union[List[str], List[Tuple[str, Any]]]:
         """
         Process data loaded from dataset source. Must be implemented by subclasses.
         """

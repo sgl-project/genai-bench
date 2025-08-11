@@ -47,12 +47,12 @@ genai-bench benchmark \
             --api-base "http://localhost:8180" \
             --api-model-name "/models/Phi-3-vision-128k-instruct" \
             --model-tokenizer "/models/Phi-3-vision-128k-instruct" \
-            --task image-to-text \
+            --task image-text-to-text \
             --max-time-per-run 15 \
             --max-requests-per-run 300 \
-            --server-engine vLLM \
+            --server-engine "SGLang" \
             --server-gpu-type A100-80G \
-            --server-version "v0.6.0" \
+            --server-version "v0.4.10" \
             --server-gpu-count 4 \
             --traffic-scenario "I(256,256)" \
             --traffic-scenario "I(1024,1024)" \
@@ -60,6 +60,8 @@ genai-bench benchmark \
             --num-concurrency 8 \
             --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
+
+For complex setups, we recommend use of [dataset configs](#using-dataset-configurations).
 
 ## Start an embedding benchmark
 
@@ -202,12 +204,31 @@ To address this, you can increase the number of worker processes using the `--nu
 
 This distributes the load across multiple processes on a single machine, improving performance and ensuring your benchmark runs smoothly.
 
+### Controlling User Spawn Rate
+
+When running high-concurrency benchmarks with large payloads (e.g., 20k+ tokens), workers may become overwhelmed if all users are spawned immediately. This can cause worker heartbeat failures and restarts.
+
+To prevent this, use the `--spawn-rate` option to control how quickly users are spawned:
+
+```shell
+    --num-concurrency 500 \
+    --num-workers 16 \
+    --spawn-rate 50
+```
+
+**Examples:**
+- `--spawn-rate 50`: Spawn 50 users per second (takes 10 seconds to reach 500 users)
+- `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
+- `--spawn-rate 500`: Spawn all users immediately (default behavior)
+
+
 ### Notes on Usage
 
 1. This feature is experimental, so monitor the system's behavior when enabling multiple workers.
 2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
 3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers.
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
+5. For high-concurrency tests with large payloads, use `--spawn-rate` to prevent worker overload.
 
 
 ## Using Dataset Configurations
@@ -231,7 +252,9 @@ Genai-bench supports flexible dataset configurations through two approaches:
 For advanced HuggingFace configurations, create a JSON config file:
 
 **Important Note for HuggingFace Datasets:**
-When using HuggingFace datasets, you should always check if you need a `split`, `subset` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail.
+When using HuggingFace datasets, you should always check if you need a `split`, `subset`, or `name` parameter to avoid errors. If you don't specify, HuggingFace's `load_dataset` may return a `DatasetDict` object instead of a `Dataset`, which will cause the benchmark to fail. Some datasets require additional configuration parameters like `name` to specify which subset of the dataset to load.
+
+To specify a dataset config, use: `--dataset-config config.json`.
 
 **config.json:**
 ```json
@@ -241,8 +264,7 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
     "path": "ccdv/govreport-summarization",
     "huggingface_kwargs": {
       "split": "train",
-      "revision": "main",
-      "streaming": true
+      "revision": "main"
     }
   },
   "prompt_column": "report"
@@ -280,9 +302,45 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
 }
 ```
 
-Then use: `--dataset-config config.json`
+**Benchmarking with large images:**
+When benchmarking with very large images, the pillow library throws an exception. To get around this, use a config with the argument `unsafe_allow_large_images`, which disables the warning.
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "zhang0jhon/Aesthetic-4K",
+    "huggingface_kwargs": {
+      "split": "train"
+    }
+  },
+  "prompt_column": "text",
+  "image_column": "image",
+  "unsafe_allow_large_images": true
+}
+```
+
+**Using prompt lambdas (vision tasks only):**
+If you want to benchmark a specific portion of a vision dataset, you can use the `prompt_lambda` argument to select only the desired section. When using `prompt_lambda`, you don't need to specify `prompt_column` as the lambda function generates the prompts dynamically. Note that `prompt_lambda` is only available for vision/multimodal tasks.
+
+
+```json
+{
+  "source": {
+    "type": "huggingface",
+    "path": "lmms-lab/LLaVA-OneVision-Data",
+    "huggingface_kwargs": {
+      "split": "train",
+      "name": "CLEVR-Math(MathV360K)"
+    }
+  },
+  "image_column": "image",
+  "prompt_lambda": "lambda x: x['conversations'][0]['value'] if len(x['conversations']) > 1 else ''"
+}
+```
 
 **Benefits of config files:**
+
 - Access to ALL HuggingFace `load_dataset` parameters
 - Reusable and version-controllable
 - Support for complex configurations

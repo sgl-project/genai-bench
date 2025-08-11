@@ -28,7 +28,7 @@ class AWSBedrockUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        "image-to-text": "chat",  # Same method handles both text and image
+        "image-text-to-text": "chat",  # Same method handles both text and image
     }
 
     host: Optional[str] = None
@@ -259,10 +259,22 @@ class AWSBedrockUser(BaseUser):
                     {"type": "text", "text": request.prompt}
                 ]
                 for image in request.image_content:
+                    # Handle different image formats for Bedrock
+                    if image.startswith("data:image/"):
+                        # Extract base64 data from data URL
+                        image_data = image.split(",", 1)[1]
+                    elif image.startswith(("http://", "https://")):
+                        # Bedrock doesn't support HTTP URLs - should be converted in
+                        # data loading phase
+                        raise ValueError(
+                            f"AWS Bedrock does not support HTTP URLs for images. "
+                            f"URL '{image}' should be processed during data loading."
+                        )
+
                     source_data: Dict[str, str] = {
                         "type": "base64",
                         "media_type": "image/jpeg",  # Assume JPEG
-                        "data": image,
+                        "data": image_data,
                     }
                     content.append({"type": "image", "source": source_data})
                 body["messages"].append({"role": "user", "content": content})

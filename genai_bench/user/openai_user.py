@@ -63,7 +63,7 @@ class OpenAIUser(BaseUser):
             image_content = [
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                    "image_url": {"url": image},
                 }
                 for image in user_request.image_content
             ]
@@ -261,6 +261,19 @@ class OpenAIUser(BaseUser):
                 num_prefill_tokens, num_prompt_tokens, tokens_received = (
                     self._get_usage_info(data, num_prefill_tokens)
                 )
+                # Additional check for time_at_first_token when the response is
+                # too short
+                if not time_at_first_token:
+                    tokens_received = data["usage"].get("completion_tokens", 0)
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                        time_at_first_token = time.monotonic()
+                    else:
+                        raise Exception("Invalid Response")
                 break
 
             try:
@@ -311,6 +324,7 @@ class OpenAIUser(BaseUser):
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}"
         )
+
         if not tokens_received:
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False

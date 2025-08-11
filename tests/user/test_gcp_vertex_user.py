@@ -55,7 +55,7 @@ class TestGCPVertexUser:
         assert GCPVertexUser.supported_tasks == {
             "text-to-text": "chat",
             "text-to-embeddings": "embeddings",
-            "image-to-text": "chat",
+            "image-text-to-text": "chat",
         }
 
     def test_init(self):
@@ -206,7 +206,7 @@ class TestGCPVertexUser:
             prompt="Describe this image",
             model="gemini-pro-vision",
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_prefill_tokens=10,
             num_images=1,
         )

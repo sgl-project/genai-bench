@@ -1,11 +1,12 @@
 import base64
 import random
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import PIL
 from PIL.Image import Image
 from six import BytesIO
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserImageChatRequest,
@@ -14,6 +15,7 @@ from genai_bench.protocol import (
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import MultiModality, Scenario
+from genai_bench.utils import safe_eval_prompt
 
 logger = init_logger(__name__)
 
@@ -35,26 +37,37 @@ class ImageSampler(Sampler):
         tokenizer,
         model: str,
         output_modality: str,
-        data: List[Tuple[str, Image]],
+        data: Any,
+        dataset_config: Optional[DatasetConfig] = None,
         additional_request_params: Optional[dict] = None,
         **kwargs,
     ):
-        super().__init__(tokenizer, model, output_modality, additional_request_params)
+        super().__init__(
+            tokenizer,
+            model,
+            output_modality,
+            additional_request_params,
+            dataset_config=dataset_config,
+        )
         self.data = data
 
-    def sample(self, scenario: Scenario) -> UserRequest:
+    def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
-        Samples a request based on the scenario.
+        Samples a request based on the scenario or dataset configuration.
 
         Args:
-            scenario (Scenario): The scenario to use for sampling.
+            scenario (Scenario, optional): The scenario to use for sampling.
+                If None, uses dataset configuration directly.
 
         Returns:
             UserRequest: A request object for the task.
         """
-        self._validate_scenario(scenario)
-
-        image_dimension, num_images, num_output_tokens = scenario.sample()
+        # Dataset mode when scenario is dataset or None
+        if self._is_dataset_mode(scenario):
+            image_dimension, num_images, num_output_tokens = None, 1, None
+        else:
+            self._validate_scenario(scenario)
+            image_dimension, num_images, num_output_tokens = scenario.sample()
         prompt, image_content = self._sample_image_and_text(image_dimension, num_images)
 
         # TODO: create Delegated Request Creator to replace if-else
@@ -72,14 +85,14 @@ class ImageSampler(Sampler):
         prompt: str,
         image_content: List[str],
         num_images: int,
-        num_output_tokens: int,
+        num_output_tokens: int | None,
     ) -> UserImageChatRequest:
         """
         Generates a `UserImageChatRequest` for image-text-to-text tasks.
 
         Args:
             prompt (str): The textual prompt accompanying the images.
-            image_content (List[str]): List of Base64-encoded images.
+            image_content (List[str]): List of image URLs (base64 data or http URLs).
             num_images (int): Number of images in the request.
             num_output_tokens (int): Number of output tokens expected.
 
@@ -103,7 +116,7 @@ class ImageSampler(Sampler):
         Generates a `UserImageEmbeddingRequest` for image-to-embedding tasks.
 
         Args:
-            image_content (List[str]): List of Base64-encoded images.
+            image_content (List[str]): List of image URLs (base64 data or http URLs).
             num_images (int): Number of images in the request.
 
         Returns:
@@ -119,53 +132,88 @@ class ImageSampler(Sampler):
             additional_request_params=self.additional_request_params,
         )
 
-    def _validate_scenario(self, scenario: Optional[Scenario]) -> None:
+    def _validate_scenario(self, scenario: Scenario) -> None:
         """
-        Validates that a scenario is provided and has the correct type.
+        Validates that a scenario has the correct type.
 
         Raises:
-            ValueError: If the scenario is invalid or missing.
+            ValueError: If the scenario is invalid.
         """
-        if scenario is None:
-            raise ValueError("A scenario is required for image sampling.")
         if not isinstance(scenario.scenario_type, MultiModality):
             raise ValueError(
                 f"Expected MultiModality for image tasks, got "
                 f"{type(scenario.scenario_type)}"
             )
 
-    def encode_image_base64(cls, image: Image) -> str:
-        """Convert image to base64 encoding format."""
-        buffered = BytesIO()
-        # TODO: why do we need this
-        if image.mode == "RGBA":
-            image = image.convert("RGB")  # convert to RGB before saving to JPEG
-        # Save the image in the buffer in JPEG format
-        image.save(buffered, format="JPEG")
-        encoded_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        return encoded_string
-
     def _sample_image_and_text(
-        self, image_dimension: Tuple[int, int], num_images: int
+        self, image_dimension: Optional[Tuple[int, int]] = None, num_images: int = 1
     ) -> Tuple[str, List[str]]:
         """
-        Loads and processes images and accompanying texts from the dataset.
+        Lazily sample and process images and accompanying texts from the dataset.
 
-        Args:
-            image_dimension (Tuple[int, int]): Dimensions to resize the images.
-            num_images (int): Number of images to load.
-
-        Returns:
-            Tuple[str, List[str]]: A tuple containing:
-                - Texts concatenated as a single prompt.
-                - A list of Base64-encoded images.
+        Supports two input shapes:
+        - Sequence of (prompt, image) tuples (backward compatible)
+        - Sequence of dict rows (e.g., HF Dataset rows) using dataset_config
         """
-        selected_data = random.choices(self.data, k=num_images)
-        images, texts = [], []
+        images: List[str] = []
+        texts: List[str] = []
 
-        for data in selected_data:
-            image = data[1]
-            image = image.resize(image_dimension, PIL.Image.Resampling.LANCZOS)
-            images.append(self.encode_image_base64(image))
-            texts.append(data[0])
+        chosen = random.choices(self.data, k=num_images)
+        for item in chosen:
+            prompt: str = ""
+            raw_image: Any = None
+            # Backward-compatible format
+            if isinstance(item, tuple) and len(item) == 2:
+                prompt, raw_image = item
+            # Dict row format
+            elif isinstance(item, dict) and self.dataset_config is not None:
+                cfg = self.dataset_config
+                if cfg.image_column:
+                    raw_image = item.get(cfg.image_column)
+                if cfg.prompt_lambda:
+                    prompt = safe_eval_prompt(cfg.prompt_lambda, item)
+                elif cfg.prompt_column:
+                    prompt = str(item.get(cfg.prompt_column, ""))
+            else:
+                continue
+
+            if raw_image is None:
+                continue
+            processed_image = ImageSampler.process_image(
+                raw_image, resize=image_dimension
+            )
+            images.append(processed_image)
+            texts.append(prompt or "")
+
         return " ".join(texts), images
+
+    @staticmethod
+    def process_image(image: Any, resize: Optional[Tuple[int, int]] = None) -> str:
+        """
+        Process a single image input and return a data URL or HTTP(S) URL.
+
+        Supports three input types:
+        1. Dictionary with raw image bytes
+        2. PIL.Image.Image input
+        3. String input (URL or file path)
+        """
+        if isinstance(image, dict) and "bytes" in image:
+            image = PIL.Image.open(BytesIO(image["bytes"]))
+
+        if isinstance(image, Image):
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+            if resize:
+                image = image.resize(resize, PIL.Image.Resampling.LANCZOS)
+            with BytesIO() as image_data:
+                image.save(image_data, format="JPEG")
+                image_base64 = base64.b64encode(image_data.getvalue()).decode("utf-8")
+            return f"data:image/jpeg;base64,{image_base64}"
+
+        if isinstance(image, str) and image.startswith(("http://", "https://")):
+            return image
+
+        raise ValueError(
+            f"Invalid image input {image}. Must be a PIL.Image.Image"
+            " or str or dictionary with raw image bytes."
+        )

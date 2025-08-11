@@ -1,6 +1,9 @@
-from typing import Any, List, Set, Tuple
+from typing import Any, Set
 
-from PIL.Image import Image
+from datasets import Dataset as HFDataset
+from datasets import DatasetDict as HFDatasetDict
+from datasets import IterableDataset as HFIterableDataset
+from datasets import IterableDatasetDict as HFIterableDatasetDict
 
 from genai_bench.data.loaders.base import DatasetFormat, DatasetLoader
 from genai_bench.logging import init_logger
@@ -18,20 +21,36 @@ class ImageDatasetLoader(DatasetLoader):
     }
     media_type = "Image"
 
-    def _process_loaded_data(self, data: Any) -> List[Tuple[str, Image]]:
-        """Process data loaded from dataset source."""
-        sampled_requests: List[Tuple[str, Image]] = []
-        image_column = self.dataset_config.image_column
-        prompt_column = self.dataset_config.prompt_column
+    def _process_loaded_data(self, data: Any) -> Any:
+        """Normalize HF datasets and avoid eager iteration.
 
-        try:
-            for item in data:
-                image = item[image_column] if image_column else None
-                prompt = item[prompt_column] if prompt_column else ""
-                if image:
-                    sampled_requests.append((prompt, image))
-        except (ValueError, KeyError) as e:
+        - If it's a `datasets.Dataset`, return it (supports len and __getitem__).
+        - If it's a `datasets.DatasetDict`, select a split (prefer 'train' or the
+          first available) and return that `Dataset`.
+        - If it's a streaming dataset (`IterableDataset` or `IterableDatasetDict`),
+          raise an error instructing to disable streaming.
+        - Otherwise, pass-through.
+        """
+        if isinstance(data, HFDataset):
+            return data
+        if isinstance(data, HFDatasetDict):
+            available_splits = list(data.keys())
+            if not available_splits:
+                raise ValueError(
+                    "HuggingFace DatasetDict has no splits to select from."
+                )
+            chosen_split = "train" if "train" in data else available_splits[0]
+            if len(available_splits) > 1 and chosen_split != "train":
+                logger.warning(
+                    "Multiple splits found %s; defaulting to '%s'. "
+                    "Set config.huggingface_kwargs.split to control this.",
+                    available_splits,
+                    chosen_split,
+                )
+            return data[chosen_split]
+        if isinstance(data, (HFIterableDataset, HFIterableDatasetDict)):
             raise ValueError(
-                f"Cannot extract image data from dataset: {type(data)}, error: {str(e)}"
-            ) from e
-        return sampled_requests
+                "Streaming datasets are not supported for image sampling. "
+                "Load without streaming (streaming=False) and provide a concrete split."
+            )
+        return data

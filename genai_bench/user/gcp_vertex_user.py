@@ -32,7 +32,7 @@ class GCPVertexUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        "image-to-text": "chat",  # Same method handles both text and image
+        "image-text-to-text": "chat",  # Same method handles both text and image
     }
 
     host: Optional[str] = None
@@ -414,11 +414,32 @@ class GCPVertexUser(BaseUser):
                 # Multimodal request
                 parts: List[Dict[str, Any]] = [{"text": request.prompt}]
                 for image in request.image_content:
-                    inline_data: Dict[str, str] = {
-                        "mimeType": "image/jpeg",
-                        "data": image,
-                    }
-                    parts.append({"inlineData": inline_data})
+                    if image.startswith("data:image/"):
+                        # Extract base64 data from data URL for inline data
+                        image_data = image.split(",", 1)[1]
+                        parts.append(
+                            {
+                                "inlineData": {
+                                    "mimeType": "image/jpeg",
+                                    "data": image_data,
+                                }
+                            }
+                        )
+                    elif image.startswith(("http://", "https://", "gs://")):
+                        # Use fileData for HTTP URLs and Cloud Storage URIs
+                        parts.append(
+                            {
+                                "fileData": {
+                                    "mimeType": "image/jpeg",
+                                    "fileUri": image,
+                                }
+                            }
+                        )
+                    else:
+                        raise ValueError(
+                            f"Unsupported image format for GCP Vertex AI: {type(image)}"
+                        )
+
                 contents.append({"parts": parts})
             else:
                 # Text-only request

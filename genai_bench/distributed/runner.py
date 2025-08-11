@@ -30,7 +30,11 @@ class DistributedConfig:
     master_host: str = "127.0.0.1"
     master_port: int = 5557
     wait_time: int = 2
-    pin_to_cores: bool = True  # Enable CPU pinning by default
+
+    # Experimental:
+    # CPU pinning is not supported on all platforms, so we disable it by default
+    # If you want to enable it, you may need to set the cpu_affinity_map
+    pin_to_cores: bool = False
     cpu_affinity_map: Optional[Dict[int, int]] = None  # Custom worker->CPU mapping
 
     def __post_init__(self):
@@ -158,6 +162,7 @@ class DistributedRunner:
         )
         # Create collector only for master in distributed mode
         self.metrics_collector = AggregatedMetricsCollector()
+
         time.sleep(self.config.wait_time)
         self._register_message_handlers()
 
@@ -228,13 +233,21 @@ class DistributedRunner:
                 master_host=self.config.master_host, master_port=self.config.master_port
             )
             self._register_message_handlers()
+
+            # Add periodic health check logging
+            logger.info(
+                f"Worker {worker_id} started successfully and connected to master"
+            )
+
             runner.greenlet.join()
         except Exception as e:
             logger.error(f"Worker {worker_id} failed: {str(e)}")
-            raise
+            # Don't raise here to prevent worker restart loops
+            return
 
     def _set_cpu_affinity(self, worker_id: int) -> None:
         """Set CPU affinity for worker process"""
+        # NOTE: only works on Linux
         process = psutil.Process()
         cpu_count = multiprocessing.cpu_count()
 
@@ -314,9 +327,21 @@ class DistributedRunner:
             self.environment.runner.quit()
             self.environment.runner = None
 
-        for process in self._worker_processes:
-            process.terminate()
-            process.join()
+        # Gracefully terminate worker processes
+        for i, process in enumerate(self._worker_processes):
+            try:
+                if process.is_alive():
+                    logger.info(f"Terminating worker {i}")
+                    process.terminate()
+                    process.join(timeout=10)  # Wait up to 10 seconds
+
+                    # Force kill if still alive
+                    if process.is_alive():
+                        logger.warning(f"Force killing worker {i}")
+                        process.kill()
+                        process.join()
+            except Exception as e:
+                logger.error(f"Error terminating worker {i}: {e}")
 
     def _register_message_handlers(self) -> None:
         """Register message handlers based on runner type.

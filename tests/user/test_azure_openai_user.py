@@ -52,7 +52,7 @@ class TestAzureOpenAIUser:
         assert AzureOpenAIUser.supported_tasks == {
             "text-to-text": "chat",
             "text-to-embeddings": "embeddings",
-            "image-to-text": "chat",
+            "image-text-to-text": "chat",
         }
 
     def test_init(self):
@@ -168,7 +168,7 @@ class TestAzureOpenAIUser:
             prompt="Describe this image",
             model="gpt-4-vision",
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             num_prefill_tokens=10,
         )

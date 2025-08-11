@@ -203,9 +203,9 @@ class OpenAIUser(BaseUser):
 
 1. Add tests for the new task in the appropriate test files.
 2. Include tests for:
-   - Request creation in the sampler.
-   - Task validation in the `User` class.
-   - End-to-end workflow using the new task.
+    - Request creation in the sampler.
+    - Task validation in the `User` class.
+    - End-to-end workflow using the new task.
 
 ---
 

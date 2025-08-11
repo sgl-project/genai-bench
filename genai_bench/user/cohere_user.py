@@ -324,10 +324,7 @@ class CohereUser(BaseUser):
                     f"scenario is requesting {num_sampled_images}"
                 )
             return {
-                "images": [
-                    f"data:image/jpeg;base64,{image}"
-                    for image in user_request.image_content
-                ],
+                "images": user_request.image_content,
                 "input_type": "IMAGE",
             }
         return {"texts": user_request.documents, "input_type": "CLUSTERING"}

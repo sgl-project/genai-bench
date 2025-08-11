@@ -1,6 +1,6 @@
 import json
 from os import PathLike
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, numbers
@@ -112,12 +112,14 @@ def _create_summary_sheet_common(
     rows = []
 
     for scenario in merged_scenarios:
-        summary_value = -9999
+        summary_value = -1
         summary_total_chars_per_hour = 0.0
+        display_summary_value: Union[str, int]
+        display_total_chars_per_hour: Union[str, float]
 
         iteration_key = experiment_metadata.iteration_type
 
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][
                 "aggregated_metrics"
             ]
@@ -128,7 +130,7 @@ def _create_summary_sheet_common(
             )
             if metric_value is not None and metric_value > threshold:
                 if (
-                    summary_value != -9999
+                    summary_value != -1
                     and getattr(metrics, iteration_key) > summary_value
                 ):
                     prev_metrics = run_data[scenario][summary_value][
@@ -140,12 +142,23 @@ def _create_summary_sheet_common(
                 summary_value = max(summary_value, getattr(metrics, iteration_key))
                 summary_total_chars_per_hour = metrics.mean_total_chars_per_hour
 
+        if summary_value == -1:
+            logger.warning(
+                f"For scenario '{scenario}', couldn't find a concurrency that meets "
+                f"the minimum output inference speed requirement: {threshold} tokens/s."
+                f" Please add lower concurrency test cases."
+            )
+            display_summary_value = "N/A"
+            display_total_chars_per_hour = "N/A"
+        else:
+            display_summary_value = summary_value
+            display_total_chars_per_hour = summary_total_chars_per_hour
         rows.append(
             [
                 gpu_type_value,
                 SCENARIO_MAP.get(scenario, scenario),
-                summary_value,
-                summary_total_chars_per_hour,
+                display_summary_value,
+                display_total_chars_per_hour,
             ]
         )
 
@@ -211,7 +224,7 @@ def _create_appendix_sheet_common(
     for scenario in merged_scenarios:
         num_rows = 0  # Count rows for this scenario
 
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][
                 "aggregated_metrics"
             ]
@@ -337,7 +350,7 @@ def create_aggregated_metrics_sheet(
     merged_scenarios = reorder_scenarios(SCENARIO_MAP, experiment_metadata)
 
     for scenario in merged_scenarios:
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             metrics: AggregatedMetrics = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
                 "aggregated_metrics"
             ]
@@ -384,7 +397,7 @@ def create_single_request_metrics_sheet(
     for scenario in merged_scenarios:
         rows_for_scenario = 0
         start_row_iteration = start_row
-        for iteration in sorted(run_data[scenario]):
+        for iteration in sorted(run_data.get(scenario, [])):
             row_for_iteration = 0
             metrics: List[RequestLevelMetrics] = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
                 "individual_request_metrics"

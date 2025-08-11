@@ -54,8 +54,21 @@ class DatasetConfig(BaseModel):
     """Complete dataset configuration."""
 
     source: DatasetSourceConfig
-    prompt_column: str = Field("prompt", description="Column name containing prompts")
-    image_column: str = Field("image", description="Column name containing images")
+    prompt_column: Optional[str] = Field(
+        None, description="Column name containing prompts"
+    )
+    image_column: Optional[str] = Field(
+        None, description="Column name containing images"
+    )
+    prompt_lambda: Optional[str] = Field(
+        None,
+        description="Lambda expression string, "
+        'e.g. \'lambda item: f"Question: {item["question"]}"\'',
+    )
+    unsafe_allow_large_images: bool = Field(
+        False,
+        description="Overrides pillows internal DDOS protection",
+    )
 
     @classmethod
     def from_file(cls, config_path: str) -> "DatasetConfig":
@@ -68,8 +81,8 @@ class DatasetConfig(BaseModel):
     def from_cli_args(
         cls,
         dataset_path: Optional[str] = None,
-        prompt_column: str = "prompt",
-        image_column: str = "image",
+        prompt_column: Optional[str] = None,
+        image_column: Optional[str] = None,
         **kwargs,
     ) -> "DatasetConfig":
         """Create configuration from CLI arguments for backward compatibility."""
@@ -87,8 +100,10 @@ class DatasetConfig(BaseModel):
                     file_format = "csv"
                 elif path.suffix == ".txt":
                     file_format = "txt"
-                else:
+                elif path.suffix == ".json":
                     file_format = "json"
+                else:
+                    raise ValueError(f"Unsupported file format: {path.suffix}")
             else:
                 # Assume it's a HuggingFace ID
                 source_type = "huggingface"
@@ -107,4 +122,6 @@ class DatasetConfig(BaseModel):
             source=source_config,
             prompt_column=prompt_column,
             image_column=image_column,
+            prompt_lambda=None,
+            unsafe_allow_large_images=False,
         )

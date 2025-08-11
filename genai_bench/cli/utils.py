@@ -1,6 +1,5 @@
 from locust.env import Environment
 
-import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -116,14 +115,3 @@ def get_run_params(iteration_type: str, iteration_value: int) -> Tuple[str, int,
     if iteration_type == "batch_size":
         return "Batch Size", iteration_value, 1
     return "Concurrency", 1, iteration_value
-
-
-def set_environment_variables():
-    """
-    Set environment variables for 3p libraries.
-    """
-    # Huggingface dataset library produces progress bar that is not desirable
-    os.environ["HF_DATASETS_DISABLE_PROGRESS_BARS"] = "1"
-
-    # Huggingface tokenizer library produces progress bar that is not desirable
-    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"

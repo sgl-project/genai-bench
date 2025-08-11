@@ -234,8 +234,12 @@ def test_worker_process_failure(mock_environment, mock_dashboard):
         "Worker failed"
     )
 
-    with pytest.raises(WorkerSetupError):
-        runner._worker_process(0)
+    # The worker process should now catch the exception and return gracefully
+    # instead of re-raising it
+    result = runner._worker_process(0)
+
+    # Verify that the function returns None (graceful exit)
+    assert result is None
 
 
 @patch("gevent.spawn")

@@ -77,6 +77,7 @@ def api_options(func):
             [
                 "openai",
                 "oci-cohere",
+                "oci-genai",
                 "cohere",
                 "aws-bedrock",
                 "azure-openai",
@@ -296,14 +297,16 @@ def sampling_options(func):
     func = click.option(
         "--dataset-image-column",
         type=str,
-        default="image",
+        default=None,
         help="Column name containing images (for multimodal datasets).",
     )(func)
     func = click.option(
         "--dataset-prompt-column",
         type=str,
-        default="prompt",
-        help="Column name containing prompts (for CSV/HuggingFace datasets).",
+        default=None,
+        help="Column name containing prompts (for CSV/HuggingFace datasets). "
+        "If not specified, empty prompts will be used. For advanced usage, please"
+        "check out DatasetConfig.",
     )(func)
     func = click.option(
         "--dataset-path",
@@ -570,6 +573,14 @@ def distributed_locust_options(func):
         required=False,
         help="Number of worker processes to spawn for the load test. "
         "By default it runs as a single process.",
+    )(func)
+    func = click.option(
+        "--spawn-rate",
+        type=int,
+        default=None,
+        required=False,
+        help="Number of users to spawn per second. Defaults to concurrency value. "
+        "Use lower values (e.g., 10-50) for LLM workloads to prevent worker overload.",
     )(func)
     return func
 

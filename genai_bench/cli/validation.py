@@ -14,6 +14,7 @@ from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
+from genai_bench.user.oci_genai_user import OCIGenAIUser
 from genai_bench.user.openai_user import OpenAIUser
 
 logger = init_logger(__name__)
@@ -21,6 +22,7 @@ logger = init_logger(__name__)
 API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
+    OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
     AWSBedrockUser.BACKEND_NAME: AWSBedrockUser,
     AzureOpenAIUser.BACKEND_NAME: AzureOpenAIUser,
@@ -39,6 +41,7 @@ DEFAULT_SCENARIOS_FOR_CHAT = [
     "D(2000,200)",
     "D(7800,200)",
 ]
+
 
 DEFAULT_SCENARIOS_FOR_VISION = [
     "I(512,512)",
@@ -132,6 +135,9 @@ def validate_traffic_scenario_callback(ctx, param, value):
         )
     if value:
         return [validate_scenario_callback(v) for v in value]
+    # If user provided a dataset and no scenario, prefer dataset mode (no data shaping)
+    if ctx.params.get("dataset_path") or ctx.params.get("dataset_config"):
+        return ["dataset"]
     if task not in DEFAULT_SCENARIOS_BY_TASK:
         raise click.BadParameter(
             f"No default traffic scenarios defined for task '{task}'"
@@ -255,6 +261,7 @@ def validate_api_key(ctx, param, value):
     # Backends that don't use traditional API key
     no_api_key = [
         OCICohereUser.BACKEND_NAME,
+        OCIGenAIUser.BACKEND_NAME,
         CohereUser.BACKEND_NAME,
         AWSBedrockUser.BACKEND_NAME,
         GCPVertexUser.BACKEND_NAME,

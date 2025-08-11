@@ -32,7 +32,7 @@ class AzureOpenAIUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        "image-to-text": "chat",  # Same method handles both text and image
+        "image-text-to-text": "chat",  # Same method handles both text and image
     }
 
     host: Optional[str] = None
@@ -396,10 +396,7 @@ class AzureOpenAIUser(BaseUser):
             # Multimodal request
             content: List[Dict[str, Any]] = [{"type": "text", "text": request.prompt}]
             for image in request.image_content:
-                image_url_data: Dict[str, str] = {
-                    "url": f"data:image/jpeg;base64,{image}"
-                }
-                content.append({"type": "image_url", "image_url": image_url_data})
+                content.append({"type": "image_url", "image_url": {"url": image}})
             messages.append({"role": "user", "content": content})
         else:
             # Text-only request
