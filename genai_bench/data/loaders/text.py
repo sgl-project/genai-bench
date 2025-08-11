@@ -9,6 +9,8 @@ logger = init_logger(__name__)
 class TextDatasetLoader(DatasetLoader):
     """
     This datasetLoader is responsible for loading prompts from a data source.
+
+    TODO: Add support for prompt lambdas similar to ImageDatasetLoader.
     """
 
     supported_formats: Set[DatasetFormat] = {
