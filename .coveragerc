@@ -3,8 +3,6 @@ omit =
     genai_bench/cli/report.py
     genai_bench/analysis/excel_report.py
     genai_bench/analysis/plot_report.py
-    genai_bench/analysis/flexible_plot_report.py
-    genai_bench/analysis/plot_config.py
     genai_bench/ui/*
     genai_bench/logging.py
     tests/*

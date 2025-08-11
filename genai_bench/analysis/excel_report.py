@@ -195,17 +195,17 @@ def _create_appendix_sheet_common(
             [
                 "End-to-End Latency per Request (s)",
                 "Request Throughput (RPS)",
-                "Server Total Throughput (Input + Output) (tokens/s)",
+                "Total Throughput (Input + Output) of Server (tokens/s)",
             ]
         )
     else:
         headers.extend(
             [
-                "Per-Request Inference Speed (tokens/s)",
-                "Server Output Throughput (tokens/s)",
+                "Output Inference Speed per Request (tokens/s)",
+                "Output Throughput of Server (tokens/s)",
                 "End-to-End Latency per Request (s)",
                 "Request Throughput (RPS)",
-                "Server Total Throughput (Input + Output) (tokens/s)",
+                "Total Throughput (Input + Output) of Server (tokens/s)",
             ]
         )
 

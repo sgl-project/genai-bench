@@ -1,12 +1,12 @@
 {
-    "cmd": "/home/changsu/miniconda3/bin/genai-bench --api_backend openai --api_base http://localhost:8082 --api_key your-openai-api-key --api_model_name meta-llama/Meta-Llama-3-70B-Instruct --model_tokenizer /mnt/data/models/Meta-Llama-3.1-70B-Instruct --task chat --run_time 1 --server_engine SGLang --server_gpu_type H100 --server_version v0.6.0 --server_gpu_count 4 --model Meta-Llama-3.1-70B-Instruct --num_concurrency (1, 2, 4, 8, 16, 32, 64, 128, 256) --traffic_scenario N(480,240)/(300,150) --traffic_scenario D(100,100) --traffic_scenario D(100,1000) --traffic_scenario D(2000,200) --traffic_scenario D(7800,200)",
+    "cmd": "/home/changsu/miniconda3/bin/genai-bench --api_backend openai --api_base http://localhost:8082 --api_key your-openai-api-key --api_model_name vllm-model --model_tokenizer /mnt/data/models/Meta-Llama-3.1-70B-Instruct --task chat --run_time 1 --server_engine vLLM --server_gpu_type H100 --server_version v0.6.0 --server_gpu_count 4 --model Meta-Llama-3.1-70B-Instruct --num_concurrency (1, 2, 4, 8, 16, 32, 64, 128, 256) --traffic_scenario N(480,240)/(300,150) --traffic_scenario D(100,100) --traffic_scenario D(100,1000) --traffic_scenario D(2000,200) --traffic_scenario D(7800,200)",
     "benchmark_version": "",
     "api_backend": "openai",
     "auth_config": {
         "api_base": "http://localhost:8084",
         "api_key": "********_key"
     },
-    "api_model_name": "meta-llama/Meta-Llama-3-70B-Instruct",
+    "api_model_name": "vllm-model",
     "server_model_tokenizer": "/mnt/data/models/Meta-Llama-3.1-70B-Instruct",
     "model": "Meta-Llama-3.1-70B-Instruct",
     "task": "text-to-text",
@@ -29,13 +29,13 @@
         "D(7800,200)"
     ],
     "additional_request_params": {},
-    "server_engine": "SGLang",
+    "server_engine": "vLLM",
     "server_version": "v0.6.0",
     "server_gpu_type": "H100",
     "server_gpu_count": "4",
     "max_time_per_run_s": 60,
     "max_requests_per_run": 300,
-    "experiment_folder_name": "/home/changsu/openai_SGLang_v0.6.0_chat_sglang-model_tokenizer__mnt_data_models_Meta-Llama-3.1-70B-Instruct_20240906_165433",
+    "experiment_folder_name": "/home/changsu/openai_vLLM_v0.6.0_chat_vllm-model_tokenizer__mnt_data_models_Meta-Llama-3.1-70B-Instruct_20240906_165433",
     "dataset_path": null,
     "dataset_prompt_column_index": 0,
     "character_token_ratio": 4.059085841694538

@@ -126,9 +126,7 @@ def mock_report_and_plot():
             return_value=(mock_experiment_metadata, MagicMock()),
         ) as mock_load_experiment,
         patch("genai_bench.cli.cli.create_workbook") as mock_create_workbook,
-        patch(
-            "genai_bench.cli.cli.plot_experiment_data_flexible"
-        ) as mock_plot_experiment_data_flexible,
+        patch("genai_bench.cli.cli.plot_experiment_data") as mock_plot_experiment_data,
         patch(
             "genai_bench.cli.cli.plot_single_scenario_inference_speed_vs_throughput"
         ) as mock_plot_single_scenario_inference_speed_vs_throughput,
@@ -136,7 +134,7 @@ def mock_report_and_plot():
         yield {
             "load_experiment": mock_load_experiment,
             "create_workbook": mock_create_workbook,
-            "plot_experiment_data_flexible": mock_plot_experiment_data_flexible,
+            "plot_experiment_data": mock_plot_experiment_data,
             "experiment_metadata": mock_experiment_metadata,
             "plot_single_scenario_inference_speed_vs_throughput": mock_plot_single_scenario_inference_speed_vs_throughput,  # noqa: E501
         }
@@ -194,7 +192,7 @@ def test_benchmark_command(cli_runner, default_options, mock_report_and_plot):
 
     assert mock_report_and_plot["load_experiment"].called
     assert mock_report_and_plot["create_workbook"].called
-    assert mock_report_and_plot["plot_experiment_data_flexible"].called
+    assert mock_report_and_plot["plot_experiment_data"].called
     assert mock_report_and_plot["experiment_metadata"].server_gpu_count == 4
 
 
@@ -248,7 +246,7 @@ def test_invalid_server_gpu_type(cli_runner, default_options):
         [
             *default_options,
             "--server-engine",
-            "SGLang",
+            "vLLM",
             "--server-gpu-type",
             "YYY",  # Invalid GPU type
             "--server-version",
@@ -464,7 +462,7 @@ def test_benchmark_command_with_traffic_scenarios(cli_runner, default_options, c
             [
                 *default_options,
                 "--server-engine",
-                "SGLang",
+                "vLLM",
                 "--server-version",
                 "1.0",
                 "--server-gpu-type",
@@ -489,7 +487,7 @@ def test_benchmark_command_with_traffic_scenarios(cli_runner, default_options, c
             [
                 *default_options,
                 "--server-engine",
-                "SGLang",
+                "vLLM",
                 "--server-version",
                 "1.0",
                 "--server-gpu-type",
@@ -551,7 +549,7 @@ def test_benchmark_command_with_oci_auth(cli_runner, default_options, caplog):
                     "--max-requests-per-run",
                     "5",
                     "--server-engine",
-                    "SGLang",
+                    "vLLM",
                     "--server-version",
                     "1.0",
                     "--server-gpu-type",
@@ -624,7 +622,7 @@ def test_benchmark_command_with_spawn_rate(
     # Verify report generation like other basic tests
     assert mock_report_and_plot["load_experiment"].called
     assert mock_report_and_plot["create_workbook"].called
-    assert mock_report_and_plot["plot_experiment_data_flexible"].called
+    assert mock_report_and_plot["plot_experiment_data"].called
 
 
 @pytest.mark.usefixtures(
