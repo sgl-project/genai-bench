@@ -248,7 +248,7 @@ def test_invalid_server_gpu_type(cli_runner, default_options):
         [
             *default_options,
             "--server-engine",
-            "vLLM",
+            "SGLang",
             "--server-gpu-type",
             "YYY",  # Invalid GPU type
             "--server-version",
@@ -464,7 +464,7 @@ def test_benchmark_command_with_traffic_scenarios(cli_runner, default_options, c
             [
                 *default_options,
                 "--server-engine",
-                "vLLM",
+                "SGLang",
                 "--server-version",
                 "1.0",
                 "--server-gpu-type",
@@ -489,7 +489,7 @@ def test_benchmark_command_with_traffic_scenarios(cli_runner, default_options, c
             [
                 *default_options,
                 "--server-engine",
-                "vLLM",
+                "SGLang",
                 "--server-version",
                 "1.0",
                 "--server-gpu-type",
@@ -551,7 +551,7 @@ def test_benchmark_command_with_oci_auth(cli_runner, default_options, caplog):
                     "--max-requests-per-run",
                     "5",
                     "--server-engine",
-                    "vLLM",
+                    "SGLang",
                     "--server-version",
                     "1.0",
                     "--server-gpu-type",

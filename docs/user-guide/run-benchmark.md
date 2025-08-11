@@ -21,12 +21,12 @@ export TRANSFORMERS_VERBOSITY=error
 genai-bench benchmark --api-backend openai \
             --api-base "http://localhost:8082" \
             --api-key "your-openai-api-key" \
-            --api-model-name "vllm-model" \
+            --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
             --model-tokenizer "/mnt/data/models/Meta-Llama-3.1-70B-Instruct" \
             --task text-to-text \
             --max-time-per-run 15 \
             --max-requests-per-run 300 \
-            --server-engine "vLLM" \
+            --server-engine "SGLang" \
             --server-gpu-type "H100" \
             --server-version "v0.6.0" \
             --server-gpu-count 4
@@ -119,7 +119,7 @@ genai-bench benchmark --api-backend oci-cohere \
             --api-base "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com" \
             --api-model-name "c4ai-command-r-08-2024" \
             --model-tokenizer "/home/ubuntu/c4ai-command-r-08-2024" \
-            --server-engine "vLLM" \
+            --server-engine "SGLang" \
             --task text-to-text \
             --num-concurrency 1 \
             --server-gpu-type A100-80G \
