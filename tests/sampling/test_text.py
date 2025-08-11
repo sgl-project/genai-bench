@@ -267,12 +267,14 @@ class TestTextSampler(unittest.TestCase):
 
         # Mock encode to return list with length equal to number of characters in input
         def mock_encode(text, add_special_tokens=False):
-            return [1] * len(text)
+            # ignore space
+            encoded_text = [1] * len(text.replace(" ", ""))
+            return encoded_text
 
         self.tokenizer.encode = mock_encode
 
         # Mock decode to return the original text
-        def mock_decode(tokens):
+        def mock_decode(tokens, skip_special_tokens=True):
             if isinstance(tokens, list):
                 return "a" * len(tokens)  # Return 'a' repeated for the token count
             return "decoded_text"
@@ -290,7 +292,6 @@ class TestTextSampler(unittest.TestCase):
             model=self.model,
             output_modality=self.output_modality,
             data=self.test_data,
-            use_scenario=True,
             prompt_prefix_ratio=0.5,  # 50% of 20 tokens = 10 tokens
         )
         result = prefix_sampler.sample(scenario)
@@ -299,7 +300,7 @@ class TestTextSampler(unittest.TestCase):
         self.assertTrue(isinstance(result.prompt, str))
         self.assertGreater(len(result.prompt), 0)
         self.assertTrue(result.prompt.startswith(prefix_sampler.prefix))
-        self.assertEqual(len(result.prompt), 20)
+        self.assertEqual(len(mock_encode(result.prompt)), 20)
 
     def test_short_prompt_request(self):
         """Test that short prompts are handled correctly."""
@@ -335,7 +336,6 @@ class TestTextSampler(unittest.TestCase):
             model=self.model,
             output_modality=self.output_modality,
             data=[],
-            use_scenario=True,
         )
         scenario = NormalDistribution(10, 0, 10, 0)
 
