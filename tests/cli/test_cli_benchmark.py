@@ -126,7 +126,9 @@ def mock_report_and_plot():
             return_value=(mock_experiment_metadata, MagicMock()),
         ) as mock_load_experiment,
         patch("genai_bench.cli.cli.create_workbook") as mock_create_workbook,
-        patch("genai_bench.cli.cli.plot_experiment_data_flexible") as mock_plot_experiment_data_flexible,
+        patch(
+            "genai_bench.cli.cli.plot_experiment_data_flexible"
+        ) as mock_plot_experiment_data_flexible,
         patch(
             "genai_bench.cli.cli.plot_single_scenario_inference_speed_vs_throughput"
         ) as mock_plot_single_scenario_inference_speed_vs_throughput,
