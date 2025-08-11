@@ -102,9 +102,9 @@ def test_plot_single_scenario_success(
         ax=mock_ax,
         x_data=[100.0, 200.0],
         y_data=[10.0, 20.0],
-        x_label="Output Throughput of Server (tokens/s)",
-        y_label="Output Inference Speed per Request (tokens/s)",
-        title="Output Inference Speed per Request vs Output Throughput of Server "
+        x_label="Server Output Throughput (tokens/s)",
+        y_label="Per-Request Inference Speed (tokens/s)",
+        title="Per-Request Inference Speed vs Server Output Throughput "
         "- test_scenario",
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
@@ -144,9 +144,9 @@ def test_plot_single_scenario_with_missing_data(
         ax=mock_ax,
         x_data=[100.0, 200.0],  # Only data from concurrency levels 1 and 2
         y_data=[10.0, 20.0],
-        x_label="Output Throughput of Server (tokens/s)",
-        y_label="Output Inference Speed per Request (tokens/s)",
-        title="Output Inference Speed per Request vs Output Throughput of Server "
+        x_label="Server Output Throughput (tokens/s)",
+        y_label="Per-Request Inference Speed (tokens/s)",
+        title="Per-Request Inference Speed vs Server Output Throughput "
         "- test_scenario",
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
@@ -322,28 +322,6 @@ def test_plot_graph_concurrency():
     ax.set_xticklabels.assert_called_once_with(concurrency_levels)
     # Check that the plot was made (using ax.plot by default)
     ax.plot.assert_called_once()
-
-
-def test_plot_graph_cap():
-    """
-    When y_label triggers value capping (e.g. contains "ttft"),
-    only y values in [0.1, 100] are plotted.
-    """
-    ax = MagicMock()
-    x_data = [0, 1, 2, 3]
-    y_data = [0.05, 0.5, 50, 150]  # only 0.5 and 50 are within the valid range
-    x_label = "Not Concurrency"
-    y_label = "TTFT"
-    title = "TTFT Plot"
-    concurrency_levels = [10, 20, 30, 40]
-    label = "CapTest"
-
-    plot_graph(ax, x_data, y_data, x_label, y_label, title, concurrency_levels, label)
-
-    # The plotting call should use only the two valid data points.
-    ax.plot.assert_called_once()
-    # And y-limits should be capped to [0.1, 100]
-    ax.set_ylim.assert_called_with([0.1, 100])
 
 
 @patch("genai_bench.analysis.plot_report.plot_graph")
@@ -573,7 +551,8 @@ def test_plot_error_rates():
     ax.set_xlabel.assert_called_with("Concurrency")
     ax.set_ylabel.assert_called_with("Error Rate")
     ax.set_title.assert_called_with("Error Rates by HTTP Status vs Concurrency")
-    ax.set_ylim.assert_called()  # Ensuring y-limit is set (with bottom=0)
+    ax.set_ylim.assert_called_with(bottom=0)  # Ensuring y-limit is set (with bottom=0)
+    ax.set_xlim.assert_called_with(left=0)
     ax.legend.assert_called()
     ax.grid.assert_called_with(True)
 

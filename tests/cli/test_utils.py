@@ -61,7 +61,7 @@ def test_get_experiment_path_with_custom_name(tmp_path):
         experiment_folder_name=custom_name,
         experiment_base_dir=str(tmp_path),
         api_backend="openai",
-        server_engine="vLLM",
+        server_engine="SGLang",
         server_version="1.0",
         task="text-to-text",
         model="gpt-4",
@@ -77,13 +77,13 @@ def test_get_experiment_path_default_name(mock_datetime, tmp_path):
         experiment_folder_name=None,
         experiment_base_dir=str(tmp_path),
         api_backend="openai",
-        server_engine="vLLM",
+        server_engine="SGLang",
         server_version="1.0",
         task="text-to-text",
         model="gpt-4",
     )
 
-    expected_name = "openai_vLLM_1.0_text-to-text_gpt-4_20240314_150926"
+    expected_name = "openai_SGLang_1.0_text-to-text_gpt-4_20240314_150926"
     assert path == tmp_path / expected_name
     assert path.exists()
 
@@ -112,13 +112,13 @@ def test_get_experiment_path_no_base_dir(mock_datetime):
             experiment_folder_name=None,
             experiment_base_dir=None,
             api_backend="openai",
-            server_engine="vLLM",
+            server_engine="SGLang",
             server_version="1.0",
             task="text-to-text",
             model="gpt-4",
         )
 
-        expected_name = "openai_vLLM_1.0_text-to-text_gpt-4_20240314_150926"
+        expected_name = "openai_SGLang_1.0_text-to-text_gpt-4_20240314_150926"
         assert path == Path(expected_name)
         mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
@@ -134,7 +134,7 @@ def test_get_experiment_path_existing_folder(mock_logger, tmp_path):
         experiment_folder_name=folder_name,
         experiment_base_dir=str(tmp_path),
         api_backend="openai",
-        server_engine="vLLM",
+        server_engine="SGLang",
         server_version="1.0",
         task="text-to-text",
         model="gpt-4",
