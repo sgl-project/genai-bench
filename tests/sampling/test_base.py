@@ -28,7 +28,6 @@ def test_sampler_factory(mock_vision_dataset):
         tokenizer=Mock(),
         model="gpt-3",
         data=text_data,
-        use_scenario=True,
     )
     assert isinstance(sampler, TextSampler)
 
@@ -37,7 +36,6 @@ def test_sampler_factory(mock_vision_dataset):
         tokenizer=Mock(),
         model="gpt-3",
         data=text_data,
-        use_scenario=True,
     )
     assert isinstance(sampler, TextSampler)
 
@@ -46,7 +44,6 @@ def test_sampler_factory(mock_vision_dataset):
         tokenizer=Mock(),
         model="gpt-3",
         data=mock_vision_dataset,
-        use_scenario=False,
     )
     assert isinstance(sampler, ImageSampler)
 

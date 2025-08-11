@@ -12,7 +12,6 @@ class TextDistribution(Enum):
     NORMAL = "N"
     DETERMINISTIC = "D"
     UNIFORM = "U"
-    FILE = "F"  # Special case within text distribution
 
 
 class EmbeddingDistribution(Enum):
@@ -41,6 +40,12 @@ class MultiModality(Enum):
     AUDIO = "A"
 
 
+class SpecialScenario(Enum):
+    """Special, non-parametric scenario types."""
+
+    DATASET = "dataset"
+
+
 class Scenario(ABC):
     """
     An abstract base class for different scenarios based on specified
@@ -49,7 +54,11 @@ class Scenario(ABC):
 
     _registry: Dict[str, Type["Scenario"]] = {}
     scenario_type: (
-        TextDistribution | MultiModality | EmbeddingDistribution | ReRankDistribution
+        TextDistribution
+        | MultiModality
+        | EmbeddingDistribution
+        | ReRankDistribution
+        | SpecialScenario
     )
     validation_pattern: str
 
@@ -85,13 +94,17 @@ class Scenario(ABC):
         representation.
         Determines the correct subclass to instantiate using the registered map.
         """
+        # Extract leading type token (supports multi-char tokens like "dataset")
+        match = re.match(r"^([A-Za-z]+)", scenario_str)
+        type_token = match.group(1) if match else scenario_str[0]
         cls.validate(scenario_str)
-        type_identifier = scenario_str[0]
-        scenario_class = cls._registry.get(type_identifier)
+        scenario_class = cls._registry.get(type_token)
         assert (
             scenario_class is not None
         ), "scenario_class should not be None at this step"
-        return scenario_class.parse(scenario_str[1:])
+        # Pass the parameter substring (if any) to parser
+        params_str = scenario_str[len(type_token) :]
+        return scenario_class.parse(params_str)
 
     @classmethod
     def validate(cls, scenario_str: str) -> bool:
@@ -99,22 +112,45 @@ class Scenario(ABC):
         Scenario string validation method
         Subclass requires validation_pattern to be defined
         """
-        scenario_type = scenario_str[0]
-        scenario_class = cls._registry.get(scenario_type)
-        if not scenario_class or not bool(
-            re.match(scenario_class.validation_pattern, scenario_str)
-        ):
+        match = re.match(r"^([A-Za-z]+)", scenario_str)
+        type_token = match.group(1) if match else scenario_str[0]
+        scenario_class = cls._registry.get(type_token)
+        if not scenario_class:
+            supported = ", ".join(sorted(cls._registry.keys()))
             raise ValueError(
-                f"Invalid scenario string '{scenario_str}'. Should follow "
-                "U(min_input_tokens,max_input_tokens)/(min_output_tokens,max_output_tokens), "  # noqa: E501
-                "N(mean_input_tokens,stddev_input_tokens)/(mean_output_tokens,stddev_output_tokens), "  # noqa: E501
-                "D(num_input_tokens,num_output_tokens), "
-                "U(max_input_tokens,max_output_tokens) OR "
-                "Multi modality scenario I(num_input_dimension_width,num_input_dimension_height,num_input_images)"  # noqa: E501
-                "Embedding scenario: E(max_tokens_per_document)"
-                "Re-Rank scenario: R(max_tokens_per_document,max_tokens_per_query)"
+                f"Invalid scenario string '{scenario_str}'. Unknown type "
+                f"'{type_token}'. Supported types: {supported}"
+            )
+        if not re.match(scenario_class.validation_pattern, scenario_str):
+            raise ValueError(
+                f"Invalid scenario string '{scenario_str}' for type '{type_token}'. "
+                f"Expected to match pattern: {scenario_class.validation_pattern}"
             )
         return True
+
+
+class DatasetScenario(Scenario):
+    """
+    A generic no-op scenario used to indicate dataset/direct sampling mode.
+    It is registered in the scenario registry and created via its human-friendly
+    alias in Scenario.from_string (e.g., "dataset").
+    """
+
+    scenario_type = SpecialScenario.DATASET
+    validation_pattern = r"^dataset$"
+
+    def sample(self) -> Any:  # pragma: no cover
+        raise NotImplementedError(
+            "DatasetScenario has no sampling parameters; samplers should bypass token "
+            "shaping in dataset mode."
+        )
+
+    def to_string(self) -> str:
+        return "dataset"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "Scenario":
+        return cls()
 
 
 def parse_params_str(

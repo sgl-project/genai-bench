@@ -1,6 +1,7 @@
 """Scenario definitions for traffic generation."""
 
 from genai_bench.scenarios.base import (
+    DatasetScenario,
     EmbeddingDistribution,
     MultiModality,
     ReRankDistribution,
@@ -18,6 +19,7 @@ __all__ = [
     "EmbeddingDistribution",
     "EmbeddingScenario",
     "ImageModality",
+    "DatasetScenario",
     "MultiModality",
     "NormalDistribution",
     "ReRankDistribution",

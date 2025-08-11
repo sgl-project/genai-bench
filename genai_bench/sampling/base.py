@@ -4,7 +4,7 @@ from typing import Dict, Optional, Set, Type
 from transformers import PreTrainedTokenizer
 
 from genai_bench.protocol import UserRequest
-from genai_bench.scenarios.base import Scenario
+from genai_bench.scenarios.base import DatasetScenario, Scenario
 
 
 class Sampler(ABC):
@@ -51,8 +51,18 @@ class Sampler(ABC):
         self.get_token_length = lambda text, add_special_tokens=False: len(
             tokenizer.encode(text, add_special_tokens=add_special_tokens)
         )
-        self.use_scenario = True
         self.batch_size = 1  # Default batch size
+
+    def _is_dataset_mode(self, scenario: Optional[Scenario]) -> bool:
+        """Return True when sampler should use raw dataset without token shaping.
+
+        Dataset mode is signaled by a None scenario or a Scenario whose
+        string representation equals "dataset" (and for safety, by explicit
+        DatasetScenario instance).
+        """
+        if scenario is None:
+            return True
+        return isinstance(scenario, DatasetScenario)
 
     @abstractmethod
     def sample(self, scenario: Scenario) -> UserRequest:
