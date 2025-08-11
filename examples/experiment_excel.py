@@ -11,7 +11,7 @@ from genai_bench.logging import LoggingManager
 LoggingManager("excel")
 
 
-folder_name = "/Users/changsu/openai_chat_sglang-model_tokenizer__mnt_data_models_Llama-3-70B-Instruct_20240904_003850"  # noqa: E501
+folder_name = "<Path to your experiment folder>"  # noqa: E501
 os.makedirs(folder_name, exist_ok=True)
 experiment_metadata, run_data = load_one_experiment(folder_name)
 create_workbook(
