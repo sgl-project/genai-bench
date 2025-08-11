@@ -6,6 +6,7 @@ import PIL
 from PIL.Image import Image
 from six import BytesIO
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserImageChatRequest,
@@ -37,6 +38,7 @@ class ImageSampler(Sampler):
         model: str,
         output_modality: str,
         data: Any,
+        dataset_config: Optional[DatasetConfig] = None,
         additional_request_params: Optional[dict] = None,
         **kwargs,
     ):
@@ -45,7 +47,7 @@ class ImageSampler(Sampler):
             model,
             output_modality,
             additional_request_params,
-            dataset_config=kwargs.get("dataset_config"),
+            dataset_config=dataset_config,
         )
         self.data = data
 

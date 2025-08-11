@@ -1,6 +1,7 @@
 import random
 from typing import Any, Dict, List, Optional
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
@@ -31,9 +32,12 @@ class TextSampler(Sampler):
         output_modality: str,
         data: List[str],
         additional_request_params: Optional[Dict[str, Any]] = None,
+        dataset_config: Optional[DatasetConfig] = None,
         **kwargs,
     ):
-        super().__init__(tokenizer, model, output_modality, additional_request_params)
+        super().__init__(
+            tokenizer, model, output_modality, additional_request_params, dataset_config
+        )
 
         self.data = data
         self.batch_size = 1  # Default batch size

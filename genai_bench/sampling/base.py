@@ -3,6 +3,7 @@ from typing import Dict, Optional, Set, Type
 
 from transformers import PreTrainedTokenizer
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.protocol import UserRequest
 from genai_bench.scenarios.base import DatasetScenario, Scenario
 
@@ -30,7 +31,7 @@ class Sampler(ABC):
         model: str,
         output_modality: str,
         additional_request_params: Optional[dict] = None,
-        dataset_config=None,
+        dataset_config: Optional[DatasetConfig] = None,
         **kwargs,
     ):
         """Initializes the Sampler.
