@@ -176,7 +176,7 @@ genai-bench benchmark \
   --max-requests-per-run 100 \
   --max-time-per-run 10
 ```
-**Note:** for Dedicated model, the `--api-model-name` is just a placeholder, the model depends on the the endpointId you provided
+**Note:** for Dedicated model, the `--api-model-name` is just a placeholder, the model depends on the endpointId you provided
 
 **Advanced features:**
 ```bash
