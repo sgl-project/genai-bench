@@ -353,7 +353,7 @@ class FlexiblePlotGenerator:
                 bbox=dict(
                     boxstyle="round,pad=0.2",
                     facecolor="white",
-                    alpha=0.7,
+                    alpha=0.0,
                     edgecolor="none",
                 ),
             )
@@ -564,7 +564,7 @@ class FlexiblePlotGenerator:
                     bbox=dict(
                         boxstyle="round,pad=0.2",
                         facecolor="white",
-                        alpha=0.7,
+                        alpha=0.0,
                         edgecolor="none",
                     ),
                 )
