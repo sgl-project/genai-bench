@@ -51,7 +51,6 @@ def plot_graph(
     else:
         x_positions = x_data  # type: ignore[assignment]
 
-    # If this is TTFT or E2E latency, filter out values outside [0.1, 100]
     valid_x = x_data
     valid_y = y_data
     valid_concurrency = concurrency_levels
