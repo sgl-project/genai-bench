@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from PIL import Image
 
+from genai_bench.data.config import DatasetConfig, DatasetSourceConfig
 from genai_bench.protocol import UserImageChatRequest, UserImageEmbeddingRequest
 from genai_bench.sampling.image import ImageSampler
 from genai_bench.scenarios import ImageModality
@@ -86,3 +87,99 @@ def test_image_sampler_with_invalid_scenario(mock_tokenizer, mock_vision_dataset
         match="Expected MultiModality for image tasks, got <class 'str'>",
     ):
         sampler.sample(mock_scenario)
+
+
+def test_image_sampler_dict_rows_prompt_column(monkeypatch, mock_tokenizer):
+    img = Image.new("RGB", (64, 64))
+    data = [
+        {"image_column": img, "prompt_column": "prompt_1"},
+        {"image_column": img, "prompt_column": "prompt_2"},
+    ]
+    ds_cfg = DatasetConfig(
+        source=DatasetSourceConfig(type="huggingface", path="test/dataset"),
+        prompt_column="prompt_column",
+        image_column="image_column",
+    )
+    # Force deterministic sampling
+    monkeypatch.setattr("random.choices", lambda population, k: [population[0]])
+
+    sampler = ImageSampler(
+        tokenizer=mock_tokenizer,
+        model="phi-vision",
+        output_modality="text",
+        data=data,
+        dataset_config=ds_cfg,
+    )
+    req = sampler.sample(scenario=None)
+    assert isinstance(req, UserImageChatRequest)
+    assert req.prompt == "prompt_1"
+    assert len(req.image_content) == 1
+    assert req.image_content[0].startswith("data:image/jpeg;base64,")
+
+
+def test_image_sampler_dict_rows_prompt_lambda(monkeypatch, mock_tokenizer):
+    img = Image.new("RGB", (64, 64))
+    data = [{"image_column": img, "anything": "ignored"}]
+    ds_cfg = DatasetConfig(
+        source=DatasetSourceConfig(type="huggingface", path="test/dataset"),
+        prompt_lambda='lambda x: "Fixed prompt for all"',
+        image_column="image_column",
+    )
+    monkeypatch.setattr("random.choices", lambda population, k: [population[0]])
+
+    sampler = ImageSampler(
+        tokenizer=mock_tokenizer,
+        model="phi-vision",
+        output_modality="text",
+        data=data,
+        dataset_config=ds_cfg,
+    )
+    req = sampler.sample(scenario=None)
+    assert isinstance(req, UserImageChatRequest)
+    assert req.prompt == "Fixed prompt for all"
+    assert req.image_content[0].startswith("data:image/jpeg;base64,")
+
+
+def test_image_sampler_dict_rows_url_images(monkeypatch, mock_tokenizer):
+    data = [{"image_column": "https://example.com/a.jpg", "prompt_column": "p1"}]
+    ds_cfg = DatasetConfig(
+        source=DatasetSourceConfig(type="huggingface", path="test/dataset"),
+        prompt_column="prompt_column",
+        image_column="image_column",
+    )
+    monkeypatch.setattr("random.choices", lambda population, k: [population[0]])
+
+    sampler = ImageSampler(
+        tokenizer=mock_tokenizer,
+        model="phi-vision",
+        output_modality="text",
+        data=data,
+        dataset_config=ds_cfg,
+    )
+    req = sampler.sample(scenario=None)
+    assert isinstance(req, UserImageChatRequest)
+    assert req.prompt == "p1"
+    assert req.image_content == ["https://example.com/a.jpg"]
+
+
+def test_image_sampler_missing_prompt_column(monkeypatch, mock_tokenizer):
+    img = Image.new("RGB", (64, 64))
+    data = [{"image_column": img, "other": "x"}]
+    ds_cfg = DatasetConfig(
+        source=DatasetSourceConfig(type="huggingface", path="test/dataset"),
+        prompt_column="nonexistent_column",
+        image_column="image_column",
+    )
+    monkeypatch.setattr("random.choices", lambda population, k: [population[0]])
+
+    sampler = ImageSampler(
+        tokenizer=mock_tokenizer,
+        model="phi-vision",
+        output_modality="text",
+        data=data,
+        dataset_config=ds_cfg,
+    )
+    req = sampler.sample(scenario=None)
+    assert isinstance(req, UserImageChatRequest)
+    assert req.prompt == ""
+    assert req.image_content[0].startswith("data:image/jpeg;base64,")

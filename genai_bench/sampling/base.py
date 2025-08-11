@@ -3,6 +3,7 @@ from typing import Dict, Optional, Set, Type
 
 from transformers import PreTrainedTokenizer
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.protocol import UserRequest
 from genai_bench.scenarios.base import DatasetScenario, Scenario
 
@@ -30,6 +31,7 @@ class Sampler(ABC):
         model: str,
         output_modality: str,
         additional_request_params: Optional[dict] = None,
+        dataset_config: Optional[DatasetConfig] = None,
         **kwargs,
     ):
         """Initializes the Sampler.
@@ -52,6 +54,7 @@ class Sampler(ABC):
             tokenizer.encode(text, add_special_tokens=add_special_tokens)
         )
         self.batch_size = 1  # Default batch size
+        self.dataset_config = dataset_config
 
     def _is_dataset_mode(self, scenario: Optional[Scenario]) -> bool:
         """Return True when sampler should use raw dataset without token shaping.

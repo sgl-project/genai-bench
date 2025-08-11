@@ -6,6 +6,7 @@ import PIL
 from PIL.Image import Image
 from six import BytesIO
 
+from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserImageChatRequest,
@@ -14,6 +15,7 @@ from genai_bench.protocol import (
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import MultiModality, Scenario
+from genai_bench.utils import safe_eval_prompt
 
 logger = init_logger(__name__)
 
@@ -35,11 +37,18 @@ class ImageSampler(Sampler):
         tokenizer,
         model: str,
         output_modality: str,
-        data: List[Tuple[str, Any]],
+        data: Any,
+        dataset_config: Optional[DatasetConfig] = None,
         additional_request_params: Optional[dict] = None,
         **kwargs,
     ):
-        super().__init__(tokenizer, model, output_modality, additional_request_params)
+        super().__init__(
+            tokenizer,
+            model,
+            output_modality,
+            additional_request_params,
+            dataset_config=dataset_config,
+        )
         self.data = data
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
@@ -140,33 +149,46 @@ class ImageSampler(Sampler):
         self, image_dimension: Optional[Tuple[int, int]] = None, num_images: int = 1
     ) -> Tuple[str, List[str]]:
         """
-        Loads and processes images and accompanying texts from the dataset.
+        Lazily sample and process images and accompanying texts from the dataset.
 
-        Args:
-            image_dimension (Tuple[int, int], optional): Dimensions to resize the
-                images.
-            num_images (int): Number of images to load. Defaults to 1.
-
-        Returns:
-            Tuple[str, List[str]]: A tuple containing:
-                - Texts concatenated as a single prompt.
-                - A list of image URLs (base64 data URLs or file:// URLs).
+        Supports two input shapes:
+        - Sequence of (prompt, image) tuples (backward compatible)
+        - Sequence of dict rows (e.g., HF Dataset rows) using dataset_config
         """
-        selected_data = random.choices(self.data, k=num_images)
-        images, texts = [], []
+        images: List[str] = []
+        texts: List[str] = []
 
-        for data in selected_data:
-            raw_image = data[1]
-            # Use process_image with resize parameter
+        chosen = random.choices(self.data, k=num_images)
+        for item in chosen:
+            prompt: str = ""
+            raw_image: Any = None
+            # Backward-compatible format
+            if isinstance(item, tuple) and len(item) == 2:
+                prompt, raw_image = item
+            # Dict row format
+            elif isinstance(item, dict) and self.dataset_config is not None:
+                cfg = self.dataset_config
+                if cfg.image_column:
+                    raw_image = item.get(cfg.image_column)
+                if cfg.prompt_lambda:
+                    prompt = safe_eval_prompt(cfg.prompt_lambda, item)
+                elif cfg.prompt_column:
+                    prompt = str(item.get(cfg.prompt_column, ""))
+            else:
+                continue
+
+            if raw_image is None:
+                continue
             processed_image = ImageSampler.process_image(
                 raw_image, resize=image_dimension
             )
             images.append(processed_image)
-            texts.append(data[0])
+            texts.append(prompt or "")
+
         return " ".join(texts), images
 
     @staticmethod
-    def process_image(image: Any, resize: tuple = None) -> str:
+    def process_image(image: Any, resize: Optional[Tuple[int, int]] = None) -> str:
         """
         Process a single image input and return a data URL or HTTP(S) URL.
 
