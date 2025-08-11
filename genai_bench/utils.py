@@ -4,6 +4,10 @@ from pathlib import Path
 
 from transformers import PreTrainedTokenizer
 
+from genai_bench.logging import init_logger
+
+logger = init_logger(__name__)
+
 
 def sanitize_string(input_str: str):
     """
@@ -67,7 +71,10 @@ def safe_eval_prompt(prompt_template: str, item: dict) -> str:
             safe_dict = {"context": item, "str": str, "len": len}
             result = eval(expr, {"__builtins__": {}}, safe_dict)
             return str(result) if result is not None else ""
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                f"Failed to evaluate prompt template: {prompt_template}, error: {e}"
+            )
             return ""
 
     # Simple field access
