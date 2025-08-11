@@ -13,9 +13,9 @@ LoggingManager("plot")
 
 
 # Example usage with filtering multiple experiments
-folder_name = "/Users/changsu/experiment_plot"
+folder_name = "<Path to the experiment folder>"
 filter_criteria = {
-    "model": "vllm-model",
+    "model": "Llama-4-Scout-17B-16E-Instruct",
 }
 
 os.makedirs(folder_name, exist_ok=True)
@@ -33,7 +33,7 @@ else:
 # Plot for one experiment
 experiment_folder = os.path.join(
     folder_name,
-    "openai_chat_vllm-model_tokenizer__mnt_data_models_Llama-3-70B-Instruct_20240904_003850",
+    "openai_SGLang_v0.4.7.post1_text-to-text_Llama-4-Scout-17B-16E-Instruct_20250620_042005",
 )
 experiment_metadata, run_data = load_one_experiment(experiment_folder)
 if not experiment_metadata or not run_data:
