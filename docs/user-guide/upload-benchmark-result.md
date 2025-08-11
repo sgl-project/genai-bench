@@ -16,12 +16,12 @@ To enable result uploading, use the following options with the `benchmark` comma
 genai-bench benchmark \
     --api-base "http://localhost:8082" \
     --api-key "your-openai-api-key" \
-    --api-model-name "vllm-model" \
+    --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
     --model-tokenizer "/mnt/data/models/Meta-Llama-3.1-70B-Instruct" \
     --task text-to-text \
     --max-time-per-run 15 \
     --max-requests-per-run 300 \
-    --server-engine "vLLM" \
+    --server-engine "SGLang" \
     --server-gpu-type "H100" \
     --server-version "v0.6.0" \
     --server-gpu-count 4 \

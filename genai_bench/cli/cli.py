@@ -11,9 +11,10 @@ import click
 from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.analysis.experiment_loader import load_one_experiment
 from genai_bench.analysis.plot_report import (
-    plot_experiment_data,
     plot_single_scenario_inference_speed_vs_throughput,
 )
+from genai_bench.analysis.flexible_plot_report import plot_experiment_data_flexible
+
 from genai_bench.auth.unified_factory import UnifiedAuthFactory
 from genai_bench.cli.option_groups import (
     api_options,
@@ -506,7 +507,7 @@ def benchmark(
         ),
         percentile="mean",
     )
-    plot_experiment_data(
+    plot_experiment_data_flexible(
         [
             (experiment_metadata, run_data),
         ],

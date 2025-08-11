@@ -71,7 +71,7 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
     default=None,
     callback=validate_filter_criteria,
     help="A dictionary containing filter criteria for the plot. Default: {}. "
-    "Example: '{'model': 'vllm-model'}'",
+    "Example: '{'model': 'meta-llama/Meta-Llama-3-70B-Instruct'}'",
 )
 @click.option(
     "--plot-config",
