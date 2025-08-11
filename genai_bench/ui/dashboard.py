@@ -241,7 +241,7 @@ class RichLiveDashboard:
         self.layout["ttft_vs_input_throughput"].update(
             Panel(
                 input_throughput_scatter_plot,
-                title="Input Latency vs Server Input Throughput",
+                title="Input Latency vs Input Throughput of Server",
                 border_style="bold green",
                 expand=True,
             )
@@ -249,7 +249,7 @@ class RichLiveDashboard:
         self.layout["output_latency_vs_output_throughput"].update(
             Panel(
                 output_latency_scatter_plot,
-                title="Output Latency vs Server Output Throughput",
+                title="Output Latency vs Output Throughput of Server",
                 border_style="bold blue",
                 expand=True,
             )
@@ -324,7 +324,7 @@ class RichLiveDashboard:
         self.layout["ttft_vs_input_throughput"].update(
             Panel(
                 Text(),
-                title="Input Latency vs Server Input Throughput",
+                title="Input Latency vs Input Throughput of Server",
                 border_style="bold green",
                 expand=True,
             )
@@ -332,7 +332,7 @@ class RichLiveDashboard:
         self.layout["output_latency_vs_output_throughput"].update(
             Panel(
                 Text(),
-                title="Output Latency vs Server Output Throughput",
+                title="Output Latency vs Output Throughput of Server",
                 border_style="bold blue",
                 expand=True,
             )

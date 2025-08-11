@@ -2,7 +2,7 @@
 
 This is a quick reference guide for common multi-cloud scenarios with genai-bench. For detailed information, see the [comprehensive guide](multi-cloud-auth-storage.md).
 
-> **Note**: For OpenAI, SGLang and vLLM backends, both `--api-key` and `--model-api-key` are supported for backward compatibility.
+> **Note**: For OpenAI, vLLM, and SGLang backends, both `--api-key` and `--model-api-key` are supported for backward compatibility.
 
 ## OpenAI Benchmarking
 
