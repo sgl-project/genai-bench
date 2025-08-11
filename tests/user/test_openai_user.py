@@ -71,19 +71,19 @@ def test_chat(mock_post, mock_openai_user):
     # Mock the iter_content method to simulate streaming
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"R"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"AG"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" ("},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"Ret"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"rie"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"val"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"-Aug"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"mented"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" Generation"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":")"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"R"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"AG"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" ("},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"Ret"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"rie"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"val"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"-Aug"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"mented"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" Generation"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":")"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
             b"",
-            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"vllm-model","choices":[],"usage":{"prompt_tokens":5,"total_tokens":15,"completion_tokens":10}}',  # noqa:E501
+            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[],"usage":{"prompt_tokens":5,"total_tokens":15,"completion_tokens":10}}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -131,13 +131,13 @@ def test_vision(mock_post, mock_openai_user):
     # Mock the iter_content method to simulate streaming
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"The"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" image"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" depicts"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" serene"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[],"usage":{"prompt_tokens":6421,"total_tokens":6426,"completion_tokens":5}}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"The"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" image"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" depicts"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" serene"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[],"usage":{"prompt_tokens":6421,"total_tokens":6426,"completion_tokens":5}}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -286,13 +286,13 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
     response_mock.status_code = 200
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"The"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" image"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" depicts"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" serene"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"vllm-model","choices":[],"usage":{"prompt_tokens":6421,"total_tokens":6426,"completion_tokens":5}}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"The"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" image"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" depicts"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" serene"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-81667d8b92f74ae8ad207009cc1d2a5b","object":"chat.completion.chunk","created":1727154331,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[],"usage":{"prompt_tokens":6421,"total_tokens":6426,"completion_tokens":5}}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -335,19 +335,19 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
     # Mock the iter_content method to simulate streaming
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"R"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"AG"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" ("},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"Ret"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"rie"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"val"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"-Aug"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":"mented"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" Generation"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"vllm-model","choices":[{"index":0,"delta":{"content":")"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"R"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"AG"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" ("},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"Ret"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"rie"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"val"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"-Aug"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":"mented"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" Generation"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":")"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
             b"",
-            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"vllm-model","choices":[]}',  # noqa:E501
+            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[]}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -425,8 +425,8 @@ def test_chat_with_warning_first_chunk_tokens(mock_post, mock_openai_user, caplo
     response_mock.status_code = 200
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"vllm-model","choices":[{"delta":{"content":"First chunk with multiple tokens","usage":{"completion_tokens":5}},"finish_reason":null}]}',  # noqa:E501
-            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"vllm-model","choices":[]}',  # noqa:E501
+            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"delta":{"content":"First chunk with multiple tokens","usage":{"completion_tokens":5}},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chat-f774576725a9470ea37c7706a45a6557","object":"chat.completion.chunk","created":1724448805,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[]}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -536,7 +536,7 @@ def test_chat_vision_without_prefill_tokens(mock_post, mock_openai_user):
 
 @patch("genai_bench.user.openai_user.requests.post")
 def test_vllm_model_format(mock_post, mock_openai_user):
-    """Test handling of vllm-model format chunks."""
+    """Test handling of meta-llama/Meta-Llama-3-70B-Instruct format chunks."""
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
         lambda text, add_special_tokens=True: len(text)
@@ -554,11 +554,11 @@ def test_vllm_model_format(mock_post, mock_openai_user):
     response_mock.status_code = 200
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" a"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
             b"",
-            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"vllm-model","choices":[{"index":0,"delta":{"content":" sequence"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
+            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"content":" sequence"},"logprobs":null,"finish_reason":"length","stop_reason":null}]}',  # noqa:E501
             b"",
-            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"vllm-model","choices":[],"usage":{"prompt_tokens":5,"total_tokens":7,"completion_tokens":2}}',  # noqa:E501
+            b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[],"usage":{"prompt_tokens":5,"total_tokens":7,"completion_tokens":2}}',  # noqa:E501
         ]
     )
     mock_post.return_value = response_mock
