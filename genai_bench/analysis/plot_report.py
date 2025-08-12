@@ -51,25 +51,9 @@ def plot_graph(
     else:
         x_positions = x_data  # type: ignore[assignment]
 
-    # If this is TTFT or E2E latency, filter out values outside [0.1, 100]
-    valid_x = []
-    valid_y = []
-    valid_concurrency = []
-
-    should_cap = any(
-        kw in y_label.lower() for kw in ["ttft", "mean e2e", "p90 e2e", "p99 e2e"]
-    )
-
-    if should_cap:
-        for xx, yy, cc in zip(x_data, y_data, concurrency_levels, strict=False):
-            if 0.1 <= yy <= 100:
-                valid_x.append(xx)
-                valid_y.append(yy)
-                valid_concurrency.append(cc)
-    else:
-        valid_x = x_data
-        valid_y = y_data
-        valid_concurrency = concurrency_levels
+    valid_x = x_data
+    valid_y = y_data
+    valid_concurrency = concurrency_levels
 
     # Plot data
     if plot_type == "line":
@@ -88,7 +72,7 @@ def plot_graph(
             textcoords="offset points",
             ha="left",
             bbox=dict(
-                boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor="none"
+                boxstyle="round,pad=0.2", facecolor="white", alpha=0.1, edgecolor="none"
             ),
         )
 
@@ -101,11 +85,17 @@ def plot_graph(
             mticker.LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1, numticks=100)
         )
 
-    # Cap the y-limits if needed
-    if should_cap:
-        ax.set_ylim([0.1, 100])
-    else:
-        ax.set_ylim(bottom=0)
+    # Axis limits handling with autoscale re-enabled every draw
+    # X-axis: allow Matplotlib to autoscale to include new data, then pin left=0
+    ax.autoscale(enable=True, axis="x", tight=False)
+    x_left, x_right = ax.get_xlim()
+    ax.set_xlim(left=0.0, right=x_right)
+
+    # Y-axis: re-autoscale first, then pin bottom=0 for linear scale only
+    ax.autoscale(enable=True, axis="y", tight=False)
+    if ax.get_yscale() != "log":
+        y_bottom, y_top = ax.get_ylim()
+        ax.set_ylim(bottom=0.0, top=y_top)
 
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -715,6 +705,10 @@ def plot_error_rates(
     ax.set_xlabel("Concurrency")
     ax.set_ylabel("Error Rate")
     ax.set_title("Error Rates by HTTP Status vs Concurrency")
-    ax.set_ylim(bottom=0)
+    # Re-enable autoscale for y so subsequent groups can extend the top,
+    # then pin bottom at 0 (valid for linear scale used here)
+    ax.autoscale(enable=True, axis="y", tight=False)
+    y_bottom, y_top = ax.get_ylim()
+    ax.set_ylim(bottom=0.0, top=y_top)
     ax.legend()
     ax.grid(True)

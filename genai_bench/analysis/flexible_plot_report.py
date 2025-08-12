@@ -353,7 +353,7 @@ class FlexiblePlotGenerator:
                 bbox=dict(
                     boxstyle="round,pad=0.2",
                     facecolor="white",
-                    alpha=0.7,
+                    alpha=0.1,
                     edgecolor="none",
                 ),
             )
@@ -481,7 +481,7 @@ class FlexiblePlotGenerator:
         ax.set_xlabel(plot_spec.x_label or self._generate_label(plot_spec.x_field))
         ax.set_ylabel(plot_spec.y_label or "Value")
         ax.set_title(plot_spec.title)
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=0.1)
 
         # Position legend outside plot area for multi-line plots to avoid overlap
         ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize="small")
@@ -564,7 +564,7 @@ class FlexiblePlotGenerator:
                     bbox=dict(
                         boxstyle="round,pad=0.2",
                         facecolor="white",
-                        alpha=0.7,
+                        alpha=0.1,
                         edgecolor="none",
                     ),
                 )
@@ -593,7 +593,7 @@ class FlexiblePlotGenerator:
             # Copy grid
             ax_temp.grid(
                 ax.get_xgridlines()[0].get_visible() if ax.get_xgridlines() else True,
-                alpha=0.3,
+                alpha=0.1,
             )
             ax_temp.minorticks_on()
 
