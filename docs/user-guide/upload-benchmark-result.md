@@ -3,6 +3,7 @@
 > **Note**: For comprehensive multi-cloud storage authentication and configuration, see the [Multi-Cloud Authentication & Storage Guide](multi-cloud-auth-storage.md).
 
 ## OCI Object Storage (Legacy)
+
 GenAI Bench supports uploading benchmark results directly to OCI Object Storage. This feature is useful for:
 
 - Storing benchmark results in a centralized location
@@ -29,6 +30,7 @@ genai-bench benchmark \
     --storage-bucket "your-bucket-name" \
     --storage-provider oci
 ```
+
 By default, GenAI Bench uses OCI User Principal for authentication and authorization.
 The default namespace is the current tenancy, and the default region is the current region in which the client is positioned.
 You can override the namespace and region using the `--namespace` and `--region` options, respectively.

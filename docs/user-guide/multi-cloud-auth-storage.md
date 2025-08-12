@@ -3,6 +3,7 @@
 genai-bench now supports comprehensive multi-cloud authentication for both model endpoints and storage services. This guide covers how to configure and use authentication for various cloud providers.
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Model Provider Authentication](#model-provider-authentication)
   - [OpenAI](#openai)
@@ -25,6 +26,7 @@ genai-bench now supports comprehensive multi-cloud authentication for both model
 ## Overview
 
 genai-bench separates authentication into two categories:
+
 1. **Model Authentication**: For accessing LLM endpoints
 2. **Storage Authentication**: For uploading benchmark results
 
@@ -42,6 +44,7 @@ OpenAI uses API key authentication.
 - `--api-key` or `--model-api-key`: Your OpenAI API key
 
 **Example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend openai \
@@ -55,6 +58,7 @@ genai-bench benchmark \
 ```
 
 **Environment variable alternative:**
+
 ```bash
 export MODEL_API_KEY=sk-...
 genai-bench benchmark --api-backend openai ...
@@ -77,6 +81,7 @@ OCI supports multiple authentication methods.
 - `--auth`: Authentication type (default: user_principal)
 
 **User Principal example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-cohere \
@@ -92,6 +97,7 @@ genai-bench benchmark \
 ```
 
 **Instance Principal example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-cohere \
@@ -132,6 +138,7 @@ OCI GenAI provides access to Pretrained Foundational Models ([Available Models](
 - `DEDICATED`: Uses endpointId for dedicated endpoints
 
 **User Principal example (Grok):**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-genai \
@@ -148,6 +155,7 @@ genai-bench benchmark \
 ```
 
 **Security Token example (Grok):**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-genai \
@@ -164,6 +172,7 @@ genai-bench benchmark \
 ```
 
 **Dedicated Endpoint example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-genai \
@@ -176,9 +185,11 @@ genai-bench benchmark \
   --max-requests-per-run 100 \
   --max-time-per-run 10
 ```
+
 **Note:** for Dedicated model, the `--api-model-name` is just a placeholder, the model depends on the endpointId you provided
 
 **Advanced features:**
+
 ```bash
 # With system message and chat history
 genai-bench benchmark \
@@ -200,6 +211,7 @@ genai-bench benchmark \
 AWS Bedrock supports IAM credentials and profiles.
 
 **Authentication methods:**
+
 1. **IAM Credentials**: Access key ID and secret access key
 2. **AWS Profile**: Named profile from credentials file
 3. **Environment variables**: AWS SDK default behavior
@@ -210,6 +222,7 @@ AWS Bedrock supports IAM credentials and profiles.
 - `--aws-region`: AWS region for Bedrock
 
 **IAM Credentials example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend aws-bedrock \
@@ -225,6 +238,7 @@ genai-bench benchmark \
 ```
 
 **AWS Profile example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend aws-bedrock \
@@ -239,6 +253,7 @@ genai-bench benchmark \
 ```
 
 **Environment variables:**
+
 ```bash
 export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -252,6 +267,7 @@ genai-bench benchmark --api-backend aws-bedrock ...
 Azure OpenAI supports API key and Azure AD authentication.
 
 **Authentication methods:**
+
 1. **API Key**: Traditional API key authentication
 2. **Azure AD**: Azure Active Directory token
 
@@ -263,6 +279,7 @@ Azure OpenAI supports API key and Azure AD authentication.
 - `--azure-api-version`: API version (default: 2024-02-01)
 
 **API Key example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend azure-openai \
@@ -278,6 +295,7 @@ genai-bench benchmark \
 ```
 
 **Azure AD example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend azure-openai \
@@ -297,6 +315,7 @@ genai-bench benchmark \
 GCP Vertex AI supports service account and API key authentication.
 
 **Authentication methods:**
+
 1. **Service Account**: JSON key file
 2. **API Key**: For certain Vertex AI services
 3. **Application Default Credentials**: GCP SDK default
@@ -308,6 +327,7 @@ GCP Vertex AI supports service account and API key authentication.
 - `--gcp-location`: GCP region (default: us-central1)
 
 **Service Account example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \
@@ -323,6 +343,7 @@ genai-bench benchmark \
 ```
 
 **Environment variable:**
+
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 export GCP_PROJECT_ID=my-project-123
@@ -341,6 +362,7 @@ vLLM and SGLang use OpenAI-compatible APIs with optional authentication.
 - `--api-key` or `--model-api-key`: Optional API key if authentication is enabled
 
 **Example:**
+
 ```bash
 genai-bench benchmark \
   --api-backend sglang \
@@ -372,6 +394,7 @@ All storage providers share these common parameters:
 Same as OCI model authentication (user_principal, instance_principal, etc.)
 
 **Example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -386,11 +409,13 @@ genai-bench benchmark \
 ### AWS S3
 
 **Authentication methods:**
+
 1. **IAM Credentials**
 2. **AWS Profile**
 3. **Environment variables**
 
 **IAM Credentials example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -404,6 +429,7 @@ genai-bench benchmark \
 ```
 
 **AWS Profile example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -418,12 +444,14 @@ genai-bench benchmark \
 ### Azure Blob Storage
 
 **Authentication methods:**
+
 1. **Storage Account Key**
 2. **Connection String**
 3. **SAS Token**
 4. **Azure AD**
 
 **Account Key example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -436,6 +464,7 @@ genai-bench benchmark \
 ```
 
 **Connection String example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -448,10 +477,12 @@ genai-bench benchmark \
 ### GCP Cloud Storage
 
 **Authentication methods:**
+
 1. **Service Account**
 2. **Application Default Credentials**
 
 **Example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -474,6 +505,7 @@ GitHub storage uploads results as release artifacts.
 - `--github-repo`: Repository name
 
 **Example:**
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -489,6 +521,7 @@ genai-bench benchmark \
 ### Cross-Cloud Benchmarking
 
 **Benchmark OpenAI and store in AWS S3:**
+
 ```bash
 genai-bench benchmark \
   --api-backend openai \
@@ -507,6 +540,7 @@ genai-bench benchmark \
 ```
 
 **Benchmark AWS Bedrock and store in Azure Blob:**
+
 ```bash
 genai-bench benchmark \
   --api-backend aws-bedrock \
@@ -525,6 +559,7 @@ genai-bench benchmark \
 ```
 
 **Benchmark OCI GenAI (Grok models) and store in OCI Object storage**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-genai \
@@ -547,6 +582,7 @@ genai-bench benchmark \
 ### Multi-Modal Tasks
 
 **Image-text-to-text with GCP Vertex AI:**
+
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \
@@ -577,27 +613,32 @@ genai-bench supports environment variables for sensitive credentials:
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to GCP service account JSON
 
 ### Storage Authentication
+
 - `AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`: Azure storage credentials
 - `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_STORAGE_SAS_TOKEN`: Azure storage alternatives
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`: GitHub configuration
 
 ### General
+
 - `HF_TOKEN`: HuggingFace token for downloading tokenizers
 
 ## Best Practices
 
 ### Security
+
 1. **Never commit credentials**: Use environment variables or secure credential stores
 2. **Use least privilege**: Grant only necessary permissions for benchmarking
 3. **Rotate credentials regularly**: Update API keys and tokens periodically
 4. **Use service accounts**: Prefer service accounts over personal credentials for automation
 
 ### Performance
+
 1. **Choose nearby regions**: Select cloud regions close to your location for lower latency
 2. **Batch operations**: Use appropriate batch sizes for embedding tasks
 3. **Monitor costs**: Be aware of API pricing and set appropriate limits
 
 ### Organization
+
 1. **Use consistent naming**: Adopt a naming convention for storage prefixes
 2. **Separate environments**: Use different buckets/prefixes for dev/test/prod
 3. **Tag resources**: Use cloud provider tags for cost tracking and organization
@@ -624,6 +665,7 @@ genai-bench supports environment variables for sensitive credentials:
     - Token estimates for embeddings tasks may vary by provider
 
 ### Troubleshooting
+
 1. **Check credentials**: Verify authentication credentials are correct
 2. **Verify permissions**: Ensure accounts have necessary permissions
 3. **Check regions**: Confirm services are available in selected regions
@@ -635,6 +677,7 @@ genai-bench supports environment variables for sensitive credentials:
 If you're migrating from the legacy OCI-only CLI:
 
 **Old command:**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-cohere \
@@ -644,6 +687,7 @@ genai-bench benchmark \
 ```
 
 **New command:**
+
 ```bash
 genai-bench benchmark \
   --api-backend oci-cohere \

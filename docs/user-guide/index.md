@@ -6,7 +6,7 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } **Running Benchmarks**
+- :material-rocket-launch:{ .lg .middle } **Running Benchmarks**
 
     ---
 
@@ -14,7 +14,7 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Run Benchmark](run-benchmark.md)
 
--   :material-cloud:{ .lg .middle } **Multi-Cloud Setup**
+- :material-cloud:{ .lg .middle } **Multi-Cloud Setup**
 
     ---
 
@@ -22,7 +22,7 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Multi-Cloud Guide](multi-cloud-auth-storage.md)
 
--   :material-docker:{ .lg .middle } **Docker Deployment**
+- :material-docker:{ .lg .middle } **Docker Deployment**
 
     ---
 
@@ -30,7 +30,7 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Docker Guide](run-benchmark-using-docker.md)
 
--   :material-file-excel:{ .lg .middle } **Excel Reports**
+- :material-file-excel:{ .lg .middle } **Excel Reports**
 
     ---
 
