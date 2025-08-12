@@ -6,7 +6,7 @@ Welcome to the GenAI Bench development guide! This section covers everything you
 
 <div class="grid cards" markdown>
 
--   :material-source-pull:{ .lg .middle } **Contributing**
+- :material-source-pull:{ .lg .middle } **Contributing**
 
     ---
 
@@ -80,16 +80,19 @@ genai-bench/
 ## Key Components
 
 ### Authentication System
+
 - Unified factory for creating auth providers
 - Support for multiple cloud providers
 - Extensible architecture for new providers
 
 ### Storage System
+
 - Abstract base class for storage providers
 - Implementations for AWS S3, Azure Blob, GCP Cloud Storage, etc.
 - Consistent interface across providers
 
 ### CLI Architecture
+
 - Click-based command structure
 - Modular option groups
 - Comprehensive validation

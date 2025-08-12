@@ -131,14 +131,11 @@ genai-bench benchmark --api-backend oci-cohere \
             --num-workers 4
 ```
 
-
 ## Monitor a benchmark
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.
 
-
 ### Specify --traffic-scenario and --num-concurrency
-
 
 **IMPORTANT**: Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency`
 and `--traffic-scenario`.
@@ -156,10 +153,7 @@ genai-bench benchmark \
             --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)"
 ```
 
-
-
 ### Notes on specific options
-
 
 To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. You can find more details in the `manage_run_time` function located in [utils.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py). Combination of `--max-time-per-run` and `--max-requests-per-run` should save overall time of one benchmark.
 
@@ -185,7 +179,6 @@ For heavier traffic scenarios, like `D(16000,200)` or `D(128000,200)`, use the f
             --num-concurrency 16 \
             --num-concurrency 32 \
 ```
-
 
 ## Distributed Benchmark
 
@@ -217,10 +210,10 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 ```
 
 **Examples:**
+
 - `--spawn-rate 50`: Spawn 50 users per second (takes 10 seconds to reach 500 users)
 - `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
 - `--spawn-rate 500`: Spawn all users immediately (default behavior)
-
 
 ### Notes on Usage
 
@@ -230,11 +223,12 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
 5. For high-concurrency tests with large payloads, use `--spawn-rate` to prevent worker overload.
 
-
 ## Using Dataset Configurations
+
 Genai-bench supports flexible dataset configurations through two approaches:
 
 ### Simple CLI Usage (for basic datasets)
+
 ```shell
 # Local CSV file
 --dataset-path /path/to/data.csv \
@@ -249,6 +243,7 @@ Genai-bench supports flexible dataset configurations through two approaches:
 ```
 
 ### Advanced Configuration Files (for complex setups)
+
 For advanced HuggingFace configurations, create a JSON config file:
 
 **Important Note for HuggingFace Datasets:**
@@ -257,6 +252,7 @@ When using HuggingFace datasets, you should always check if you need a `split`, 
 To specify a dataset config, use: `--dataset-config config.json`.
 
 **config.json:**
+
 ```json
 {
   "source": {
@@ -272,6 +268,7 @@ To specify a dataset config, use: `--dataset-config config.json`.
 ```
 
 **Vision dataset config:**
+
 ```json
 {
   "source": {
@@ -288,6 +285,7 @@ To specify a dataset config, use: `--dataset-config config.json`.
 ```
 
 **Example for the llava-bench-in-the-wild dataset:**
+
 ```json
 {
   "source": {
@@ -322,7 +320,6 @@ When benchmarking with very large images, the pillow library throws an exception
 
 **Using prompt lambdas (vision tasks only):**
 If you want to benchmark a specific portion of a vision dataset, you can use the `prompt_lambda` argument to select only the desired section. When using `prompt_lambda`, you don't need to specify `prompt_column` as the lambda function generates the prompts dynamically. Note that `prompt_lambda` is only available for vision/multimodal tasks.
-
 
 ```json
 {
