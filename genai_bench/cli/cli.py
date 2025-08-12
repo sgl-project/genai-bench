@@ -156,10 +156,17 @@ def benchmark(
         "benchmark tool for Large Language Model."
     )
 
-    # Log all parameters
+    # Log all parameters (filtering out sensitive information)
     logger.info("Options you provided:")
+    sensitive_params = {"api_key", "model_api_key", "aws_access_key_id", "aws_secret_access_key", 
+                       "aws_session_token", "azure_ad_token", "github_token"}
+    
     for key, value in ctx.params.items():
-        logger.info(f"{key}: {value}")
+        # Check if this is a sensitive parameter that came from environment variable
+        if key in sensitive_params and os.getenv(key.upper().replace("-", "_")):
+            logger.info(f"{key}: [ENV_VAR]")
+        else:
+            logger.info(f"{key}: {value}")
 
     # -------------------------------------
     # Authentication Section
@@ -241,16 +248,27 @@ def benchmark(
     auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
     logger.info(f"Using {api_backend} authentication")
 
-    # Rebuild the cmd_line from ctx.params
+    # Rebuild the cmd_line from ctx.params, filtering out sensitive information
     cmd_line_parts = [sys.argv[0]]
+    sensitive_params = {"api_key", "model_api_key", "aws_access_key_id", "aws_secret_access_key", 
+                       "aws_session_token", "azure_ad_token", "github_token"}
+    
     for key, value in ctx.params.items():
         if isinstance(value, (list, tuple)):
             for item in value:
                 cmd_line_parts.append(f"--{key}".replace("_", "-"))
-                cmd_line_parts.append(str(item))
+                # Check if this is a sensitive parameter that came from environment variable
+                if key in sensitive_params and os.getenv(key.upper().replace("-", "_")):
+                    cmd_line_parts.append("[ENV_VAR]")
+                else:
+                    cmd_line_parts.append(str(item))
         elif value:
             cmd_line_parts.append(f"--{key}".replace("_", "-"))
-            cmd_line_parts.append(str(value))
+            # Check if this is a sensitive parameter that came from environment variable
+            if key in sensitive_params and os.getenv(key.upper().replace("-", "_")):
+                cmd_line_parts.append("[ENV_VAR]")
+            else:
+                cmd_line_parts.append(str(value))
     cmd_line = " ".join(cmd_line_parts)
 
     user_class = ctx.obj.get("user_class")
