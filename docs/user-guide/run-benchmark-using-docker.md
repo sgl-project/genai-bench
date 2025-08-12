@@ -16,6 +16,10 @@ Alternatively, you can build the image locally from the [Dockerfile](https://git
 docker build . -f Dockerfile -t genai-bench:dev
 ```
 
+## Run Benchmark with a Docker Container
+
+### Create a Docker Network (Optional)
+
 To avoid internet disruptions and network latency, it's recommended to run the benchmarking within the same network as the target inference server. You can always choose to use `--network host` if you prefer.
 
 To create a bridge network in docker:
@@ -23,6 +27,8 @@ To create a bridge network in docker:
 ```shell
 docker network create benchmark-network -d bridge
 ```
+
+### Start an Inference Server
 
 Then, start the inference server using the standard Docker command with the additional flag `--network benchmark-network`.
 
@@ -42,6 +48,8 @@ docker run -itd \
     --host 0.0.0.0 \
     --context-length=131072
 ```
+
+### Start a Benchmark Container
 
 Next, start the genai-bench container with the same network flag.
 
@@ -73,7 +81,7 @@ docker run \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
     --env HF_TOKEN="<your_HF_TOKEN>" \
-    --network host \
+    --network <your-network> \
     -v <path-to-your-local-model>:/models \
     -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
     --name llama-4-scout-benchmark \
@@ -121,7 +129,7 @@ docker run \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
     --env HF_TOKEN="<your_HF_TOKEN>" \
-    --network host \
+    --network <your-network> \
     -v <path-to-your-local-model>:/models \
     -v $HOST_OUTPUT_DIR:$CONTAINER_OUTPUT_DIR \
     -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
