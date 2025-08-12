@@ -121,6 +121,7 @@ nav:
   - User Guide:
       - user-guide/index.md
       - Run Benchmark: user-guide/run-benchmark.md
+      - Traffic Scenarios: user-guide/scenario-definition.md
       - Multi-Cloud Authentication: user-guide/multi-cloud-auth-storage.md
       - Quick Reference: user-guide/multi-cloud-quick-reference.md
       - Docker Deployment: user-guide/run-benchmark-using-docker.md
