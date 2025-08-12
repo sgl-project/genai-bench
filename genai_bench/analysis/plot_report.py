@@ -278,6 +278,7 @@ def plot_metrics(
         )
 
 
+# TODO: Remove this function when flexible plot report is fully tested.
 def plot_experiment_data(
     run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
     group_key: str,
