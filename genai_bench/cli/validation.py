@@ -270,8 +270,10 @@ def validate_api_key(ctx, param, value):
         if not value:
             # Check if model_api_key is provided as an alternative
             model_api_key = ctx.params.get("model_api_key")
-            if not model_api_key:
-                raise click.BadParameter(f"API key is required for {api_backend} backend. Use --api-key or --model-api-key")
+            # Also check for environment variable
+            env_api_key = os.getenv("MODEL_API_KEY")
+            if not model_api_key and not env_api_key:
+                raise click.BadParameter(f"API key is required for {api_backend} backend. Use --api-key, --model-api-key, or set MODEL_API_KEY environment variable")
     elif api_backend == AzureOpenAIUser.BACKEND_NAME:
         # Azure can use API key or Azure AD - validated in model auth options
         pass
