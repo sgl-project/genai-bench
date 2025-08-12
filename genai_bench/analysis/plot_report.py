@@ -72,7 +72,7 @@ def plot_graph(
             textcoords="offset points",
             ha="left",
             bbox=dict(
-                boxstyle="round,pad=0.2", facecolor="white", alpha=0.0, edgecolor="none"
+                boxstyle="round,pad=0.2", facecolor="white", alpha=0.1, edgecolor="none"
             ),
         )
 

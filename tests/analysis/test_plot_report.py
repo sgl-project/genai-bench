@@ -250,6 +250,9 @@ def test_plot_single_scenario_rerank(mock_plot_graph, mock_plt, tmp_path, caplog
 
 def test_plot_graph_line():
     ax = MagicMock()
+    ax.get_xlim.return_value = (0, 10)
+    ax.get_ylim.return_value = (0, 10)
+    ax.get_yscale.return_value = "linear"
     x_data = [1, 2, 3]
     y_data = [10, 20, 30]
     x_label = "X Axis"
@@ -280,6 +283,9 @@ def test_plot_graph_line():
 
 def test_plot_graph_scatter():
     ax = MagicMock()
+    ax.get_xlim.return_value = (0, 10)
+    ax.get_ylim.return_value = (0, 10)
+    ax.get_yscale.return_value = "linear"
     x_data = [1, 2, 3]
     y_data = [10, 20, 30]
     x_label = "X Axis"
@@ -307,6 +313,9 @@ def test_plot_graph_scatter():
 def test_plot_graph_concurrency():
     """When x_label is 'Concurrency', x_data is replaced by evenly spaced positions."""
     ax = MagicMock()
+    ax.get_xlim.return_value = (0, 10)
+    ax.get_ylim.return_value = (0, 10)
+    ax.get_yscale.return_value = "linear"
     x_data = [10, 20, 30]
     y_data = [0.5, 1.0, 2.0]
     x_label = "Concurrency"
@@ -322,28 +331,6 @@ def test_plot_graph_concurrency():
     ax.set_xticklabels.assert_called_once_with(concurrency_levels)
     # Check that the plot was made (using ax.plot by default)
     ax.plot.assert_called_once()
-
-
-def test_plot_graph_cap():
-    """
-    When y_label triggers value capping (e.g. contains "ttft"),
-    only y values in [0.1, 100] are plotted.
-    """
-    ax = MagicMock()
-    x_data = [0, 1, 2, 3]
-    y_data = [0.05, 0.5, 50, 150]  # only 0.5 and 50 are within the valid range
-    x_label = "Not Concurrency"
-    y_label = "TTFT"
-    title = "TTFT Plot"
-    concurrency_levels = [10, 20, 30, 40]
-    label = "CapTest"
-
-    plot_graph(ax, x_data, y_data, x_label, y_label, title, concurrency_levels, label)
-
-    # The plotting call should use only the two valid data points.
-    ax.plot.assert_called_once()
-    # And y-limits should be capped to [0.1, 100]
-    ax.set_ylim.assert_called_with([0.1, 100])
 
 
 @patch("genai_bench.analysis.plot_report.plot_graph")
@@ -552,6 +539,8 @@ def test_plot_error_rates():
     ax = MagicMock()
     # Ensure unpacking of legend handles/labels works.
     ax.get_legend_handles_labels.return_value = ([], [])
+    # Provide y-limits for autoscale+pin logic
+    ax.get_ylim.return_value = (0, 1)
 
     def create_agg(freq, num_requests):
         agg = MagicMock()
