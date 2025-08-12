@@ -83,8 +83,9 @@ genai-bench benchmark --api-backend openai \
             --traffic-scenario "E(1024)" \
             --server-gpu-type "H100" \
             --server-version "v0.4.2" \
-            --server-gpu-count 1
-```
+            --server-gpu-count 1 \
+            --batch-size 1 \
+            --batch-size 8
 
 ## Start a rerank benchmark against OCI Cohere
 
@@ -107,7 +108,6 @@ genai-bench benchmark --api-backend oci-cohere \
             --additional-request-params '{"compartmentId": "COMPARTMENTID", "endpointId": "ENDPOINTID", "servingType": "DEDICATED"}' \
             --num-workers 4
 ```
-
 
 ## Start a benchmark against OCI Cohere
 
