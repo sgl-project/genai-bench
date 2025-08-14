@@ -78,7 +78,7 @@ class BasetenUser(OpenAIUser):
             image_content = [
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                    "image_url": {"url": image},  # image already contains the full data URL
                 }
                 for image in user_request.image_content
             ]
