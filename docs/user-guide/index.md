@@ -18,11 +18,19 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     ---
 
-    Configure authentication for AWS, Azure, GCP, OCI, and more
+    Configure authentication for AWS, Azure, GCP, OCI, Baseten, and more
 
     [:octicons-arrow-right-24: Multi-Cloud Guide](multi-cloud-auth-storage.md)
 
-- :material-docker:{ .lg .middle } **Docker Deployment**
+-   :material-cog:{ .lg .middle } **Baseten Support**
+
+    ---
+
+    Learn about dual format support and flexible response handling
+
+    [:octicons-arrow-right-24: Baseten Guide](baseten-support.md)
+
+-   :material-docker:{ .lg .middle } **Docker Deployment**
 
     ---
 

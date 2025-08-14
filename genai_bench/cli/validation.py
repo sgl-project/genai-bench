@@ -11,6 +11,7 @@ from genai_bench.logging import init_logger
 from genai_bench.scenarios.base import Scenario
 from genai_bench.user.aws_bedrock_user import AWSBedrockUser
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
+from genai_bench.user.baseten_user import BasetenUser
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
@@ -29,6 +30,7 @@ API_BACKEND_USER_MAP = {
     GCPVertexUser.BACKEND_NAME: GCPVertexUser,
     "vllm": OpenAIUser,  # vLLM uses OpenAI-compatible API
     "sglang": OpenAIUser,  # SGLang uses OpenAI-compatible API
+    "baseten": BasetenUser,  # Baseten uses custom user for full URL handling
 }
 
 DEFAULT_NUM_CONCURRENCIES = [1, 2, 4, 8, 16, 32, 64, 128, 256]
@@ -256,7 +258,7 @@ def validate_api_key(ctx, param, value):
         raise click.BadParameter("api_backend must be specified before api_key")
 
     # Backends that require API key
-    api_key_required = [OpenAIUser.BACKEND_NAME, "vllm", "sglang"]
+    api_key_required = [OpenAIUser.BACKEND_NAME, "vllm", "sglang", "baseten"]
 
     # Backends that don't use traditional API key
     no_api_key = [
@@ -270,7 +272,12 @@ def validate_api_key(ctx, param, value):
     # Azure OpenAI can use API key or Azure AD
     if api_backend in api_key_required:
         if not value:
-            raise click.BadParameter(f"API key is required for {api_backend} backend")
+            # Check if model_api_key is provided as an alternative
+            model_api_key = ctx.params.get("model_api_key")
+            # Also check for environment variable
+            env_api_key = os.getenv("MODEL_API_KEY")
+            if not model_api_key and not env_api_key:
+                raise click.BadParameter(f"API key is required for {api_backend} backend. Use --api-key, --model-api-key, or set MODEL_API_KEY environment variable")
     elif api_backend == AzureOpenAIUser.BACKEND_NAME:
         # Azure can use API key or Azure AD - validated in model auth options
         pass

@@ -22,6 +22,12 @@ from genai_bench.cli.validation import (
 # the decorator works in reversed order
 def api_options(func):
     func = click.option(
+        "--disable-streaming",
+        is_flag=True,
+        default=False,
+        help="Disable streaming responses. Uses non-streaming API calls instead.",
+    )(func)
+    func = click.option(
         "--additional-request-params",
         type=str,
         default=None,
@@ -82,6 +88,7 @@ def api_options(func):
                 "aws-bedrock",
                 "azure-openai",
                 "gcp-vertex",
+                "baseten",
                 "vllm",
                 "sglang",
             ],

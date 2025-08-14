@@ -3,7 +3,7 @@ name = "genai-bench"
 version = "0.0.2"
 description = "A powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems."
 authors = [{ name = "Chang Su", email = "chang.s.su@oracle.com" }]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.14"
 readme = "README.md"
 license = {text = "MIT"}
 classifiers = [
@@ -14,6 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Benchmark",
     "Typing :: Typed",
@@ -90,7 +91,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py313"
 line-length = 88
 extend-exclude = [
 ]
@@ -126,7 +127,7 @@ ignore = [
 
 [tool.black]
 line-length = 88
-target-version = ['py310']
+target-version = ['py313']
 exclude = '\.venv|build|dist'
 
 [tool.isort]
