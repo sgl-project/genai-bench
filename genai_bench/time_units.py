@@ -168,4 +168,4 @@ class TimeUnitConverter:
         Returns:
             True if field contains time/latency data
         """
-        return field_name in cls.LATENCY_FIELDS
+        return any(latency_field in field_name for latency_field in cls.LATENCY_FIELDS)

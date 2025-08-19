@@ -10,7 +10,7 @@
       "x_field": "mean_output_throughput_tokens_per_s",
       "y_field": "stats.e2e_latency.mean",
       "x_label": "Output Throughput (tokens/s)",
-      "y_label": "Mean E2E Latency (s)",
+      "y_label": "Mean E2E Latency (ms)",
       "plot_type": "line",
       "position": [0, 0]
     },

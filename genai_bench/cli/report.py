@@ -89,6 +89,13 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
     help="Use a built-in plot preset. Overrides --plot-config if both are provided.",
 )
 @click.option(
+    "--time-unit",
+    type=click.Choice(["s", "ms"], case_sensitive=False),
+    default="s",
+    help="Time unit for latency metrics display and export. "
+    "Options: 's' (seconds), 'ms' (milliseconds). Default: s",
+)
+@click.option(
     "--list-fields",
     is_flag=True,
     help="List all available fields with actual data from the experiment folder and "
@@ -99,16 +106,23 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
     is_flag=True,
     help="Only validate the plot configuration without generating plots.",
 )
+@click.option(
+    "--verbose",
+    is_flag=True,
+    help="Enable verbose logging for debugging.",
+)
 @click.pass_context
 def plot(
     ctx,
     experiments_folder,
-    filter_criteria,
     group_key,
+    filter_criteria,
     plot_config,
     preset,
+    time_unit,
     list_fields,
     validate_only,
+    verbose,
 ):
     """
     Plots the experiment(s) results based on filters and group.
@@ -204,13 +218,13 @@ def plot(
         from genai_bench.analysis.plot_config import PlotConfigManager
 
         if preset:
-            config = PlotConfigManager.load_preset(preset)
+            config = PlotConfigManager.load_preset(preset, time_unit)
             logger.info(f"Using preset configuration: {preset}")
         elif plot_config:
-            config = PlotConfigManager.load_from_file(plot_config)
+            config = PlotConfigManager.load_from_file(plot_config, time_unit)
             logger.info(f"Using configuration from: {plot_config}")
         else:
-            config = PlotConfigManager.load_preset("2x4_default")
+            config = PlotConfigManager.load_preset("2x4_default", time_unit)
             logger.info("Using default 2x4 configuration")
 
     except Exception as e:
