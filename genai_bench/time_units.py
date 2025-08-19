@@ -169,7 +169,4 @@ class TimeUnitConverter:
     @classmethod
     def is_latency_field(cls, field_name: str) -> bool:
         """Check if a field name represents a latency metric."""
-        for latency_field in cls.LATENCY_FIELDS:
-            if latency_field in field_name:
-                return True
-        return False
+        return any(latency_field in field_name for latency_field in cls.LATENCY_FIELDS)

@@ -17,8 +17,8 @@ from genai_bench.analysis.plot_report import (
 )
 from genai_bench.logging import init_logger
 from genai_bench.protocol import ExperimentMetadata
-from genai_bench.utils import sanitize_string
 from genai_bench.time_units import TimeUnitConverter
+from genai_bench.utils import sanitize_string
 
 logger = init_logger(__name__)
 
@@ -40,13 +40,19 @@ class FlexiblePlotGenerator:
         """Generate plots based on configuration."""
         # Extract source time unit from experiment metadata
         source_time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
-        
+
         if group_key == "none":
-            self._plot_single_analysis(run_data_list, experiment_folder, time_unit, source_time_unit)
+            self._plot_single_analysis(
+                run_data_list, experiment_folder, time_unit, source_time_unit
+            )
         elif group_key == "traffic_scenario":
-            self._plot_by_scenario(run_data_list, experiment_folder, time_unit, source_time_unit)
+            self._plot_by_scenario(
+                run_data_list, experiment_folder, time_unit, source_time_unit
+            )
         else:
-            self._plot_by_group(run_data_list, group_key, experiment_folder, time_unit, source_time_unit)
+            self._plot_by_group(
+                run_data_list, group_key, experiment_folder, time_unit, source_time_unit
+            )
 
     def _plot_single_analysis(
         self,
@@ -79,7 +85,14 @@ class FlexiblePlotGenerator:
 
             # Single scenario = no grouping, perfect for multi-line plots
             # Pass empty label since we're not grouping
-            self._plot_metrics(axs, [concurrency_data], {"": concurrency_levels}, [""], time_unit, source_time_unit)
+            self._plot_metrics(
+                axs,
+                [concurrency_data],
+                {"": concurrency_levels},
+                [""],
+                time_unit,
+                source_time_unit,
+            )
             self._finalize_and_save_plots(
                 axs,
                 fig,
@@ -103,7 +116,14 @@ class FlexiblePlotGenerator:
         fig, axs = self._create_figure()
         fig.suptitle("Grouped by Traffic Scenario", fontsize=14)
 
-        self._plot_metrics(axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit)
+        self._plot_metrics(
+            axs,
+            concurrency_data_list,
+            label_to_concurrency_map,
+            labels,
+            time_unit,
+            source_time_unit,
+        )
         self._finalize_and_save_plots(
             axs, fig, labels, experiment_folder, "traffic_scenario"
         )
@@ -122,8 +142,6 @@ class FlexiblePlotGenerator:
             get_group_data,
         )
 
-
-
         traffic_scenarios = extract_traffic_scenarios(run_data_list)
         for traffic_scenario in traffic_scenarios:
             fig, axs = self._create_figure()
@@ -134,7 +152,12 @@ class FlexiblePlotGenerator:
             )
 
             self._plot_metrics(
-                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit
+                axs,
+                concurrency_data_list,
+                label_to_concurrency_map,
+                labels,
+                time_unit,
+                source_time_unit,
             )
             self._finalize_and_save_plots(
                 axs,
@@ -183,7 +206,12 @@ class FlexiblePlotGenerator:
             )
             # Convert multi-line plots to single-line plots automatically
             self._plot_metrics_single_line_fallback(
-                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit
+                axs,
+                concurrency_data_list,
+                label_to_concurrency_map,
+                labels,
+                time_unit,
+                source_time_unit,
             )
             return
 
@@ -276,11 +304,23 @@ class FlexiblePlotGenerator:
         try:
             if plot_spec.is_multi_line():
                 self._plot_multi_line_metric(
-                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit, source_time_unit
+                    plot_spec,
+                    ax,
+                    concurrency_data,
+                    concurrency_levels,
+                    label,
+                    time_unit,
+                    source_time_unit,
                 )
             else:
                 self._plot_single_line_metric(
-                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit, source_time_unit
+                    plot_spec,
+                    ax,
+                    concurrency_data,
+                    concurrency_levels,
+                    label,
+                    time_unit,
+                    source_time_unit,
                 )
 
         except Exception as e:
@@ -337,33 +377,35 @@ class FlexiblePlotGenerator:
 
         # Convert time data values if this is a latency field
         is_latency = TimeUnitConverter.is_latency_field(y_field_spec.field)
-        
-        if is_latency:
-            # Only convert if source and target units are different
-            if source_time_unit != time_unit:
-                y_data = [
-                    TimeUnitConverter.convert_value(val, source_time_unit, time_unit) for val in y_data
-                ]
+
+        if is_latency and source_time_unit != time_unit:
+            y_data = [
+                TimeUnitConverter.convert_value(val, source_time_unit, time_unit)
+                for val in y_data
+            ]
 
         # Handle special error rate plot
         if y_field_spec.field == "error_rate" and plot_spec.plot_type == "bar":
             plot_error_rates(ax, concurrency_data, concurrency_levels, label)
         else:
             # Apply time unit conversion to labels and title if this is a latency field
-            y_label = plot_spec.y_label or self._generate_label(y_field_spec.field, time_unit)
+            y_label = plot_spec.y_label or self._generate_label(
+                y_field_spec.field, time_unit
+            )
             title = plot_spec.title
-            
+
             # Convert labels to correct time unit if this is a latency field
             if TimeUnitConverter.is_latency_field(y_field_spec.field):
                 y_label = TimeUnitConverter.get_unit_label(y_label, time_unit)
                 title = TimeUnitConverter.get_unit_label(title, time_unit)
-            
+
             # Use existing plot_graph function
             plot_graph(
                 ax=ax,
                 x_data=x_data,
                 y_data=y_data,
-                x_label=plot_spec.x_label or self._generate_label(plot_spec.x_field, time_unit),
+                x_label=plot_spec.x_label
+                or self._generate_label(plot_spec.x_field, time_unit),
                 y_label=y_label,
                 title=title,
                 concurrency_levels=valid_concurrency,
@@ -464,11 +506,14 @@ class FlexiblePlotGenerator:
 
                     if y_val is not None:
                         # Convert time values if this is a latency field
-                        if TimeUnitConverter.is_latency_field(y_field_spec.field):
-                            # Only convert if source and target units are different
-                            if source_time_unit != time_unit:
-                                y_val = TimeUnitConverter.convert_value(y_val, source_time_unit, time_unit)
-                        
+                        # and if source and target units are different
+                        is_latency = TimeUnitConverter.is_latency_field(
+                            y_field_spec.field
+                        )
+                        if is_latency and source_time_unit != time_unit:
+                            y_val = TimeUnitConverter.convert_value(
+                                y_val, source_time_unit, time_unit
+                            )
                         y_data.append(y_val)
                         # Use evenly spaced positions for concurrency, actual values
                         # otherwise
@@ -492,7 +537,9 @@ class FlexiblePlotGenerator:
             # Determine line styling
             color = y_field_spec.color or colors[i % len(colors)]
             linestyle = y_field_spec.linestyle or linestyles[i % len(linestyles)]
-            line_label = y_field_spec.label or self._generate_label(y_field_spec.field, time_unit)
+            line_label = y_field_spec.label or self._generate_label(
+                y_field_spec.field, time_unit
+            )
 
             # For multi-line plots, keep labels clean
             full_label = line_label
@@ -541,22 +588,25 @@ class FlexiblePlotGenerator:
                 )
 
         # Set labels and title
-        ax.set_xlabel(plot_spec.x_label or self._generate_label(plot_spec.x_field, time_unit))
-        
+        ax.set_xlabel(
+            plot_spec.x_label or self._generate_label(plot_spec.x_field, time_unit)
+        )
+
         # Update y-axis label and title with correct time unit if this is a latency plot
         y_label = plot_spec.y_label or "Value"
         title = plot_spec.title
-        
-        # Check if any of the y-fields are latency fields to determine if we need time unit conversion
+
+        # Check if any of the y-fields are latency fields
+        # to determine if we need time unit conversion
         has_latency_fields = any(
-            TimeUnitConverter.is_latency_field(spec.field) 
+            TimeUnitConverter.is_latency_field(spec.field)
             for spec in plot_spec.get_y_field_specs()
         )
-        
+
         if has_latency_fields:
             y_label = TimeUnitConverter.get_unit_label(y_label, time_unit)
             title = TimeUnitConverter.get_unit_label(title, time_unit)
-        
+
         ax.set_ylabel(y_label)
         ax.set_title(title)
         ax.grid(True, alpha=0.3)
@@ -725,7 +775,7 @@ class FlexiblePlotGenerator:
                 base_label = f"{metric} ({stat})"
             else:
                 base_label = metric
-            
+
             # Apply time unit conversion if this is a latency field
             if TimeUnitConverter.is_latency_field(parts[1]):
                 base_label = TimeUnitConverter.get_unit_label(base_label, time_unit)
@@ -798,12 +848,14 @@ def plot_experiment_data_flexible(
         group_key: Key to group data by
         experiment_folder: Output folder path
         plot_config: Plot configuration (uses default if None)
-        time_unit: Time unit to use for plotting ('s' or 'ms'). If None, extracts from metadata.
+        time_unit: Time unit to use for plotting ('s' or 'ms').
+            If None, extracts from metadata.
     """
-    # Use CLI time_unit parameter if provided, otherwise extract from experiment metadata
+    # Use CLI time_unit parameter if provided, otherwise extract
+    # from experiment metadata
     if time_unit is None:
         time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
-    
+
     if plot_config is None:
         plot_config = PlotConfigManager.load_preset("2x4_default", time_unit)
 

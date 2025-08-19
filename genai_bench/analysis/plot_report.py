@@ -12,7 +12,6 @@ from matplotlib.figure import Figure
 from genai_bench.analysis.experiment_loader import ExperimentMetrics, MetricsData
 from genai_bench.logging import init_logger
 from genai_bench.protocol import ExperimentMetadata
-from genai_bench.time_units import TimeUnitConverter
 from genai_bench.utils import sanitize_string
 
 logger = init_logger(__name__)

@@ -402,51 +402,63 @@ class PlotConfigManager:
     }
 
     @classmethod
-    def apply_time_unit_conversion(cls, config_data: Dict[str, Any], time_unit: str = "s") -> Dict[str, Any]:
+    def apply_time_unit_conversion(
+        cls, config_data: Dict[str, Any], time_unit: str = "s"
+    ) -> Dict[str, Any]:
         """
         Apply time unit conversion to plot configuration labels.
-        
+
         Args:
             config_data: Plot configuration dictionary
             time_unit: Target time unit ('s' or 'ms')
-            
+
         Returns:
             Modified configuration with updated labels
         """
         if time_unit not in ["s", "ms"]:
             return config_data
-            
+
         # Create a copy to avoid modifying the original
         config_copy = config_data.copy()
-        
+
         # Convert labels in each plot specification
         for plot_copy in config_copy.get("plots", []):
             # Convert title
             if "title" in plot_copy:
                 original_title = plot_copy["title"]
-                plot_copy["title"] = TimeUnitConverter.get_unit_label(original_title, time_unit)
-            
+                plot_copy["title"] = TimeUnitConverter.get_unit_label(
+                    original_title, time_unit
+                )
+
             # Convert y_label
             if "y_label" in plot_copy:
                 original_y_label = plot_copy["y_label"]
-                plot_copy["y_label"] = TimeUnitConverter.get_unit_label(original_y_label, time_unit)
-            
+                plot_copy["y_label"] = TimeUnitConverter.get_unit_label(
+                    original_y_label, time_unit
+                )
+
             # Convert x_label
             if "x_label" in plot_copy:
                 original_x_label = plot_copy["x_label"]
-                plot_copy["x_label"] = TimeUnitConverter.get_unit_label(original_x_label, time_unit)
-            
+                plot_copy["x_label"] = TimeUnitConverter.get_unit_label(
+                    original_x_label, time_unit
+                )
+
             # Convert y_fields labels
             if "y_fields" in plot_copy:
                 for y_field in plot_copy["y_fields"]:
                     if "label" in y_field:
                         original_label = y_field["label"]
-                        y_field["label"] = TimeUnitConverter.get_unit_label(original_label, time_unit)
-        
+                        y_field["label"] = TimeUnitConverter.get_unit_label(
+                            original_label, time_unit
+                        )
+
         return config_copy
 
     @classmethod
-    def load_config(cls, config_source: Union[str, Dict, None] = None, time_unit: str = "s") -> PlotConfig:
+    def load_config(
+        cls, config_source: Union[str, Dict, None] = None, time_unit: str = "s"
+    ) -> PlotConfig:
         """Load plot configuration from various sources."""
         if config_source is None:
             # Use default 2x4 preset
@@ -471,8 +483,10 @@ class PlotConfigManager:
     def load_preset(cls, preset_name: str, time_unit: str = "s") -> PlotConfig:
         """Load a preset plot configuration."""
         if preset_name not in cls.PRESETS:
-            raise ValueError(f"Unknown preset: {preset_name}. Available: {list(cls.PRESETS.keys())}")
-        
+            raise ValueError(
+                f"Unknown preset: {preset_name}. Available: {list(cls.PRESETS.keys())}"
+            )
+
         preset_data = cls.PRESETS[preset_name]
         return cls.load_config(preset_data, time_unit)
 
