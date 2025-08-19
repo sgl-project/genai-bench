@@ -218,13 +218,13 @@ def plot(
         from genai_bench.analysis.plot_config import PlotConfigManager
 
         if preset:
-            config = PlotConfigManager.load_preset(preset, time_unit)
+            config = PlotConfigManager.load_preset(preset)
             logger.info(f"Using preset configuration: {preset}")
         elif plot_config:
-            config = PlotConfigManager.load_from_file(plot_config, time_unit)
+            config = PlotConfigManager.load_from_file(plot_config)
             logger.info(f"Using configuration from: {plot_config}")
         else:
-            config = PlotConfigManager.load_preset("2x4_default", time_unit)
+            config = PlotConfigManager.load_preset("2x4_default")
             logger.info("Using default 2x4 configuration")
 
     except Exception as e:
