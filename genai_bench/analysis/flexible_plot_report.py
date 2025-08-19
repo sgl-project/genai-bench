@@ -24,10 +24,12 @@ logger = init_logger(__name__)
 
 
 class FlexiblePlotGenerator:
-    """Generate plots based on flexible configuration."""
+    """Generates plots using flexible configuration."""
 
-    def __init__(self, config: PlotConfig):
+    def __init__(self, config: PlotConfig, time_unit: str = "s"):
+        """Initialize with plot configuration and time unit."""
         self.config = config
+        self.time_unit = time_unit
 
     def generate_plots(
         self,
@@ -66,7 +68,8 @@ class FlexiblePlotGenerator:
         for scenario in all_scenarios:
             concurrency_data = experiment_metrics[scenario]
             concurrency_levels = sorted(concurrency_data.keys())
-            time_unit = metadata.time_unit
+            # Use stored time_unit instead of metadata.time_unit
+            time_unit = self.time_unit
 
             fig, axs = self._create_figure()
             fig.suptitle(f"Single Scenario Analysis: {scenario}", fontsize=14)
@@ -92,8 +95,8 @@ class FlexiblePlotGenerator:
             run_data_list
         )
 
-        # Get time unit from the first experiment metadata
-        time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+        # Use stored time_unit instead of extracting from metadata
+        time_unit = self.time_unit
 
         fig, axs = self._create_figure()
         fig.suptitle("Grouped by Traffic Scenario", fontsize=14)
@@ -115,8 +118,8 @@ class FlexiblePlotGenerator:
             get_group_data,
         )
 
-        # Get time unit from the first experiment metadata
-        time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+        # Use stored time_unit instead of extracting from metadata
+        time_unit = self.time_unit
 
         traffic_scenarios = extract_traffic_scenarios(run_data_list)
         for traffic_scenario in traffic_scenarios:
@@ -322,6 +325,21 @@ class FlexiblePlotGenerator:
             logger.warning(f"No valid data for plot: {plot_spec.title}")
             return
 
+        # Convert time data values if this is a latency field
+        is_latency = TimeUnitConverter.is_latency_field(y_field_spec.field)
+        
+        if is_latency:
+            # Check if data appears to already be in milliseconds (values > 1000)
+            # If so, convert from ms to target unit, otherwise assume seconds
+            if any(val > 1000 for val in y_data):
+                y_data = [
+                    TimeUnitConverter.convert_value(val, "ms", time_unit) for val in y_data
+                ]
+            else:
+                y_data = [
+                    TimeUnitConverter.convert_value(val, "s", time_unit) for val in y_data
+                ]
+
         # Handle special error rate plot
         if y_field_spec.field == "error_rate" and plot_spec.plot_type == "bar":
             plot_error_rates(ax, concurrency_data, concurrency_levels, label)
@@ -441,7 +459,12 @@ class FlexiblePlotGenerator:
                     if y_val is not None:
                         # Convert time values if this is a latency field
                         if TimeUnitConverter.is_latency_field(y_field_spec.field):
-                            y_val = TimeUnitConverter.convert_value(y_val, "s", time_unit)
+                            # Check if data appears to already be in milliseconds (values > 1000)
+                            # If so, convert from ms to target unit, otherwise assume seconds
+                            if y_val > 1000:
+                                y_val = TimeUnitConverter.convert_value(y_val, "ms", time_unit)
+                            else:
+                                y_val = TimeUnitConverter.convert_value(y_val, "s", time_unit)
                         
                         y_data.append(y_val)
                         # Use evenly spaced positions for concurrency, actual values
@@ -762,6 +785,7 @@ def plot_experiment_data_flexible(
     group_key: str,
     experiment_folder: str,
     plot_config: Optional[PlotConfig] = None,
+    time_unit: Optional[str] = None,
 ) -> None:
     """
     Plot experiment data using flexible configuration.
@@ -771,14 +795,17 @@ def plot_experiment_data_flexible(
         group_key: Key to group data by
         experiment_folder: Output folder path
         plot_config: Plot configuration (uses default if None)
+        time_unit: Time unit to use for plotting ('s' or 'ms'). If None, extracts from metadata.
     """
-    # Extract time unit from the first experiment metadata
-    time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+    # Use CLI time_unit parameter if provided, otherwise extract from experiment metadata
+    if time_unit is None:
+        extracted_time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+        time_unit = extracted_time_unit
     
     if plot_config is None:
         plot_config = PlotConfigManager.load_preset("2x4_default", time_unit)
 
-    generator = FlexiblePlotGenerator(plot_config)
+    generator = FlexiblePlotGenerator(plot_config, time_unit)
     generator.generate_plots(run_data_list, group_key, experiment_folder)
 
 

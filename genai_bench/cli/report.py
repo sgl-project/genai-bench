@@ -276,6 +276,7 @@ def plot(
             group_key=group_key,
             experiment_folder=experiments_folder,
             plot_config=config,
+            time_unit=time_unit,
         )
         logger.info("Plot generation completed successfully")
     except Exception as e:

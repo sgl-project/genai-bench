@@ -118,7 +118,7 @@ class TimeUnitConverter:
         Update a label with the appropriate time unit.
 
         Args:
-            base_label: Original label (may contain '(s)' or similar)
+            base_label: Original label (may contain '(s)' or '(ms)' or similar)
             unit: Target unit ('s' or 'ms')
 
         Returns:
@@ -131,6 +131,15 @@ class TimeUnitConverter:
             label = label.replace(" per Request (seconds)", " per Request (ms)")
             label = label.replace(
                 " Latency per Request (s)", " Latency per Request (ms)"
+            )
+            return label
+        elif unit == "s":
+            # Replace various forms of milliseconds notation with seconds
+            label = base_label.replace(" (ms)", " (s)")
+            label = label.replace("(ms)", "(s)")
+            label = label.replace(" per Request (milliseconds)", " per Request (s)")
+            label = label.replace(
+                " Latency per Request (ms)", " Latency per Request (s)"
             )
             return label
         return base_label
@@ -159,13 +168,8 @@ class TimeUnitConverter:
 
     @classmethod
     def is_latency_field(cls, field_name: str) -> bool:
-        """
-        Check if a field name represents a latency/time metric.
-
-        Args:
-            field_name: Name of the field
-
-        Returns:
-            True if field contains time/latency data
-        """
-        return any(latency_field in field_name for latency_field in cls.LATENCY_FIELDS)
+        """Check if a field name represents a latency metric."""
+        for latency_field in cls.LATENCY_FIELDS:
+            if latency_field in field_name:
+                return True
+        return False
