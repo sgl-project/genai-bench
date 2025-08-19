@@ -26,29 +26,34 @@ logger = init_logger(__name__)
 class FlexiblePlotGenerator:
     """Generates plots using flexible configuration."""
 
-    def __init__(self, config: PlotConfig, time_unit: str = "s"):
+    def __init__(self, config: PlotConfig):
         """Initialize with plot configuration and time unit."""
         self.config = config
-        self.time_unit = time_unit
 
     def generate_plots(
         self,
         run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
         group_key: str,
         experiment_folder: str,
+        time_unit: str = "s",
     ) -> None:
         """Generate plots based on configuration."""
+        # Extract source time unit from experiment metadata
+        source_time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+        
         if group_key == "none":
-            self._plot_single_analysis(run_data_list, experiment_folder)
+            self._plot_single_analysis(run_data_list, experiment_folder, time_unit, source_time_unit)
         elif group_key == "traffic_scenario":
-            self._plot_by_scenario(run_data_list, experiment_folder)
+            self._plot_by_scenario(run_data_list, experiment_folder, time_unit, source_time_unit)
         else:
-            self._plot_by_group(run_data_list, group_key, experiment_folder)
+            self._plot_by_group(run_data_list, group_key, experiment_folder, time_unit, source_time_unit)
 
     def _plot_single_analysis(
         self,
         run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
         experiment_folder: str,
+        time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot for single scenario analysis without grouping - plots ALL scenarios."""
         if not run_data_list:
@@ -68,15 +73,13 @@ class FlexiblePlotGenerator:
         for scenario in all_scenarios:
             concurrency_data = experiment_metrics[scenario]
             concurrency_levels = sorted(concurrency_data.keys())
-            # Use stored time_unit instead of metadata.time_unit
-            time_unit = self.time_unit
 
             fig, axs = self._create_figure()
             fig.suptitle(f"Single Scenario Analysis: {scenario}", fontsize=14)
 
             # Single scenario = no grouping, perfect for multi-line plots
             # Pass empty label since we're not grouping
-            self._plot_metrics(axs, [concurrency_data], {"": concurrency_levels}, [""], time_unit)
+            self._plot_metrics(axs, [concurrency_data], {"": concurrency_levels}, [""], time_unit, source_time_unit)
             self._finalize_and_save_plots(
                 axs,
                 fig,
@@ -89,19 +92,18 @@ class FlexiblePlotGenerator:
         self,
         run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
         experiment_folder: str,
+        time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot grouped by traffic scenario."""
         label_to_concurrency_map, concurrency_data_list, labels = get_scenario_data(
             run_data_list
         )
 
-        # Use stored time_unit instead of extracting from metadata
-        time_unit = self.time_unit
-
         fig, axs = self._create_figure()
         fig.suptitle("Grouped by Traffic Scenario", fontsize=14)
 
-        self._plot_metrics(axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit)
+        self._plot_metrics(axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit)
         self._finalize_and_save_plots(
             axs, fig, labels, experiment_folder, "traffic_scenario"
         )
@@ -111,6 +113,8 @@ class FlexiblePlotGenerator:
         run_data_list: List[Tuple[ExperimentMetadata, ExperimentMetrics]],
         group_key: str,
         experiment_folder: str,
+        time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot grouped by specified group key."""
         from genai_bench.analysis.plot_report import (
@@ -118,8 +122,7 @@ class FlexiblePlotGenerator:
             get_group_data,
         )
 
-        # Use stored time_unit instead of extracting from metadata
-        time_unit = self.time_unit
+
 
         traffic_scenarios = extract_traffic_scenarios(run_data_list)
         for traffic_scenario in traffic_scenarios:
@@ -131,7 +134,7 @@ class FlexiblePlotGenerator:
             )
 
             self._plot_metrics(
-                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit
             )
             self._finalize_and_save_plots(
                 axs,
@@ -165,6 +168,7 @@ class FlexiblePlotGenerator:
         label_to_concurrency_map: Dict[str, List[int]],
         labels: List[str],
         time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot metrics based on configuration."""
         # Check if we have multi-line plots with multiple scenarios/groups
@@ -179,7 +183,7 @@ class FlexiblePlotGenerator:
             )
             # Convert multi-line plots to single-line plots automatically
             self._plot_metrics_single_line_fallback(
-                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit, source_time_unit
             )
             return
 
@@ -194,6 +198,7 @@ class FlexiblePlotGenerator:
                     concurrency_levels=concurrency_levels,
                     label=labels[i],
                     time_unit=time_unit,
+                    source_time_unit=source_time_unit,
                 )
 
     def _plot_metrics_single_line_fallback(
@@ -203,6 +208,7 @@ class FlexiblePlotGenerator:
         label_to_concurrency_map: Dict[str, List[int]],
         labels: List[str],
         time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Fallback to single-line plotting when multi-line conflicts with grouping."""
         logger.info(
@@ -242,6 +248,7 @@ class FlexiblePlotGenerator:
                         concurrency_levels=concurrency_levels,
                         label=labels[i],
                         time_unit=time_unit,
+                        source_time_unit=source_time_unit,
                     )
                 else:
                     # Regular single-line plot
@@ -252,6 +259,7 @@ class FlexiblePlotGenerator:
                         concurrency_levels=concurrency_levels,
                         label=labels[i],
                         time_unit=time_unit,
+                        source_time_unit=source_time_unit,
                     )
 
     def _plot_single_metric(
@@ -262,16 +270,17 @@ class FlexiblePlotGenerator:
         concurrency_levels: List[int],
         label: str,
         time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot a single metric based on plot specification."""
         try:
             if plot_spec.is_multi_line():
                 self._plot_multi_line_metric(
-                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit
+                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit, source_time_unit
                 )
             else:
                 self._plot_single_line_metric(
-                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit
+                    plot_spec, ax, concurrency_data, concurrency_levels, label, time_unit, source_time_unit
                 )
 
         except Exception as e:
@@ -293,6 +302,7 @@ class FlexiblePlotGenerator:
         concurrency_levels: List[int],
         label: str,
         time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot a single line metric (original behavior)."""
         # Extract data using field paths
@@ -329,15 +339,10 @@ class FlexiblePlotGenerator:
         is_latency = TimeUnitConverter.is_latency_field(y_field_spec.field)
         
         if is_latency:
-            # Check if data appears to already be in milliseconds (values > 1000)
-            # If so, convert from ms to target unit, otherwise assume seconds
-            if any(val > 1000 for val in y_data):
+            # Only convert if source and target units are different
+            if source_time_unit != time_unit:
                 y_data = [
-                    TimeUnitConverter.convert_value(val, "ms", time_unit) for val in y_data
-                ]
-            else:
-                y_data = [
-                    TimeUnitConverter.convert_value(val, "s", time_unit) for val in y_data
+                    TimeUnitConverter.convert_value(val, source_time_unit, time_unit) for val in y_data
                 ]
 
         # Handle special error rate plot
@@ -414,6 +419,7 @@ class FlexiblePlotGenerator:
         concurrency_levels: List[int],
         label: str,
         time_unit: str = "s",
+        source_time_unit: str = "s",
     ) -> None:
         """Plot multiple lines on the same subplot."""
         # Get colors from tab10 colormap
@@ -459,12 +465,9 @@ class FlexiblePlotGenerator:
                     if y_val is not None:
                         # Convert time values if this is a latency field
                         if TimeUnitConverter.is_latency_field(y_field_spec.field):
-                            # Check if data appears to already be in milliseconds (values > 1000)
-                            # If so, convert from ms to target unit, otherwise assume seconds
-                            if y_val > 1000:
-                                y_val = TimeUnitConverter.convert_value(y_val, "ms", time_unit)
-                            else:
-                                y_val = TimeUnitConverter.convert_value(y_val, "s", time_unit)
+                            # Only convert if source and target units are different
+                            if source_time_unit != time_unit:
+                                y_val = TimeUnitConverter.convert_value(y_val, source_time_unit, time_unit)
                         
                         y_data.append(y_val)
                         # Use evenly spaced positions for concurrency, actual values
@@ -799,14 +802,13 @@ def plot_experiment_data_flexible(
     """
     # Use CLI time_unit parameter if provided, otherwise extract from experiment metadata
     if time_unit is None:
-        extracted_time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
-        time_unit = extracted_time_unit
+        time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
     
     if plot_config is None:
         plot_config = PlotConfigManager.load_preset("2x4_default", time_unit)
 
-    generator = FlexiblePlotGenerator(plot_config, time_unit)
-    generator.generate_plots(run_data_list, group_key, experiment_folder)
+    generator = FlexiblePlotGenerator(plot_config)
+    generator.generate_plots(run_data_list, group_key, experiment_folder, time_unit)
 
 
 def validate_plot_config_with_data(
