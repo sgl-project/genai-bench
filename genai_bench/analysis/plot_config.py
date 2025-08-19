@@ -153,7 +153,7 @@ class PlotConfigManager:
                     "x_field": "mean_output_throughput_tokens_per_s",
                     "y_field": "stats.ttft.mean",
                     "x_label": "Output Throughput of Server (tokens/s)",
-                    "y_label": "TTFT",
+                    "y_label": "TTFT (s)",
                     "plot_type": "line",
                     "position": [0, 1],
                 },
@@ -190,7 +190,7 @@ class PlotConfigManager:
                     "x_field": "mean_total_tokens_throughput_tokens_per_s",
                     "y_field": "stats.ttft.mean",
                     "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
-                    "y_label": "TTFT",
+                    "y_label": "TTFT (s)",
                     "plot_type": "line",
                     "position": [1, 1],
                 },
@@ -284,12 +284,12 @@ class PlotConfigManager:
                     "y_fields": [
                         {
                             "field": "stats.ttft.mean",
-                            "label": "Mean TTFT",
+                            "label": "Mean TTFT (s)",
                             "color": "green",
                         },
                         {
                             "field": "stats.ttft.p95",
-                            "label": "P95 TTFT",
+                            "label": "P95 TTFT (s)",
                             "color": "purple",
                         },
                     ],
@@ -365,12 +365,12 @@ class PlotConfigManager:
                     "y_fields": [
                         {
                             "field": "stats.ttft.mean",
-                            "label": "Mean TTFT",
+                            "label": "Mean TTFT (s)",
                             "color": "green",
                         },
                         {
                             "field": "stats.ttft.p95",
-                            "label": "P95 TTFT",
+                            "label": "P95 TTFT (s)",
                             "color": "purple",
                         },
                     ],
