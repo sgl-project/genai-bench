@@ -44,15 +44,6 @@ def plot_graph(
         label (str): Label for the legend.
         plot_type (str): Type of plot, either "line" or "scatter".
     """
-    # Convert time data and update labels if needed
-    is_time_data = any(kw in y_label.lower() for kw in TimeUnitConverter.LATENCY_FIELDS)
-    if is_time_data:
-        y_data = [
-            TimeUnitConverter.convert_value(val, "s", time_unit) for val in y_data
-        ]
-        y_label = TimeUnitConverter.get_unit_label(y_label, time_unit)
-        title = TimeUnitConverter.get_unit_label(title, time_unit)
-
     if x_label == "Concurrency":
         # Set x-axis for concurrency levels to have even spacing
         x_positions = range(len(concurrency_levels))
