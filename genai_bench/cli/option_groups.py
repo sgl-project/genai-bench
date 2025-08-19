@@ -611,6 +611,7 @@ def storage_auth_options(func):
     func = click.option(
         "--storage-bucket",
         type=str,
+        is_eager=True,
         help="Bucket/container name for storage provider.",
     )(func)
 
