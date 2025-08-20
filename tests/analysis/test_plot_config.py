@@ -1,8 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
-
 from genai_bench.analysis.plot_config import PlotConfigManager
-from genai_bench.time_units import TimeUnitConverter
 
 
 def test_apply_time_unit_conversion_to_ms():
@@ -15,23 +11,23 @@ def test_apply_time_unit_conversion_to_ms():
                 "x_label": "Throughput (tokens/s)",
                 "y_fields": [
                     {"field": "stats.ttft.mean", "label": "Mean TTFT (s)"},
-                    {"field": "stats.ttft.p95", "label": "P95 TTFT (s)"}
-                ]
+                    {"field": "stats.ttft.p95", "label": "P95 TTFT (s)"},
+                ],
             }
         ]
     }
-    
+
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "ms")
-    
+
     # Check title conversion
     assert converted["plots"][0]["title"] == "TTFT vs Throughput"
-    
+
     # Check y_label conversion
     assert converted["plots"][0]["y_label"] == "TTFT (ms)"
-    
+
     # Check x_label (should not change as it's not a time field)
     assert converted["plots"][0]["x_label"] == "Throughput (tokens/s)"
-    
+
     # Check y_fields labels
     assert converted["plots"][0]["y_fields"][0]["label"] == "Mean TTFT (ms)"
     assert converted["plots"][0]["y_fields"][1]["label"] == "P95 TTFT (ms)"
@@ -47,17 +43,17 @@ def test_apply_time_unit_conversion_to_seconds():
                 "x_label": "Concurrency",
                 "y_fields": [
                     {"field": "stats.e2e_latency.mean", "label": "Mean Latency (ms)"},
-                    {"field": "stats.e2e_latency.p99", "label": "P99 Latency (ms)"}
-                ]
+                    {"field": "stats.e2e_latency.p99", "label": "P99 Latency (ms)"},
+                ],
             }
         ]
     }
-    
+
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "s")
-    
+
     # Check y_label conversion
     assert converted["plots"][0]["y_label"] == "E2E Latency (s)"
-    
+
     # Check y_fields labels
     assert converted["plots"][0]["y_fields"][0]["label"] == "Mean Latency (s)"
     assert converted["plots"][0]["y_fields"][1]["label"] == "P99 Latency (s)"
@@ -70,16 +66,14 @@ def test_apply_time_unit_conversion_no_change():
             {
                 "title": "TTFT Analysis",
                 "y_label": "TTFT (s)",
-                "y_fields": [
-                    {"field": "stats.ttft.mean", "label": "Mean TTFT (s)"}
-                ]
+                "y_fields": [{"field": "stats.ttft.mean", "label": "Mean TTFT (s)"}],
             }
         ]
     }
-    
+
     # Convert to seconds (should be no-op)
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "s")
-    
+
     # Check that labels remain unchanged
     assert converted["plots"][0]["y_label"] == "TTFT (s)"
     assert converted["plots"][0]["y_fields"][0]["label"] == "Mean TTFT (s)"
@@ -87,27 +81,20 @@ def test_apply_time_unit_conversion_no_change():
 
 def test_apply_time_unit_conversion_invalid_unit():
     """Test that invalid time units are handled gracefully."""
-    config_data = {
-        "plots": [
-            {
-                "title": "Test Plot",
-                "y_label": "TTFT (s)"
-            }
-        ]
-    }
-    
+    config_data = {"plots": [{"title": "Test Plot", "y_label": "TTFT (s)"}]}
+
     # Invalid time unit should return original config unchanged
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "invalid")
-    
+
     assert converted == config_data
 
 
 def test_apply_time_unit_conversion_empty_plots():
     """Test that empty plots list is handled correctly."""
     config_data = {"plots": []}
-    
+
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "ms")
-    
+
     assert converted == config_data
 
 
@@ -121,9 +108,9 @@ def test_apply_time_unit_conversion_missing_fields():
             }
         ]
     }
-    
+
     converted = PlotConfigManager.apply_time_unit_conversion(config_data, "ms")
-    
+
     # Should not crash and should return the config
     assert "title" in converted["plots"][0]
     assert converted["plots"][0]["title"] == "Test Plot"
