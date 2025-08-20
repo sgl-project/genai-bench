@@ -77,7 +77,7 @@ def plot_graph(
             ),
         )
 
-    if y_label == "TTFT":
+    if "TTFT" in y_label:
         ax.set_yscale("log", base=10)
         ax.yaxis.set_major_locator(
             mticker.LogLocator(base=10.0, subs=[1.0], numticks=10)
@@ -573,6 +573,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
     task: str,
     scenario_metrics: Dict[str, Any],
     iteration_type: str,
+    time_unit: str = "s",
 ) -> None:
     """
     Plots metrics for a single scenario immediately after it completes.
@@ -586,6 +587,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
                 or batch
              iteration_type: List of concurrency levels/batch
         iteration_type: Type of iteration for the benchmark. E.g. concurrency levels.
+        time_unit (str): [s|ms] Time unit for latency metrics display and export.
     """
     # TODO: This logic should be de-coupled.
     if (
@@ -642,7 +644,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
         concurrency_levels=valid_concurrency,
         label=f"Scenario: {scenario_label}",
         plot_type="line",
-        time_unit="s",
+        time_unit=time_unit,
     )
 
     ax.legend()
