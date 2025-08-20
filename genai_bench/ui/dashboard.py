@@ -212,7 +212,9 @@ class RichLiveDashboard:
             )
         )
 
-    def update_scatter_plot_panel(self, ui_scatter_plot_metrics: Optional[List[float]]):
+    def update_scatter_plot_panel(
+        self, ui_scatter_plot_metrics: Optional[List[float]], time_unit: str = "s"
+    ):
         if not ui_scatter_plot_metrics:
             logger.info("No ui_scatter_plot_metrics collected for this run.")
             return
@@ -228,13 +230,13 @@ class RichLiveDashboard:
         input_throughput_scatter_plot = create_scatter_plot(
             self.plot_metrics["input_throughput"],
             self.plot_metrics["ttft"],
-            y_unit="s",
+            y_unit=time_unit,
             x_unit="tokens/sec",
         )
         output_latency_scatter_plot = create_scatter_plot(
             self.plot_metrics["output_throughput"],
             self.plot_metrics["output_latency"],
-            y_unit="s",
+            y_unit=time_unit,
             x_unit="tokens/sec",
         )
 

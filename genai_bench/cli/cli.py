@@ -448,7 +448,8 @@ def benchmark(
                     ) from e
 
                 dashboard.update_scatter_plot_panel(
-                    aggregated_metrics_collector.get_ui_scatter_plot_metrics(time_unit)
+                    aggregated_metrics_collector.get_ui_scatter_plot_metrics(time_unit),
+                    time_unit,
                 )
 
                 logger.info(
