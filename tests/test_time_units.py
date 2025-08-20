@@ -46,8 +46,14 @@ class TestTimeUnitConverter:
             TimeUnitConverter.get_unit_label("End-to-End Latency per Request (s)", "ms")
             == "End-to-End Latency per Request (ms)"
         )
+        assert TimeUnitConverter.get_unit_label("TTFT (ms)", "s") == "TTFT (s)"
+        assert TimeUnitConverter.get_unit_label("TTFT", "s") == "TTFT"
+        assert (
+            TimeUnitConverter.get_unit_label("End-to-End Latency per Request (ms)", "s")
+            == "End-to-End Latency per Request (s)"
+        )
 
-        # No change for seconds
+        # No change for same unit
         assert TimeUnitConverter.get_unit_label("TTFT (s)", "s") == "TTFT (s)"
 
     def test_metrics_dict_conversion(self):
