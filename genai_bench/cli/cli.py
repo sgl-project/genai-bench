@@ -231,7 +231,9 @@ def benchmark(
 
     elif api_backend == "baseten":
         # Baseten uses API key authentication
-        auth_kwargs["api_key"] = model_api_key or api_key
+        # Check for API key in order: model_api_key, api_key, MODEL_API_KEY, BASETEN_API_KEY
+        baseten_api_key = model_api_key or api_key or os.getenv("MODEL_API_KEY") or os.getenv("BASETEN_API_KEY")
+        auth_kwargs["api_key"] = baseten_api_key
 
     # Map backend names for auth factory
     auth_backend_map = {
