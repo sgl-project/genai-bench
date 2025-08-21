@@ -40,11 +40,12 @@ def _agg_metrics(
     num_concurrency: int,
     output_infer_speed_mean: float,
     ttft_mean: float = 0.5,
+    e2e_latency_mean: float = 1.0,
 ) -> AggregatedMetrics:
     stats = MetricStats(
         output_inference_speed=StatField(mean=output_infer_speed_mean),
         ttft=StatField(mean=ttft_mean),
-        e2e_latency=StatField(mean=1.0),
+        e2e_latency=StatField(mean=e2e_latency_mean),
     )
     return AggregatedMetrics(
         scenario=scenario,
@@ -101,7 +102,11 @@ def test_time_unit_conversion_seconds_to_milliseconds():
         scenario: {
             1: {
                 "aggregated_metrics": _agg_metrics(
-                    scenario, 1, output_infer_speed_mean=15.0, ttft_mean=0.5
+                    scenario,
+                    1,
+                    output_infer_speed_mean=15.0,
+                    ttft_mean=0.5,
+                    e2e_latency_mean=1.0,
                 ),
                 "individual_request_metrics": [{}],
             }
@@ -147,6 +152,7 @@ def test_time_unit_conversion_milliseconds_to_seconds():
                     1,
                     output_infer_speed_mean=15.0,
                     ttft_mean=500.0,  # 500ms = 0.5s
+                    e2e_latency_mean=1000.0,  # 1000ms = 1.0s
                 ),
                 "individual_request_metrics": [{}],
             }
@@ -175,5 +181,5 @@ def test_time_unit_conversion_milliseconds_to_seconds():
         # Check that e2e_latency value was converted from 1000ms to 1.0s
         e2e_latency_value = ws[2][6].value  # Row 2, column 7 (e2e_latency value)
         assert (
-            e2e_latency_value == 0.001
-        ), f"Expected e2e_latency value 0.001s, got: {e2e_latency_value}"
+            e2e_latency_value == 1
+        ), f"Expected e2e_latency value 1s, got: {e2e_latency_value}"

@@ -758,33 +758,23 @@ class FlexiblePlotGenerator:
 
     def _generate_label(self, field_path: str, time_unit: str = "s") -> str:
         """Generate a human-readable label from field path."""
-        # Simple label generation - can be enhanced
         parts = field_path.split(".")
-        if len(parts) == 1:
-            base_label = field_path.replace("_", " ").title()
-            # Apply time unit conversion if this is a latency field
-            if TimeUnitConverter.is_latency_field(field_path):
-                base_label = TimeUnitConverter.get_unit_label(base_label, time_unit)
-            return base_label
+        metric_name_for_latency_check = field_path
 
-        # Handle stats fields
         if parts[0] == "stats":
             metric = parts[1].replace("_", " ").title()
+            metric_name_for_latency_check = parts[1]
             if len(parts) > 2:
                 stat = parts[2].upper()
                 base_label = f"{metric} ({stat})"
             else:
                 base_label = metric
+        else:
+            base_label = field_path.replace("_", " ").title()
 
-            # Apply time unit conversion if this is a latency field
-            if TimeUnitConverter.is_latency_field(parts[1]):
-                base_label = TimeUnitConverter.get_unit_label(base_label, time_unit)
-            return base_label
-
-        base_label = field_path.replace("_", " ").title()
-        # Apply time unit conversion if this is a latency field
-        if TimeUnitConverter.is_latency_field(field_path):
+        if TimeUnitConverter.is_latency_field(metric_name_for_latency_check):
             base_label = TimeUnitConverter.get_unit_label(base_label, time_unit)
+
         return base_label
 
     def _finalize_and_save_plots(

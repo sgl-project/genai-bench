@@ -1,5 +1,6 @@
 """Time unit conversion utilities for genai-bench metrics."""
 
+import re
 from typing import Any, Dict, List, Optional
 
 
@@ -127,23 +128,11 @@ class TimeUnitConverter:
             Updated label with correct unit notation
         """
         if unit == "ms":
-            # Replace various forms of seconds notation with milliseconds
-            label = base_label.replace(" (s)", " (ms)")
-            label = label.replace("(s)", "(ms)")
-            label = label.replace(" per Request (seconds)", " per Request (ms)")
-            label = label.replace(
-                " Latency per Request (s)", " Latency per Request (ms)"
-            )
-            return label
+            # Replace (s) or (seconds) with (ms)
+            return re.sub(r"\((s|seconds)\)", "(ms)", base_label)
         elif unit == "s":
-            # Replace various forms of milliseconds notation with seconds
-            label = base_label.replace(" (ms)", " (s)")
-            label = label.replace("(ms)", "(s)")
-            label = label.replace(" per Request (milliseconds)", " per Request (s)")
-            label = label.replace(
-                " Latency per Request (ms)", " Latency per Request (s)"
-            )
-            return label
+            # Replace (ms) or (milliseconds) with (s)
+            return re.sub(r"\((ms|milliseconds)\)", "(s)", base_label)
         return base_label
 
     @staticmethod
