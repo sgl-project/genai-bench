@@ -8,7 +8,7 @@ from genai_bench.metrics.metrics import AggregatedMetrics, MetricStats, StatFiel
 from genai_bench.protocol import ExperimentMetadata
 
 
-def _make_metadata(scenarios: list[str]) -> ExperimentMetadata:
+def _make_metadata(scenarios: list[str], time_unit: str = "s") -> ExperimentMetadata:
     return ExperimentMetadata(
         cmd="genai-bench benchmark",
         benchmark_version="test",
@@ -31,13 +31,21 @@ def _make_metadata(scenarios: list[str]) -> ExperimentMetadata:
         experiment_folder_name="/tmp",
         dataset_path=None,
         character_token_ratio=1.0,
+        time_unit=time_unit,
     )
 
 
 def _agg_metrics(
-    scenario: str, num_concurrency: int, output_infer_speed_mean: float
+    scenario: str,
+    num_concurrency: int,
+    output_infer_speed_mean: float,
+    ttft_mean: float = 0.5,
 ) -> AggregatedMetrics:
-    stats = MetricStats(output_inference_speed=StatField(mean=output_infer_speed_mean))
+    stats = MetricStats(
+        output_inference_speed=StatField(mean=output_infer_speed_mean),
+        ttft=StatField(mean=ttft_mean),
+        e2e_latency=StatField(mean=1.0),
+    )
     return AggregatedMetrics(
         scenario=scenario,
         num_concurrency=num_concurrency,
@@ -82,3 +90,90 @@ def test_summary_displays_na_when_threshold_not_met():
                 break
 
         assert found, "Scenario row not found in Summary sheet"
+
+
+def test_time_unit_conversion_seconds_to_milliseconds():
+    """Test that latency metrics are converted from seconds to milliseconds."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario], time_unit="s")  # Source is seconds
+
+    run_data = {
+        scenario: {
+            1: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario, 1, output_infer_speed_mean=15.0, ttft_mean=0.5
+                ),
+                "individual_request_metrics": [{}],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "time_unit_test.xlsx")
+        # Request conversion to milliseconds
+        create_workbook(metadata, run_data, out_path, percentile="mean", time_unit="ms")
+
+        wb = load_workbook(out_path)
+        ws = wb["Appendix"]
+
+        # Check that TTFT column header shows milliseconds
+        headers = [cell.value for cell in ws[1]]
+        ttft_header = headers[3]  # TTFT column
+        assert "ms" in str(
+            ttft_header
+        ), f"Expected TTFT header to show ms, got: {ttft_header}"
+
+        # Check that the actual TTFT value was converted from 0.5s to 500ms
+        ttft_value = ws[2][3].value  # Row 2, column 4 (TTFT value)
+        assert ttft_value == 500.0, f"Expected TTFT value 500.0ms, got: {ttft_value}"
+
+        # Check that e2e_latency value was converted from 1.0s to 1000ms
+        e2e_latency_value = ws[2][6].value  # Row 2, column 7 (e2e_latency value)
+        assert (
+            e2e_latency_value == 1000.0
+        ), f"Expected e2e_latency value 1000.0ms, got: {e2e_latency_value}"
+
+
+def test_time_unit_conversion_milliseconds_to_seconds():
+    """Test that latency metrics are converted from milliseconds to seconds."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario], time_unit="ms")  # Source is milliseconds
+
+    run_data = {
+        scenario: {
+            1: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario,
+                    1,
+                    output_infer_speed_mean=15.0,
+                    ttft_mean=500.0,  # 500ms = 0.5s
+                ),
+                "individual_request_metrics": [{}],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "time_unit_test.xlsx")
+        # Request conversion to seconds
+        create_workbook(metadata, run_data, out_path, percentile="mean", time_unit="s")
+
+        wb = load_workbook(out_path)
+        ws = wb["Appendix"]
+
+        # Check that TTFT column header shows seconds
+        headers = [cell.value for cell in ws[1]]
+        ttft_header = headers[3]  # TTFT column
+        assert "s" in str(
+            ttft_header
+        ), f"Expected TTFT header to show s, got: {ttft_header}"
+
+        # Check that the actual TTFT value was converted from 500ms to 0.5s
+        ttft_value = ws[2][3].value  # Row 2, column 4 (TTFT value)
+        assert ttft_value == 0.5, f"Expected TTFT value 0.5s, got: {ttft_value}"
+
+        # Check that e2e_latency value was converted from 1000ms to 1.0s
+        e2e_latency_value = ws[2][6].value  # Row 2, column 7 (e2e_latency value)
+        assert (
+            e2e_latency_value == 0.001
+        ), f"Expected e2e_latency value 0.001s, got: {e2e_latency_value}"
