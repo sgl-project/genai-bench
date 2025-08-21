@@ -36,8 +36,15 @@ from genai_bench.utils import is_single_experiment_folder
     prompt=True,
     help="Name of the Excel file. The system will create a <excel-name>.xlsx.",
 )
+@click.option(
+    "--time-unit",
+    type=click.Choice(["s", "ms"], case_sensitive=False),
+    default="s",
+    help="Time unit for latency metrics in the spreadsheet. "
+    "Options: 's' (seconds), 'ms' (milliseconds). Default: s",
+)
 @click.pass_context
-def excel(ctx, experiment_folder, excel_name, metric_percentile):
+def excel(ctx, experiment_folder, excel_name, metric_percentile, time_unit):
     """
     Exports the experiment results to an Excel file.
     """
@@ -45,7 +52,7 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile):
     _ = init_logger("genai_bench.excel")
     excel_path = os.path.join(experiment_folder, excel_name + ".xlsx")
     experiment_metadata, run_data = load_one_experiment(experiment_folder)
-    create_workbook(experiment_metadata, run_data, excel_path, metric_percentile)
+    create_workbook(experiment_metadata, run_data, excel_path, metric_percentile, time_unit)
 
 
 @click.command()

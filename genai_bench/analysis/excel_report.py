@@ -30,19 +30,44 @@ def create_workbook(
     run_data: ExperimentMetrics,
     output_file: PathLike | str,
     percentile: str = "mean",
+    time_unit: str = "s",
 ):
     # Extract time unit from experiment metadata
-    time_unit = experiment_metadata.time_unit
+    source_time_unit = experiment_metadata.time_unit
+    
+    # Convert run_data to the specified time unit if different from source
+    if source_time_unit != time_unit:
+        logger.info(f"Converting latency metrics from {source_time_unit} to {time_unit}")
+        converted_run_data = {}
+        for scenario, concurrency_data in run_data.items():
+            converted_run_data[scenario] = {}
+            for concurrency, metrics_data in concurrency_data.items():
+                converted_run_data[scenario][concurrency] = {}
+                for key, value in metrics_data.items():
+                    if key == "aggregated_metrics":
+                        # Convert aggregated metrics
+                        converted_run_data[scenario][concurrency][key] = TimeUnitConverter.convert_metrics_dict(
+                            value, time_unit
+                        )
+                    elif key == "request_level_metrics":
+                        # Convert request level metrics
+                        converted_run_data[scenario][concurrency][key] = TimeUnitConverter.convert_metrics_list(
+                            value, time_unit
+                        )
+                    else:
+                        # Keep other data unchanged
+                        converted_run_data[scenario][concurrency][key] = value
+        run_data = converted_run_data
 
     wb = Workbook()
 
-    create_summary_sheet(wb, experiment_metadata, run_data, percentile=percentile)
+    create_summary_sheet(wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit)
     create_appendix_sheet(
         wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
     )
     create_experiment_metadata_sheet(wb, experiment_metadata)
-    create_aggregated_metrics_sheet(wb, run_data, experiment_metadata)
-    create_single_request_metrics_sheet(wb, run_data, experiment_metadata)
+    create_aggregated_metrics_sheet(wb, run_data, experiment_metadata, time_unit=time_unit)
+    create_single_request_metrics_sheet(wb, run_data, experiment_metadata, time_unit=time_unit)
 
     # Remove the default sheet
     del wb[wb.sheetnames[0]]
@@ -299,6 +324,7 @@ def create_summary_sheet(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     percentile: str = "mean",
+    time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
     _create_summary_sheet_common(
@@ -340,6 +366,7 @@ def create_aggregated_metrics_sheet(
     wb: Workbook,
     run_data: ExperimentMetrics,
     experiment_metadata: ExperimentMetadata,
+    time_unit: str = "s",
 ):
     sheet = wb.create_sheet("Aggregated Metrics for Each Run")
     metadata_headers = ["scenario", experiment_metadata.iteration_type]
@@ -395,6 +422,7 @@ def create_single_request_metrics_sheet(
     wb: Workbook,
     run_data: ExperimentMetrics,
     experiment_metadata: ExperimentMetadata,
+    time_unit: str = "s",
 ):
     sheet = wb.create_sheet("Individual Request Metrics")
     headers = ["scenario", experiment_metadata.iteration_type] + list(
