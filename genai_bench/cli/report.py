@@ -52,7 +52,9 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile, time_unit):
     _ = init_logger("genai_bench.excel")
     excel_path = os.path.join(experiment_folder, excel_name + ".xlsx")
     experiment_metadata, run_data = load_one_experiment(experiment_folder)
-    create_workbook(experiment_metadata, run_data, excel_path, metric_percentile, time_unit)
+    create_workbook(
+        experiment_metadata, run_data, excel_path, metric_percentile, time_unit
+    )
 
 
 @click.command()

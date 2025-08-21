@@ -34,25 +34,31 @@ def create_workbook(
 ):
     # Extract time unit from experiment metadata
     source_time_unit = experiment_metadata.time_unit
-    
+
     # Convert run_data to the specified time unit if different from source
     if source_time_unit != time_unit:
-        logger.info(f"Converting latency metrics from {source_time_unit} to {time_unit}")
-        converted_run_data = {}
+        logger.info(
+            f"Converting latency metrics from {source_time_unit} to {time_unit}"
+        )
+        converted_run_data: dict = {}
         for scenario, concurrency_data in run_data.items():
             converted_run_data[scenario] = {}
             for concurrency, metrics_data in concurrency_data.items():
                 converted_run_data[scenario][concurrency] = {}
                 for key, value in metrics_data.items():
                     if key == "aggregated_metrics":
-                        # Convert aggregated metrics
-                        converted_run_data[scenario][concurrency][key] = TimeUnitConverter.convert_metrics_dict(
-                            value, time_unit
+                        metrics_dict = value.model_dump()
+                        converted_metrics_dict = TimeUnitConverter.convert_metrics_dict(
+                            metrics_dict, time_unit, source_time_unit
                         )
-                    elif key == "request_level_metrics":
-                        # Convert request level metrics
-                        converted_run_data[scenario][concurrency][key] = TimeUnitConverter.convert_metrics_list(
-                            value, time_unit
+                        converted_run_data[scenario][concurrency][key] = (
+                            AggregatedMetrics(**converted_metrics_dict)
+                        )
+                    elif key == "individual_request_metrics":
+                        converted_run_data[scenario][concurrency][key] = (
+                            TimeUnitConverter.convert_metrics_list(
+                                value, time_unit, source_time_unit
+                            )
                         )
                     else:
                         # Keep other data unchanged
@@ -61,13 +67,19 @@ def create_workbook(
 
     wb = Workbook()
 
-    create_summary_sheet(wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit)
+    create_summary_sheet(
+        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+    )
     create_appendix_sheet(
         wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
     )
     create_experiment_metadata_sheet(wb, experiment_metadata)
-    create_aggregated_metrics_sheet(wb, run_data, experiment_metadata, time_unit=time_unit)
-    create_single_request_metrics_sheet(wb, run_data, experiment_metadata, time_unit=time_unit)
+    create_aggregated_metrics_sheet(
+        wb, run_data, experiment_metadata, time_unit=time_unit
+    )
+    create_single_request_metrics_sheet(
+        wb, run_data, experiment_metadata, time_unit=time_unit
+    )
 
     # Remove the default sheet
     del wb[wb.sheetnames[0]]

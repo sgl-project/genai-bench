@@ -54,7 +54,7 @@ class TimeUnitConverter:
 
     @classmethod
     def convert_metrics_dict(
-        cls, metrics_dict: Dict[str, Any], to_unit: str
+        cls, metrics_dict: Dict[str, Any], to_unit: str, from_unit: str = "s"
     ) -> Dict[str, Any]:
         """
         Convert all time values in a metrics dictionary.
@@ -66,7 +66,7 @@ class TimeUnitConverter:
         Returns:
             New dictionary with converted time values
         """
-        if to_unit == "s":
+        if to_unit == from_unit:
             return metrics_dict  # No conversion needed
 
         converted = metrics_dict.copy()
@@ -74,7 +74,9 @@ class TimeUnitConverter:
         # Convert direct latency fields
         for field in cls.LATENCY_FIELDS:
             if field in converted and converted[field] is not None:
-                converted[field] = cls.convert_value(converted[field], "s", to_unit)
+                converted[field] = cls.convert_value(
+                    converted[field], from_unit, to_unit
+                )
 
         # Convert stats nested fields
         if "stats" in converted and isinstance(converted["stats"], dict):
@@ -87,7 +89,7 @@ class TimeUnitConverter:
                     for stat_key in cls.STATS_KEYS:
                         if stat_key in stats_obj:
                             stats_obj[stat_key] = cls.convert_value(
-                                stats_obj[stat_key], "s", to_unit
+                                stats_obj[stat_key], from_unit, to_unit
                             )
                     converted["stats"][field] = stats_obj
 
@@ -95,7 +97,7 @@ class TimeUnitConverter:
 
     @classmethod
     def convert_metrics_list(
-        cls, metrics_list: List[Dict[str, Any]], to_unit: str
+        cls, metrics_list: List[Dict[str, Any]], to_unit: str, from_unit: str = "s"
     ) -> List[Dict[str, Any]]:
         """
         Convert time values in a list of metrics dictionaries.
@@ -108,7 +110,7 @@ class TimeUnitConverter:
             New list with converted time values
         """
         return [
-            cls.convert_metrics_dict(metrics_dict, to_unit)
+            cls.convert_metrics_dict(metrics_dict, to_unit, from_unit)
             for metrics_dict in metrics_list
         ]
 
