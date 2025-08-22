@@ -145,7 +145,7 @@ def benchmark(
     Run a benchmark based on user defined scenarios.
     """
     # Set up the dashboard and layout
-    dashboard = create_dashboard()
+    dashboard = create_dashboard(time_unit)
 
     # Initialize logging with the layout for the log panel
     logging_manager = LoggingManager("benchmark", dashboard.layout, dashboard.live)

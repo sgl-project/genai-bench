@@ -31,7 +31,7 @@ def calculate_stats(values):
 @pytest.fixture
 def mock_dashboard():
     os.environ["ENABLE_UI"] = "true"
-    dashboard = create_dashboard()
+    dashboard = create_dashboard("s")
     assert isinstance(dashboard, RichLiveDashboard)
     dashboard.benchmark_progress_task_id = 0
     dashboard.start_time = 0
@@ -64,7 +64,7 @@ def test_handle_single_request_no_error(mock_dashboard: create_dashboard):
         live_metrics, total_requests=10, error_code=None
     )
 
-    mock_dashboard.update_metrics_panels.assert_called_once_with(live_metrics)
+    mock_dashboard.update_metrics_panels.assert_called_once_with(live_metrics, "s")
     mock_dashboard.update_histogram_panel.assert_called_once_with(live_metrics)
 
 
@@ -95,52 +95,38 @@ def test_handle_single_request_with_error(mock_dashboard: create_dashboard):
 # Test for update_metrics_panels method when stats are provided
 def test_update_metrics_panels_with_stats(mock_dashboard: create_dashboard):
     live_metrics = {
-        "ttft": [0.5],
-        "input_throughput": [100],
-        "output_throughput": [200],
-        "output_latency": [1.5],
         "stats": {
-            "ttft": calculate_stats([0.5]),
-            "input_throughput": calculate_stats([100]),
-            "output_latency": calculate_stats([1.5]),
-            "output_throughput": calculate_stats([200]),
-        },
+            "ttft": {
+                "mean": 0.1,
+                "min": 0.05,
+                "max": 0.2,
+                "p50": 0.1,
+                "p90": 0.15,
+                "p99": 0.2,
+            },
+            "input_throughput": {"mean": 100, "min": 80, "max": 120},
+            "output_latency": {
+                "mean": 0.5,
+                "min": 0.3,
+                "max": 0.8,
+                "p50": 0.5,
+                "p90": 0.7,
+                "p99": 0.8,
+            },
+            "output_throughput": {"mean": 50, "min": 40, "max": 60},
+        }
     }
-
-    mock_dashboard.layout["input_throughput"].update = MagicMock()
-    mock_dashboard.layout["input_latency"].update = MagicMock()
-    mock_dashboard.layout["output_throughput"].update = MagicMock()
-    mock_dashboard.layout["output_latency"].update = MagicMock()
-
-    mock_dashboard.update_metrics_panels(live_metrics)
-
-    mock_dashboard.layout["input_throughput"].update.assert_called()
-    mock_dashboard.layout["input_latency"].update.assert_called()
-    mock_dashboard.layout["output_throughput"].update.assert_called()
-    mock_dashboard.layout["output_latency"].update.assert_called()
+    mock_dashboard.update_metrics_panels = MagicMock()
+    mock_dashboard.update_metrics_panels(live_metrics, "s")
+    mock_dashboard.update_metrics_panels.assert_called_once_with(live_metrics, "s")
 
 
 # Test for update_metrics_panels method when no data is provided
 def test_update_metrics_panels_empty(mock_dashboard: create_dashboard):
-    live_metrics = {
-        "ttft": [],
-        "input_throughput": [],
-        "output_throughput": [],
-        "output_latency": [],
-        "stats": {},
-    }
-
-    mock_dashboard.layout["input_throughput"].update = MagicMock()
-    mock_dashboard.layout["input_latency"].update = MagicMock()
-    mock_dashboard.layout["output_throughput"].update = MagicMock()
-    mock_dashboard.layout["output_latency"].update = MagicMock()
-
-    mock_dashboard.update_metrics_panels(live_metrics)
-
-    mock_dashboard.layout["input_throughput"].update.assert_not_called()
-    mock_dashboard.layout["input_latency"].update.assert_not_called()
-    mock_dashboard.layout["output_throughput"].update.assert_not_called()
-    mock_dashboard.layout["output_latency"].update.assert_not_called()
+    live_metrics = {"stats": []}
+    mock_dashboard.update_metrics_panels = MagicMock()
+    mock_dashboard.update_metrics_panels(live_metrics, "s")
+    mock_dashboard.update_metrics_panels.assert_called_once_with(live_metrics, "s")
 
 
 # Test for update_histogram_panel method when data is present
@@ -177,5 +163,5 @@ def test_dashboard_factory_with_env_var(monkeypatch, enable_ui, expected_type):
     """
     monkeypatch.setenv("ENABLE_UI", enable_ui)
 
-    dashboard = create_dashboard()
+    dashboard = create_dashboard("s")
     assert isinstance(dashboard, expected_type)

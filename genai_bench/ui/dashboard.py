@@ -26,9 +26,10 @@ logger = init_logger(__name__)
 class MinimalDashboard:
     """A minimal implementation of the Dashboard interface for scenarios without UI."""
 
-    def __init__(self):
+    def __init__(self, time_unit: str = "s"):
         self.console = None
         self.layout = None
+        self.time_unit = time_unit
         self._live = type(
             "MinimalDashboardLive",
             (),
@@ -42,7 +43,9 @@ class MinimalDashboard:
     def live(self):
         return self._live
 
-    def update_metrics_panels(self, live_metrics: LiveMetricsData):
+    def update_metrics_panels(
+        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+    ):
         pass
 
     def update_histogram_panel(self, live_metrics: LiveMetricsData):
@@ -131,7 +134,7 @@ class RichLiveDashboard:
     - If `ENABLE_UI` is disabled, consider using `MinimalDashboard` instead.
     """
 
-    def __init__(self):
+    def __init__(self, time_unit: str = "s"):
         self.console: Console = Console()
         self.layout = create_layout()
         (
@@ -143,6 +146,7 @@ class RichLiveDashboard:
         self.start_time: Optional[float] = None
         self.run_time: Optional[int] = None
         self.max_requests_per_run: Optional[int] = None
+        self.time_unit: str = time_unit
         self.plot_metrics: Dict[str, List[float]] = {
             "ttft": [],
             "input_throughput": [],
@@ -156,7 +160,9 @@ class RichLiveDashboard:
             screen=True,
         )
 
-    def update_metrics_panels(self, live_metrics: LiveMetricsData):
+    def update_metrics_panels(
+        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+    ):
         if "stats" not in live_metrics or not live_metrics["stats"]:
             return
         stats = live_metrics["stats"]
@@ -166,19 +172,21 @@ class RichLiveDashboard:
                 "Input",
                 stats.get("ttft", []),
                 stats.get("input_throughput", []),
+                time_unit,
             )
             output_latency_panel, output_throughput_panel = create_metric_panel(
                 "Output",
                 stats.get("output_latency", []),
                 stats.get("output_throughput", []),
+                time_unit,
             )
         else:
             # If stats is a list or other format, use empty lists as fallback
             input_latency_panel, input_throughput_panel = create_metric_panel(
-                "Input", [], []
+                "Input", [], [], time_unit
             )
             output_latency_panel, output_throughput_panel = create_metric_panel(
-                "Output", [], []
+                "Output", [], [], time_unit
             )
 
         self.layout["input_throughput"].update(input_throughput_panel)
@@ -311,7 +319,7 @@ class RichLiveDashboard:
         if error_code is not None:
             return
 
-        self.update_metrics_panels(live_metrics)
+        self.update_metrics_panels(live_metrics, self.time_unit)
         self.update_histogram_panel(live_metrics)
 
     def reset_plot_metrics(self):
@@ -374,8 +382,8 @@ class RichLiveDashboard:
 Dashboard = Union[RichLiveDashboard, MinimalDashboard]
 
 
-def create_dashboard() -> Dashboard:
+def create_dashboard(time_unit: str = "s") -> Dashboard:
     """Factory function that returns either a NoOpDashboard or RealDashboard based
     on ENABLE_UI."""
     enable_ui = os.getenv("ENABLE_UI", "true").lower() == "true"
-    return RichLiveDashboard() if enable_ui else MinimalDashboard()
+    return RichLiveDashboard(time_unit) if enable_ui else MinimalDashboard(time_unit)
