@@ -65,7 +65,7 @@ def test_handle_single_request_no_error(mock_dashboard: create_dashboard):
     )
 
     mock_dashboard.update_metrics_panels.assert_called_once_with(live_metrics, "s")
-    mock_dashboard.update_histogram_panel.assert_called_once_with(live_metrics)
+    mock_dashboard.update_histogram_panel.assert_called_once_with(live_metrics, "s")
 
 
 # Test for handle_single_request method when an error occurs
@@ -142,7 +142,7 @@ def test_update_histogram_panel(mock_dashboard: create_dashboard):
     mock_dashboard.layout["input_histogram"].update = MagicMock()
     mock_dashboard.layout["output_histogram"].update = MagicMock()
 
-    mock_dashboard.update_histogram_panel(live_metrics)
+    mock_dashboard.update_histogram_panel(live_metrics, "s")
 
     mock_dashboard.layout["input_histogram"].update.assert_called()
     mock_dashboard.layout["output_histogram"].update.assert_called()

@@ -8,7 +8,9 @@ from genai_bench.logging import init_logger
 logger = init_logger(__name__)
 
 
-def create_horizontal_colored_bar_chart(values, width=40, bin_width=0.1, max_bins=10):
+def create_horizontal_colored_bar_chart(
+    values, width=40, bin_width=0.1, max_bins=10, time_unit="s"
+):
     if not values:
         logger.warning("No data for histogram.")
         return Text()
@@ -30,9 +32,17 @@ def create_horizontal_colored_bar_chart(values, width=40, bin_width=0.1, max_bin
     chart = Text()
 
     # Format the labels for the bins using integer or specified decimal width
-    bin_labels = [
-        f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(bin_edges) - 1)
-    ]
+    # Convert bin edges if time_unit is "ms"
+    if time_unit == "ms":
+        bin_labels = [
+            f"{bin_edges[i] * 1000:.0f}-{bin_edges[i + 1] * 1000:.0f}ms"
+            for i in range(len(bin_edges) - 1)
+        ]
+    else:
+        bin_labels = [
+            f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}s"
+            for i in range(len(bin_edges) - 1)
+        ]
 
     # Determine the width of the longest label
     max_label_width = max(len(label) for label in bin_labels)

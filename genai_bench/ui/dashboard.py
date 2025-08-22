@@ -48,7 +48,9 @@ class MinimalDashboard:
     ):
         pass
 
-    def update_histogram_panel(self, live_metrics: LiveMetricsData):
+    def update_histogram_panel(
+        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+    ):
         pass
 
     def update_scatter_plot_panel(self, ui_scatter_plot_metrics: Optional[List[float]]):
@@ -194,13 +196,16 @@ class RichLiveDashboard:
         self.layout["output_throughput"].update(output_throughput_panel)
         self.layout["output_latency"].update(output_latency_panel)
 
-    def update_histogram_panel(self, live_metrics: LiveMetricsData):
+    def update_histogram_panel(
+        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+    ):
         input_latency_hist_chart = create_horizontal_colored_bar_chart(
-            live_metrics["ttft"], bin_width=0.01
+            live_metrics["ttft"], bin_width=0.01, time_unit=time_unit
         )
         output_latency_hist_chart = create_horizontal_colored_bar_chart(
             live_metrics["output_latency"],
             bin_width=0.01,
+            time_unit=time_unit,
         )
 
         self.layout["input_histogram"].update(
@@ -320,7 +325,7 @@ class RichLiveDashboard:
             return
 
         self.update_metrics_panels(live_metrics, self.time_unit)
-        self.update_histogram_panel(live_metrics)
+        self.update_histogram_panel(live_metrics, self.time_unit)
 
     def reset_plot_metrics(self):
         """Reset plot metrics for each scenario."""
