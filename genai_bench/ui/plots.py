@@ -69,6 +69,10 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
         logger.warning("No data for scatter plot.")
         return Text()
 
+    # Calculate spacing based on time unit
+    # 7 spaces for seconds, 9 spaces for milliseconds to accommodate longer labels
+    label_spacing = 9 if y_unit == "ms" else 7
+
     # Determine ranges
     x_min, x_max = min(x_values), max(x_values)
     y_min, y_max = min(y_values), max(y_values)
@@ -107,23 +111,24 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
             )
             # Avoid printing the same label as the row above
             if y_label != last_y_label:
-                y_label_str = f"{y_label:<7}"
+                y_label_str = f"{y_label:<{label_spacing}}"
                 last_y_label = y_label
                 if i == 0:  # Add unit to the top row
                     y_label_str = (
-                        f"{y_label:<{6 - len(y_unit)}} {y_unit:<{len(y_unit)}}"
+                        f"{y_label:<{label_spacing - len(y_unit) - 1}} "
+                        f"{y_unit:<{len(y_unit)}}"
                     )
             else:
-                y_label_str = " " * 7  # Leave space for the label
+                y_label_str = " " * label_spacing  # Leave space for the label
         else:
-            y_label_str = " " * 7  # Leave space for the label
+            y_label_str = " " * label_spacing  # Leave space for the label
 
         # Construct the row with dots
         plot_line = "".join(plot[i]) if i < len(plot) else ""
         chart.append(Text(f"{y_label_str}|{plot_line}\n"))
 
     # Add x-axis line
-    x_axis_line = "       " + "-" * (width + 1) + "\n"
+    x_axis_line = " " * label_spacing + "-" * (width + 1) + "\n"
     chart.append(Text(x_axis_line))
 
     # Create x-axis labels using actual x_values
@@ -142,7 +147,9 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
             last_x_pos = x_pos
 
     # Add unit to the rightmost position, on the same line
-    x_label_line = "       " + "".join(x_labels) + f"{x_unit:<{len(x_unit)}}\n"
+    x_label_line = (
+        " " * label_spacing + "".join(x_labels) + f"{x_unit:<{len(x_unit)}}\n"
+    )
     chart.append(Text(x_label_line))
 
     return chart

@@ -9,6 +9,7 @@ from genai_bench.ui.dashboard import (
     RichLiveDashboard,
     create_dashboard,
 )
+from genai_bench.ui.plots import create_scatter_plot
 
 
 # Helper function to calculate stats for live metrics
@@ -165,3 +166,46 @@ def test_dashboard_factory_with_env_var(monkeypatch, enable_ui, expected_type):
 
     dashboard = create_dashboard("s")
     assert isinstance(dashboard, expected_type)
+
+
+def test_scatter_plot_spacing_for_different_time_units():
+    """Test that scatter plot spacing is correct for seconds vs milliseconds."""
+    # Test data
+    x_values = [100, 200, 300, 400, 500]
+    y_values = [0.5, 1.0, 1.5, 2.0, 2.5]
+
+    # Test with seconds
+    plot_s = create_scatter_plot(x_values, y_values, y_unit="s")
+    plot_s_str = str(plot_s)
+
+    # Test with milliseconds
+    plot_ms = create_scatter_plot(x_values, y_values, y_unit="ms")
+    plot_ms_str = str(plot_ms)
+
+    # Check that seconds plot uses 7 spaces for labels
+    lines_s = plot_s_str.split("\n")
+    label_line_s = None
+    for line in lines_s:
+        if "2.5" in line and "s" in line:
+            label_line_s = line
+            break
+
+    assert label_line_s is not None, "Could not find label line with seconds"
+
+    # Check that milliseconds plot uses 9 spaces for labels
+    lines_ms = plot_ms_str.split("\n")
+    label_line_ms = None
+    for line in lines_ms:
+        if "2.5" in line and "ms" in line:  # Scatter plot doesn't convert values
+            label_line_ms = line
+            break
+
+    assert label_line_ms is not None, "Could not find label line with milliseconds"
+
+    # Verify the label spacing
+    assert (
+        label_line_s.index("|") == 7
+    ), f"Expected 7 spaces for seconds, got: {label_line_s.index('|')}"
+    assert (
+        label_line_ms.index("|") == 9
+    ), f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
