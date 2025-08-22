@@ -6,6 +6,7 @@ import numpy as np
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
 from genai_bench.protocol import LiveMetricsData
+from genai_bench.time_units import TimeUnitConverter
 
 logger = init_logger(__name__)
 
@@ -245,15 +246,24 @@ class AggregatedMetricsCollector:
             "stats": {},
         }
 
-    def save(self, file_path: str):
+    def save(self, file_path: str, time_unit: str = "s"):
         if not self.all_request_metrics:
             return
 
+        # Convert aggregated metrics to the specified time unit
+        aggregated_dict = TimeUnitConverter.convert_metrics_dict(
+            self.aggregated_metrics.model_dump(), time_unit
+        )
+
+        # Convert individual request metrics to the specified time unit
+        individual_dicts = TimeUnitConverter.convert_metrics_list(
+            [metrics.model_dump() for metrics in self.all_request_metrics], time_unit
+        )
+
         data_to_save = {
-            "aggregated_metrics": self.aggregated_metrics.model_dump(),
-            "individual_request_metrics": [
-                metrics.model_dump() for metrics in self.all_request_metrics
-            ],
+            "aggregated_metrics": aggregated_dict,
+            "individual_request_metrics": individual_dicts,
+            "_time_unit": time_unit,  # Store metadata for reference
         }
         with open(file_path, "w") as metrics_file:
             json.dump(data_to_save, metrics_file, indent=4)
@@ -262,16 +272,22 @@ class AggregatedMetricsCollector:
         """Returns the latest live metrics for use in the UI."""
         return self._live_metrics_data
 
-    def get_ui_scatter_plot_metrics(self) -> List[float] | None:
+    def get_ui_scatter_plot_metrics(self, time_unit: str = "s") -> List[float] | None:
         """Returns the plot metrics for use in the UI."""
         mean_ttft = self.aggregated_metrics.stats.ttft.mean
         mean_output_latency = self.aggregated_metrics.stats.output_latency.mean
         if mean_ttft is None or mean_output_latency is None:
             return None
 
+        # Convert time-based metrics to the specified time unit for UI display
+        converted_ttft = TimeUnitConverter.convert_value(mean_ttft, "s", time_unit)
+        converted_output_latency = TimeUnitConverter.convert_value(
+            mean_output_latency, "s", time_unit
+        )
+
         return [
-            mean_ttft,
-            mean_output_latency,
+            converted_ttft,
+            converted_output_latency,
             self.aggregated_metrics.mean_input_throughput_tokens_per_s,
             self.aggregated_metrics.mean_output_throughput_tokens_per_s,
         ]
