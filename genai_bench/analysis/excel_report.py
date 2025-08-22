@@ -394,7 +394,20 @@ def create_aggregated_metrics_sheet(
         for key in RequestLevelMetrics.model_fields
         if key not in {"error_code", "error_message"}
     ]
-    stats_headers = [key for key in filtered_keys]
+
+    # Apply time unit labels to latency fields in stats headers
+    stats_headers = []
+    stats_field_mapping = {}  # Map display headers to actual field names
+    for key in filtered_keys:
+        if TimeUnitConverter.is_latency_field(key):
+            # Add time unit to latency field headers
+            display_header = TimeUnitConverter.get_unit_label(f"{key} (s)", time_unit)
+            stats_headers.append(display_header)
+            stats_field_mapping[display_header] = key
+        else:
+            stats_headers.append(key)
+            stats_field_mapping[key] = key  # Non-latency fields map to themselves
+
     sheet.append(metadata_headers + base_headers + stats_headers)
     make_header_bold(sheet)
 
@@ -420,8 +433,10 @@ def create_aggregated_metrics_sheet(
                     value = json.dumps(value, indent=2)
                 row.append(value)
 
-            for stats_key in stats_headers:
-                stats_value = metrics_dict["stats"].get(stats_key, {})
+            for stats_header in stats_headers:
+                # Use the mapping to get the actual field name for data extraction
+                data_field_name = stats_field_mapping[stats_header]
+                stats_value = metrics_dict["stats"].get(data_field_name, {})
                 row.append(json.dumps(stats_value, indent=2))
 
             sheet.append(row)
@@ -437,9 +452,20 @@ def create_single_request_metrics_sheet(
     time_unit: str = "s",
 ):
     sheet = wb.create_sheet("Individual Request Metrics")
-    headers = ["scenario", experiment_metadata.iteration_type] + list(
-        RequestLevelMetrics.model_fields
-    )
+
+    # Apply time unit labels to latency fields in headers
+    headers = ["scenario", experiment_metadata.iteration_type]
+    field_mapping = {}  # Map display headers to actual field names
+    for field in RequestLevelMetrics.model_fields:
+        if TimeUnitConverter.is_latency_field(field):
+            # Add time unit to latency field headers
+            display_header = TimeUnitConverter.get_unit_label(f"{field} (s)", time_unit)
+            headers.append(display_header)
+            field_mapping[display_header] = field
+        else:
+            headers.append(field)
+            field_mapping[field] = field  # Non-latency fields map to themselves
+
     sheet.append(headers)
     make_header_bold(sheet)
 
@@ -456,8 +482,10 @@ def create_single_request_metrics_sheet(
             ]
             for single_request_metrics in metrics:
                 row = [scenario, iteration]
-                for field in RequestLevelMetrics.model_fields:
-                    value = single_request_metrics.get(field)  # type: ignore[attr-defined]
+                for header in headers[2:]:  # Skip scenario and iteration_type
+                    # Use the mapping to get the actual field name for data extraction
+                    data_field_name = field_mapping[header]
+                    value = single_request_metrics.get(data_field_name)  # type: ignore[attr-defined]
                     row.append(value)
                 sheet.append(row)
                 rows_for_scenario += 1
