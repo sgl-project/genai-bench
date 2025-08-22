@@ -509,6 +509,7 @@ def benchmark(
             f"{Path(experiment_folder_abs_path).name}_summary.xlsx",
         ),
         percentile="mean",
+        time_unit=time_unit,
     )
     plot_experiment_data_flexible(
         [
