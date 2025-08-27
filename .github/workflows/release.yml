@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      id-token: write # For trusted publishing (optional but recommended)
+      id-token: write   # For trusted publishing (optional but recommended)
       contents: read
-      packages: write # For publishing Docker images to GHCR
+      packages: write   # For publishing Docker images to GHCR
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
           TAG="${{ github.event.release.tag_name }}"
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-      
+
       - name: Sync pyproject.toml version
         run: |
           python - <<'PY'
@@ -58,6 +58,7 @@ jobs:
           PY
         env:
           VERSION: ${{ steps.version.outputs.version }}
+
       - name: Build package
         run: |
           uv build
