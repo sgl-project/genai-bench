@@ -10,9 +10,6 @@ on:
         required: true
         type: string
 
-env:
-  GHCR_NAMESPACE: ${{ github.repository_owner }}
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -94,6 +91,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set GHCR namespace (lowercase)
+        run: echo "GHCR_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -103,8 +103,8 @@ jobs:
           build-args: |
             PKG_VERSION=${{ steps.version.outputs.version }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/genai-bench:latest
-            ghcr.io/${{ github.repository_owner }}/genai-bench:${{ steps.version.outputs.tag }}
-            ghcr.io/${{ github.repository_owner }}/genai-bench:${{ steps.version.outputs.version }}
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:latest
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
