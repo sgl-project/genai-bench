@@ -11,7 +11,7 @@ on:
         type: string
 
 env:
-  GHCR_NAMESPACE: ${{ github.repository_owner }}
+  GHCR_NAMESPACE: ${{ toLower(github.repository_owner) }}
 
 jobs:
   release:
