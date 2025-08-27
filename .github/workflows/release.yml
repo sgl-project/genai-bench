@@ -3,15 +3,24 @@ name: Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to test (e.g., v0.0.3-rc.1)"
+        required: true
+        type: string
+
+env:
+  GHCR_NAMESPACE: ${{ github.repository_owner }}
 
 jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      id-token: write   # For trusted publishing (optional but recommended)
+      id-token: write
       contents: read
-      packages: write   # For publishing Docker images to GHCR
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -38,10 +47,14 @@ jobs:
         run: |
           uv run coverage report --fail-under=93
 
-      - name: Extract version from release tag
+      - name: Extract version from tag (release or manual)
         id: version
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${TAG#v}" >> $GITHUB_OUTPUT
 
@@ -60,15 +73,13 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
 
       - name: Build package
-        run: |
-          uv build
+        run: uv build
 
       - name: Publish to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          # For trusted publishing (more secure, optional):
-          # repository-url: https://upload.pypi.org/legacy/
 
       - name: Set up QEMU (for multi-arch)
         uses: docker/setup-qemu-action@v3
@@ -92,8 +103,8 @@ jobs:
           build-args: |
             PKG_VERSION=${{ steps.version.outputs.version }}
           tags: |
-            ghcr.io/moirai-internal/genai-bench:latest
-            ghcr.io/moirai-internal/genai-bench:${{ steps.version.outputs.tag }}      # v0.0.3
-            ghcr.io/moirai-internal/genai-bench:${{ steps.version.outputs.version }}  # 0.0.3
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:latest
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
