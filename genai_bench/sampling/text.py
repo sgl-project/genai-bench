@@ -77,9 +77,7 @@ class TextSampler(Sampler):
         prompt = self._sample_text(num_input_tokens)
         num_prefill_tokens = self.get_token_length(prompt)
         if num_input_tokens is not None:
-            self._check_discrepancy(
-                num_input_tokens, num_prefill_tokens, threshold=0.15, tolerance=20
-            )
+            self._check_discrepancy(num_input_tokens, num_prefill_tokens, threshold=0.1)
 
         return UserChatRequest(
             model=self.model,
@@ -106,7 +104,7 @@ class TextSampler(Sampler):
         num_prefill_tokens = sum(self.get_token_length(doc) for doc in documents)
         if tokens_per_document is not None:
             num_expected_tokens = tokens_per_document * self.batch_size
-            self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 0.2, 20)
+            self._check_discrepancy(num_expected_tokens, num_prefill_tokens, 0.2)
 
         return UserEmbeddingRequest(
             model=self.model,
@@ -203,11 +201,7 @@ class TextSampler(Sampler):
         return prompt
 
     def _check_discrepancy(
-        self,
-        num_input_tokens: int,
-        num_prefill_tokens: int,
-        threshold: float = 0.1,
-        tolerance: int = 10,
+        self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1
     ) -> None:
         """
         Checks for and logs large discrepancies in token counts.
@@ -216,14 +210,12 @@ class TextSampler(Sampler):
             num_input_tokens (int): Expected number of input tokens.
             num_prefill_tokens (int): Actual number of input tokens.
             threshold (float, optional): Threshold for discrepancies.
-            tolerance (int, optional): Number of tokens to consider for discrepancies.
 
         Raises:
-            Warning: If the discrepancy exceeds threshold * num_input_tokens
-            or is greater than tolerance tokens.
+            Warning: If the discrepancy exceeds threshold * num_input_tokens.
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
-        if discrepancy > threshold * num_input_tokens or discrepancy > tolerance:
+        if discrepancy > threshold * num_input_tokens:
             logger.warning(
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
