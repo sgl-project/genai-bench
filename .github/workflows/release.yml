@@ -93,7 +93,6 @@ jobs:
             PKG_VERSION=${{ steps.version.outputs.version }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:latest
-            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.tag }}
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
