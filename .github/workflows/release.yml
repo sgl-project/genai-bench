@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -34,7 +34,6 @@ jobs:
         run: |
           uv pip install --system .
           uv pip install --system ".[dev,multi-cloud]"
-
       - name: Run tests
         run: |
           uv run pytest tests --cov --cov-report=term-missing -v
@@ -43,7 +42,6 @@ jobs:
       - name: Check coverage threshold
         run: |
           uv run coverage report --fail-under=93
-
       - name: Extract version from tag (release or manual)
         id: version
         run: |
@@ -54,7 +52,6 @@ jobs:
           fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-
       - name: Sync pyproject.toml version
         run: |
           python - <<'PY'
@@ -89,7 +86,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }} 
 
       - name: Set GHCR namespace (lowercase)
         run: echo "GHCR_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
@@ -108,6 +105,3 @@ jobs:
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Check git diff
-        run: git diff pyproject.toml
