@@ -8,7 +8,9 @@ from genai_bench.logging import init_logger
 logger = init_logger(__name__)
 
 
-def create_horizontal_colored_bar_chart(values, width=40, bin_width=0.1, max_bins=10):
+def create_horizontal_colored_bar_chart(
+    values, width=40, bin_width=0.1, max_bins=10, time_unit="s"
+):
     if not values:
         logger.warning("No data for histogram.")
         return Text()
@@ -30,9 +32,17 @@ def create_horizontal_colored_bar_chart(values, width=40, bin_width=0.1, max_bin
     chart = Text()
 
     # Format the labels for the bins using integer or specified decimal width
-    bin_labels = [
-        f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(bin_edges) - 1)
-    ]
+    # Convert bin edges if time_unit is "ms"
+    if time_unit == "ms":
+        bin_labels = [
+            f"{bin_edges[i] * 1000:.0f}-{bin_edges[i + 1] * 1000:.0f}ms"
+            for i in range(len(bin_edges) - 1)
+        ]
+    else:
+        bin_labels = [
+            f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}s"
+            for i in range(len(bin_edges) - 1)
+        ]
 
     # Determine the width of the longest label
     max_label_width = max(len(label) for label in bin_labels)
@@ -58,6 +68,10 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
     if not x_values or not y_values:
         logger.warning("No data for scatter plot.")
         return Text()
+
+    # Calculate spacing based on time unit
+    # 7 spaces for seconds, 9 spaces for milliseconds to accommodate longer labels
+    label_spacing = 9 if y_unit == "ms" else 7
 
     # Determine ranges
     x_min, x_max = min(x_values), max(x_values)
@@ -97,23 +111,24 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
             )
             # Avoid printing the same label as the row above
             if y_label != last_y_label:
-                y_label_str = f"{y_label:<7}"
+                y_label_str = f"{y_label:<{label_spacing}}"
                 last_y_label = y_label
                 if i == 0:  # Add unit to the top row
                     y_label_str = (
-                        f"{y_label:<{6 - len(y_unit)}} {y_unit:<{len(y_unit)}}"
+                        f"{y_label:<{label_spacing - len(y_unit) - 1}} "
+                        f"{y_unit:<{len(y_unit)}}"
                     )
             else:
-                y_label_str = " " * 7  # Leave space for the label
+                y_label_str = " " * label_spacing  # Leave space for the label
         else:
-            y_label_str = " " * 7  # Leave space for the label
+            y_label_str = " " * label_spacing  # Leave space for the label
 
         # Construct the row with dots
         plot_line = "".join(plot[i]) if i < len(plot) else ""
         chart.append(Text(f"{y_label_str}|{plot_line}\n"))
 
     # Add x-axis line
-    x_axis_line = "       " + "-" * (width + 1) + "\n"
+    x_axis_line = " " * label_spacing + "-" * (width + 1) + "\n"
     chart.append(Text(x_axis_line))
 
     # Create x-axis labels using actual x_values
@@ -132,7 +147,9 @@ def create_scatter_plot(x_values, y_values, width=40, height=10, y_unit="", x_un
             last_x_pos = x_pos
 
     # Add unit to the rightmost position, on the same line
-    x_label_line = "       " + "".join(x_labels) + f"{x_unit:<{len(x_unit)}}\n"
+    x_label_line = (
+        " " * label_spacing + "".join(x_labels) + f"{x_unit:<{len(x_unit)}}\n"
+    )
     chart.append(Text(x_label_line))
 
     return chart

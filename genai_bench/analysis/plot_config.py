@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics
+from genai_bench.time_units import TimeUnitConverter
 
 logger = init_logger(__name__)
 
@@ -152,7 +153,7 @@ class PlotConfigManager:
                     "x_field": "mean_output_throughput_tokens_per_s",
                     "y_field": "stats.ttft.mean",
                     "x_label": "Output Throughput of Server (tokens/s)",
-                    "y_label": "TTFT",
+                    "y_label": "TTFT (s)",
                     "plot_type": "line",
                     "position": [0, 1],
                 },
@@ -189,7 +190,7 @@ class PlotConfigManager:
                     "x_field": "mean_total_tokens_throughput_tokens_per_s",
                     "y_field": "stats.ttft.mean",
                     "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
-                    "y_label": "TTFT",
+                    "y_label": "TTFT (s)",
                     "plot_type": "line",
                     "position": [1, 1],
                 },
@@ -273,7 +274,7 @@ class PlotConfigManager:
                         },
                     ],
                     "x_label": "Requests Per Second",
-                    "y_label": "Latency (seconds)",
+                    "y_label": "Latency (s)",
                     "plot_type": "line",
                     "position": [0, 0],
                 },
@@ -283,12 +284,12 @@ class PlotConfigManager:
                     "y_fields": [
                         {
                             "field": "stats.ttft.mean",
-                            "label": "Mean TTFT",
+                            "label": "Mean TTFT (s)",
                             "color": "green",
                         },
                         {
                             "field": "stats.ttft.p95",
-                            "label": "P95 TTFT",
+                            "label": "P95 TTFT (s)",
                             "color": "purple",
                         },
                     ],
@@ -364,12 +365,12 @@ class PlotConfigManager:
                     "y_fields": [
                         {
                             "field": "stats.ttft.mean",
-                            "label": "Mean TTFT",
+                            "label": "Mean TTFT (s)",
                             "color": "green",
                         },
                         {
                             "field": "stats.ttft.p95",
-                            "label": "P95 TTFT",
+                            "label": "P95 TTFT (s)",
                             "color": "purple",
                         },
                     ],
@@ -401,44 +402,96 @@ class PlotConfigManager:
     }
 
     @classmethod
-    def load_config(cls, config_source: Union[str, Dict, None] = None) -> PlotConfig:
+    def apply_time_unit_conversion(
+        cls, config_data: Dict[str, Any], time_unit: str = "s"
+    ) -> Dict[str, Any]:
+        """
+        Apply time unit conversion to plot configuration labels.
+
+        Args:
+            config_data: Plot configuration dictionary
+            time_unit: Target time unit ('s' or 'ms')
+
+        Returns:
+            Modified configuration with updated labels
+        """
+        if time_unit not in ["s", "ms"]:
+            return config_data
+
+        # Create a copy to avoid modifying the original
+        config_copy = config_data.copy()
+
+        # Convert labels in each plot specification
+        for plot_copy in config_copy.get("plots", []):
+            # Convert title
+            if "title" in plot_copy:
+                original_title = plot_copy["title"]
+                plot_copy["title"] = TimeUnitConverter.get_unit_label(
+                    original_title, time_unit
+                )
+
+            # Convert y_label
+            if "y_label" in plot_copy:
+                original_y_label = plot_copy["y_label"]
+                plot_copy["y_label"] = TimeUnitConverter.get_unit_label(
+                    original_y_label, time_unit
+                )
+
+            # Convert x_label
+            if "x_label" in plot_copy:
+                original_x_label = plot_copy["x_label"]
+                plot_copy["x_label"] = TimeUnitConverter.get_unit_label(
+                    original_x_label, time_unit
+                )
+
+            # Convert y_fields labels
+            if "y_fields" in plot_copy:
+                for y_field in plot_copy["y_fields"]:
+                    if "label" in y_field:
+                        original_label = y_field["label"]
+                        y_field["label"] = TimeUnitConverter.get_unit_label(
+                            original_label, time_unit
+                        )
+
+        return config_copy
+
+    @classmethod
+    def load_config(
+        cls, config_source: Union[str, Dict, None] = None, time_unit: str = "s"
+    ) -> PlotConfig:
         """Load plot configuration from various sources."""
         if config_source is None:
             # Use default 2x4 preset
-            return cls.load_preset("2x4_default")
+            return cls.load_preset("2x4_default", time_unit)
 
         if isinstance(config_source, str):
             if config_source in cls.PRESETS:
                 # Load preset
-                return cls.load_preset(config_source)
+                return cls.load_preset(config_source, time_unit)
             else:
                 # Load from file
-                return cls.load_from_file(config_source)
+                return cls.load_from_file(config_source, time_unit)
 
         if isinstance(config_source, dict):
             # Load from dictionary
-            return PlotConfig(**config_source)
+            converted_data = cls.apply_time_unit_conversion(config_source, time_unit)
+            return PlotConfig(**converted_data)
 
         raise ValueError(f"Invalid config source type: {type(config_source)}")
 
     @classmethod
-    def load_preset(cls, preset_name: str) -> PlotConfig:
-        """Load a built-in preset configuration."""
+    def load_preset(cls, preset_name: str, time_unit: str = "s") -> PlotConfig:
+        """Load a preset plot configuration."""
         if preset_name not in cls.PRESETS:
-            available = list(cls.PRESETS.keys())
-            raise ValueError(f"Unknown preset '{preset_name}'. Available: {available}")
+            raise ValueError(
+                f"Unknown preset: {preset_name}. Available: {list(cls.PRESETS.keys())}"
+            )
 
         preset_data = cls.PRESETS[preset_name]
-        layout_data = preset_data["layout"]
-        plots_data = preset_data["plots"]
-
-        # Type ignore for mypy issues with preset data structure
-        layout = PlotLayout(**layout_data)  # type: ignore[arg-type]
-        plots = [PlotSpec(**plot_data) for plot_data in plots_data]  # type: ignore[arg-type]
-        return PlotConfig(layout=layout, plots=plots)
+        return cls.load_config(preset_data, time_unit)
 
     @classmethod
-    def load_from_file(cls, file_path: str) -> PlotConfig:
+    def load_from_file(cls, file_path: str, time_unit: str = "s") -> PlotConfig:
         """Load configuration from JSON file."""
         path = Path(file_path)
         if not path.exists():
@@ -447,7 +500,8 @@ class PlotConfigManager:
         try:
             with open(path, "r") as f:
                 config_data = json.load(f)
-            return PlotConfig(**config_data)
+            converted_data = cls.apply_time_unit_conversion(config_data, time_unit)
+            return PlotConfig(**converted_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in config file {file_path}: {e}") from e
         except Exception as e:
@@ -461,8 +515,6 @@ class PlotConfigManager:
 
         with open(path, "w") as f:
             json.dump(config.model_dump(), f, indent=2)
-
-        logger.info(f"Plot configuration saved to {file_path}")
 
     @classmethod
     def get_available_fields(cls) -> Dict[str, str]:
