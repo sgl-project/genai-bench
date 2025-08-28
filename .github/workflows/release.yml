@@ -3,6 +3,12 @@ name: Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to test (e.g., v0.0.3-rc.1)"
+        required: true
+        type: string
 
 jobs:
   release:
@@ -38,10 +44,14 @@ jobs:
         run: |
           uv run coverage report --fail-under=93
 
-      - name: Extract version from release tag
+      - name: Extract version from tag (release or manual)
         id: version
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${TAG#v}" >> $GITHUB_OUTPUT
 
@@ -63,6 +73,7 @@ jobs:
         run: uv build
 
       - name: Publish to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
@@ -83,7 +94,7 @@ jobs:
       - name: Set GHCR namespace (lowercase)
         run: echo "GHCR_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
 
-      - name: Build and push Docker image (release)
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -96,3 +107,6 @@ jobs:
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Check git diff
+        run: git diff pyproject.toml
