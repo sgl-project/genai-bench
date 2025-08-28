@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -104,6 +104,7 @@ jobs:
             PKG_VERSION=${{ steps.version.outputs.version }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:latest
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.tag }}
             ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
