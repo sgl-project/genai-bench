@@ -96,7 +96,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Set GHCR namespace (lowercase)
         run: echo "GHCR_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
