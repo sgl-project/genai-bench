@@ -3,12 +3,6 @@ name: Release
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "Run release in dry mode"
-        required: false
-        default: "true"
 
 jobs:
   release:
@@ -56,22 +50,15 @@ jobs:
       - name: Extract version from pyproject.toml
         id: tagver
         run: |
-          # use pyproject version
           echo "tag=v${{ steps.projver.outputs.version }}" >> $GITHUB_OUTPUT
           echo "version=${{ steps.projver.outputs.version }}" >> $GITHUB_OUTPUT
 
-      - name: Debug - Show extracted versions
-        run: |
-          echo "::notice ::Tag version: ${{ steps.tagver.outputs.version }}"
-          echo "::notice ::pyproject.toml version: ${{ steps.projver.outputs.version }}"
-          echo "Raw tag value: ${{ github.event.release.tag_name }}"
-          
       - name: Verify versions match
         run: |
           echo "Tag version:       ${{ steps.tagver.outputs.version }}"
           echo "pyproject version: ${{ steps.projver.outputs.version }}"
           if [ "${{ steps.tagver.outputs.version }}" != "${{ steps.projver.outputs.version }}" ]; then
-            echo "::error ::Release tag (v${{ steps.tagver.outputs.version }}) must match pyproject.toml version (${{ steps.projver.outputs.version }}). Please ensure the tag matches 'v${{ steps.projver.outputs.version }}'"
+            echo "::error ::Release tag must match pyproject.toml version."
             exit 1
           fi
 
@@ -79,7 +66,6 @@ jobs:
         run: uv build
 
       - name: Publish to PyPI
-        if: ${{ github.event_name == 'release' && inputs.dry_run != 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
