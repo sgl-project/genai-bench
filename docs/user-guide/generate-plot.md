@@ -236,6 +236,10 @@ A simplified 2x2 layout with the most important metrics for quick analysis.
 4. Use `--validate-only` to test your configuration
 5. Generate plots with your custom config
 
+### Time Units
+
+Pick the unit of time to measure latency fields with `--time-unit [s|ms]`. Plots default to using seconds if not specified.
+
 ### Tips
 
 - Use descriptive titles for your plots
