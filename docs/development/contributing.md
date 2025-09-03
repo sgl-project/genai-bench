@@ -11,7 +11,7 @@ We use `make format` to format our code using `isort` and `ruff`. The detailed c
 
 ## Pull Requests
 
-When submitting a pull request, please follow the PR template that will be automatically populated when you open a PR.
+Please follow the PR template, which will be automatically populated when you open a new [Pull Request on GitHub](https://github.com/sgl-project/genai-bench/compare).
 
 ### Code Reviews
 
