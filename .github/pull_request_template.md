@@ -12,6 +12,9 @@ Please prefix your PR title with one of the following:
 - [ ] `[Report]` - Changes in generating plots and excel reports
 - [ ] `[Misc]` - Other changes (use sparingly)
 
+## Related Issue
+Link the related issue: #<issue_number>
+
 ## Changes Made in this PR
 - [ ] Change 1  
 - [ ] Change 2 
