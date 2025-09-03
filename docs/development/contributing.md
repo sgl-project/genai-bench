@@ -11,38 +11,7 @@ We use `make format` to format our code using `isort` and `ruff`. The detailed c
 
 ## Pull Requests
 
-When submitting a pull request, please:
-
-1. `git pull origin main` to make sure your code has been rebased on top of the latest commit on the main branch.
-2. Ensure code is properly formatted and passed every lint checks by running `make check`.
-3. Add new test cases to stay robust and correct. In the case of a bug fix, the tests should fail without your code
-changes. For new features, try to cover as many variants as reasonably possible. You can use `make test` to check the
-test coverage. Or use `make test_changed` to test the test coverage for your own branch. We enforce to keep a test
-coverage about 90%.
-
-### PR Template
-
-It is required to classify your PR and make the commit message concise and useful. Prefix the PR title appropriately
-to indicate the type of change. Please use one of the following:
-
-`[Bugfix]` for bug fixes.
-
-`[Core]` for core backend changes. This includes build, version upgrade, changes in user and sampling.
-
-`[Metrics]` for changes made to metrics.
-
-`[Frontend]` for UI dashboard and CLI entrypoint related changes.
-
-`[Docs]` for changes related to documentation.
-
-`[CI/Tests]` for unittests and integration tests.
-
-`[Report]` for changes in generating plots and excel reports.
-
-`[Misc]` for PRs that do not fit the above categories. Please use this sparingly.
-
-Open source community also recommends to keep the commit message title within 52 chars and each line in message content
-within 72 chars.
+When submitting a pull request, please follow the [PR template](../../.github/pull_request_template.md) that will be automatically populated when you open a PR.
 
 ### Code Reviews
 
