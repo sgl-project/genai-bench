@@ -38,6 +38,15 @@ jobs:
         run: |
           uv run coverage report --fail-under=93
 
+      # 1) version from GitHub Release tag
+      - name: Extract version from release tag
+        id: tagver
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      # 2) version from pyproject.toml
       - name: Read version from pyproject.toml
         id: projver
         run: |
@@ -47,6 +56,7 @@ jobs:
           print(f"version={data['project']['version']}")
           PY
 
+      # 3) verify versions match
       - name: Extract version from pyproject.toml
         id: tagver
         run: |
