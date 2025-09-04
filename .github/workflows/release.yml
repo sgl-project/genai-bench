@@ -4,14 +4,25 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.1.0rc1)'
+        required: true
+        type: string
+env:
+  REGISTRY: ghcr.io
+  IMAGE_ORG: moirai-internal 
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -39,13 +50,22 @@ jobs:
           uv run coverage report --fail-under=93
 
       # 1) version from GitHub Release tag
-      - name: Extract version from release tag
+      - name: Extract version
         id: tagver
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error ::Tag is required (e.g., v0.1.0rc1)."
+            exit 1
+          fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-
+          echo "Resolved tag=$TAG, version=${TAG#v}"
+          
       # 2) version from pyproject.toml
       - name: Read version from pyproject.toml
         id: projver
@@ -57,12 +77,6 @@ jobs:
           PY
 
       # 3) verify versions match
-      - name: Extract version from pyproject.toml
-        id: tagver
-        run: |
-          echo "tag=v${{ steps.projver.outputs.version }}" >> $GITHUB_OUTPUT
-          echo "version=${{ steps.projver.outputs.version }}" >> $GITHUB_OUTPUT
-
       - name: Verify versions match
         run: |
           echo "Tag version:       ${{ steps.tagver.outputs.version }}"
@@ -76,6 +90,7 @@ jobs:
         run: uv build
 
       - name: Publish to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
@@ -90,12 +105,9 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
-
-      - name: Set GHCR namespace (lowercase)
-        run: echo "GHCR_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
 
       - name: Build and push Docker image (release)
         uses: docker/build-push-action@v6
@@ -106,7 +118,7 @@ jobs:
           build-args: |
             PKG_VERSION=${{ steps.tagver.outputs.version }}
           tags: |
-            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:latest
-            ghcr.io/${{ env.GHCR_NAMESPACE }}/genai-bench:${{ steps.tagver.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/genai-bench:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/genai-bench:${{ steps.tagver.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
