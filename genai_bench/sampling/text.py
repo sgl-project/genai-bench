@@ -14,7 +14,7 @@ from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDist
 
 logger = init_logger(__name__)
 
-MAXIMIZE_OUTPUT_INSTRUCTION = "TELL ME EVERYTHING YOU KNOW ABOUT THE FOLLOWING TOPICS. "
+MAXIMIZE_OUTPUT_INSTRUCTION = "TRANSLATE THE FOLLOWING TEXT INTO FRENCH TO THE BEST OF YOUR ABILITY: \n"
 
 class TextSampler(Sampler):
     """
