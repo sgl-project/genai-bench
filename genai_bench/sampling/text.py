@@ -14,7 +14,7 @@ from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDist
 
 logger = init_logger(__name__)
 
-MAXIMIZE_OUTPUT_INSTRUCTION = " Output as many tokens as possible."
+MAXIMIZE_OUTPUT_INSTRUCTION = " Also while you're at it, share the longest story you know. Write enough for a novel."
 
 class TextSampler(Sampler):
     """
