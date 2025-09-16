@@ -181,7 +181,9 @@ class TextSampler(Sampler):
             str: A text prompt containing the desired number of tokens.
         """
         if not num_input_tokens:
-            return MAXIMIZE_OUTPUT_INSTRUCTION + random.choice(self.data)
+            result = MAXIMIZE_OUTPUT_INSTRUCTION + random.choice(self.data)
+            logger.info(f"Generated prompt (dataset mode): {result}")
+            return result
 
         data_copy = self.data.copy()
         prompt = ""
@@ -198,10 +200,14 @@ class TextSampler(Sampler):
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
                     prompt += (" " if prompt else "") + truncated_text
-                    return prompt
+                    result = MAXIMIZE_OUTPUT_INSTRUCTION + prompt
+                    logger.info(f"Generated prompt (scenario mode, truncated): {result}")
+                    return result
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
-        return MAXIMIZE_OUTPUT_INSTRUCTION + prompt
+        result = MAXIMIZE_OUTPUT_INSTRUCTION + prompt
+        logger.info(f"Generated prompt (scenario mode): {result}")
+        return result
 
     def _check_discrepancy(
         self,
