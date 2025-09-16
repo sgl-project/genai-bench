@@ -14,6 +14,7 @@ from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDist
 
 logger = init_logger(__name__)
 
+MAXIMIZE_OUTPUT_INSTRUCTION = " Output as many tokens as possible."
 
 class TextSampler(Sampler):
     """
@@ -180,7 +181,7 @@ class TextSampler(Sampler):
             str: A text prompt containing the desired number of tokens.
         """
         if not num_input_tokens:
-            return random.choice(self.data)
+            return random.choice(self.data) + MAXIMIZE_OUTPUT_INSTRUCTION
 
         data_copy = self.data.copy()
         prompt = ""
@@ -200,7 +201,7 @@ class TextSampler(Sampler):
                     return prompt
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
-        return prompt
+        return prompt + MAXIMIZE_OUTPUT_INSTRUCTION
 
     def _check_discrepancy(
         self,
