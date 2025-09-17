@@ -48,17 +48,29 @@ def create_layout():
     return layout
 
 
-def create_metric_panel(title, latency_data, throughput_data):
+def create_metric_panel(title, latency_data, throughput_data, time_unit: str = "s"):
+    # Convert latency values if needed
+    if time_unit == "ms":
+        # Convert seconds to milliseconds
+        latency_values = {
+            key: value * 1000 if value is not None else value
+            for key, value in latency_data.items()
+        }
+        time_unit_label = "ms"
+    else:
+        latency_values = latency_data
+        time_unit_label = "s"
+
     latency_table = Table.grid(expand=True)
     latency_table.add_column(justify="left")
     latency_table.add_row(
         Text.from_markup(
-            f"[yellow]Avg:[/yellow] {latency_data['mean']:.2f} s\n"
-            f"Min: {latency_data['min']:.2f} s\n"
-            f"Max: {latency_data['max']:.2f} s\n"
-            f"[blue]P50:[/blue] {latency_data['p50']:.2f} s\n"
-            f"[magenta]P90:[/magenta] {latency_data['p90']:.2f} s\n"
-            f"[green]P99:[/green] {latency_data['p99']:.2f} s",
+            f"[yellow]Avg:[/yellow] {latency_values['mean']:.2f} {time_unit_label}\n"
+            f"Min: {latency_values['min']:.2f} {time_unit_label}\n"
+            f"Max: {latency_values['max']:.2f} {time_unit_label}\n"
+            f"[blue]P50:[/blue] {latency_values['p50']:.2f} {time_unit_label}\n"
+            f"[magenta]P90:[/magenta] {latency_values['p90']:.2f} {time_unit_label}\n"
+            f"[green]P99:[/green] {latency_values['p99']:.2f} {time_unit_label}",
             justify="left",
         )
     )

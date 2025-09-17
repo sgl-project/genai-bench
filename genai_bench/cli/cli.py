@@ -140,12 +140,13 @@ def benchmark(
     github_token,
     github_owner,
     github_repo,
+    time_unit,
 ):
     """
     Run a benchmark based on user defined scenarios.
     """
     # Set up the dashboard and layout
-    dashboard = create_dashboard()
+    dashboard = create_dashboard(time_unit)
 
     # Initialize logging with the layout for the log panel
     logging_manager = LoggingManager("benchmark", dashboard.layout, dashboard.live)
@@ -361,6 +362,7 @@ def benchmark(
         additional_request_params=additional_request_params,
         dataset_path=str(dataset_path),
         character_token_ratio=sonnet_character_token_ratio,
+        time_unit=time_unit,
     )
     experiment_metadata_file = Path(
         os.path.join(experiment_folder_abs_path, "experiment_metadata.json")
@@ -463,7 +465,8 @@ def benchmark(
                         f"debug_for_run_{sanitized_scenario_str}_{concurrency}.json"
                     )
                     aggregated_metrics_collector.save(
-                        os.path.join(experiment_folder_abs_path, debug_file_name)
+                        os.path.join(experiment_folder_abs_path, debug_file_name),
+                        time_unit,
                     )
                     raise ValueError(
                         f"{str(e)} Please check out "
@@ -472,7 +475,8 @@ def benchmark(
                     ) from e
 
                 dashboard.update_scatter_plot_panel(
-                    aggregated_metrics_collector.get_ui_scatter_plot_metrics()
+                    aggregated_metrics_collector.get_ui_scatter_plot_metrics(time_unit),
+                    time_unit,
                 )
 
                 logger.info(
@@ -487,7 +491,7 @@ def benchmark(
                     f"{iteration}_time_{total_run_time}s.json"
                 )
                 aggregated_metrics_collector.save(
-                    os.path.join(experiment_folder_abs_path, run_name)
+                    os.path.join(experiment_folder_abs_path, run_name), time_unit
                 )
                 # Store metrics in memory for interim plot
                 scenario_metrics["data"][iteration] = {
@@ -532,6 +536,7 @@ def benchmark(
             f"{Path(experiment_folder_abs_path).name}_summary.xlsx",
         ),
         percentile="mean",
+        time_unit=time_unit,
     )
     plot_experiment_data_flexible(
         [
@@ -539,6 +544,7 @@ def benchmark(
         ],
         group_key="traffic_scenario",
         experiment_folder=experiment_folder_abs_path,
+        time_unit=time_unit,
     )
     logger.info(
         f"📁 Please check {experiment_folder_abs_path} "

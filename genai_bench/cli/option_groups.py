@@ -562,6 +562,13 @@ def experiment_options(func):
         "or a local path. IMPORTANT: it should match the tokenizer the model "
         "server uses.",
     )(func)
+    func = click.option(
+        "--time-unit",
+        type=click.Choice(["s", "ms"], case_sensitive=False),
+        default="s",
+        help="Time unit for latency metrics display and export. "
+        "Options: 's' (seconds), 'ms' (milliseconds). Default: s",
+    )(func)
     return func
 
 
@@ -618,6 +625,7 @@ def storage_auth_options(func):
     func = click.option(
         "--storage-bucket",
         type=str,
+        is_eager=True,
         help="Bucket/container name for storage provider.",
     )(func)
 
