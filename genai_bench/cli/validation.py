@@ -391,7 +391,7 @@ def validate_object_storage_options(ctx, param, value):
 
 def validate_warmup_cooldown_ratio_options(ctx, param, value):
     """Validate warmup and cooldown options."""
-    warmup_ratio = ctx.params.get("warmup_ratio", 0.0)
+    warmup_ratio = ctx.params.get("warmup_ratio") or 0.0
     cooldown_ratio = value or 0.0
     if warmup_ratio + cooldown_ratio >= 1.0:
         raise click.BadParameter(
