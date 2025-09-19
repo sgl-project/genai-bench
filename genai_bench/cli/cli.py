@@ -78,6 +78,8 @@ def benchmark(
     task,
     iteration_type,
     num_concurrency,
+    warmup_ratio,
+    cooldown_ratio,
     batch_size,
     traffic_scenario,
     additional_request_params,
@@ -430,6 +432,8 @@ def benchmark(
                         start_time,
                         end_time,
                         sonnet_character_token_ratio,
+                        warmup_ratio,
+                        cooldown_ratio,
                     )
                 except ValueError as e:
                     debug_file_name = (
