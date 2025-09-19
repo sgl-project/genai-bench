@@ -235,6 +235,43 @@ def test_update_live_metrics(aggregated_metrics_collector):
     assert live_metrics["stats"]["output_latency"]["p99"] == pytest.approx(1.296)
 
 
+def test_filter_warmup_and_cooldown_metrics(aggregated_metrics_collector):
+    metrics = [
+        RequestLevelMetrics(
+            ttft=0.1,
+            tpot=0.2,
+            e2e_latency=1.0,
+            output_latency=0.9,
+            input_throughput=20.0,
+            output_throughput=11.111,
+            num_input_tokens=2,
+            num_output_tokens=10,
+            output_inference_speed=5,
+            total_tokens=12,
+        )
+        for _ in range(10)
+    ]
+
+    metrics[0].ttft = 0.0
+    metrics[-1].ttft = 0.0
+
+    for metric in metrics:
+        aggregated_metrics_collector.add_single_request_metrics(metric)
+
+    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 4, 0.1, 0.1)
+    aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
+
+    # Check aggregate calculations#
+    assert aggregated_metrics.stats.ttft["mean"] == pytest.approx(0.1)
+    assert aggregated_metrics.stats.tpot["mean"] == pytest.approx(0.2)
+    assert aggregated_metrics.stats.e2e_latency["mean"] == pytest.approx(1.0)
+    assert aggregated_metrics.stats.output_latency["mean"] == pytest.approx(0.9)
+    assert aggregated_metrics.stats.input_throughput["mean"] == pytest.approx(20.0)
+    assert aggregated_metrics.stats.output_throughput["mean"] == pytest.approx(11.111)
+    # Check metadata calculations
+    assert aggregated_metrics.num_requests == 10
+
+
 def test_save_metrics(aggregated_metrics_collector, tmp_path):
     # Add some sample metrics
     metrics = RequestLevelMetrics(
