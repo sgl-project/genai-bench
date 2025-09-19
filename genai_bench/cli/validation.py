@@ -388,6 +388,7 @@ def validate_object_storage_options(ctx, param, value):
         )
     return value
 
+
 def validate_warmup_cooldown_ratio_options(ctx, param, value):
     """Validate warmup and cooldown options."""
     warmup_ratio = ctx.params.get("warmup_ratio", 0.0)

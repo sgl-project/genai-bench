@@ -144,12 +144,16 @@ class AggregatedMetricsCollector:
         warmup_number = 0
         if warmup_ratio:
             warmup_number = int(len(self.all_request_metrics) * warmup_ratio)
-            logger.info(f"Filtering out first {warmup_number} / {len(self.all_request_metrics)} warmup requests.")
+            logger.info(
+                f"Filtering out first {warmup_number} / {len(self.all_request_metrics)} warmup requests."
+            )
 
         cooldown_number = 0
         if cooldown_ratio:
             cooldown_number = int(len(self.all_request_metrics) * cooldown_ratio)
-            logger.info(f"Filtering out last {cooldown_number} / {len(self.all_request_metrics)} cooldown requests.")
+            logger.info(
+                f"Filtering out last {cooldown_number} / {len(self.all_request_metrics)} cooldown requests."
+            )
 
         for key in filtered_keys:
             # Extract the list of values for this metric from all requests
