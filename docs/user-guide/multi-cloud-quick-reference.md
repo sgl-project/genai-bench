@@ -7,6 +7,7 @@ This is a quick reference guide for common multi-cloud scenarios with genai-benc
 ## OpenAI Benchmarking
 
 ### Basic Usage
+
 ```bash
 genai-bench benchmark \
   --api-backend openai \
@@ -20,6 +21,7 @@ genai-bench benchmark \
 ```
 
 ### With Environment Variable
+
 ```bash
 export MODEL_API_KEY=sk-...
 genai-bench benchmark \
@@ -35,6 +37,7 @@ genai-bench benchmark \
 ## AWS Bedrock Benchmarking
 
 ### Using AWS Profile
+
 ```bash
 genai-bench benchmark \
   --api-backend aws-bedrock \
@@ -49,6 +52,7 @@ genai-bench benchmark \
 ```
 
 ### Using IAM Credentials
+
 ```bash
 genai-bench benchmark \
   --api-backend aws-bedrock \
@@ -66,6 +70,7 @@ genai-bench benchmark \
 ## Azure OpenAI Benchmarking
 
 ### Using API Key
+
 ```bash
 genai-bench benchmark \
   --api-backend azure-openai \
@@ -83,6 +88,7 @@ genai-bench benchmark \
 ## GCP Vertex AI Benchmarking
 
 ### Using Service Account
+
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 genai-bench benchmark \
@@ -100,6 +106,7 @@ genai-bench benchmark \
 ## Storage Examples
 
 ### Upload to OCI Object Storage
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -111,6 +118,7 @@ genai-bench benchmark \
 ```
 
 ### Upload to AWS S3
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -122,6 +130,7 @@ genai-bench benchmark \
 ```
 
 ### Upload to Azure Blob
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -133,6 +142,7 @@ genai-bench benchmark \
 ```
 
 ### Upload to GCP Cloud Storage
+
 ```bash
 genai-bench benchmark \
   ... \
@@ -146,6 +156,7 @@ genai-bench benchmark \
 ## Cross-Cloud Examples
 
 ### Benchmark OpenAI, Store in S3
+
 ```bash
 export MODEL_API_KEY=sk-...
 export AWS_PROFILE=default
@@ -165,6 +176,7 @@ genai-bench benchmark \
 ```
 
 ### Benchmark Bedrock, Store in Azure
+
 ```bash
 export AWS_PROFILE=bedrock-user
 export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=..."
@@ -184,6 +196,7 @@ genai-bench benchmark \
 ```
 
 ### Benchmark Azure OpenAI, Store in GCP
+
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/storage-sa.json
 
@@ -207,6 +220,7 @@ genai-bench benchmark \
 ## Multi-Modal Tasks
 
 ### Image-text-to-Text Benchmarking
+
 ```bash
 genai-bench benchmark \
   --api-backend gcp-vertex \
@@ -223,6 +237,7 @@ genai-bench benchmark \
 ```
 
 ### Text-to-Embeddings Benchmarking
+
 ```bash
 genai-bench benchmark \
   --api-backend openai \
@@ -239,6 +254,7 @@ genai-bench benchmark \
 ## Environment Variable Reference
 
 ### Model Authentication
+
 ```bash
 # OpenAI
 export MODEL_API_KEY=sk-...
@@ -261,6 +277,7 @@ export GCP_LOCATION=us-central1
 ```
 
 ### Storage Authentication
+
 ```bash
 # Azure Storage
 export AZURE_STORAGE_ACCOUNT_NAME=myaccount
@@ -274,6 +291,7 @@ export GITHUB_REPO=benchmarks
 ```
 
 ### General
+
 ```bash
 # HuggingFace (for downloading tokenizers)
 export HF_TOKEN=hf_...

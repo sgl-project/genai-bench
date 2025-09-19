@@ -210,6 +210,10 @@ class ExperimentMetadata(BaseModel):
         ...,
         description="The name of the folder to save the experiment results.",
     )
+    time_unit: str = Field(
+        default="s",
+        description="Time unit for latency metrics display and export (s or ms).",
+    )
     dataset_path: Optional[str] = None
     character_token_ratio: Optional[float] = Field(
         None,

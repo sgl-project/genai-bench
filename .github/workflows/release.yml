@@ -4,13 +4,25 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.1.0rc1)'
+        required: true
+        type: string
+env:
+  REGISTRY: ghcr.io
+  IMAGE_ORG: moirai-internal 
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
-    permissions:
-      id-token: write # For trusted publishing (optional but recommended)
-      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -37,13 +49,76 @@ jobs:
         run: |
           uv run coverage report --fail-under=93
 
-      - name: Build package
+      # 1) version from GitHub Release tag
+      - name: Extract version
+        id: tagver
         run: |
-          uv build
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error ::Tag is required (e.g., v0.1.0rc1)."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+          echo "Resolved tag=$TAG, version=${TAG#v}"
+          
+      # 2) version from pyproject.toml
+      - name: Read version from pyproject.toml
+        id: projver
+        run: |
+          python - <<'PY' | tee /dev/stderr | awk -F= '/^version=/{print "version="$2}' >> "$GITHUB_OUTPUT"
+          import tomllib, pathlib, sys
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text("utf-8"))
+          print(f"version={data['project']['version']}")
+          PY
+
+      # 3) verify versions match
+      - name: Verify versions match
+        run: |
+          echo "Tag version:       ${{ steps.tagver.outputs.version }}"
+          echo "pyproject version: ${{ steps.projver.outputs.version }}"
+          if [ "${{ steps.tagver.outputs.version }}" != "${{ steps.projver.outputs.version }}" ]; then
+            echo "::error ::Release tag must match pyproject.toml version."
+            exit 1
+          fi
+
+      - name: Build package
+        run: uv build
 
       - name: Publish to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          # For trusted publishing (more secure, optional):
-          # repository-url: https://upload.pypi.org/legacy/
+
+      # --- Docker publish ---
+      - name: Set up QEMU (for multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push Docker image (release)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            PKG_VERSION=${{ steps.tagver.outputs.version }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/genai-bench:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/genai-bench:${{ steps.tagver.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

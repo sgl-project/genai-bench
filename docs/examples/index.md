@@ -70,16 +70,19 @@ genai-bench benchmark \
 GenAI Bench supports various traffic patterns:
 
 ### Text Generation Scenarios
+
 - `D(100,100)` - Deterministic: 100 input tokens, 100 output tokens
 - `N(480,240)/(300,150)` - Normal distribution
 - `U(50,100)/(200,250)` - Uniform distribution
 
 ### Embedding Scenarios
+
 - `E(64)` - 64 tokens per document
 - `E(512)` - 512 tokens per document
 - `E(1024)` - 1024 tokens per document
 
 ### Vision Scenarios
+
 - `I(512,512)` - 512x512 pixel images
 - `I(1024,512)` - 1024x512 pixel images
 - `I(2048,2048)` - 2048x2048 pixel images

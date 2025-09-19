@@ -109,6 +109,7 @@ def test_plot_single_scenario_success(
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
         plot_type="line",
+        time_unit="s",
     )
     assert mock_plt.savefig.called
     assert mock_plt.close.called
@@ -151,6 +152,7 @@ def test_plot_single_scenario_with_missing_data(
         concurrency_levels=[1, 2],
         label="Scenario: test_scenario",
         plot_type="line",
+        time_unit="s",
     )
 
     # Verify warnings were logged for missing data
