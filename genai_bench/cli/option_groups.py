@@ -409,7 +409,8 @@ def experiment_options(func):
         type=click.FloatRange(0.0, 1.0, min_open=False, max_open=True),
         default=None,
         help=(
-            "The ratio of the benchmark to run as a warmup and not include in the final results."
+            "The ratio of the benchmark to run as a warmup "
+            "and not include in the final results."
         ),
     )(func)
     func = click.option(
@@ -418,7 +419,8 @@ def experiment_options(func):
         default=None,
         callback=validate_warmup_cooldown_ratio_options,
         help=(
-            "The ratio of the benchmark to run as a cooldown and not include in the final results."
+            "The ratio of the benchmark to run as a cooldown "
+            "and not include in the final results."
         ),
     )(func)
     func = click.option(

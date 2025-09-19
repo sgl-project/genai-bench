@@ -395,7 +395,8 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
     cooldown_ratio = value or 0.0
     if warmup_ratio + cooldown_ratio >= 1.0:
         raise click.BadParameter(
-            f"warmup_ratio({warmup_ratio}) + cooldown_ratio({cooldown_ratio}) must be < 1.0.",
+            f"warmup_ratio({warmup_ratio}) + cooldown_ratio({cooldown_ratio}) "
+            f"must be < 1.0.",
             param_hint=["--warmup-ratio", "--cooldown-ratio"],
         )
     return value
