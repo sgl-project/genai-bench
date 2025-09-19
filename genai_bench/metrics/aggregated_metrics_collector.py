@@ -153,7 +153,7 @@ class AggregatedMetricsCollector:
         if cooldown_ratio:
             cooldown_number = int(len(self.all_request_metrics) * cooldown_ratio)
             logger.info(
-                f"Filtering out last {cooldown_number} {len(self.all_request_metrics)} "
+                f"Filtering out last {cooldown_number}/{len(self.all_request_metrics)} "
                 f"cooldown requests."
             )
 
