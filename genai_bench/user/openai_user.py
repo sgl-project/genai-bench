@@ -220,6 +220,7 @@ class OpenAIUser(BaseUser):
         end_chunk = b"[DONE]"
 
         generated_text = ""
+        all_text_for_token_estimate = ""
         tokens_received = 0
         time_at_first_token = None
         finish_reason = None
@@ -278,12 +279,24 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content, usage = (
-                    delta.get("content", None),
-                    delta.get("usage", None),
-                )
+                content = delta.get("content", None)
+                reasoning_content = delta.get("reasoning_content", None) 
+                usage = delta.get("usage", None)    
                 if usage:
                     tokens_received = usage["completion_tokens"]
+
+                if reasoning_content:
+                    if not time_at_first_token:
+                        if tokens_received > 1:
+                            logger.warning(
+                                f"🚨🚨🚨 The first chunk the server returned "
+                                f"has >1 tokens: {tokens_received}. It will "
+                                f"affect the accuracy of time_at_first_token!"
+                            )
+                        time_at_first_token = time.monotonic()
+                    #generated_text += reasoning_content 
+                    all_text_for_token_estimate += reasoning_content
+
                 if content:
                     if not time_at_first_token:
                         if tokens_received > 1:
@@ -294,6 +307,7 @@ class OpenAIUser(BaseUser):
                             )
                         time_at_first_token = time.monotonic()
                     generated_text += content
+                    all_text_for_token_estimate += content
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
 
@@ -326,8 +340,10 @@ class OpenAIUser(BaseUser):
         )
 
         if not tokens_received:
+            text_for_est = all_text_for_token_estimate or generated_text
+
             tokens_received = self.environment.sampler.get_token_length(
-                generated_text, add_special_tokens=False
+                text_for_est, add_special_tokens=False
             )
             logger.warning(
                 "🚨🚨🚨 There is no usage info returned from the model "

@@ -659,3 +659,68 @@ def test_sgl_model_format(mock_post, mock_openai_user):
     assert response.generated_text == " on"
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 5
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_with_reasoning_content_and_token_estimation(mock_post, mock_openai_user, caplog):
+    """
+    Ensure TTFT is triggered by reasoning_content,
+    generated_text excludes it, and token estimation includes both
+    reasoning_content + content when usage is missing.
+    """
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-oss-20b-h100-chat",
+        prompt="Why is the sky blue?",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=20,
+    )
+
+    # Prepare text pieces
+    reasoning_text = "Thinking..."
+    final_text = "The sky is blue"
+    combined_text = reasoning_text + final_text
+
+    # Mock sampler so token estimation equals len(combined_text)
+    mock_openai_user.environment.sampler = MagicMock()
+    mock_openai_user.environment.sampler.get_token_length.return_value = len(combined_text)
+
+    # Stream: first reasoning_content, then content, then a final chunk without usage (forces estimation)
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id": "chat-xxx", "choices": [{"delta": {"reasoning_content": "Thinking..."}, "index": 0}], "model": "gpt-oss-llama-3"}',
+            b'data: {"id": "chat-xxx", "choices": [{"delta": {"content": "The sky is blue"}, "index": 0}], "model": "gpt-oss-llama-3"}',
+            b'data: {"id": "chat-xxx", "choices": [{"delta": {}, "finish_reason": "stop"}]}',
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    with caplog.at_level(logging.WARNING):
+        # Call send_request directly to get a UserChatResponse
+        resp = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+
+    # Assertions: got a UserChatResponse
+    assert isinstance(resp, UserChatResponse)
+    assert resp.status_code == 200
+    assert resp.time_at_first_token is not None
+
+    # generated_text should NOT include reasoning_content
+    assert resp.generated_text == final_text
+
+    # Warning about missing usage must be present
+    assert "There is no usage info returned from the model server" in caplog.text
+
+    # Token estimation must be based on reasoning + content
+    assert resp.tokens_received == len(combined_text)
+    mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
+        combined_text, add_special_tokens=False
+    )
