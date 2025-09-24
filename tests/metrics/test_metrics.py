@@ -118,7 +118,9 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     # Manually call the aggregation logic to verify results
     start_time = 0
     end_time = 1.5
-    aggregated_metrics_collector.aggregate_metrics_data(start_time, end_time, 4.4)
+    aggregated_metrics_collector.aggregate_metrics_data(
+        start_time, end_time, 4.4, 0.0, 0.0
+    )
     aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
 
     # Check aggregate calculations
@@ -287,7 +289,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
         total_tokens=12,
     )
     aggregated_metrics_collector.add_single_request_metrics(metrics)
-    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 4)
+    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 4, 0.0, 0.0)
 
     # Save the metrics to a file
     save_path = tmp_path / "metrics.json"
@@ -305,7 +307,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
 
 def test_aggregate_empty_metrics(aggregated_metrics_collector, tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
-        aggregated_metrics_collector.aggregate_metrics_data(0, 1, 3)
+        aggregated_metrics_collector.aggregate_metrics_data(0, 1, 3, 0.0, 0.0)
 
     assert (
         "‼️ No request metrics collected, one possible cause "

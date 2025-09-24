@@ -99,9 +99,9 @@ class Scenario(ABC):
         type_token = match.group(1) if match else scenario_str[0]
         cls.validate(scenario_str)
         scenario_class = cls._registry.get(type_token)
-        assert scenario_class is not None, (
-            "scenario_class should not be None at this step"
-        )
+        assert (
+            scenario_class is not None
+        ), "scenario_class should not be None at this step"
         # Pass the parameter substring (if any) to parser
         params_str = scenario_str[len(type_token) :]
         return scenario_class.parse(params_str)
