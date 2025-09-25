@@ -660,6 +660,7 @@ def test_sgl_model_format(mock_post, mock_openai_user):
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 5
 
+
 @patch("genai_bench.user.openai_user.requests.post")
 def test_chat_with_reasoning_content_and_token_estimation(
     mock_post,

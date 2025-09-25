@@ -280,8 +280,8 @@ class OpenAIUser(BaseUser):
             try:
                 delta = data["choices"][0]["delta"]
                 content = delta.get("content", None)
-                reasoning_content = delta.get("reasoning_content", None) 
-                usage = delta.get("usage", None)    
+                reasoning_content = delta.get("reasoning_content", None)
+                usage = delta.get("usage", None)
                 if usage:
                     tokens_received = usage["completion_tokens"]
 
@@ -294,7 +294,7 @@ class OpenAIUser(BaseUser):
                                 f"affect the accuracy of time_at_first_token!"
                             )
                         time_at_first_token = time.monotonic()
-                    # generated_text += reasoning_content 
+                    # generated_text += reasoning_content
                     all_text_for_token_estimate += reasoning_content
 
                 if content:
