@@ -294,7 +294,7 @@ class OpenAIUser(BaseUser):
                                 f"affect the accuracy of time_at_first_token!"
                             )
                         time_at_first_token = time.monotonic()
-                    #generated_text += reasoning_content 
+                    # generated_text += reasoning_content 
                     all_text_for_token_estimate += reasoning_content
 
                 if content:

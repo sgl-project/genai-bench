@@ -662,7 +662,9 @@ def test_sgl_model_format(mock_post, mock_openai_user):
 
 @patch("genai_bench.user.openai_user.requests.post")
 def test_chat_with_reasoning_content_and_token_estimation(
-    mock_post, mock_openai_user, caplog,
+    mock_post,
+    mock_openai_user,
+    caplog,
 ):
     """
     Ensure TTFT is triggered by reasoning_content,
