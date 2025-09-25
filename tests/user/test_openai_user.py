@@ -664,7 +664,6 @@ def test_sgl_model_format(mock_post, mock_openai_user):
 def test_chat_with_reasoning_content_and_token_estimation(
     mock_post, mock_openai_user, caplog,
 ):
-
     """
     Ensure TTFT is triggered by reasoning_content,
     generated_text excludes it, and token estimation includes both
@@ -700,18 +699,18 @@ def test_chat_with_reasoning_content_and_token_estimation(
                 b'data: {"id": "chat-xxx", "choices": [{"delta": '
                 b'{"reasoning_content": "Thinking..."}, "index": 0}], '
                 b'"model": "gpt-oss-llama-3"}'
-        ),
-        (
-            b'data: {"id": "chat-xxx", "choices": [{"delta": '
-            b'{"content": "The sky is blue"}, "index": 0}], '
-            b'"model": "gpt-oss-llama-3"}'
-        ),
-        (
-            b'data: {"id": "chat-xxx", "choices": [{"delta": {}, '
-            b'"finish_reason": "stop"}]}'
-        ),
-        b"data: [DONE]",
-    ]
+            ),
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": '
+                b'{"content": "The sky is blue"}, "index": 0}], '
+                b'"model": "gpt-oss-llama-3"}'
+            ),
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": {}, '
+                b'"finish_reason": "stop"}]}'
+            ),
+            b"data: [DONE]",
+        ]
     )
 
     mock_post.return_value = response_mock
