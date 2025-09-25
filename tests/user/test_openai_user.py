@@ -661,7 +661,10 @@ def test_sgl_model_format(mock_post, mock_openai_user):
     assert response.num_prefill_tokens == 5
 
 @patch("genai_bench.user.openai_user.requests.post")
-def test_chat_with_reasoning_content_and_token_estimation(mock_post, mock_openai_user, caplog):
+def test_chat_with_reasoning_content_and_token_estimation(
+    mock_post, mock_openai_user, caplog,
+):
+
     """
     Ensure TTFT is triggered by reasoning_content,
     generated_text excludes it, and token estimation includes both
@@ -683,19 +686,34 @@ def test_chat_with_reasoning_content_and_token_estimation(mock_post, mock_openai
 
     # Mock sampler so token estimation equals len(combined_text)
     mock_openai_user.environment.sampler = MagicMock()
-    mock_openai_user.environment.sampler.get_token_length.return_value = len(combined_text)
+    mock_openai_user.environment.sampler.get_token_length.return_value = len(
+        combined_text
+    )
 
-    # Stream: first reasoning_content, then content, then a final chunk without usage (forces estimation)
+    # Stream: first reasoning_content, then content,
+    # then a final chunk without usage (forces estimation)
     response_mock = MagicMock()
     response_mock.status_code = 200
     response_mock.iter_lines = MagicMock(
         return_value=[
-            b'data: {"id": "chat-xxx", "choices": [{"delta": {"reasoning_content": "Thinking..."}, "index": 0}], "model": "gpt-oss-llama-3"}',
-            b'data: {"id": "chat-xxx", "choices": [{"delta": {"content": "The sky is blue"}, "index": 0}], "model": "gpt-oss-llama-3"}',
-            b'data: {"id": "chat-xxx", "choices": [{"delta": {}, "finish_reason": "stop"}]}',
-            b"data: [DONE]",
-        ]
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": '
+                b'{"reasoning_content": "Thinking..."}, "index": 0}], '
+                b'"model": "gpt-oss-llama-3"}'
+        ),
+        (
+            b'data: {"id": "chat-xxx", "choices": [{"delta": '
+            b'{"content": "The sky is blue"}, "index": 0}], '
+            b'"model": "gpt-oss-llama-3"}'
+        ),
+        (
+            b'data: {"id": "chat-xxx", "choices": [{"delta": {}, '
+            b'"finish_reason": "stop"}]}'
+        ),
+        b"data: [DONE]",
+    ]
     )
+
     mock_post.return_value = response_mock
 
     with caplog.at_level(logging.WARNING):
