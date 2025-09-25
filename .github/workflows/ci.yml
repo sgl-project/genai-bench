@@ -39,22 +39,22 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          uv run pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
+          python -m pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
 
       - name: Check coverage threshold
         run: |
-          uv run coverage report --show-missing --fail-under=93
+          python -m coverage report --show-missing --fail-under=93
 
       # Optional: If you want to see coverage in CI logs
       - name: Display coverage
         run: |
-          uv run coverage report
+          python -m coverage report
 
       - name: Generate and display coverage info
         if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
         run: |
           # Extract coverage percentage
-          COVERAGE=$(uv run coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+          COVERAGE=$(python -m coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
           echo "Coverage: $COVERAGE%"
           echo "Update README badge with: https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
 
@@ -84,15 +84,15 @@ jobs:
 
       - name: Check formatting with ruff
         run: |
-          uv run ruff format --diff genai_bench tests
+          python -m ruff format --diff genai_bench tests
 
       - name: Lint with ruff
         run: |
-          uv run ruff check genai_bench tests
+          python -m ruff check genai_bench tests
 
       - name: Type check with mypy
         run: |
-          uv run mypy genai_bench --config-file=mypy.ini
+          python -m mypy genai_bench --config-file=mypy.ini
 
   build:
     runs-on: ubuntu-latest
