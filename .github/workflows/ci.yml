@@ -34,8 +34,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install .
-          uv pip install ".[dev,multi-cloud]"
+          python -m uv pip install --system .
+          python -m uv pip install --system ".[dev,multi-cloud]"
 
       - name: Run tests with coverage
         run: |
@@ -79,8 +79,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install .
-          uv pip install ".[dev,multi-cloud]"
+          python -m uv pip install --system .
+          python -m uv pip install --system ".[dev,multi-cloud]"
 
       - name: Check formatting with ruff
         run: |
@@ -116,8 +116,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install .
-          uv pip install ".[dev,multi-cloud]"
+          python -m uv pip install --no-color -vvv .
+          python -m uv pip install ".[dev,multi-cloud]"
 
       - name: Build package
         run: |
