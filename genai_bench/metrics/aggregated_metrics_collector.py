@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -108,6 +108,8 @@ class AggregatedMetricsCollector:
         start_time: float,
         end_time: float,
         dataset_character_to_token_ratio: float,
+        warmup_ratio: Optional[float],
+        cooldown_ratio: Optional[float],
     ):
         """
         Aggregates collected metrics data over all requests.
@@ -118,6 +120,10 @@ class AggregatedMetricsCollector:
             dataset_character_to_token_ratio (float): The ratio of characters
                 to tokens. It is required to calculate character-level metric:
                 mean_total_chars_per_hour.
+            warmup_ratio (Optional[float]): The portion of initial requests
+                to exclude from the aggregation as warmup.
+            cooldown_ratio (Optional[float]): The portion of final requests
+                to exclude from the aggregation as cooldown.
         """
         if not self.all_request_metrics:
             logger.warning(
@@ -135,6 +141,22 @@ class AggregatedMetricsCollector:
             if key not in {"error_code", "error_message"}
         ]
 
+        warmup_number = 0
+        if warmup_ratio:
+            warmup_number = int(len(self.all_request_metrics) * warmup_ratio)
+            logger.info(
+                f"Filtering out first {warmup_number}/{len(self.all_request_metrics)} "
+                f"warmup requests."
+            )
+
+        cooldown_number = 0
+        if cooldown_ratio:
+            cooldown_number = int(len(self.all_request_metrics) * cooldown_ratio)
+            logger.info(
+                f"Filtering out last {cooldown_number}/{len(self.all_request_metrics)} "
+                f"cooldown requests."
+            )
+
         for key in filtered_keys:
             # Extract the list of values for this metric from all requests
             values: List[float] = []
@@ -146,7 +168,8 @@ class AggregatedMetricsCollector:
                 if value is None:
                     logger.info(f"{i}th request has NoneType value in metric {key}.")
                     continue
-                values.append(value)
+                if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
+                    values.append(value)
 
             # Validate that all values are valid for processing
             if not values:

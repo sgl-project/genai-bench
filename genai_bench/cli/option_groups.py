@@ -14,6 +14,7 @@ from genai_bench.cli.validation import (
     validate_object_storage_options,
     validate_task,
     validate_traffic_scenario_callback,
+    validate_warmup_cooldown_ratio_options,
 )
 
 
@@ -402,6 +403,25 @@ def experiment_options(func):
         help="The max duration per experiment run. Unit: minute. "
         "One experiment run will exit if max_time_per_run is "
         "reached. ",
+    )(func)
+    func = click.option(
+        "--warmup-ratio",
+        type=click.FloatRange(0.0, 1.0, min_open=False, max_open=True),
+        default=None,
+        help=(
+            "The ratio of the benchmark to run as a warmup "
+            "and not include in the final results."
+        ),
+    )(func)
+    func = click.option(
+        "--cooldown-ratio",
+        type=click.FloatRange(0.0, 1.0, min_open=False, max_open=True),
+        default=None,
+        callback=validate_warmup_cooldown_ratio_options,
+        help=(
+            "The ratio of the benchmark to run as a cooldown "
+            "and not include in the final results."
+        ),
     )(func)
     func = click.option(
         "--traffic-scenario",
