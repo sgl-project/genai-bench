@@ -1,24 +1,22 @@
+"""Customized user for OpenAI backends."""
+
 from locust import task
 
 import json
+import random
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Dict, Optional
 
-from oci.generative_ai_inference import GenerativeAiInferenceClient
-from oci.generative_ai_inference.models import (
-    ChatDetails,
-    ChatResult,
-    DedicatedServingMode,
-    GenericChatRequest,
-    OnDemandServingMode,
-)
+import requests
+from requests import Response
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
-    UserRequest,
+    UserEmbeddingRequest,
+    UserImageChatRequest,
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
@@ -26,275 +24,315 @@ from genai_bench.user.base_user import BaseUser
 logger = init_logger(__name__)
 
 
-class OCIGenAIUser(BaseUser):
-    """User class for OCI GenAI models API with OCI authentication."""
-
-    BACKEND_NAME = "oci-genai"
+class OpenAIUser(BaseUser):
+    BACKEND_NAME = "openai"
     supported_tasks = {
         "text-to-text": "chat",
+        "image-text-to-text": "chat",
+        "text-to-embeddings": "embeddings",
+        # Future support can be added here
     }
+
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
+    headers = None
 
     def on_start(self):
-        """Initialize OCI client on start."""
+        if not self.host or not self.auth_provider:
+            raise ValueError("API key and base must be set for OpenAIUser.")
+        self.headers = {
+            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
+            "Content-Type": "application/json",
+        }
         super().on_start()
-        if not self.auth_provider:
-            raise ValueError("Auth is required for OCIGenAIUser")
 
-        # Get config and signer from auth provider
-        config = self.auth_provider.get_config()
-        signer = self.auth_provider.get_credentials()
+    @task
+    def chat(self):
+        endpoint = "/v1/chat/completions"
+        user_request = self.sample()
 
-        self.client = GenerativeAiInferenceClient(
-            config=config,
-            signer=signer,
-            service_endpoint=self.host,
+        if not isinstance(user_request, UserChatRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserChatRequest for OpenAIUser.chat, got "
+                f"{type(user_request)}"
+            )
+
+        if isinstance(user_request, UserImageChatRequest):
+            text_content = [{"type": "text", "text": user_request.prompt}]
+            image_content = [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image},
+                }
+                for image in user_request.image_content
+            ]
+            content = text_content + image_content
+        else:
+            # Backward compatibility for vLLM versions prior to v0.5.1.
+            # OpenAI API used a different text prompt format before
+            # multi-modality model support.
+            content = user_request.prompt
+
+        payload = {
+            "model": user_request.model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": content,
+                }
+            ],
+            "max_tokens": user_request.max_tokens,
+            "temperature": user_request.additional_request_params.get(
+                "temperature", 0.0
+            ),
+            "ignore_eos": user_request.additional_request_params.get(
+                "ignore_eos",
+                bool(user_request.max_tokens),
+            ),
+            "stream": True,
+            "stream_options": {
+                "include_usage": True,
+            },
+            **user_request.additional_request_params,
+        }
+        self.send_request(
+            True,
+            endpoint,
+            payload,
+            self.parse_chat_response,
+            user_request.num_prefill_tokens,
         )
-        logger.debug("Generative AI Inference Client initialized.")
+
+    @task
+    def embeddings(self):
+        endpoint = "/v1/embeddings"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserEmbeddingRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserEmbeddingRequest for OpenAIUser."
+                f"embeddings, got {type(user_request)}"
+            )
+
+        random.shuffle(user_request.documents)
+        payload = {
+            "model": user_request.model,
+            "input": user_request.documents,
+            "encoding_format": user_request.additional_request_params.get(
+                "encoding_format", "float"
+            ),
+            **user_request.additional_request_params,
+        }
+        self.send_request(False, endpoint, payload, self.parse_embedding_response)
 
     def send_request(
         self,
+        stream: bool,
         endpoint: str,
-        payload: Any,
-        parse_strategy: Any,
+        payload: Dict[str, Any],
+        parse_strategy: Callable[..., UserResponse],
         num_prefill_tokens: Optional[int] = None,
     ) -> UserResponse:
-        logger.debug(f"Sending request with payload: {payload}")
+        """
+        Sends a POST request, handling both streaming and non-streaming
+        responses.
+
+        Args:
+            endpoint (str): The API endpoint.
+            payload (Dict[str, Any]): The JSON payload for the request.
+            stream (bool): Whether to stream the response.
+            parse_strategy (Callable[[Response, float], UserResponse]):
+                The function to parse the response.
+            num_prefill_tokens (Optional[int]): The num of tokens in the
+                prefill/prompt. Only need for streaming requests.
+
+        Returns:
+            UserResponse: A response object containing status and metrics data.
+        """
+        response = None
+
         try:
             start_time = time.monotonic()
-            response = self.client.chat(payload)
+            response = requests.post(
+                url=f"{self.host}{endpoint}",
+                json=payload,
+                stream=stream,
+                headers=self.headers,
+            )
             non_stream_post_end_time = time.monotonic()
-            if response.status == 200:
+
+            if response.status_code == 200:
                 metrics_response = parse_strategy(
-                    payload,
                     response,
                     start_time,
                     num_prefill_tokens,
                     non_stream_post_end_time,
                 )
             else:
-                logger.warning(
-                    f"Received error status-code: {response.status} "
-                    f"RequestId: {response.request_id} "
-                    f"Response: {response.response}"
-                )
                 metrics_response = UserResponse(
-                    status_code=response.status,
-                    error_message="Request Failed",
+                    status_code=response.status_code,
+                    error_message=response.text,
                 )
-            self.collect_metrics(metrics_response, endpoint)
-            return metrics_response
-        except Exception as e:
-            logger.warning(f"Error: {e}")
-            return UserResponse(
-                status_code=500,
+        except requests.exceptions.ConnectionError as e:
+            metrics_response = UserResponse(
+                status_code=503, error_message=f"Connection error: {e}"
+            )
+        except requests.exceptions.Timeout as e:
+            metrics_response = UserResponse(
+                status_code=408, error_message=f"Request timed out: {e}"
+            )
+        except requests.exceptions.RequestException as e:
+            metrics_response = UserResponse(
+                status_code=500,  # Assign a generic 500
                 error_message=str(e),
-                num_prefill_tokens=num_prefill_tokens or 0,
             )
+        finally:
+            if response is not None:
+                response.close()
 
-    @task
-    def chat(self):
-        """Send a chat completion request using OCI GenAI Service format."""
-        user_request = self.sample()
-
-        if not isinstance(user_request, UserChatRequest):
-            raise AttributeError(
-                f"Expected UserChatRequest for OCIGenAIUser.chat, got "
-                f"{type(user_request)}"
-            )
-
-        compartment_id = self.get_compartment_id(user_request)
-        serving_mode = self.get_serving_mode(user_request)
-
-        # Construct chat request for OCI GenAI Service format using GENERIC API format
-        messages = self.build_messages(user_request)
-
-        chat_request = GenericChatRequest(
-            api_format="GENERIC",
-            messages=messages,
-            max_tokens=user_request.max_tokens,
-            is_stream=True,
-            temperature=user_request.additional_request_params.get("temperature", 0.75),
-            top_p=user_request.additional_request_params.get("top_p", 0.7),
-            top_k=user_request.additional_request_params.get("top_k", 1),
-            frequency_penalty=user_request.additional_request_params.get(
-                "frequency_penalty", None
-            ),
-            presence_penalty=user_request.additional_request_params.get(
-                "presence_penalty", None
-            ),
-            num_generations=1,
-        )
-
-        # Define payload with compartment ID and serving mode
-        chat_detail = ChatDetails(
-            compartment_id=compartment_id,
-            serving_mode=serving_mode,
-            chat_request=chat_request,
-        )
-
-        return self.send_request(
-            endpoint="chat",
-            payload=chat_detail,
-            parse_strategy=self.parse_chat_response,
-            num_prefill_tokens=user_request.num_prefill_tokens,
-        )
-
-    def build_messages(self, user_request: UserChatRequest) -> list:
-        """Build messages array in OCI GenAI format."""
-        messages = []
-
-        # Add system message if provided
-        system_message = user_request.additional_request_params.get("system_message")
-        if system_message:
-            messages.append(
-                {
-                    "role": "SYSTEM",
-                    "content": [{"text": system_message, "type": "TEXT"}],
-                }
-            )
-
-        # Add conversation history if provided
-        chat_history = user_request.additional_request_params.get("chat_history", [])
-        for msg in chat_history:
-            # Convert from OpenAI format to OCI format if needed
-            if isinstance(msg.get("content"), str):
-                # Convert simple string content to OCI format
-                oci_msg = {
-                    "role": msg["role"].upper(),
-                    "content": [{"text": msg["content"], "type": "TEXT"}],
-                }
-            else:
-                # Assume it's already in OCI format
-                oci_msg = msg
-            messages.append(oci_msg)
-
-        # Add current user message
-        messages.append(
-            {"role": "USER", "content": [{"text": user_request.prompt, "type": "TEXT"}]}
-        )
-
-        return messages
-
-    def get_compartment_id(self, user_request: UserRequest):
-        compartment_id = user_request.additional_request_params.get("compartmentId")
-        if not compartment_id:
-            raise ValueError("compartmentId missing in additional request params")
-        return compartment_id
-
-    def get_serving_mode(self, user_request: UserRequest) -> Any:
-        params = user_request.additional_request_params
-        model_id = user_request.model
-        serving_type = params.get("servingType", "ON_DEMAND")
-
-        if serving_type == "DEDICATED":
-            endpoint_id = params.get("endpointId")
-            if not endpoint_id:
-                raise ValueError(
-                    "endpointId must be provided for DEDICATED servingType"
-                )
-            logger.debug(
-                f"Using DedicatedServingMode {serving_type} with "
-                f"endpoint ID: {endpoint_id}"
-            )
-            return DedicatedServingMode(endpoint_id=endpoint_id)
-        else:
-            logger.debug(
-                f"Using OnDemandServingMode {serving_type} with model ID: {model_id}"
-            )
-            return OnDemandServingMode(model_id=model_id)
+        self.collect_metrics(metrics_response, endpoint)
+        return metrics_response
 
     def parse_chat_response(
         self,
-        request: ChatDetails,
-        response: ChatResult,
+        response: Response,
         start_time: float,
         num_prefill_tokens: int,
         _: float,
     ) -> UserResponse:
         """
-        Parses the streaming response from OCI GenAI Service using OCI's format.
+        Parses a streaming response.
 
         Args:
-            request (ChatDetails): OCI GenAI Chat request.
-            response (ChatResult): The streaming response from the API.
-            start_time (float): Timestamp of request initiation.
-            num_prefill_tokens (int): Number of tokens in the prompt.
-            _ (float): Placeholder for unused variable.
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            num_prefill_tokens (int): The num of tokens in the prefill/prompt.
+            _ (float): Placeholder for an unused var, to keep parse_*_response
+                have the same interface.
 
         Returns:
-            UserResponse: Parsed response in the UserResponse format.
+            UserChatResponse: A response object with metrics and generated text.
         """
+        stream_chunk_prefix = "data: "
+        end_chunk = b"[DONE]"
+
         generated_text = ""
         tokens_received = 0
-        time_at_first_token: Optional[float] = None
+        time_at_first_token = None
         finish_reason = None
         previous_data = None
+        num_prompt_tokens = None
+        for chunk in response.iter_lines(chunk_size=None):
+            # Caution: Adding logs here can make debug mode unusable.
+            chunk = chunk.strip()
 
-        # Iterate over each event in the streaming response
-        for event in response.data.events():
-            # Raw event data from the stream
-            event_data = event.data.strip()
-            # Parse the event data as JSON
-            try:
-                parsed_data = json.loads(event_data)
-                finish_reason = parsed_data.get("finishReason", None)
-                if not finish_reason:
-                    # Extract text content from OCI GenAI format
-                    message = parsed_data.get("message", {})
-                    content_array = message.get("content", [])
-                    if content_array and len(content_array) > 0:
-                        text_segment = content_array[0].get("text", "")
-                        if text_segment:
-                            # Capture the time at the first token
-                            if not time_at_first_token:
-                                time_at_first_token = time.monotonic()
-                                logger.debug(
-                                    f"First token received at: {time_at_first_token}"
-                                )
-                            generated_text += text_segment
-                            tokens_received += 1  # each event contains one token
-                            logger.debug(
-                                f"Text: '{text_segment}', "
-                                f"tokens received: {tokens_received}"
-                            )
-                    # Track the previous data for debugging purposes
-                    previous_data = parsed_data
-                else:
-                    # we have reached the end
-                    logger.debug(
-                        f"We have reached the end of the response "
-                        f"with finish reason: {finish_reason}"
-                    )
-                    break
-            except json.JSONDecodeError:
-                logger.warning(
-                    f"Error decoding JSON from event data: {event_data}, "
-                    f"previous data: {previous_data}, "
-                    f"finish reason: {finish_reason}"
-                )
+            if not chunk:
                 continue
 
-        # End timing for response
+            chunk = chunk[len(stream_chunk_prefix) :]
+            if chunk == end_chunk:
+                break
+            data = json.loads(chunk)
+
+            # Handle streaming error response as OpenAI API server handles it
+            # differently. Some might return 200 first and generate error response
+            # later in the chunk
+            if data.get("error") is not None:
+                return UserResponse(
+                    status_code=data["error"].get("code", -1),
+                    error_message=data["error"].get(
+                        "message", "Unknown error, please check server logs"
+                    ),
+                )
+
+            # Standard OpenAI API streams include "finish_reason"
+            # in the second-to-last chunk,
+            # followed by "usage" in the final chunk,
+            # which does not contain "finish_reason"
+            if (
+                not data["choices"]
+                and finish_reason
+                and "usage" in data
+                and data["usage"]
+            ):
+                num_prefill_tokens, num_prompt_tokens, tokens_received = (
+                    self._get_usage_info(data, num_prefill_tokens)
+                )
+                # Additional check for time_at_first_token when the response is
+                # too short
+                if not time_at_first_token:
+                    tokens_received = data["usage"].get("completion_tokens", 0)
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                        time_at_first_token = time.monotonic()
+                    else:
+                        raise Exception("Invalid Response")
+                break
+
+            try:
+                delta = data["choices"][0]["delta"]
+                content = delta.get("content") or delta.get("reasoning_content")
+                usage = delta.get("usage")
+                
+                if usage:
+                    tokens_received = usage["completion_tokens"]
+                if content:
+                    if not time_at_first_token:
+                        if tokens_received > 1:
+                            logger.warning(
+                                f"🚨🚨🚨 The first chunk the server returned "
+                                f"has >1 tokens: {tokens_received}. It will "
+                                f"affect the accuracy of time_at_first_token!"
+                            )
+                        time_at_first_token = time.monotonic()
+                    generated_text += content
+
+                finish_reason = data["choices"][0].get("finish_reason", None)
+
+                # SGLang v0.4.3 to v0.4.7 has finish_reason and usage
+                # in the last chunk
+                if finish_reason and "usage" in data and data["usage"]:
+                    num_prefill_tokens, num_prompt_tokens, tokens_received = (
+                        self._get_usage_info(data, num_prefill_tokens)
+                    )
+                    break
+
+            except (IndexError, KeyError) as e:
+                logger.warning(
+                    f"Error processing chunk: {e}, data: {data}, "
+                    f"previous_data: {previous_data}, "
+                    f"finish_reason: {finish_reason}, skipping"
+                )
+
+            previous_data = data
+
         end_time = time.monotonic()
         logger.debug(
             f"Generated text: {generated_text} \n"
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
+            f"Prompt Tokens: {num_prompt_tokens} \n"
             f"Completion Tokens: {tokens_received}\n"
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}"
         )
-        # Log if token count was not captured accurately
+
         if not tokens_received:
-            tokens_received = len(generated_text.split())
-
-        # Ensure time_at_first_token is never None (fallback to end_time)
-        if time_at_first_token is None:
-            time_at_first_token = end_time
-            logger.warning("time_at_first_token was None, using end_time as fallback")
-
+            tokens_received = self.environment.sampler.get_token_length(
+                generated_text, add_special_tokens=False
+            )
+            logger.warning(
+                "🚨🚨🚨 There is no usage info returned from the model "
+                "server. Estimated tokens_received based on the model "
+                "tokenizer."
+            )
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -303,4 +341,52 @@ class OCIGenAIUser(BaseUser):
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
             end_time=end_time,
+        )
+
+    @staticmethod
+    def _get_usage_info(data, num_prefill_tokens):
+        num_prompt_tokens = data["usage"]["prompt_tokens"]
+        tokens_received = data["usage"]["completion_tokens"]
+        # For vision task
+        if num_prefill_tokens is None:
+            # use num_prompt_tokens as prefill to cover image tokens
+            num_prefill_tokens = num_prompt_tokens
+        if abs(num_prompt_tokens - num_prefill_tokens) >= 50:
+            logger.warning(
+                f"Significant difference detected in prompt tokens: "
+                f"The number of prompt tokens processed by the model "
+                f"server ({num_prompt_tokens}) differs from the number "
+                f"of prefill tokens returned by the sampler "
+                f"({num_prefill_tokens}) by "
+                f"{abs(num_prompt_tokens - num_prefill_tokens)} tokens."
+            )
+        return num_prefill_tokens, num_prompt_tokens, tokens_received
+
+    @staticmethod
+    def parse_embedding_response(
+        response: Response, start_time: float, _: Optional[int], end_time: float
+    ) -> UserResponse:
+        """
+        Parses a non-streaming response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            _ (Optional[int]): Placeholder for an unused var, to keep
+                parse_*_response have the same interface.
+            end_time(float): The time when the request was finished.
+
+        Returns:
+            UserResponse: A response object with metrics.
+        """
+
+        data = response.json()
+        num_prompt_tokens = data["usage"]["prompt_tokens"]
+
+        return UserResponse(
+            status_code=200,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            num_prefill_tokens=num_prompt_tokens,
         )
