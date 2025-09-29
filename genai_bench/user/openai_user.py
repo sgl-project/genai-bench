@@ -279,7 +279,6 @@ class OpenAIUser(BaseUser):
             try:
                 delta = data["choices"][0]["delta"]
                 content = delta.get("content") or delta.get("reasoning_content")
-                
                 if content:
                     if not time_at_first_token:
                         if tokens_received > 1:
