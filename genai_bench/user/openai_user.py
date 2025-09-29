@@ -389,3 +389,4 @@ class OpenAIUser(BaseUser):
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
         )
+        
