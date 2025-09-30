@@ -288,7 +288,7 @@ def benchmark(
         data=data,
         additional_request_params=additional_request_params,
         dataset_config=dataset_config_obj,
-        prefix_length=prompt_prefix_ratio,
+        prompt_prefix_ratio=prompt_prefix_ratio,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode
