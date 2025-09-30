@@ -348,3 +348,7 @@ If you want to benchmark a specific portion of a vision dataset, you can use the
 - Reusable and version-controllable
 - Support for complex configurations
 - Future-proof (no CLI updates needed for new HuggingFace features)
+
+## Picking units
+
+Genai-bench defaults to measuring latency (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--time-unit [s|ms]`. 

@@ -22,6 +22,7 @@ from genai_bench.cli.validation import (
     validate_task,
     validate_tokenizer,
     validate_traffic_scenario_callback,
+    validate_warmup_cooldown_ratio_options,
 )
 
 
@@ -472,3 +473,40 @@ def test_validate_filter_criteria_invalid_json():
     with pytest.raises(click.BadParameter) as exc_info:
         validate_filter_criteria(ctx, param, "{invalid json}")
     assert "Invalid JSON string in `--filter-criteria`" in str(exc_info.value)
+
+
+def test_validate_warmup_cooldown_ratio_options():
+    """Test validation of warmup and cooldown ratio options."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test with valid warmup_ratio value
+    ctx.params = {
+        "warmup_ratio": 0.1,
+    }
+    validate_warmup_cooldown_ratio_options(ctx, param, None)
+    assert ctx.params["warmup_ratio"] == 0.1
+
+    # Test with valid cooldown_ratio value
+    ctx.params = {
+        "cooldown_ratio": 0.1,
+    }
+    validate_warmup_cooldown_ratio_options(ctx, param, 0.1)
+    assert ctx.params["cooldown_ratio"] == 0.1
+
+    # Test with valid warmup_ratio and cooldown_ratio value
+    ctx.params = {
+        "warmup_ratio": 0.1,
+        "cooldown_ratio": 0.1,
+    }
+    validate_warmup_cooldown_ratio_options(ctx, param, 0.1)
+    assert ctx.params["warmup_ratio"] == 0.1
+    assert ctx.params["cooldown_ratio"] == 0.1
+
+    # Test with warmup_ratio + cooldown_ratio >= 1.0
+    with pytest.raises(click.BadParameter):
+        ctx.params = {
+            "warmup_ratio": 0.5,
+            "cooldown_ratio": 0.5,
+        }
+        validate_warmup_cooldown_ratio_options(ctx, param, 0.5)

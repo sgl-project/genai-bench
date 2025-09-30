@@ -14,6 +14,7 @@ from genai_bench.cli.validation import (
     validate_object_storage_options,
     validate_task,
     validate_traffic_scenario_callback,
+    validate_warmup_cooldown_ratio_options,
 )
 
 
@@ -412,6 +413,25 @@ def experiment_options(func):
         "reached. ",
     )(func)
     func = click.option(
+        "--warmup-ratio",
+        type=click.FloatRange(0.0, 1.0, min_open=False, max_open=True),
+        default=None,
+        help=(
+            "The ratio of the benchmark to run as a warmup "
+            "and not include in the final results."
+        ),
+    )(func)
+    func = click.option(
+        "--cooldown-ratio",
+        type=click.FloatRange(0.0, 1.0, min_open=False, max_open=True),
+        default=None,
+        callback=validate_warmup_cooldown_ratio_options,
+        help=(
+            "The ratio of the benchmark to run as a cooldown "
+            "and not include in the final results."
+        ),
+    )(func)
+    func = click.option(
         "--traffic-scenario",
         type=str,
         multiple=True,
@@ -563,6 +583,13 @@ def experiment_options(func):
         "or a local path. IMPORTANT: it should match the tokenizer the model "
         "server uses.",
     )(func)
+    func = click.option(
+        "--time-unit",
+        type=click.Choice(["s", "ms"], case_sensitive=False),
+        default="s",
+        help="Time unit for latency metrics display and export. "
+        "Options: 's' (seconds), 'ms' (milliseconds). Default: s",
+    )(func)
     return func
 
 
@@ -619,6 +646,7 @@ def storage_auth_options(func):
     func = click.option(
         "--storage-bucket",
         type=str,
+        is_eager=True,
         help="Bucket/container name for storage provider.",
     )(func)
 
