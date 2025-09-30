@@ -50,6 +50,7 @@ class OCIGenAIUser(BaseUser):
             config=config,
             signer=signer,
             service_endpoint=self.host,
+            timeout=(60, 300)
         )
         logger.debug("Generative AI Inference Client initialized.")
 

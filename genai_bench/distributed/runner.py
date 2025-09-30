@@ -276,7 +276,12 @@ class DistributedRunner:
 
         def handler(environment: Environment, msg: Any, **kwargs) -> None:
             # Master receives and aggregates metrics
-            metrics = RequestLevelMetrics.model_validate_json(msg.data)
+            try:
+                metrics = RequestLevelMetrics.model_validate_json(msg.data)
+            except Exception as e:
+                logger.warning(f"Dropping invalid metrics record due to validation error: {e}")
+                return
+            
             if not self.metrics_collector:
                 return
 
