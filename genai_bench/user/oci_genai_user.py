@@ -47,10 +47,7 @@ class OCIGenAIUser(BaseUser):
         signer = self.auth_provider.get_credentials()
 
         self.client = GenerativeAiInferenceClient(
-            config=config,
-            signer=signer,
-            service_endpoint=self.host,
-            timeout=(60, 300)
+            config=config, signer=signer, service_endpoint=self.host, timeout=(60, 300)
         )
         logger.debug("Generative AI Inference Client initialized.")
 
