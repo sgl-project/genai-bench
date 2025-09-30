@@ -25,6 +25,10 @@ from genai_bench.user.base_user import BaseUser
 
 logger = init_logger(__name__)
 
+# OCI client timeout constants
+OCI_CONNECT_TIMEOUT = 60
+OCI_READ_TIMEOUT = 300
+
 
 class OCIGenAIUser(BaseUser):
     """User class for OCI GenAI models API with OCI authentication."""
@@ -47,7 +51,10 @@ class OCIGenAIUser(BaseUser):
         signer = self.auth_provider.get_credentials()
 
         self.client = GenerativeAiInferenceClient(
-            config=config, signer=signer, service_endpoint=self.host, timeout=(60, 300)
+            config=config,
+            signer=signer,
+            service_endpoint=self.host,
+            timeout=(OCI_CONNECT_TIMEOUT, OCI_READ_TIMEOUT),
         )
         logger.debug("Generative AI Inference Client initialized.")
 

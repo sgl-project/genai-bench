@@ -333,3 +333,31 @@ def test_log_data_processing(mock_environment, mock_dashboard):
     runner._process_log_data(None)
     runner._process_log_data({})
     runner._process_log_data({"invalid": "data"})
+
+
+@patch("genai_bench.distributed.runner.logger")
+def test_metrics_handler_validation_error_handling(
+    mock_logger, mock_environment, mock_dashboard
+):
+    """Test that ValidationError in metrics handler is caught and logged."""
+    config = DistributedConfig(num_workers=0)
+    runner = DistributedRunner(mock_environment, config, mock_dashboard)
+    runner.setup()
+
+    # Create handler
+    handler = runner._create_metrics_handler()
+
+    # Create invalid metrics data that will cause ValidationError
+    # This simulates the case where tpot is None but error_code is None
+    invalid_metrics_json = '{"ttft": 0.5, "tpot": null, "error_code": null}'
+
+    mock_msg = MagicMock()
+    mock_msg.data = invalid_metrics_json
+
+    # Call handler - should not raise exception
+    handler(mock_environment, mock_msg)
+
+    # Verify warning was logged
+    mock_logger.warning.assert_called_once()
+    warning_call = mock_logger.warning.call_args[0][0]
+    assert "Dropping invalid metrics record due to validation error" in warning_call
