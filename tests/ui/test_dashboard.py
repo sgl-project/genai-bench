@@ -209,3 +209,17 @@ def test_scatter_plot_spacing_for_different_time_units():
     assert (
         label_line_ms.index("|") == 9
     ), f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
+
+
+def test_minimal_dashboard_update_scatter_plot_does_not_crash():
+    """
+    Ensure MinimalDashboard.update_scatter_plot_panel works without a crash
+    """
+    dashboard = MinimalDashboard("s")
+
+    mock_metrics = [0.1, 0.2, 10.0, 20.0]
+
+    # Calling with metrics and explicit time unit should not raise
+    dashboard.update_scatter_plot_panel(mock_metrics, "s")
+
+    dashboard.update_scatter_plot_panel(mock_metrics, "ms")
