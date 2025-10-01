@@ -223,3 +223,5 @@ def test_minimal_dashboard_update_scatter_plot_does_not_crash():
     dashboard.update_scatter_plot_panel(mock_metrics, "s")
 
     dashboard.update_scatter_plot_panel(mock_metrics, "ms")
+
+    dashboard.update_scatter_plot_panel(None, "s")
