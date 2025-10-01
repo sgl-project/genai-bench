@@ -54,7 +54,7 @@ class MinimalDashboard:
         pass
 
     def update_scatter_plot_panel(
-        self, ui_scatter_plot_metrics: Optional[List[float]], time_unit: str = "s"
+        self, _ui_scatter_plot_metrics: Optional[List[float]], _time_unit: str = "s"
     ):
         pass
 
