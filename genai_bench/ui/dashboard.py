@@ -53,7 +53,9 @@ class MinimalDashboard:
     ):
         pass
 
-    def update_scatter_plot_panel(self, ui_scatter_plot_metrics: Optional[List[float]]):
+    def update_scatter_plot_panel(
+        self, _ui_scatter_plot_metrics: Optional[List[float]], _time_unit: str = "s"
+    ):
         pass
 
     def update_benchmark_progress_bars(self, progress_increment: float):
