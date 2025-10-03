@@ -278,10 +278,9 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content, usage = (
-                    delta.get("content", None),
-                    delta.get("usage", None),
-                )
+                content = delta.get("content") or delta.get("reasoning_content")
+                usage = delta.get("usage")
+
                 if usage:
                     tokens_received = usage["completion_tokens"]
                 if content:
