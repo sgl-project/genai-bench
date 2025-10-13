@@ -20,6 +20,8 @@ from genai_bench.auth.oci.model_auth_adapter import OCIModelAuthAdapter
 from genai_bench.auth.oci.storage_auth_adapter import OCIStorageAuthAdapter
 from genai_bench.auth.openai.auth import OpenAIAuth
 from genai_bench.auth.openai.model_auth_adapter import OpenAIModelAuthAdapter
+from genai_bench.auth.together.auth import TogetherAuth
+from genai_bench.auth.together.model_auth_adapter import TogetherModelAuthAdapter
 from genai_bench.auth.storage_auth_provider import StorageAuthProvider
 
 
@@ -32,7 +34,7 @@ class UnifiedAuthFactory:
 
         Args:
             provider: Provider type ('openai', 'oci', 'aws-bedrock',
-                'azure-openai', 'gcp-vertex')
+                'azure-openai', 'gcp-vertex', 'together')
             **kwargs: Provider-specific arguments
 
         Returns:
@@ -84,10 +86,15 @@ class UnifiedAuthFactory:
                 api_key=kwargs.get("api_key"),
             )
 
+        elif provider == "together":
+            api_key = kwargs.get("api_key")
+            together_auth = TogetherAuth(api_key=api_key)
+            return TogetherModelAuthAdapter(together_auth)
+        
         else:
             raise ValueError(
                 f"Unsupported model provider: {provider}. "
-                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex"
+                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, together"
             )
 
     @staticmethod
