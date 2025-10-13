@@ -221,6 +221,10 @@ def benchmark(
             }
         )
 
+    elif api_backend == "together":
+        # Together uses API key for authentication
+        auth_kwargs["api_key"] = model_api_key or api_key
+
     elif api_backend in ["vllm", "sglang"]:
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
