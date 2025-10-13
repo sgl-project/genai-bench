@@ -25,7 +25,7 @@ class AuthFactory:
             OpenAIAuth: OpenAI auth provider
         """
         return OpenAIAuth(api_key=api_key)
-    
+
     @staticmethod
     def create_together_auth(api_key: str) -> TogetherAuth:
         """Create Together authentication provider.
