@@ -524,7 +524,7 @@ def benchmark(
         ],
         group_key="traffic_scenario",
         experiment_folder=experiment_folder_abs_path,
-        time_unit=metrics_time_unit,
+        metrics_time_unit=metrics_time_unit,
     )
     logger.info(
         f"📁 Please check {experiment_folder_abs_path} "

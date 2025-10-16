@@ -389,8 +389,12 @@ class RichLiveDashboard:
 Dashboard = Union[RichLiveDashboard, MinimalDashboard]
 
 
-def create_dashboard(time_unit: str = "s") -> Dashboard:
+def create_dashboard(metrics_time_unit: str = "s") -> Dashboard:
     """Factory function that returns either a NoOpDashboard or RealDashboard based
     on ENABLE_UI."""
     enable_ui = os.getenv("ENABLE_UI", "true").lower() == "true"
-    return RichLiveDashboard(time_unit) if enable_ui else MinimalDashboard(time_unit)
+    return (
+        RichLiveDashboard(metrics_time_unit)
+        if enable_ui
+        else MinimalDashboard(metrics_time_unit)
+    )

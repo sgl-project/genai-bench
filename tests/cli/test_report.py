@@ -33,7 +33,7 @@ def mock_experiment_data():
     return [(metadata, run_data)]
 
 
-def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
+def test_cli_metrics_time_unit_parameter_passed(cli_runner, mock_experiment_data):
     """Test that the --metrics-time-unit CLI parameter is correctly passed through."""
     with (
         patch(
@@ -58,10 +58,10 @@ def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
 
         # Verify the plotting function was called with the correct time unit
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "ms"
+        assert call_args[1]["metrics_time_unit"] == "ms"
 
 
-def test_cli_time_unit_default_value(cli_runner, mock_experiment_data):
+def test_cli_metrics_time_unit_default_value(cli_runner, mock_experiment_data):
     """Test that the default time unit is 's' when not specified."""
     with (
         patch(
@@ -85,10 +85,10 @@ def test_cli_time_unit_default_value(cli_runner, mock_experiment_data):
 
         # Verify the plotting function was called with default time unit
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "s"
+        assert call_args[1]["metrics_time_unit"] == "s"
 
 
-def test_cli_time_unit_parameter_validation(cli_runner):
+def test_cli_metrics_time_unit_parameter_validation(cli_runner):
     """Test that invalid time unit values are rejected."""
     result = cli_runner.invoke(
         plot,
@@ -107,7 +107,7 @@ def test_cli_time_unit_parameter_validation(cli_runner):
     assert "Invalid value for '--metrics-time-unit'" in result.output
 
 
-def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
+def test_cli_metrics_time_unit_with_preset(cli_runner, mock_experiment_data):
     """Test that time unit works correctly with preset configurations."""
     with (
         patch(
@@ -135,4 +135,4 @@ def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
         # Verify the plotting function was called with correct parameters
         mock_plot.assert_called_once()
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "ms"
+        assert call_args[1]["metrics_time_unit"] == "ms"

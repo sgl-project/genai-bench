@@ -828,7 +828,7 @@ def plot_experiment_data_flexible(
     group_key: str,
     experiment_folder: str,
     plot_config: Optional[PlotConfig] = None,
-    time_unit: Optional[str] = None,
+    metrics_time_unit: Optional[str] = None,
 ) -> None:
     """
     Plot experiment data using flexible configuration.
@@ -843,14 +843,16 @@ def plot_experiment_data_flexible(
     """
     # Use CLI time_unit parameter if provided, otherwise extract
     # from experiment metadata
-    if time_unit is None:
-        time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+    if metrics_time_unit is None:
+        metrics_time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
 
     if plot_config is None:
-        plot_config = PlotConfigManager.load_preset("2x4_default", time_unit)
+        plot_config = PlotConfigManager.load_preset("2x4_default", metrics_time_unit)
 
     generator = FlexiblePlotGenerator(plot_config)
-    generator.generate_plots(run_data_list, group_key, experiment_folder, time_unit)
+    generator.generate_plots(
+        run_data_list, group_key, experiment_folder, metrics_time_unit
+    )
 
 
 def validate_plot_config_with_data(

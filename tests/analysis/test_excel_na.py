@@ -116,7 +116,9 @@ def test_time_unit_conversion_seconds_to_milliseconds():
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "time_unit_test.xlsx")
         # Request conversion to milliseconds
-        create_workbook(metadata, run_data, out_path, percentile="mean", time_unit="ms")
+        create_workbook(
+            metadata, run_data, out_path, percentile="mean", metrics_time_unit="ms"
+        )
 
         wb = load_workbook(out_path)
         ws = wb["Appendix"]
@@ -162,7 +164,9 @@ def test_time_unit_conversion_milliseconds_to_seconds():
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "time_unit_test.xlsx")
         # Request conversion to seconds
-        create_workbook(metadata, run_data, out_path, percentile="mean", time_unit="s")
+        create_workbook(
+            metadata, run_data, out_path, percentile="mean", metrics_time_unit="s"
+        )
 
         wb = load_workbook(out_path)
         ws = wb["Appendix"]

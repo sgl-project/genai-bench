@@ -30,15 +30,15 @@ def create_workbook(
     run_data: ExperimentMetrics,
     output_file: PathLike | str,
     percentile: str = "mean",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ):
     # Extract time unit from experiment metadata
     source_time_unit = experiment_metadata.time_unit
 
     # Convert run_data to the specified time unit if different from source
-    if source_time_unit != time_unit:
+    if source_time_unit != metrics_time_unit:
         logger.info(
-            f"Converting latency metrics from {source_time_unit} to {time_unit}"
+            f"Converting latency metrics from {source_time_unit} to {metrics_time_unit}"
         )
         converted_run_data: dict = {}
         for scenario, concurrency_data in run_data.items():
@@ -49,7 +49,7 @@ def create_workbook(
                     if key == "aggregated_metrics":
                         metrics_dict = value.model_dump()
                         converted_metrics_dict = TimeUnitConverter.convert_metrics_dict(
-                            metrics_dict, time_unit, source_time_unit
+                            metrics_dict, metrics_time_unit, source_time_unit
                         )
                         converted_run_data[scenario][concurrency][key] = (
                             AggregatedMetrics(**converted_metrics_dict)
@@ -57,7 +57,7 @@ def create_workbook(
                     elif key == "individual_request_metrics":
                         converted_run_data[scenario][concurrency][key] = (
                             TimeUnitConverter.convert_metrics_list(
-                                value, time_unit, source_time_unit
+                                value, metrics_time_unit, source_time_unit
                             )
                         )
                     else:
@@ -68,17 +68,25 @@ def create_workbook(
     wb = Workbook()
 
     create_summary_sheet(
-        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+        wb,
+        experiment_metadata,
+        run_data,
+        percentile=percentile,
+        time_unit=metrics_time_unit,
     )
     create_appendix_sheet(
-        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+        wb,
+        experiment_metadata,
+        run_data,
+        percentile=percentile,
+        time_unit=metrics_time_unit,
     )
     create_experiment_metadata_sheet(wb, experiment_metadata)
     create_aggregated_metrics_sheet(
-        wb, run_data, experiment_metadata, time_unit=time_unit
+        wb, run_data, experiment_metadata, time_unit=metrics_time_unit
     )
     create_single_request_metrics_sheet(
-        wb, run_data, experiment_metadata, time_unit=time_unit
+        wb, run_data, experiment_metadata, time_unit=metrics_time_unit
     )
 
     # Remove the default sheet
