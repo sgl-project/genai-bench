@@ -337,7 +337,7 @@ def benchmark(
         additional_request_params=additional_request_params,
         dataset_path=str(dataset_path),
         character_token_ratio=sonnet_character_token_ratio,
-        time_unit=metrics_time_unit,
+        metrics_time_unit=metrics_time_unit,
     )
     experiment_metadata_file = Path(
         os.path.join(experiment_folder_abs_path, "experiment_metadata.json")
@@ -516,7 +516,7 @@ def benchmark(
             f"{Path(experiment_folder_abs_path).name}_summary.xlsx",
         ),
         percentile="mean",
-        time_unit=metrics_time_unit,
+        metrics_time_unit=metrics_time_unit,
     )
     plot_experiment_data_flexible(
         [

@@ -8,7 +8,9 @@ from genai_bench.metrics.metrics import AggregatedMetrics, MetricStats, StatFiel
 from genai_bench.protocol import ExperimentMetadata
 
 
-def _make_metadata(scenarios: list[str], time_unit: str = "s") -> ExperimentMetadata:
+def _make_metadata(
+    scenarios: list[str], metrics_time_unit: str = "s"
+) -> ExperimentMetadata:
     return ExperimentMetadata(
         cmd="genai-bench benchmark",
         benchmark_version="test",
@@ -31,7 +33,7 @@ def _make_metadata(scenarios: list[str], time_unit: str = "s") -> ExperimentMeta
         experiment_folder_name="/tmp",
         dataset_path=None,
         character_token_ratio=1.0,
-        time_unit=time_unit,
+        metrics_time_unit=metrics_time_unit,
     )
 
 
@@ -96,7 +98,7 @@ def test_summary_displays_na_when_threshold_not_met():
 def test_time_unit_conversion_seconds_to_milliseconds():
     """Test that latency metrics are converted from seconds to milliseconds."""
     scenario = "D(100,100)"
-    metadata = _make_metadata([scenario], time_unit="s")  # Source is seconds
+    metadata = _make_metadata([scenario], metrics_time_unit="s")  # Source is seconds
 
     run_data = {
         scenario: {
@@ -144,7 +146,9 @@ def test_time_unit_conversion_seconds_to_milliseconds():
 def test_time_unit_conversion_milliseconds_to_seconds():
     """Test that latency metrics are converted from milliseconds to seconds."""
     scenario = "D(100,100)"
-    metadata = _make_metadata([scenario], time_unit="ms")  # Source is milliseconds
+    metadata = _make_metadata(
+        [scenario], metrics_time_unit="ms"
+    )  # Source is milliseconds
 
     run_data = {
         scenario: {

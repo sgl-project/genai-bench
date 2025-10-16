@@ -26,10 +26,10 @@ logger = init_logger(__name__)
 class MinimalDashboard:
     """A minimal implementation of the Dashboard interface for scenarios without UI."""
 
-    def __init__(self, time_unit: str = "s"):
+    def __init__(self, metrics_time_unit: str = "s"):
         self.console = None
         self.layout = None
-        self.time_unit = time_unit
+        self.metrics_time_unit = metrics_time_unit
         self._live = type(
             "MinimalDashboardLive",
             (),
@@ -44,12 +44,12 @@ class MinimalDashboard:
         return self._live
 
     def update_metrics_panels(
-        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+        self, live_metrics: LiveMetricsData, metrics_time_unit: str = "s"
     ):
         pass
 
     def update_histogram_panel(
-        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+        self, live_metrics: LiveMetricsData, metrics_time_unit: str = "s"
     ):
         pass
 
@@ -138,7 +138,7 @@ class RichLiveDashboard:
     - If `ENABLE_UI` is disabled, consider using `MinimalDashboard` instead.
     """
 
-    def __init__(self, time_unit: str = "s"):
+    def __init__(self, metrics_time_unit: str = "s"):
         self.console: Console = Console()
         self.layout = create_layout()
         (
@@ -150,7 +150,7 @@ class RichLiveDashboard:
         self.start_time: Optional[float] = None
         self.run_time: Optional[int] = None
         self.max_requests_per_run: Optional[int] = None
-        self.time_unit: str = time_unit
+        self.metrics_time_unit: str = metrics_time_unit
         self.plot_metrics: Dict[str, List[float]] = {
             "ttft": [],
             "input_throughput": [],
@@ -165,7 +165,7 @@ class RichLiveDashboard:
         )
 
     def update_metrics_panels(
-        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+        self, live_metrics: LiveMetricsData, metrics_time_unit: str = "s"
     ):
         if "stats" not in live_metrics or not live_metrics["stats"]:
             return
@@ -176,21 +176,21 @@ class RichLiveDashboard:
                 "Input",
                 stats.get("ttft", []),
                 stats.get("input_throughput", []),
-                time_unit,
+                metrics_time_unit,
             )
             output_latency_panel, output_throughput_panel = create_metric_panel(
                 "Output",
                 stats.get("output_latency", []),
                 stats.get("output_throughput", []),
-                time_unit,
+                metrics_time_unit,
             )
         else:
             # If stats is a list or other format, use empty lists as fallback
             input_latency_panel, input_throughput_panel = create_metric_panel(
-                "Input", [], [], time_unit
+                "Input", [], [], metrics_time_unit
             )
             output_latency_panel, output_throughput_panel = create_metric_panel(
-                "Output", [], [], time_unit
+                "Output", [], [], metrics_time_unit
             )
 
         self.layout["input_throughput"].update(input_throughput_panel)
@@ -199,15 +199,15 @@ class RichLiveDashboard:
         self.layout["output_latency"].update(output_latency_panel)
 
     def update_histogram_panel(
-        self, live_metrics: LiveMetricsData, time_unit: str = "s"
+        self, live_metrics: LiveMetricsData, metrics_time_unit: str = "s"
     ):
         input_latency_hist_chart = create_horizontal_colored_bar_chart(
-            live_metrics["ttft"], bin_width=0.01, time_unit=time_unit
+            live_metrics["ttft"], bin_width=0.01, metrics_time_unit=metrics_time_unit
         )
         output_latency_hist_chart = create_horizontal_colored_bar_chart(
             live_metrics["output_latency"],
             bin_width=0.01,
-            time_unit=time_unit,
+            metrics_time_unit=metrics_time_unit,
         )
 
         self.layout["input_histogram"].update(
@@ -228,7 +228,9 @@ class RichLiveDashboard:
         )
 
     def update_scatter_plot_panel(
-        self, ui_scatter_plot_metrics: Optional[List[float]], time_unit: str = "s"
+        self,
+        ui_scatter_plot_metrics: Optional[List[float]],
+        metrics_time_unit: str = "s",
     ):
         if not ui_scatter_plot_metrics:
             logger.info("No ui_scatter_plot_metrics collected for this run.")
@@ -245,13 +247,13 @@ class RichLiveDashboard:
         input_throughput_scatter_plot = create_scatter_plot(
             self.plot_metrics["input_throughput"],
             self.plot_metrics["ttft"],
-            y_unit=time_unit,
+            y_unit=metrics_time_unit,
             x_unit="tokens/sec",
         )
         output_latency_scatter_plot = create_scatter_plot(
             self.plot_metrics["output_throughput"],
             self.plot_metrics["output_latency"],
-            y_unit=time_unit,
+            y_unit=metrics_time_unit,
             x_unit="tokens/sec",
         )
 
@@ -326,8 +328,8 @@ class RichLiveDashboard:
         if error_code is not None:
             return
 
-        self.update_metrics_panels(live_metrics, self.time_unit)
-        self.update_histogram_panel(live_metrics, self.time_unit)
+        self.update_metrics_panels(live_metrics, self.metrics_time_unit)
+        self.update_histogram_panel(live_metrics, self.metrics_time_unit)
 
     def reset_plot_metrics(self):
         """Reset plot metrics for each scenario."""

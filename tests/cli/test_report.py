@@ -16,7 +16,7 @@ def cli_runner():
 def mock_experiment_data():
     """Create mock experiment data."""
     metadata = Mock()
-    metadata.time_unit = "s"  # Source time unit from experiment
+    metadata.metrics_time_unit = "s"  # Source time unit from experiment
 
     run_data = {
         "scenario1": {
