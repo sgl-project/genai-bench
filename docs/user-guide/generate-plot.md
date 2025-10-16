@@ -238,7 +238,7 @@ A simplified 2x2 layout with the most important metrics for quick analysis.
 
 ### Time Units
 
-Pick the unit of time to measure latency fields with `--time-unit [s|ms]`. Plots default to using seconds if not specified.
+Pick the unit of time to measure latency fields with `--metrics-time-unit [s|ms]`. Plots default to using seconds if not specified.
 
 ### Tips
 

@@ -34,7 +34,7 @@ def mock_experiment_data():
 
 
 def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
-    """Test that the --time-unit CLI parameter is correctly passed through."""
+    """Test that the --metrics-time-unit CLI parameter is correctly passed through."""
     with (
         patch(
             "genai_bench.cli.report.load_multiple_experiments",
@@ -51,7 +51,7 @@ def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
                 "/tmp",
                 "--group-key",
                 "traffic_scenario",
-                "--time-unit",
+                "--metrics-time-unit",
                 "ms",
             ],
         )
@@ -79,7 +79,7 @@ def test_cli_time_unit_default_value(cli_runner, mock_experiment_data):
                 "/tmp",
                 "--group-key",
                 "traffic_scenario",
-                # No --time-unit specified
+                # No --metrics-time-unit specified
             ],
         )
 
@@ -97,14 +97,14 @@ def test_cli_time_unit_parameter_validation(cli_runner):
             "/tmp",
             "--group-key",
             "traffic_scenario",
-            "--time-unit",
+            "--metrics-time-unit",
             "invalid_unit",
         ],
     )
 
     # Should fail with invalid choice error
     assert result.exit_code != 0
-    assert "Invalid value for '--time-unit'" in result.output
+    assert "Invalid value for '--metrics-time-unit'" in result.output
 
 
 def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
@@ -127,7 +127,7 @@ def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
                 "traffic_scenario",
                 "--preset",
                 "2x4_default",
-                "--time-unit",
+                "--metrics-time-unit",
                 "ms",
             ],
         )
