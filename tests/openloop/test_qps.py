@@ -1,4 +1,5 @@
 import time
+import asyncio
 from typing import Any, List
 
 import pytest
@@ -6,7 +7,7 @@ from unittest.mock import patch
 
 from genai_bench.openloop.runner import OpenLoopRunner
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
-from genai_bench.protocol import UserChatRequest
+from genai_bench.protocol import UserChatRequest, UserResponse
 
 
 class DummyAuth:
@@ -91,9 +92,21 @@ def test_wait_intervals_exponential_mean_close():
     assert abs(empirical_mean - (1.0 / qps)) < 0.05  # loose tolerance
 
 
-@patch("genai_bench.openloop.runner.requests.post")
-def test_run_dispatches_exact_number_of_requests(mock_post):
-    mock_post.return_value = DummyResp(status_code=200, prompt_tokens=10, completion_tokens=2)
+def _ok_resp() -> UserResponse:
+    return UserResponse(
+        status_code=200,
+        start_time=0.0,
+        end_time=0.1,
+        time_at_first_token=0.02,
+        num_prefill_tokens=10,
+    )
+
+
+@patch.object(OpenLoopRunner, "_send_request", autospec=True)
+def test_run_dispatches_exact_number_of_requests(mock_send):
+    async def _ok(self, req):
+        return _ok_resp()
+    mock_send.side_effect = _ok
     runner, aggregated = _build_runner()
     qps = 7
     duration = 2
@@ -116,9 +129,11 @@ def test_run_dispatches_exact_number_of_requests(mock_post):
     assert len(aggregated.all_request_metrics) == expected
 
 
-@patch("genai_bench.openloop.runner.requests.post")
-def test_run_respects_max_requests(mock_post):
-    mock_post.return_value = DummyResp(status_code=200, prompt_tokens=10, completion_tokens=2)
+@patch.object(OpenLoopRunner, "_send_request", autospec=True)
+def test_run_respects_max_requests(mock_send):
+    async def _ok(self, req):
+        return _ok_resp()
+    mock_send.side_effect = _ok
     runner, aggregated = _build_runner()
     qps = 50
     duration = 2
@@ -140,9 +155,12 @@ def test_run_respects_max_requests(mock_post):
     assert len(aggregated.all_request_metrics) == max_requests
 
 
-@patch("genai_bench.openloop.runner.requests.post")
-def test_run_honors_timeout(mock_post):
-    mock_post.return_value = DummyResp(status_code=200, prompt_tokens=10, completion_tokens=2)
+@patch.object(OpenLoopRunner, "_send_request", autospec=True)
+def test_run_honors_timeout(mock_send):
+    async def _slow(self, req):
+        await asyncio.sleep(1.0)
+        return _ok_resp()
+    mock_send.side_effect = _slow
     runner, aggregated = _build_runner()
     qps = 5
     duration = 100  # many intervals
