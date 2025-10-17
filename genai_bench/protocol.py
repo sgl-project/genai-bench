@@ -188,8 +188,14 @@ class ExperimentMetadata(BaseModel):
     batch_size: Optional[List[int]] = Field(
         None, description="The batch sizes for embedding tasks."
     )
-    iteration_type: Literal["num_concurrency", "batch_size"] = Field(
+    iteration_type: Literal["num_concurrency", "batch_size", "qps"] = Field(
         "num_concurrency", description="Type of iteration used in the experiment."
+    )
+    target_qps: Optional[int] = Field(
+        None, description="Target queries per second (QPS) when running in QPS mode."
+    )
+    qps_users: Optional[int] = Field(
+        None, description="Number of Locust users spawned in QPS mode."
     )
     traffic_scenario: List[str] = Field(default_factory=list)
     additional_request_params: Dict[str, Any] = Field(default_factory=dict)

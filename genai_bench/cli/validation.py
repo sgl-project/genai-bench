@@ -400,3 +400,66 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
             param_hint=["--warmup-ratio", "--cooldown-ratio"],
         )
     return value
+
+
+def validate_qps_mode(ctx, param, value):
+    """
+    Validate QPS mode parameters and ensure mutual exclusivity.
+
+    Args:
+        ctx: Click context
+        param: Click parameter (target_qps)
+        value: Current parameter value
+
+    Returns:
+        int or None: The validated target_qps value
+    """
+    target_qps = value
+    spawn_rate = ctx.params.get("spawn_rate")
+    num_concurrency = ctx.params.get("num_concurrency", [])
+    qps_users = ctx.params.get("qps_users", 50)
+
+    # If QPS mode is not enabled, return early
+    if target_qps is None:
+        return None
+
+    # Validate QPS value is positive
+    if target_qps <= 0:
+        raise click.BadParameter(
+            f"target_qps must be positive, got {target_qps}",
+            param_hint=["--target-qps"],
+        )
+
+    # Check mutual exclusivity with spawn_rate
+    if spawn_rate is not None:
+        raise click.BadParameter(
+            "--target-qps and --spawn-rate are mutually exclusive. "
+            "Use --target-qps for QPS mode or --spawn-rate for concurrency mode.",
+            param_hint=["--target-qps", "--spawn-rate"],
+        )
+
+    # Check mutual exclusivity with num_concurrency
+    # num_concurrency has defaults, so check if it was explicitly provided
+    if num_concurrency != tuple(DEFAULT_NUM_CONCURRENCIES):
+        raise click.BadParameter(
+            "--target-qps and --num-concurrency are mutually exclusive. "
+            "Use --target-qps for QPS mode or --num-concurrency for concurrency mode.",
+            param_hint=["--target-qps", "--num-concurrency"],
+        )
+
+    # Validate qps_users makes sense
+    if qps_users <= 0:
+        raise click.BadParameter(
+            f"qps_users must be positive, got {qps_users}",
+            param_hint=["--qps-users"],
+        )
+
+    # Warn if per-user rate is too low
+    per_user_rate = target_qps / qps_users
+    if per_user_rate < 0.1:
+        logger.warning(
+            f"Per-user request rate is very low ({per_user_rate:.3f} req/s). "
+            f"Consider reducing --qps-users for better performance."
+        )
+
+    return target_qps

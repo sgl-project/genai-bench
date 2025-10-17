@@ -18,6 +18,7 @@ from genai_bench.cli.validation import (
     validate_filter_criteria,
     validate_iteration_params,
     validate_object_storage_options,
+    validate_qps_mode,
     validate_scenario_callback,
     validate_task,
     validate_tokenizer,
@@ -510,3 +511,100 @@ def test_validate_warmup_cooldown_ratio_options():
             "cooldown_ratio": 0.5,
         }
         validate_warmup_cooldown_ratio_options(ctx, param, 0.5)
+
+
+def test_validate_qps_mode_basic():
+    """Test basic QPS mode validation."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test QPS mode not enabled (target_qps is None)
+    ctx.params = {"spawn_rate": None, "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES)}
+    result = validate_qps_mode(ctx, param, None)
+    assert result is None
+
+    # Test valid QPS mode
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "qps_users": 50,
+    }
+    result = validate_qps_mode(ctx, param, 100)
+    assert result == 100
+
+
+def test_validate_qps_mode_mutual_exclusivity():
+    """Test QPS mode mutual exclusivity with spawn_rate and num_concurrency."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test mutual exclusivity with spawn_rate
+    ctx.params = {
+        "spawn_rate": 10,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "qps_users": 50,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, 100)
+    assert "--target-qps and --spawn-rate are mutually exclusive" in str(exc_info.value)
+
+    # Test mutual exclusivity with custom num_concurrency
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": (1, 2, 4),  # Custom values (tuple)
+        "qps_users": 50,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, 100)
+    assert "--target-qps and --num-concurrency are mutually exclusive" in str(
+        exc_info.value
+    )
+
+
+def test_validate_qps_mode_value_validation():
+    """Test QPS mode value validation."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test negative QPS
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "qps_users": 50,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, -10)
+    assert "target_qps must be positive" in str(exc_info.value)
+
+    # Test zero QPS
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, 0)
+    assert "target_qps must be positive" in str(exc_info.value)
+
+    # Test negative qps_users
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "qps_users": -10,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, 100)
+    assert "qps_users must be positive" in str(exc_info.value)
+
+
+def test_validate_qps_mode_warning_low_rate(caplog):
+    """Test QPS mode warns when per-user rate is too low."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test per-user rate < 0.1 triggers warning
+    with caplog.at_level(logging.WARNING):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "qps_users": 1000,  # 1 QPS / 1000 users = 0.001 req/s per user
+        }
+        result = validate_qps_mode(ctx, param, 1)
+        assert result == 1
+    assert "Per-user request rate is very low" in caplog.text
+    assert "Consider reducing --qps-users" in caplog.text

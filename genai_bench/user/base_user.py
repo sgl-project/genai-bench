@@ -1,6 +1,6 @@
 from locust import HttpUser
 
-from typing import Dict
+from typing import Dict, Optional, Callable
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.request_metrics_collector import RequestMetricsCollector
@@ -11,6 +11,7 @@ logger = init_logger(__name__)
 
 class BaseUser(HttpUser):
     supported_tasks: Dict[str, str] = {}
+    wait_time: Optional[Callable] = None  # Can be set dynamically for QPS mode
 
     def __new__(cls, *args, **kwargs):
         if cls is BaseUser:

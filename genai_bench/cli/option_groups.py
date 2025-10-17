@@ -12,6 +12,7 @@ from genai_bench.cli.validation import (
     validate_dataset_path_callback,
     validate_iteration_params,
     validate_object_storage_options,
+    validate_qps_mode,
     validate_task,
     validate_traffic_scenario_callback,
     validate_warmup_cooldown_ratio_options,
@@ -607,7 +608,29 @@ def distributed_locust_options(func):
         default=None,
         required=False,
         help="Number of users to spawn per second. Defaults to concurrency value. "
-        "Use lower values (e.g., 10-50) for LLM workloads to prevent worker overload.",
+        "Use lower values (e.g., 10-50) for LLM workloads to prevent worker overload. "
+        "Mutually exclusive with --target-qps.",
+    )(func)
+    func = click.option(
+        "--target-qps",
+        type=int,
+        default=None,
+        required=False,
+        callback=validate_qps_mode,
+        help="Target queries per second (QPS) for the benchmark. "
+        "When specified, the benchmark runs in QPS mode instead of concurrency mode. "
+        "Mutually exclusive with --num-concurrency and --spawn-rate. "
+        "In distributed mode, QPS is split evenly across all workers.",
+    )(func)
+    func = click.option(
+        "--qps-users",
+        type=int,
+        default=50,
+        required=False,
+        help="Number of Locust users to spawn in QPS mode. Each user will send "
+        "requests at target_qps/qps_users rate. Default: 50. "
+        "Higher values provide smoother request distribution. "
+        "Only applicable when --target-qps is specified.",
     )(func)
     return func
 
