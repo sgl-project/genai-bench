@@ -133,7 +133,6 @@ def benchmark(
     non_locust,
     qps_level,
     qps_distribution,
-    duration_s,
     random_seed,
     upload_results,
     namespace,
@@ -479,11 +478,11 @@ def benchmark(
                     )
                     logger.info(
                         f"Starting open-loop run with qps={concurrency}, "
-                        f"duration_s={duration_s}, distribution={qps_distribution}"
+                        f"duration_s={max_time_per_run}, distribution={qps_distribution}"
                     )
                     total_run_time = ol.run(
                         qps_level=concurrency,
-                        duration_s=duration_s,
+                        duration_s=max_time_per_run,
                         distribution=qps_distribution,
                         random_seed=random_seed,
                         max_requests=max_requests_per_run,
