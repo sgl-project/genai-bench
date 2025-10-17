@@ -157,6 +157,16 @@ class AggregatedMetrics(BaseModel):
     requests_per_second: float = Field(
         0.0, description="The average number of completed requests per second"
     )
+    summary_actual_qps: float = Field(
+        0.0,
+        description="Responses returned per second over the full run (success + error)",
+    )
+    arrival_requests_per_second: float = Field(
+        0.0, description="Planned/actual arrival rate (arrivals per second) for the run"
+    )
+    total_arrivals: int = Field(
+        0, description="Total number of requests scheduled/launched during the arrival window"
+    )
     error_codes_frequency: Dict[int, int] = Field(
         default_factory=dict, description="Frequency of error codes"
     )
