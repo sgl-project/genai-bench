@@ -96,6 +96,41 @@ def api_options(func):
         "open-source servers.",
     )(func)
     return func
+def open_loop_options(func):
+    func = click.option(
+        "--non-locust",
+        is_flag=True,
+        default=False,
+        help="Use open-loop QPS generator (tore-speed style) instead of Locust.",
+    )(func)
+    func = click.option(
+        "--qps-level",
+        type=click.FLOAT,
+        multiple=True,
+        default=None,
+        help="Open-loop QPS levels (can be specified multiple times).",
+    )(func)
+    func = click.option(
+        "--qps-distribution",
+        type=click.Choice(["uniform", "exponential", "constant"], case_sensitive=False),
+        default="uniform",
+        help="Interarrival distribution for open-loop mode (default: uniform).",
+    )(func)
+    func = click.option(
+        "--duration-s",
+        type=int,
+        default=60,
+        help="Per-run duration in seconds for open-loop mode (default: 60).",
+    )(func)
+    func = click.option(
+        "--random-seed",
+        type=int,
+        default=42,
+        help="Random seed for interarrival generation (default: 42).",
+    )(func)
+    return func
+
+
 
 
 # Model endpoint authentication options

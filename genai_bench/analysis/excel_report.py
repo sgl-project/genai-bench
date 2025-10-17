@@ -115,8 +115,9 @@ def _create_sheet_with_common_layout(
         sheet.append(row)
         num_rows += 1
 
-    # Merge GPU Type column cells
-    merge_cells(sheet, 2, num_rows, 1)
+    # Merge GPU Type column cells only when there is at least one data row
+    if num_rows >= 2:
+        merge_cells(sheet, 2, num_rows, 1)
 
     apply_number_format(sheet, exclude_columns=["A", "B", "C"])
     column_width_autofit(sheet)
@@ -502,18 +503,19 @@ def create_single_request_metrics_sheet(
                 sheet.append(row)
                 rows_for_scenario += 1
                 row_for_iteration += 1
-            merge_cells(
-                sheet,
-                start_row_iteration,
-                row_for_iteration + start_row_iteration - 1,
-                1,
-            )
-            merge_cells(
-                sheet,
-                start_row_iteration,
-                row_for_iteration + start_row_iteration - 1,
-                2,
-            )
+            if row_for_iteration >= 1:
+                merge_cells(
+                    sheet,
+                    start_row_iteration,
+                    row_for_iteration + start_row_iteration - 1,
+                    1,
+                )
+                merge_cells(
+                    sheet,
+                    start_row_iteration,
+                    row_for_iteration + start_row_iteration - 1,
+                    2,
+                )
             start_row_iteration += row_for_iteration
 
         start_row += rows_for_scenario
