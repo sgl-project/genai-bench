@@ -244,6 +244,15 @@ class AggregatedMetricsCollector:
             if self.aggregated_metrics.run_duration > 0
             else 0
         )
+        # Tore-speed style summary_actual_qps: responses (success + error) / total elapsed
+        self.aggregated_metrics.summary_actual_qps = (
+            (
+                self.aggregated_metrics.num_requests
+                / self.aggregated_metrics.run_duration
+            )
+            if self.aggregated_metrics.run_duration > 0
+            else 0
+        )
         self.aggregated_metrics.num_requests = (
             self.aggregated_metrics.num_completed_requests
             + self.aggregated_metrics.num_error_requests

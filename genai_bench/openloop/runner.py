@@ -340,6 +340,10 @@ class OpenLoopRunner:
                 asyncio.run(self._session.close())
             except Exception:
                 pass
+        # Record arrivals as an arrival rate metric for this run
+        arrival_rate = (n / (duration_s if duration_s > 0 else 1))
+        self.aggregated.aggregated_metrics.total_arrivals = n
+        self.aggregated.aggregated_metrics.arrival_requests_per_second = arrival_rate
         return end - start
 
 
