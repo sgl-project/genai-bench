@@ -4,7 +4,7 @@ import time
 import random
 from typing import List, Optional
 
-import requests
+import aiohttp
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.request_metrics_collector import RequestMetricsCollector
@@ -55,6 +55,11 @@ class OpenLoopRunner:
                     "Content-Type": "application/json",
                 }
 
+        # Async HTTP session (aiohttp) for non-blocking streaming
+        self._session: Optional[aiohttp.ClientSession] = None
+        self._aio_timeout = aiohttp.ClientTimeout(total=6 * 60 * 60)
+        self._aio_read_bufsize = 256 * 1024
+
     def _wait_intervals(
         self, qps_level: float, duration_s: int, random_seed: int, distribution: str
     ) -> List[float]:
@@ -81,7 +86,14 @@ class OpenLoopRunner:
         req = self.sampler.sample(scenario_obj)
         return req
 
-    def _send_request(self, req) -> UserResponse:
+    async def _ensure_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                timeout=self._aio_timeout, read_bufsize=self._aio_read_bufsize
+            )
+        return self._session
+
+    async def _send_request(self, req) -> UserResponse:
         # Currently implement OpenAI-compatible endpoints for text chat and embeddings
         try:
             if isinstance(req, (UserChatRequest, UserImageChatRequest)):
@@ -116,84 +128,78 @@ class OpenLoopRunner:
                     **{k: v for k, v in req.additional_request_params.items() if k not in {"stream"}},
                 }
 
+                session = await self._ensure_session()
                 start_time = time.monotonic()
-                r = requests.post(
-                    url=f"{self.api_base}{endpoint}", json=payload, headers=self.headers, stream=True
-                )
+                async with session.post(
+                    url=f"{self.api_base}{endpoint}", json=payload, headers=self.headers
+                ) as resp:
+                    if resp.status != 200:
+                        text = await resp.text()
+                        return UserResponse(status_code=resp.status, error_message=text)
 
-                if r.status_code != 200:
-                    return UserResponse(status_code=r.status_code, error_message=r.text)
+                    stream_chunk_prefix = "data: "
+                    end_chunk = b"[DONE]"
 
-                stream_chunk_prefix = "data: "
-                end_chunk = b"[DONE]"
+                    generated_text = ""
+                    tokens_received = 0
+                    time_at_first_token: Optional[float] = None
+                    finish_reason = None
+                    previous_data = None
+                    num_prompt_tokens = None
 
-                generated_text = ""
-                tokens_received = 0
-                time_at_first_token: Optional[float] = None
-                finish_reason = None
-                previous_data = None
-                num_prompt_tokens = None
+                    async for raw_line in resp.content:
+                        chunk = (raw_line or b"").strip()
+                        if not chunk:
+                            continue
+                        if chunk.startswith(stream_chunk_prefix.encode()):
+                            chunk = chunk[len(stream_chunk_prefix) :]
+                        if chunk == end_chunk:
+                            break
+                        try:
+                            data = json.loads(chunk)
+                        except Exception:
+                            previous_data = chunk
+                            continue
 
-                for raw_chunk in r.iter_lines(chunk_size=None):
-                    chunk = (raw_chunk or b"").strip()
-                    if not chunk:
-                        continue
-                    # SSE prefix
-                    if chunk.startswith(stream_chunk_prefix.encode()):
-                        chunk = chunk[len(stream_chunk_prefix) :]
-                    if chunk == end_chunk:
-                        break
+                        if data.get("error") is not None:
+                            return UserResponse(
+                                status_code=data["error"].get("code", -1),
+                                error_message=data["error"].get("message", "Unknown error"),
+                            )
 
-                    try:
-                        data = json.loads(chunk)
-                    except Exception:
-                        previous_data = chunk
-                        continue
-
-                    if data.get("error") is not None:
-                        return UserResponse(
-                            status_code=data["error"].get("code", -1),
-                            error_message=data["error"].get("message", "Unknown error"),
-                        )
-
-                    if (not data.get("choices")) and finish_reason and data.get("usage"):
-                        usage = data["usage"]
-                        num_prompt_tokens = usage.get("prompt_tokens")
-                        tokens_received = usage.get("completion_tokens", 0)
-                        if not time_at_first_token:
-                            if tokens_received > 1:
-                                time_at_first_token = time.monotonic()
-                            else:
-                                # Not enough info to infer TTFT
-                                time_at_first_token = start_time
-                        break
-
-                    try:
-                        delta = data["choices"][0]["delta"]
-                        content_piece = delta.get("content") or delta.get("reasoning_content")
-                        usage = delta.get("usage")
-
-                        if usage:
-                            tokens_received = usage.get("completion_tokens", tokens_received)
-                        if content_piece:
-                            if not time_at_first_token:
-                                # Mark TTFT on first tokenized arrival
-                                time_at_first_token = time.monotonic()
-                            generated_text += content_piece
-
-                        finish_reason = data["choices"][0].get("finish_reason", None)
-                        if finish_reason and data.get("usage"):
+                        if (not data.get("choices")) and finish_reason and data.get("usage"):
                             usage = data["usage"]
                             num_prompt_tokens = usage.get("prompt_tokens")
-                            tokens_received = usage.get("completion_tokens", tokens_received)
+                            tokens_received = usage.get("completion_tokens", 0)
+                            if not time_at_first_token:
+                                time_at_first_token = time.monotonic()
                             break
-                    except (IndexError, KeyError):
+
+                        try:
+                            delta = data["choices"][0]["delta"]
+                            content_piece = delta.get("content") or delta.get("reasoning_content")
+                            usage = delta.get("usage")
+
+                            if usage:
+                                tokens_received = usage.get("completion_tokens", tokens_received)
+                            if content_piece:
+                                if not time_at_first_token:
+                                    time_at_first_token = time.monotonic()
+                                generated_text += content_piece
+
+                            finish_reason = data["choices"][0].get("finish_reason", None)
+                            if finish_reason and data.get("usage"):
+                                usage = data["usage"]
+                                num_prompt_tokens = usage.get("prompt_tokens")
+                                tokens_received = usage.get("completion_tokens", tokens_received)
+                                break
+                        except (IndexError, KeyError):
+                            previous_data = data
+                            continue
+
                         previous_data = data
-                        continue
 
-                    previous_data = data
-
-                end_time = time.monotonic()
+                    end_time = time.monotonic()
 
                 if not tokens_received:
                     tokens_received = self.sampler.get_token_length(
@@ -220,35 +226,37 @@ class OpenLoopRunner:
                     "input": req.documents,
                     **req.additional_request_params,
                 }
+                session = await self._ensure_session()
                 start_time = time.monotonic()
-                r = requests.post(
+                async with session.post(
                     url=f"{self.api_base}{endpoint}", json=payload, headers=self.headers
-                )
-                end_time = time.monotonic()
-                if r.status_code == 200:
-                    data = r.json()
-                    num_prompt_tokens = data.get("usage", {}).get("prompt_tokens")
-                    return UserResponse(
-                        status_code=200,
-                        start_time=start_time,
-                        end_time=end_time,
-                        time_at_first_token=end_time,
-                        num_prefill_tokens=num_prompt_tokens,
-                    )
-                else:
-                    return UserResponse(status_code=r.status_code, error_message=r.text)
+                ) as resp:
+                    end_time = time.monotonic()
+                    if resp.status == 200:
+                        data = await resp.json()
+                        num_prompt_tokens = data.get("usage", {}).get("prompt_tokens")
+                        return UserResponse(
+                            status_code=200,
+                            start_time=start_time,
+                            end_time=end_time,
+                            time_at_first_token=end_time,
+                            num_prefill_tokens=num_prompt_tokens,
+                        )
+                    else:
+                        text = await resp.text()
+                        return UserResponse(status_code=resp.status, error_message=text)
 
             else:
                 return UserResponse(status_code=400, error_message="Unsupported request type")
-        except requests.exceptions.ConnectionError as e:
+        except aiohttp.ClientConnectionError as e:
             return UserResponse(status_code=503, error_message=f"Connection error: {e}")
-        except requests.exceptions.Timeout as e:
+        except asyncio.TimeoutError as e:
             return UserResponse(status_code=408, error_message=f"Request timed out: {e}")
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             return UserResponse(status_code=500, error_message=str(e))
 
     async def _send_one(self, req) -> None:
-        response = self._send_request(req)
+        response = await self._send_request(req)
         # Convert to RequestLevelMetrics and add to collector
         collector = RequestMetricsCollector()
         if response.status_code == 200:
@@ -326,6 +334,12 @@ class OpenLoopRunner:
         except asyncio.TimeoutError:
             logger.info("Open-loop run timed out per max_time_s")
         end = time.monotonic()
+        # Close session if opened
+        if self._session is not None and not self._session.closed:
+            try:
+                asyncio.run(self._session.close())
+            except Exception:
+                pass
         return end - start
 
 

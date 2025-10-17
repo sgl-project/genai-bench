@@ -486,7 +486,7 @@ def benchmark(
                         distribution=qps_distribution,
                         random_seed=random_seed,
                         max_requests=max_requests_per_run,
-                        max_time_s=max_time_per_run,
+                        max_time_s=None,
                         scenario=scenario_str,
                     )
 
