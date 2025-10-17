@@ -48,9 +48,11 @@ def create_layout():
     return layout
 
 
-def create_metric_panel(title, latency_data, throughput_data, time_unit: str = "s"):
+def create_metric_panel(
+    title, latency_data, throughput_data, metrics_time_unit: str = "s"
+):
     # Convert latency values if needed
-    if time_unit == "ms":
+    if metrics_time_unit == "ms":
         # Convert seconds to milliseconds
         latency_values = {
             key: value * 1000 if value is not None else value

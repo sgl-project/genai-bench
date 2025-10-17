@@ -30,15 +30,15 @@ def create_workbook(
     run_data: ExperimentMetrics,
     output_file: PathLike | str,
     percentile: str = "mean",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ):
     # Extract time unit from experiment metadata
-    source_time_unit = experiment_metadata.time_unit
+    source_time_unit = experiment_metadata.metrics_time_unit
 
     # Convert run_data to the specified time unit if different from source
-    if source_time_unit != time_unit:
+    if source_time_unit != metrics_time_unit:
         logger.info(
-            f"Converting latency metrics from {source_time_unit} to {time_unit}"
+            f"Converting latency metrics from {source_time_unit} to {metrics_time_unit}"
         )
         converted_run_data: dict = {}
         for scenario, concurrency_data in run_data.items():
@@ -49,7 +49,7 @@ def create_workbook(
                     if key == "aggregated_metrics":
                         metrics_dict = value.model_dump()
                         converted_metrics_dict = TimeUnitConverter.convert_metrics_dict(
-                            metrics_dict, time_unit, source_time_unit
+                            metrics_dict, metrics_time_unit, source_time_unit
                         )
                         converted_run_data[scenario][concurrency][key] = (
                             AggregatedMetrics(**converted_metrics_dict)
@@ -57,7 +57,7 @@ def create_workbook(
                     elif key == "individual_request_metrics":
                         converted_run_data[scenario][concurrency][key] = (
                             TimeUnitConverter.convert_metrics_list(
-                                value, time_unit, source_time_unit
+                                value, metrics_time_unit, source_time_unit
                             )
                         )
                     else:
@@ -68,17 +68,25 @@ def create_workbook(
     wb = Workbook()
 
     create_summary_sheet(
-        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+        wb,
+        experiment_metadata,
+        run_data,
+        percentile=percentile,
+        metrics_time_unit=metrics_time_unit,
     )
     create_appendix_sheet(
-        wb, experiment_metadata, run_data, percentile=percentile, time_unit=time_unit
+        wb,
+        experiment_metadata,
+        run_data,
+        percentile=percentile,
+        metrics_time_unit=metrics_time_unit,
     )
     create_experiment_metadata_sheet(wb, experiment_metadata)
     create_aggregated_metrics_sheet(
-        wb, run_data, experiment_metadata, time_unit=time_unit
+        wb, run_data, experiment_metadata, metrics_time_unit=metrics_time_unit
     )
     create_single_request_metrics_sheet(
-        wb, run_data, experiment_metadata, time_unit=time_unit
+        wb, run_data, experiment_metadata, metrics_time_unit=metrics_time_unit
     )
 
     # Remove the default sheet
@@ -220,7 +228,7 @@ def _create_appendix_sheet_common(
     run_data: dict,
     is_embedding: bool = False,
     percentile: str = "mean",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     """Creates appendix sheet with common logic for both chat and embedding."""
     iteration_header_map = {
@@ -231,14 +239,14 @@ def _create_appendix_sheet_common(
         "GPU Type",
         "Use Case",
         iteration_header_map[experiment_metadata.iteration_type],
-        TimeUnitConverter.get_unit_label("TTFT (s)", time_unit),
+        TimeUnitConverter.get_unit_label("TTFT (s)", metrics_time_unit),
     ]
 
     if is_embedding:
         headers.extend(
             [
                 TimeUnitConverter.get_unit_label(
-                    "End-to-End Latency per Request (s)", time_unit
+                    "End-to-End Latency per Request (s)", metrics_time_unit
                 ),
                 "Request Throughput (RPS)",
                 "Total Throughput (Input + Output) of Server (tokens/s)",
@@ -250,7 +258,7 @@ def _create_appendix_sheet_common(
                 "Output Inference Speed per Request (tokens/s)",
                 "Output Throughput of Server (tokens/s)",
                 TimeUnitConverter.get_unit_label(
-                    "End-to-End Latency per Request (s)", time_unit
+                    "End-to-End Latency per Request (s)", metrics_time_unit
                 ),
                 "Request Throughput (RPS)",
                 "Total Throughput (Input + Output) of Server (tokens/s)",
@@ -336,7 +344,7 @@ def create_summary_sheet(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     percentile: str = "mean",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
     _create_summary_sheet_common(
@@ -349,11 +357,11 @@ def create_appendix_sheet(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     percentile: str = "mean",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
     _create_appendix_sheet_common(
-        wb, experiment_metadata, run_data, is_embedding, percentile, time_unit
+        wb, experiment_metadata, run_data, is_embedding, percentile, metrics_time_unit
     )
 
 
@@ -378,7 +386,7 @@ def create_aggregated_metrics_sheet(
     wb: Workbook,
     run_data: ExperimentMetrics,
     experiment_metadata: ExperimentMetadata,
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ):
     sheet = wb.create_sheet("Aggregated Metrics for Each Run")
     metadata_headers = ["scenario", experiment_metadata.iteration_type]
@@ -401,7 +409,9 @@ def create_aggregated_metrics_sheet(
     for key in filtered_keys:
         if TimeUnitConverter.is_latency_field(key):
             # Add time unit to latency field headers
-            display_header = TimeUnitConverter.get_unit_label(f"{key} (s)", time_unit)
+            display_header = TimeUnitConverter.get_unit_label(
+                f"{key} (s)", metrics_time_unit
+            )
             stats_headers.append(display_header)
             stats_field_mapping[display_header] = key
         else:
@@ -449,7 +459,7 @@ def create_single_request_metrics_sheet(
     wb: Workbook,
     run_data: ExperimentMetrics,
     experiment_metadata: ExperimentMetadata,
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ):
     sheet = wb.create_sheet("Individual Request Metrics")
 
@@ -459,7 +469,9 @@ def create_single_request_metrics_sheet(
     for field in RequestLevelMetrics.model_fields:
         if TimeUnitConverter.is_latency_field(field):
             # Add time unit to latency field headers
-            display_header = TimeUnitConverter.get_unit_label(f"{field} (s)", time_unit)
+            display_header = TimeUnitConverter.get_unit_label(
+                f"{field} (s)", metrics_time_unit
+            )
             headers.append(display_header)
             field_mapping[display_header] = field
         else:

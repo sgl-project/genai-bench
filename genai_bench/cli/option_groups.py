@@ -576,7 +576,7 @@ def experiment_options(func):
         "server uses.",
     )(func)
     func = click.option(
-        "--time-unit",
+        "--metrics-time-unit",
         type=click.Choice(["s", "ms"], case_sensitive=False),
         default="s",
         help="Time unit for latency metrics display and export. "

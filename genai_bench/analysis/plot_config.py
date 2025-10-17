@@ -403,19 +403,19 @@ class PlotConfigManager:
 
     @classmethod
     def apply_time_unit_conversion(
-        cls, config_data: Dict[str, Any], time_unit: str = "s"
+        cls, config_data: Dict[str, Any], metrics_time_unit: str = "s"
     ) -> Dict[str, Any]:
         """
         Apply time unit conversion to plot configuration labels.
 
         Args:
             config_data: Plot configuration dictionary
-            time_unit: Target time unit ('s' or 'ms')
+            metrics_time_unit: Target time unit ('s' or 'ms')
 
         Returns:
             Modified configuration with updated labels
         """
-        if time_unit not in ["s", "ms"]:
+        if metrics_time_unit not in ["s", "ms"]:
             return config_data
 
         # Create a copy to avoid modifying the original
@@ -427,21 +427,21 @@ class PlotConfigManager:
             if "title" in plot_copy:
                 original_title = plot_copy["title"]
                 plot_copy["title"] = TimeUnitConverter.get_unit_label(
-                    original_title, time_unit
+                    original_title, metrics_time_unit
                 )
 
             # Convert y_label
             if "y_label" in plot_copy:
                 original_y_label = plot_copy["y_label"]
                 plot_copy["y_label"] = TimeUnitConverter.get_unit_label(
-                    original_y_label, time_unit
+                    original_y_label, metrics_time_unit
                 )
 
             # Convert x_label
             if "x_label" in plot_copy:
                 original_x_label = plot_copy["x_label"]
                 plot_copy["x_label"] = TimeUnitConverter.get_unit_label(
-                    original_x_label, time_unit
+                    original_x_label, metrics_time_unit
                 )
 
             # Convert y_fields labels
@@ -450,37 +450,39 @@ class PlotConfigManager:
                     if "label" in y_field:
                         original_label = y_field["label"]
                         y_field["label"] = TimeUnitConverter.get_unit_label(
-                            original_label, time_unit
+                            original_label, metrics_time_unit
                         )
 
         return config_copy
 
     @classmethod
     def load_config(
-        cls, config_source: Union[str, Dict, None] = None, time_unit: str = "s"
+        cls, config_source: Union[str, Dict, None] = None, metrics_time_unit: str = "s"
     ) -> PlotConfig:
         """Load plot configuration from various sources."""
         if config_source is None:
             # Use default 2x4 preset
-            return cls.load_preset("2x4_default", time_unit)
+            return cls.load_preset("2x4_default", metrics_time_unit)
 
         if isinstance(config_source, str):
             if config_source in cls.PRESETS:
                 # Load preset
-                return cls.load_preset(config_source, time_unit)
+                return cls.load_preset(config_source, metrics_time_unit)
             else:
                 # Load from file
-                return cls.load_from_file(config_source, time_unit)
+                return cls.load_from_file(config_source, metrics_time_unit)
 
         if isinstance(config_source, dict):
             # Load from dictionary
-            converted_data = cls.apply_time_unit_conversion(config_source, time_unit)
+            converted_data = cls.apply_time_unit_conversion(
+                config_source, metrics_time_unit
+            )
             return PlotConfig(**converted_data)
 
         raise ValueError(f"Invalid config source type: {type(config_source)}")
 
     @classmethod
-    def load_preset(cls, preset_name: str, time_unit: str = "s") -> PlotConfig:
+    def load_preset(cls, preset_name: str, metrics_time_unit: str = "s") -> PlotConfig:
         """Load a preset plot configuration."""
         if preset_name not in cls.PRESETS:
             raise ValueError(
@@ -488,10 +490,10 @@ class PlotConfigManager:
             )
 
         preset_data = cls.PRESETS[preset_name]
-        return cls.load_config(preset_data, time_unit)
+        return cls.load_config(preset_data, metrics_time_unit)
 
     @classmethod
-    def load_from_file(cls, file_path: str, time_unit: str = "s") -> PlotConfig:
+    def load_from_file(cls, file_path: str, metrics_time_unit: str = "s") -> PlotConfig:
         """Load configuration from JSON file."""
         path = Path(file_path)
         if not path.exists():
@@ -500,7 +502,9 @@ class PlotConfigManager:
         try:
             with open(path, "r") as f:
                 config_data = json.load(f)
-            converted_data = cls.apply_time_unit_conversion(config_data, time_unit)
+            converted_data = cls.apply_time_unit_conversion(
+                config_data, metrics_time_unit
+            )
             return PlotConfig(**converted_data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in config file {file_path}: {e}") from e

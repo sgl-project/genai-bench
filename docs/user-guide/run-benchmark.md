@@ -345,4 +345,4 @@ If you want to benchmark a specific portion of a vision dataset, you can use the
 
 ## Picking units
 
-Genai-bench defaults to measuring latency (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--time-unit [s|ms]`. 
+Genai-bench defaults to measuring latency (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--metrics-time-unit [s|ms]`. 
