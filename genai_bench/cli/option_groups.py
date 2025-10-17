@@ -117,12 +117,6 @@ def open_loop_options(func):
         help="Interarrival distribution for open-loop mode (default: uniform).",
     )(func)
     func = click.option(
-        "--duration-s",
-        type=int,
-        default=60,
-        help="Per-run duration in seconds for open-loop mode (default: 60).",
-    )(func)
-    func = click.option(
         "--random-seed",
         type=int,
         default=42,
@@ -480,12 +474,11 @@ def experiment_options(func):
     )(func)
     func = click.option(
         "--max-time-per-run",
-        type=int,
+        type=float,
         required=True,
         prompt=True,
-        help="The max duration per experiment run. Unit: minute. "
-        "One experiment run will exit if max_time_per_run is "
-        "reached. ",
+        help="The max duration per experiment run in minutes (floats allowed). "
+        "Each run exits when this wall-clock limit or max-requests is reached.",
     )(func)
     func = click.option(
         "--warmup-ratio",
