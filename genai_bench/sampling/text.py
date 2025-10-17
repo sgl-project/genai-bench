@@ -1,4 +1,5 @@
 import random
+import time
 from typing import Any, Dict, List, Optional
 
 from genai_bench.data.config import DatasetConfig
@@ -41,6 +42,12 @@ class TextSampler(Sampler):
 
         self.data = data
         self.batch_size = 1  # Default batch size
+        # Synthetic Tore-style configuration
+        self.synthetic_enabled = bool(getattr(self.dataset_config, "synthetic", False))
+        self.synthetic_cached_tokens = int(
+            getattr(self.dataset_config, "synthetic_cached_input_length", 0) or 0
+        )
+        self._synthetic_request_counter = 0
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -180,6 +187,67 @@ class TextSampler(Sampler):
         if not num_input_tokens:
             return random.choice(self.data)
 
+        # Synthetic Tore-style generation path: build exact-length prompt with cached prefix
+        if self.synthetic_enabled:
+            target_tokens = int(num_input_tokens)
+
+            # Base phrase to assemble tokens from
+            base_phrase = "hi,"
+            base_tokens = self.tokenizer.encode(base_phrase, add_special_tokens=False)
+            if not base_tokens:
+                # Fallback to a dot if tokenizer strips everything
+                base_tokens = self.tokenizer.encode(".", add_special_tokens=False)
+
+            def repeat_tokens_to_length(tokens: List[int], length: int) -> List[int]:
+                if length <= 0:
+                    return []
+                repeated: List[int] = []
+                while len(repeated) < length:
+                    repeated.extend(tokens)
+                return repeated[:length]
+
+            # Prefix (cached region)
+            num_prefix = min(self.synthetic_cached_tokens, target_tokens)
+            prefix_tokens = repeat_tokens_to_length(base_tokens, num_prefix)
+
+            # Unique marker to differentiate prompts
+            self._synthetic_request_counter += 1
+            marker_text = f"{self._synthetic_request_counter}-{int(time.time()*1000) % 1000000}"
+            marker_tokens = self.tokenizer.encode(marker_text, add_special_tokens=False)
+
+            # Remaining tokens for suffix
+            remaining = target_tokens - len(prefix_tokens) - len(marker_tokens)
+            if remaining < 0:
+                # If marker overflowed, trim it
+                marker_tokens = marker_tokens[: max(0, target_tokens - len(prefix_tokens))]
+                remaining = target_tokens - len(prefix_tokens) - len(marker_tokens)
+
+            # Suffix (uncached region) seeded with a long-instruction then filled by base tokens
+            tail_text = " Write a very long essay about San Francisco"
+            tail_tokens = self.tokenizer.encode(tail_text, add_special_tokens=False)
+            suffix_tokens: List[int] = []
+            # Prefer to include tail once if it fits
+            if remaining > 0 and len(tail_tokens) <= remaining:
+                suffix_tokens.extend(tail_tokens)
+                remaining -= len(tail_tokens)
+            if remaining > 0:
+                suffix_tokens.extend(repeat_tokens_to_length(base_tokens, remaining))
+
+            full_tokens = prefix_tokens + marker_tokens + suffix_tokens
+            # Enforce exact length (truncate if any rounding issues)
+            if len(full_tokens) > target_tokens:
+                full_tokens = full_tokens[:target_tokens]
+            elif len(full_tokens) < target_tokens:
+                pad_token_id = (
+                    self.tokenizer.pad_token_id
+                    if self.tokenizer.pad_token_id is not None
+                    else (self.tokenizer.eos_token_id or base_tokens[0])
+                )
+                full_tokens.extend([pad_token_id] * (target_tokens - len(full_tokens)))
+
+            return self.tokenizer.decode(full_tokens, skip_special_tokens=True)
+
+        # Default path: assemble from dataset lines to desired token length
         data_copy = self.data.copy()
         prompt = ""
         left_tokens_to_sample = num_input_tokens

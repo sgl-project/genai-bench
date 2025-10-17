@@ -40,9 +40,38 @@ It provides detailed insights into model serving performance, offering both a us
 - 📝 **Rich Logs**: Automatically flushed to both terminal and file upon experiment completion.
 - 📈 **Experiment Analyzer**: Generates comprehensive Excel reports with pricing and raw metrics data, plus flexible plot configurations (default 2x4 grid) that visualize key performance metrics including throughput, latency (TTFT, E2E, TPOT), error rates, and RPS across different traffic scenarios and concurrency levels. Supports custom plot layouts and multi-line comparisons.
 
+- 🧪 **Synthetic Tore-style prompts (optional)**: Generate synthetic requests that mimic tore-speed’s synthetic dataset prep, including a cached prefix region and exact input/output token counts for precise performance experiments.
+
 ## How to Start
 
 Please check [User Guide](https://docs.sglang.ai/genai-bench/user-guide/) and [CONTRIBUTING.md](https://docs.sglang.ai/genai-bench/development/contributing/) for how to install and use genai-bench.
+
+### Synthetic data mode (tore-speed compatible)
+
+Genai-bench can synthesize prompts similar to tore-speed’s `--dataset_type synthetic`, with a fixed-size cached prefix and exact token counts enforced at the tokenizer level.
+
+- Enable with the `--synthetic` flag and provide a deterministic traffic scenario for input/output tokens (e.g., `D(10000,825)`).
+- Specify the cached prefix size (in tokens) with `--synthetic-cached-input-length`.
+
+Example:
+
+```bash
+genai-bench benchmark \
+  --api-backend together \
+  --api-base https://api.together.xyz \
+  --api-model-name <model> \
+  --model-tokenizer <hf-tokenizer> \
+  --task text-to-text \
+  --traffic-scenario "D(10000,825)" \
+  --max-requests-per-run 1500 --max-time-per-run 2 \
+  --num-concurrency 128 --spawn-rate 128 \
+  --synthetic --synthetic-cached-input-length 3000 \
+  --additional-request-params '{"stream": true}'
+```
+
+Notes:
+- The sampler ensures the prompt contains exactly the requested number of input tokens. The leading `--synthetic-cached-input-length` tokens are filled with a repeated base phrase to emulate a cacheable prefix; a unique marker and a long instruction are appended to the uncached suffix region.
+- This is useful for cache stress tests and apples-to-apples comparisons with tore-speed’s synthetic mode.
 
 ## Benchmark Metrics Definition
 

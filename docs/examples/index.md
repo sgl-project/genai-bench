@@ -75,6 +75,24 @@ GenAI Bench supports various traffic patterns:
 - `N(480,240)/(300,150)` - Normal distribution
 - `U(50,100)/(200,250)` - Uniform distribution
 
+### Synthetic Tore-style Prompts
+
+To mimic tore-speed’s synthetic dataset with a cached prefix and exact token counts:
+
+```bash
+genai-bench benchmark \
+  --api-backend together \
+  --api-base https://api.together.xyz \
+  --api-model-name <model> \
+  --model-tokenizer <hf-tokenizer> \
+  --task text-to-text \
+  --traffic-scenario "D(10000,825)" \
+  --synthetic --synthetic-cached-input-length 3000 \
+  --max-requests-per-run 1500 --max-time-per-run 2
+```
+
+This constructs prompts with a leading 3000-token cacheable region and a unique uncached suffix, matching tore-speed synthetic behavior.
+
 ### Embedding Scenarios
 
 - `E(64)` - 64 tokens per document

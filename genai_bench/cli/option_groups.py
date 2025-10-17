@@ -296,6 +296,43 @@ def sampling_options(func):
         help="Path to JSON configuration file for advanced dataset options. "
         "This allows full control over dataset loading parameters.",
     )(func)
+    # Synthetic Tore-style generation options (optional)
+    func = click.option(
+        "--synthetic",
+        is_flag=True,
+        default=False,
+        help="Enable Tore-style synthetic prompt generation.",
+    )(func)
+    func = click.option(
+        "--synthetic-input-length",
+        type=int,
+        default=None,
+        help="Synthetic input length (tokens).",
+    )(func)
+    func = click.option(
+        "--synthetic-input-length-stdev",
+        type=int,
+        default=None,
+        help="Stddev for synthetic input length (tokens).",
+    )(func)
+    func = click.option(
+        "--synthetic-output-length",
+        type=int,
+        default=None,
+        help="Synthetic output length (tokens).",
+    )(func)
+    func = click.option(
+        "--synthetic-output-length-stdev",
+        type=int,
+        default=None,
+        help="Stddev for synthetic output length (tokens).",
+    )(func)
+    func = click.option(
+        "--synthetic-cached-input-length",
+        type=int,
+        default=None,
+        help="Number of input tokens to allocate to cached prefix.",
+    )(func)
     func = click.option(
         "--dataset-image-column",
         type=str,
