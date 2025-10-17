@@ -118,6 +118,13 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
+    # Synthetic Tore-style options (added via sampling_options)
+    synthetic,
+    synthetic_input_length,
+    synthetic_input_length_stdev,
+    synthetic_output_length,
+    synthetic_output_length_stdev,
+    synthetic_cached_input_length,
     num_workers,
     master_port,
     spawn_rate,
@@ -282,6 +289,12 @@ def benchmark(
             dataset_path=dataset_path,
             prompt_column=dataset_prompt_column,
             image_column=dataset_image_column,
+            synthetic=ctx.params.get("synthetic", False),
+            synthetic_input_length=ctx.params.get("synthetic_input_length"),
+            synthetic_input_length_stdev=ctx.params.get("synthetic_input_length_stdev"),
+            synthetic_output_length=ctx.params.get("synthetic_output_length"),
+            synthetic_output_length_stdev=ctx.params.get("synthetic_output_length_stdev"),
+            synthetic_cached_input_length=ctx.params.get("synthetic_cached_input_length"),
         )
 
     # Load data using the factory
