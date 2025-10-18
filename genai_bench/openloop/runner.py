@@ -1,5 +1,5 @@
 import asyncio
-import json
+import orjson
 import time
 import random
 from typing import List, Optional
@@ -55,8 +55,7 @@ class OpenLoopRunner:
                     "Content-Type": "application/json",
                 }
 
-        # Async HTTP session (aiohttp) for non-blocking streaming
-        self._session: Optional[aiohttp.ClientSession] = None
+        # AIOHTTP settings aligned with tore-speed
         self._aio_timeout = aiohttp.ClientTimeout(total=6 * 60 * 60)
         self._aio_read_bufsize = 256 * 1024
 
@@ -86,12 +85,7 @@ class OpenLoopRunner:
         req = self.sampler.sample(scenario_obj)
         return req
 
-    async def _ensure_session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                timeout=self._aio_timeout, read_bufsize=self._aio_read_bufsize
-            )
-        return self._session
+    # Removed session reuse; sessions are created per-request to match tore-speed
 
     async def _send_request(self, req) -> UserResponse:
         # Currently implement OpenAI-compatible endpoints for text chat and embeddings
@@ -128,78 +122,88 @@ class OpenLoopRunner:
                     **{k: v for k, v in req.additional_request_params.items() if k not in {"stream"}},
                 }
 
-                session = await self._ensure_session()
                 start_time = time.monotonic()
-                async with session.post(
-                    url=f"{self.api_base}{endpoint}", json=payload, headers=self.headers
-                ) as resp:
-                    if resp.status != 200:
-                        text = await resp.text()
-                        return UserResponse(status_code=resp.status, error_message=text)
+                async with aiohttp.ClientSession(
+                    headers=self.headers,
+                    timeout=self._aio_timeout,
+                    read_bufsize=self._aio_read_bufsize,
+                ) as session:
+                    async with session.post(
+                        url=f"{self.api_base}{endpoint}", json=payload
+                    ) as resp:
+                        if resp.status != 200:
+                            # Stream entire error body for parity with tore-speed
+                            error_message_bytes = b""
+                            async for chunk_bytes in resp.content:
+                                error_message_bytes += chunk_bytes
+                            text = error_message_bytes.decode("utf-8")
+                            return UserResponse(status_code=resp.status, error_message=text)
 
-                    stream_chunk_prefix = "data: "
-                    end_chunk = b"[DONE]"
+                        stream_chunk_prefix = "data: "
+                        end_chunk = b"[DONE]"
 
-                    generated_text = ""
-                    tokens_received = 0
-                    time_at_first_token: Optional[float] = None
-                    finish_reason = None
-                    previous_data = None
-                    num_prompt_tokens = None
+                        generated_text = ""
+                        tokens_received = 0
+                        time_at_first_token: Optional[float] = None
+                        finish_reason = None
+                        previous_data = None
+                        num_prompt_tokens = None
 
-                    async for raw_line in resp.content:
-                        chunk = (raw_line or b"").strip()
-                        if not chunk:
-                            continue
-                        if chunk.startswith(stream_chunk_prefix.encode()):
+                        async for raw_line in resp.content:
+                            chunk = (raw_line or b"").strip()
+                            if not chunk:
+                                continue
+                            # Gate on SSE style lines like tore-speed does
+                            if not chunk.startswith(stream_chunk_prefix.encode()):
+                                continue
                             chunk = chunk[len(stream_chunk_prefix) :]
-                        if chunk == end_chunk:
-                            break
-                        try:
-                            data = json.loads(chunk)
-                        except Exception:
-                            previous_data = chunk
-                            continue
+                            if chunk.strip() == end_chunk:
+                                break
+                            try:
+                                data = orjson.loads(chunk)
+                            except Exception:
+                                previous_data = chunk
+                                continue
 
-                        if data.get("error") is not None:
-                            return UserResponse(
-                                status_code=data["error"].get("code", -1),
-                                error_message=data["error"].get("message", "Unknown error"),
-                            )
+                            if data.get("error") is not None:
+                                return UserResponse(
+                                    status_code=data["error"].get("code", -1),
+                                    error_message=data["error"].get("message", "Unknown error"),
+                                )
 
-                        if (not data.get("choices")) and finish_reason and data.get("usage"):
-                            usage = data["usage"]
-                            num_prompt_tokens = usage.get("prompt_tokens")
-                            tokens_received = usage.get("completion_tokens", 0)
-                            if not time_at_first_token:
-                                time_at_first_token = time.monotonic()
-                            break
-
-                        try:
-                            delta = data["choices"][0]["delta"]
-                            content_piece = delta.get("content") or delta.get("reasoning_content")
-                            usage = delta.get("usage")
-
-                            if usage:
-                                tokens_received = usage.get("completion_tokens", tokens_received)
-                            if content_piece:
-                                if not time_at_first_token:
-                                    time_at_first_token = time.monotonic()
-                                generated_text += content_piece
-
-                            finish_reason = data["choices"][0].get("finish_reason", None)
-                            if finish_reason and data.get("usage"):
+                            if (not data.get("choices")) and finish_reason and data.get("usage"):
                                 usage = data["usage"]
                                 num_prompt_tokens = usage.get("prompt_tokens")
-                                tokens_received = usage.get("completion_tokens", tokens_received)
+                                tokens_received = usage.get("completion_tokens", 0)
+                                if not time_at_first_token:
+                                    time_at_first_token = time.monotonic()
                                 break
-                        except (IndexError, KeyError):
+
+                            try:
+                                delta = data["choices"][0]["delta"]
+                                content_piece = delta.get("content") or delta.get("reasoning_content")
+                                usage = delta.get("usage")
+
+                                if usage:
+                                    tokens_received = usage.get("completion_tokens", tokens_received)
+                                if content_piece:
+                                    if not time_at_first_token:
+                                        time_at_first_token = time.monotonic()
+                                    generated_text += content_piece
+
+                                finish_reason = data["choices"][0].get("finish_reason", None)
+                                if finish_reason and data.get("usage"):
+                                    usage = data["usage"]
+                                    num_prompt_tokens = usage.get("prompt_tokens")
+                                    tokens_received = usage.get("completion_tokens", tokens_received)
+                                    break
+                            except (IndexError, KeyError):
+                                previous_data = data
+                                continue
+
                             previous_data = data
-                            continue
 
-                        previous_data = data
-
-                    end_time = time.monotonic()
+                        end_time = time.monotonic()
 
                 if not tokens_received:
                     tokens_received = self.sampler.get_token_length(
@@ -234,25 +238,33 @@ class OpenLoopRunner:
                     "input": req.documents,
                     **req.additional_request_params,
                 }
-                session = await self._ensure_session()
                 start_time = time.monotonic()
-                async with session.post(
-                    url=f"{self.api_base}{endpoint}", json=payload, headers=self.headers
-                ) as resp:
-                    end_time = time.monotonic()
-                    if resp.status == 200:
-                        data = await resp.json()
-                        num_prompt_tokens = data.get("usage", {}).get("prompt_tokens")
-                        return UserResponse(
-                            status_code=200,
-                            start_time=start_time,
-                            end_time=end_time,
-                            time_at_first_token=end_time,
-                            num_prefill_tokens=num_prompt_tokens,
-                        )
-                    else:
-                        text = await resp.text()
-                        return UserResponse(status_code=resp.status, error_message=text)
+                async with aiohttp.ClientSession(
+                    headers=self.headers,
+                    timeout=self._aio_timeout,
+                    read_bufsize=self._aio_read_bufsize,
+                ) as session:
+                    async with session.post(
+                        url=f"{self.api_base}{endpoint}", json=payload
+                    ) as resp:
+                        end_time = time.monotonic()
+                        if resp.status == 200:
+                            data = await resp.json()
+                            num_prompt_tokens = data.get("usage", {}).get("prompt_tokens")
+                            return UserResponse(
+                                status_code=200,
+                                start_time=start_time,
+                                end_time=end_time,
+                                time_at_first_token=end_time,
+                                num_prefill_tokens=num_prompt_tokens,
+                            )
+                        else:
+                            # Stream entire error body for parity with tore-speed
+                            error_message_bytes = b""
+                            async for chunk_bytes in resp.content:
+                                error_message_bytes += chunk_bytes
+                            text = error_message_bytes.decode("utf-8")
+                            return UserResponse(status_code=resp.status, error_message=text)
 
             else:
                 return UserResponse(status_code=400, error_message="Unsupported request type")
@@ -342,12 +354,7 @@ class OpenLoopRunner:
         except asyncio.TimeoutError:
             logger.info("Open-loop run timed out per max_time_s")
         end = time.monotonic()
-        # Close session if opened
-        if self._session is not None and not self._session.closed:
-            try:
-                asyncio.run(self._session.close())
-            except Exception:
-                pass
+        # No shared session to close; each request used its own session
         # Record arrivals as an arrival rate metric for this run
         arrival_rate = (n / (duration_s if duration_s > 0 else 1))
         self.aggregated.aggregated_metrics.total_arrivals = n

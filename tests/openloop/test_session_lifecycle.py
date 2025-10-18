@@ -19,14 +19,6 @@ class DummySampler:
         )
 
 
-class FakeSession:
-    def __init__(self) -> None:
-        self.closed = False
-
-    async def close(self):
-        self.closed = True
-
-
 def _build_runner() -> tuple[OpenLoopRunner, AggregatedMetricsCollector]:
     aggregated = AggregatedMetricsCollector()
     runner = OpenLoopRunner(
@@ -42,26 +34,13 @@ def _build_runner() -> tuple[OpenLoopRunner, AggregatedMetricsCollector]:
 
 
 @patch.object(OpenLoopRunner, "_send_request", autospec=True)
-@patch.object(OpenLoopRunner, "_ensure_session", autospec=True)
-def test_session_reuse_and_close(mock_session, mock_send):
-    # Stub ensure_session to return a single FakeSession
-    fake = FakeSession()
-
-    async def _mk_session(self):
-        self._session = fake
-        return fake
-
-    mock_session.side_effect = _mk_session
-
+def test_session_per_request_and_metrics(mock_send):
     async def _ok(self, req):
         return UserResponse(status_code=200, start_time=0.0, end_time=0.01, time_at_first_token=0.001, num_prefill_tokens=10)
 
     mock_send.side_effect = _ok
 
     runner, aggregated = _build_runner()
-    # Pre-create session since _send_request is mocked and _ensure_session won't be called
-    precreated = FakeSession()
-    runner._session = precreated  # type: ignore[attr-defined]
     # Two immediate arrivals
     with patch.object(OpenLoopRunner, "_wait_intervals", return_value=[0.0, 0.0]):
         _ = runner.run(
@@ -74,8 +53,7 @@ def test_session_reuse_and_close(mock_session, mock_send):
             scenario="D(100,10)",
         )
 
-    # Precreated session should be closed after run
-    assert precreated.closed is True
+    # Validate two completions were recorded
     assert aggregated.aggregated_metrics.num_completed_requests == 2
 
 
