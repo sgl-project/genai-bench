@@ -206,6 +206,14 @@ class OpenLoopRunner:
                         generated_text, add_special_tokens=False
                     )
 
+                # Fallback: if server didn't return prompt_tokens in usage, derive from request
+                if num_prompt_tokens is None:
+                    num_prompt_tokens = getattr(req, "num_prefill_tokens", None)
+                    if num_prompt_tokens is None:
+                        num_prompt_tokens = self.sampler.get_token_length(
+                            req.prompt, add_special_tokens=False
+                        )
+
                 if not time_at_first_token:
                     time_at_first_token = end_time
 
