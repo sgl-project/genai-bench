@@ -32,7 +32,7 @@ GenAI Bench is a powerful benchmark tool designed for comprehensive token-level 
 
     Master the command-line interface
 
-    [:octicons-arrow-right-24: Command Guidelines](command-guidelines.md)
+    [:octicons-arrow-right-24: Entrypoints](entrypoints.md)
 
 -   :material-chart-line:{ .lg .middle } **Metrics**
 

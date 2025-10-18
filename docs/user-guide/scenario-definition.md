@@ -12,6 +12,7 @@ Scenarios are optional. If you don’t provide any and you supply a dataset, gen
 
 - The CLI accepts one or more scenarios via `--traffic-scenario`. Each run iterates over the supplied scenarios and the selected iteration parameter (concurrency or batch size).
 - Internally, each scenario string is parsed into a Scenario class and passed to samplers to control request construction.
+- Scenarios are defined as [multi-value options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options) in click. Meaning you can pass this command multiple times to benchmark different loads.
 
 ### Scenario types and formats
 

@@ -62,7 +62,7 @@ GenAI Bench supports multiple benchmark types:
 
 - [Installation](getting-started/installation.md) - Detailed installation guide
 - [Task Definition](getting-started/task-definition.md) - Understanding different benchmark tasks
-- [Command Guidelines](getting-started/command-guidelines.md) - Command usage guidelines
+- [Entrypoints](getting-started/entrypoints.md) - Command usage guidelines
 - [Metrics Definition](getting-started/metrics-definition.md) - Understanding benchmark metrics
 
 ### 📖 User Guide

@@ -131,16 +131,22 @@ genai-bench benchmark --api-backend oci-cohere \
             --num-workers 4
 ```
 
-## Monitor a benchmark
+## Specify a custom benchmark load
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.
 
-### Specify --traffic-scenario and --num-concurrency
+You can specify a custom load to benchmark through setting traffic scenarios and concurrencies to benchmark at. 
+
+Traffic scenarios let you define the shape of requests when benchmarking. See [Traffic Scenarios](./scenario-definition.md) for more information.
+
+The concurrency is the number of concurrent users making requests. Running various concurrencies allows you to benchmark performance at different loads. Each specified scenario is run at each concurrency. Specify concurrencies to run with `--num-concurrency`. 
 
 **IMPORTANT**: Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency`
 and `--traffic-scenario`.
 
-Both options are defined as [multi-value options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options) in click. Meaning you can pass this command multiple times. If you want to define your own `--num-concurrency` or `--traffic-scenario`, you can use
+Both options are defined as [multi-value options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options) in click. Meaning you can pass this command multiple times. 
+
+For example, the below benchmark command runs a scenario with a normal distribution of input and output tokens (Input mean=480, st.dev=240), (Output mean=300, st.dev=150) at concurrencies 1, 2, 4, 8, 16 and 32. 
 
 ```shell
 genai-bench benchmark \
@@ -153,9 +159,9 @@ genai-bench benchmark \
             --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)"
 ```
 
-### Notes on specific options
+### Notes on benchmark duration
 
-To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. You can find more details in the `manage_run_time` function located in [utils.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py). Combination of `--max-time-per-run` and `--max-requests-per-run` should save overall time of one benchmark.
+To manage each run or iteration in an experiment, genai-bench uses two parameters to control the exit logic. Benchmark runs terminate after exceeding either the maximum time limit the maximum number of requests. These are specified with `--max-time-per-run` and `--max-requests-per-run`. You can find more details in the `manage_run_time` function located in [utils.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/utils.py). 
 
 For light traffic scenarios, such as D(7800,200) or lighter, we recommend the following settings:
 
@@ -197,9 +203,17 @@ To address this, you can increase the number of worker processes using the `--nu
 
 This distributes the load across multiple processes on a single machine, improving performance and ensuring your benchmark runs smoothly.
 
+### Notes on Usage
+
+1. This feature is experimental, so monitor the system's behavior when enabling multiple workers.
+2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
+3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers.
+4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
+5. For high-concurrency tests with large payloads, use `--spawn-rate` to prevent worker overload.
+
 ### Controlling User Spawn Rate
 
-When running high-concurrency benchmarks with large payloads (e.g., 20k+ tokens), workers may become overwhelmed if all users are spawned immediately. This can cause worker heartbeat failures and restarts.
+By default, users are spawned at a rate equal to the concurrency, meaning it takes one second for all users to be created. When running high-concurrency benchmarks with large payloads (e.g., 20k+ tokens), workers may become overwhelmed if all users are spawned immediately. This can cause worker heartbeat failures and restarts.
 
 To prevent this, use the `--spawn-rate` option to control how quickly users are spawned:
 
@@ -214,14 +228,6 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 - `--spawn-rate 50`: Spawn 50 users per second (takes 10 seconds to reach 500 users)
 - `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
 - `--spawn-rate 500`: Spawn all users immediately (default behavior)
-
-### Notes on Usage
-
-1. This feature is experimental, so monitor the system's behavior when enabling multiple workers.
-2. Recommended Limit: Do **not** set the number of workers to more than 16, as excessive worker processes can lead to resource contention and diminished performance.
-3. Ensure your system has sufficient CPU and memory resources to support the desired number of workers.
-4. Adjust the number of workers based on your target load and system capacity to achieve optimal results.
-5. For high-concurrency tests with large payloads, use `--spawn-rate` to prevent worker overload.
 
 ## Using Dataset Configurations
 
@@ -345,4 +351,4 @@ If you want to benchmark a specific portion of a vision dataset, you can use the
 
 ## Picking units
 
-Genai-bench defaults to measuring latency (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--metrics-time-unit [s|ms]`. 
+Genai-bench defaults to measuring latency metrics (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--metrics-time-unit [s|ms]`. 
