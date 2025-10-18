@@ -58,3 +58,4 @@ def test_arrival_metrics_recorded(mock_send):
     assert metrics.total_arrivals == 10
     assert abs(metrics.arrival_requests_per_second - 5.0) < 1e-6
 
+
