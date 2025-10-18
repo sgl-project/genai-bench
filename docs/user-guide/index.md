@@ -74,6 +74,4 @@ Support for text, embeddings, and vision tasks:
 
 ## Need Help?
 
-- Check the [Quick Reference](multi-cloud-quick-reference.md) for common commands
-- Review [Entrypoints](../getting-started/entrypoints.md) for detailed options
 - See [Troubleshooting](multi-cloud-auth-storage.md#troubleshooting) for common issues

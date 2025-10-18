@@ -1,6 +1,6 @@
 # Run Benchmark
 
-> **Note**: GenAI Bench now supports multiple cloud providers for both model endpoints and storage. For detailed multi-cloud configuration, see the [Multi-Cloud Authentication & Storage Guide](multi-cloud-auth-storage.md) or the [Quick Reference](multi-cloud-quick-reference.md).
+> **Note**: GenAI Bench now supports multiple cloud providers for both model endpoints and storage. For detailed multi-cloud configuration, see the [Multi-Cloud Authentication & Storage Guide](multi-cloud-auth-storage.md) or the [Multi-Cloud Quick Reference](multi-cloud-quick-reference.md).
 
 ## Start a chat benchmark
 
@@ -229,9 +229,9 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 - `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
 - `--spawn-rate 500`: Spawn all users immediately (default behavior)
 
-## Using Dataset Configurations
+## Selecting datasets
 
-Genai-bench supports flexible dataset configurations through two approaches:
+By default, genai-bench samples tokens to benchmark from [sonnet.txt](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/data/sonnet.txt) for `text-to-text` or `text-to-embeddings` tasks. Image tasks do not have a default dataset. To select a dataset to benchmark from, genai-bench supports flexible dataset configurations through two approaches:
 
 ### Simple CLI Usage (for basic datasets)
 

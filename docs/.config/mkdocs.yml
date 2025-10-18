@@ -123,7 +123,7 @@ nav:
       - Run Benchmark: user-guide/run-benchmark.md
       - Traffic Scenarios: user-guide/scenario-definition.md
       - Multi-Cloud Authentication: user-guide/multi-cloud-auth-storage.md
-      - Quick Reference: user-guide/multi-cloud-quick-reference.md
+      - Multi-Cloud Quick Reference: user-guide/multi-cloud-quick-reference.md
       - Docker Deployment: user-guide/run-benchmark-using-docker.md
       - Excel Reports: user-guide/generate-excel-sheet.md
       - Visualizations: user-guide/generate-plot.md
