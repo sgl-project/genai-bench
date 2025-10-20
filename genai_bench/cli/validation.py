@@ -189,7 +189,7 @@ def validate_iteration_params(ctx, param, value) -> str:
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
     target_qps = ctx.params.get("target_qps")
-    
+
     # For QPS mode, early return
     if target_qps and target_qps != ():
         ctx.params.update(
@@ -453,7 +453,8 @@ def validate_qps_mode(ctx, param, value):
         min_qps = min(target_qps_values)
 
         if min_qps < 1:
-            # Very low QPS: 1 user per 0.5 QPS (e.g., 0.5 QPS -> 1 user, 0.1 QPS -> 1 user)
+            # Very low QPS: 1 user per 0.5 QPS
+            # (e.g., 0.5 QPS -> 1 user, 0.1 QPS -> 1 user)
             qps_users = max(1, int(min_qps / 0.5))
         elif min_qps < 10:
             # Low QPS: aim for ~1 req/s per user (e.g., 5 QPS -> 5 users)

@@ -552,11 +552,16 @@ def experiment_options(func):
     )(func)
     func = click.option(
         "--iteration-type",
-        type=click.Choice(["num_concurrency", "batch_size", "qps"], case_sensitive=False),
+        type=click.Choice(
+            ["num_concurrency", "batch_size", "qps"], case_sensitive=False
+        ),
         default="num_concurrency",
         callback=validate_iteration_params,
         hidden=True,
-        help="[Internal] Type of iteration - automatically determined based on task and options.",
+        help=(
+            "[Internal] Type of iteration - automatically determined based on "
+            "task and options."
+        ),
     )(func)
     func = click.option(
         "--model",

@@ -384,7 +384,7 @@ def benchmark(
     else:
         iteration_values = num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
-    
+
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
@@ -447,7 +447,8 @@ def benchmark(
                     )
                 else:
                     logger.info(
-                        f"Starting benchmark with {iteration_header.lower()}={iteration_val}, "
+                        f"Starting benchmark with "
+                        f"{iteration_header.lower()}={iteration_val}, "
                         f"num_users={num_users}, spawn_rate={actual_spawn_rate}"
                     )
                 environment.runner.start(num_users, spawn_rate=actual_spawn_rate)

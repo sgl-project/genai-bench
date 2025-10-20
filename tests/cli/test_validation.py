@@ -735,7 +735,8 @@ def test_validate_qps_mode_warning_low_rate(caplog):
             "spawn_rate": None,
             "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
             "batch_size": tuple(DEFAULT_BATCH_SIZES),
-            "qps_users": 1000,  # Explicitly set; 1 QPS / 1000 users = 0.001 req/s per user
+            # Explicitly set; 1 QPS / 1000 users = 0.001 req/s per user
+            "qps_users": 1000,
         }
         result = validate_qps_mode(ctx, param, (1,))
         assert result == (1,)
@@ -771,9 +772,7 @@ def test_validate_qps_mode_batch_size_exclusivity():
     }
     with pytest.raises(click.BadParameter) as exc_info:
         validate_qps_mode(ctx, param, (100,))
-    assert "--target-qps and --batch-size are mutually exclusive" in str(
-        exc_info.value
-    )
+    assert "--target-qps and --batch-size are mutually exclusive" in str(exc_info.value)
 
 
 def test_validate_iteration_params_qps_mode():

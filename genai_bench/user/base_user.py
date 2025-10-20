@@ -1,6 +1,6 @@
 from locust import HttpUser
 
-from typing import Dict, Optional, Callable
+from typing import Callable, Dict, Optional
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.request_metrics_collector import RequestMetricsCollector
