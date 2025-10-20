@@ -518,24 +518,141 @@ def test_validate_qps_mode_basic():
     ctx = MagicMock()
     param = MagicMock()
 
-    # Test QPS mode not enabled (target_qps is None)
+    # Test QPS mode not enabled (target_qps is empty tuple)
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
         "batch_size": tuple(DEFAULT_BATCH_SIZES),
     }
-    result = validate_qps_mode(ctx, param, None)
-    assert result is None
+    result = validate_qps_mode(ctx, param, ())
+    assert result == ()
 
-    # Test valid QPS mode
+    # Test valid QPS mode with single value and explicit qps_users
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
         "batch_size": tuple(DEFAULT_BATCH_SIZES),
-        "qps_users": 50,
+        "qps_users": 25,  # Explicitly set (not default 50)
     }
-    result = validate_qps_mode(ctx, param, 100)
-    assert result == 100
+    result = validate_qps_mode(ctx, param, (100,))
+    assert result == (100,)
+    assert ctx.params["qps_users"] == 25  # Should not be auto-adjusted
+
+    # Test valid QPS mode with multiple values and explicit qps_users
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
+        "qps_users": 30,  # Explicitly set
+    }
+    result = validate_qps_mode(ctx, param, (10, 50, 100))
+    assert result == (10, 50, 100)
+    assert ctx.params["qps_users"] == 30  # Should not be auto-adjusted
+
+
+def test_validate_qps_mode_auto_adjustment(caplog):
+    """Test auto-adjustment of qps_users based on target QPS."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test auto-adjustment for very low QPS (< 1)
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": None,  # Not explicitly set (default None)
+        }
+        result = validate_qps_mode(ctx, param, (0.5,))
+        assert result == (0.5,)
+        assert ctx.params["qps_users"] == 1  # Auto-adjusted to 1
+    assert "Auto-adjusted --qps-users to 1" in caplog.text
+
+    # Test auto-adjustment for low QPS (1-10)
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": None,  # Not explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (5,))
+        assert result == (5,)
+        assert ctx.params["qps_users"] == 5  # Auto-adjusted to 5
+    assert "Auto-adjusted --qps-users to 5" in caplog.text
+
+    # Test auto-adjustment for medium QPS (10-50)
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": None,  # Not explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (20,))
+        assert result == (20,)
+        assert ctx.params["qps_users"] == 10  # Auto-adjusted to 10 (20/2)
+    assert "Auto-adjusted --qps-users to 10" in caplog.text
+
+    # Test auto-adjustment for high QPS (>= 50)
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": None,  # Not explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (200,))
+        assert result == (200,)
+        # 200 QPS -> 100 users (capped at 100), so it should auto-adjust
+        assert ctx.params["qps_users"] == 100  # Auto-adjusted to 100 (200/2, capped)
+    assert "Auto-adjusted --qps-users to 100" in caplog.text
+
+    # Test auto-adjustment uses minimum QPS for multiple values
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": None,  # Not explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (1, 50, 100))
+        assert result == (1, 50, 100)
+        assert ctx.params["qps_users"] == 1  # Based on min QPS=1
+    assert "Auto-adjusted --qps-users to 1" in caplog.text
+    assert "minimum QPS=1" in caplog.text
+
+    # Test no auto-adjustment when user explicitly sets qps_users
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": 100,  # Explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (5,))
+        assert result == (5,)
+        assert ctx.params["qps_users"] == 100  # Should not change
+    assert "Auto-adjusted --qps-users" not in caplog.text
+
+    # Test no auto-adjustment when user explicitly sets qps_users to 50
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": 50,  # Explicitly set to 50 (same as old default)
+        }
+        result = validate_qps_mode(ctx, param, (1,))
+        assert result == (1,)
+        assert ctx.params["qps_users"] == 50  # Should NOT change
+    assert "Auto-adjusted --qps-users" not in caplog.text
 
 
 def test_validate_qps_mode_mutual_exclusivity():
@@ -548,10 +665,10 @@ def test_validate_qps_mode_mutual_exclusivity():
         "spawn_rate": 10,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
         "batch_size": tuple(DEFAULT_BATCH_SIZES),
-        "qps_users": 50,
+        "qps_users": 25,  # Explicitly set (not default)
     }
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, 100)
+        validate_qps_mode(ctx, param, (100,))
     assert "--target-qps and --spawn-rate are mutually exclusive" in str(exc_info.value)
 
     # Test mutual exclusivity with custom num_concurrency
@@ -559,10 +676,10 @@ def test_validate_qps_mode_mutual_exclusivity():
         "spawn_rate": None,
         "num_concurrency": (1, 2, 4),  # Custom values (tuple)
         "batch_size": tuple(DEFAULT_BATCH_SIZES),
-        "qps_users": 50,
+        "qps_users": 25,  # Explicitly set (not default)
     }
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, 100)
+        validate_qps_mode(ctx, param, (100,))
     assert "--target-qps and --num-concurrency are mutually exclusive" in str(
         exc_info.value
     )
@@ -573,20 +690,25 @@ def test_validate_qps_mode_value_validation():
     ctx = MagicMock()
     param = MagicMock()
 
-    # Test negative QPS
+    # Test negative QPS in tuple
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
         "batch_size": tuple(DEFAULT_BATCH_SIZES),
-        "qps_users": 50,
+        "qps_users": 25,  # Explicitly set (not default)
     }
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, -10)
+        validate_qps_mode(ctx, param, (-10,))
     assert "target_qps must be positive" in str(exc_info.value)
 
-    # Test zero QPS
+    # Test zero QPS in tuple
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, 0)
+        validate_qps_mode(ctx, param, (0,))
+    assert "target_qps must be positive" in str(exc_info.value)
+
+    # Test multiple values with one invalid
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, (10, -5, 100))
     assert "target_qps must be positive" in str(exc_info.value)
 
     # Test negative qps_users
@@ -597,7 +719,7 @@ def test_validate_qps_mode_value_validation():
         "qps_users": -10,
     }
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, 100)
+        validate_qps_mode(ctx, param, (100,))
     assert "qps_users must be positive" in str(exc_info.value)
 
 
@@ -606,18 +728,33 @@ def test_validate_qps_mode_warning_low_rate(caplog):
     ctx = MagicMock()
     param = MagicMock()
 
-    # Test per-user rate < 0.1 triggers warning
+    # Test per-user rate < 0.1 triggers warning for single QPS value
+    # Using explicit qps_users (not default 50) to avoid auto-adjustment
     with caplog.at_level(logging.WARNING):
         ctx.params = {
             "spawn_rate": None,
             "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
             "batch_size": tuple(DEFAULT_BATCH_SIZES),
-            "qps_users": 1000,  # 1 QPS / 1000 users = 0.001 req/s per user
+            "qps_users": 1000,  # Explicitly set; 1 QPS / 1000 users = 0.001 req/s per user
         }
-        result = validate_qps_mode(ctx, param, 1)
-        assert result == 1
+        result = validate_qps_mode(ctx, param, (1,))
+        assert result == (1,)
     assert "Per-user request rate is very low" in caplog.text
     assert "Consider reducing --qps-users" in caplog.text
+
+    # Test warning for multiple QPS values with at least one low rate
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        ctx.params = {
+            "spawn_rate": None,
+            "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
+            "qps_users": 1000,  # Explicitly set
+        }
+        result = validate_qps_mode(ctx, param, (1, 50, 100))
+        assert result == (1, 50, 100)
+    # Should warn for QPS=1 (0.001 req/s per user) but not for 50 or 100
+    assert "Per-user request rate is very low for QPS=1" in caplog.text
 
 
 def test_validate_qps_mode_batch_size_exclusivity():
@@ -630,10 +767,10 @@ def test_validate_qps_mode_batch_size_exclusivity():
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
         "batch_size": (8, 16, 32),  # Custom values
-        "qps_users": 50,
+        "qps_users": 25,  # Explicitly set (not default)
     }
     with pytest.raises(click.BadParameter) as exc_info:
-        validate_qps_mode(ctx, param, 100)
+        validate_qps_mode(ctx, param, (100,))
     assert "--target-qps and --batch-size are mutually exclusive" in str(
         exc_info.value
     )
@@ -644,13 +781,28 @@ def test_validate_iteration_params_qps_mode():
     ctx = MagicMock()
     param = MagicMock()
 
-    # Test that QPS mode overrides iteration type
+    # Test that QPS mode overrides iteration type with single QPS value
     ctx.params = {
         "task": "text-to-text",
         "num_concurrency": [1, 2, 4],
         "batch_size": [1],
-        "target_qps": 100,
+        "target_qps": (100,),
     }
     result = validate_iteration_params(ctx, param, "num_concurrency")
     assert result == "qps"
     assert ctx.params["iteration_type"] == "qps"
+    assert ctx.params["batch_size"] == [1]
+    assert ctx.params["num_concurrency"] == [1]
+
+    # Test that QPS mode works with multiple QPS values
+    ctx.params = {
+        "task": "text-to-embeddings",
+        "num_concurrency": [1, 2, 4],
+        "batch_size": [8, 16, 32],
+        "target_qps": (10, 50, 100),
+    }
+    result = validate_iteration_params(ctx, param, "batch_size")
+    assert result == "qps"
+    assert ctx.params["iteration_type"] == "qps"
+    assert ctx.params["batch_size"] == [1]
+    assert ctx.params["num_concurrency"] == [1]

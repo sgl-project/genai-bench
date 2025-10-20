@@ -329,8 +329,8 @@ def benchmark(
         num_concurrency=num_concurrency,
         batch_size=batch_size,
         iteration_type=iteration_type,
-        target_qps=target_qps,
-        qps_users=qps_users if target_qps is not None else None,
+        target_qps=list(target_qps) if target_qps and target_qps != () else None,
+        qps_users=qps_users if target_qps and target_qps != () else None,
         traffic_scenario=traffic_scenario,
         server_engine=server_engine,
         server_version=server_version,
@@ -378,31 +378,18 @@ def benchmark(
     aggregated_metrics_collector = runner.metrics_collector
 
     # Detect QPS mode vs concurrency mode
-    qps_mode = target_qps is not None
+    # With multiple=True, target_qps is a tuple (empty tuple if not provided)
+    qps_mode = target_qps and target_qps != ()
 
     if qps_mode:
-        # Configure user class for QPS mode using Locust's constant_throughput
-        # Calculate per-user request rate
-        total_workers = max(num_workers, 1)  # At least 1 (local mode)
-        per_worker_qps = target_qps / total_workers
-        per_user_rate = per_worker_qps / qps_users
-
+        # QPS mode: iterate over QPS values
         logger.info(
-            f"🎯 Running in QPS mode: target_qps={target_qps}, "
-            f"qps_users={qps_users}, workers={total_workers}"
+            f"🎯 Running in QPS mode: target_qps={list(target_qps)}, "
+            f"qps_users={qps_users}, workers={max(num_workers, 1)}"
         )
-        logger.info(
-            f"   Per-worker QPS: {per_worker_qps:.2f}, "
-            f"Per-user rate: {per_user_rate:.2f} req/s"
-        )
-
-        # Set wait_time on the user class to achieve target QPS
-        user_class.wait_time = constant_throughput(per_user_rate)
-
-        # In QPS mode, we only run once (no iteration over concurrency)
-        iteration_values = [target_qps]  # Use QPS as the "iteration" value
+        iteration_values = list(target_qps)  # Convert tuple to list
         iteration_type = "qps"
-        total_runs = len(traffic_scenario)
+        total_runs = len(traffic_scenario) * len(iteration_values)
     else:
         # Standard concurrency mode
         iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
@@ -424,14 +411,30 @@ def benchmark(
 
                 if qps_mode:
                     # QPS mode: iteration is the target QPS value
+                    current_qps = iteration
                     iteration_header = "QPS"
                     batch_size = 1  # Not used in QPS mode
                     concurrency = qps_users  # Use qps_users as effective concurrency
+
+                    # Calculate per-user request rate for this QPS level
+                    total_workers = max(num_workers, 1)
+                    per_worker_qps = current_qps / total_workers
+                    per_user_rate = per_worker_qps / qps_users
+
+                    # Set wait_time on the user class for this QPS level
+                    user_class.wait_time = constant_throughput(per_user_rate)
+
+                    logger.info(
+                        f"   Configuring for QPS={current_qps}: "
+                        f"Per-worker QPS={per_worker_qps:.2f}, "
+                        f"Per-user rate={per_user_rate:.2f} req/s"
+                    )
+
                     dashboard.create_benchmark_progress_task(
                         f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
                     )
                 else:
-                    # Concurrency mode: use normal iteration params
+                    # Concurrency or Batch-Size mode: use normal iteration params
                     iteration_header, batch_size, concurrency = get_run_params(
                         iteration_type, iteration
                     )
@@ -454,7 +457,7 @@ def benchmark(
                     # QPS mode: spawn all users quickly (wait_time handles rate limiting)
                     logger.info(
                         f"Starting benchmark in QPS mode with {qps_users} users "
-                        f"at {target_qps} QPS"
+                        f"at {current_qps} QPS"
                     )
                     environment.runner.start(qps_users, spawn_rate=qps_users)
                 else:

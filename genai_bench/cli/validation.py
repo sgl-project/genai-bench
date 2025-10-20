@@ -200,10 +200,9 @@ def validate_iteration_params(ctx, param, value) -> str:
     batch_size = ctx.params.get("batch_size", [])
     target_qps = ctx.params.get("target_qps")
 
-    # If QPS mode is enabled, skip iteration type logic
-    if target_qps is not None:
-        # QPS mode doesn't use iteration - it runs once per scenario
-        # Force batch_size and num_concurrency to [1] since we don't iterate over them
+    if target_qps and target_qps != ():
+        # QPS mode - force batch_size and num_concurrency to [1] since we don't
+        # iterate over them
         ctx.params.update(
             {
                 "iteration_type": "qps",
@@ -423,27 +422,27 @@ def validate_qps_mode(ctx, param, value):
     Args:
         ctx: Click context
         param: Click parameter (target_qps)
-        value: Current parameter value
+        value: Current parameter value (tuple of QPS values)
 
     Returns:
-        int or None: The validated target_qps value
+        tuple or None: The validated target_qps values
     """
-    target_qps = value
+    target_qps_values = value
     spawn_rate = ctx.params.get("spawn_rate")
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
-    qps_users = ctx.params.get("qps_users", 50)
+    qps_users = ctx.params.get("qps_users")
 
-    # If QPS mode is not enabled, return early
-    if target_qps is None:
-        return None
+    if not target_qps_values or target_qps_values == ():
+        return ()
 
-    # Validate QPS value is positive
-    if target_qps <= 0:
-        raise click.BadParameter(
-            f"target_qps must be positive, got {target_qps}",
-            param_hint=["--target-qps"],
-        )
+    # Validate all QPS values are positive
+    for qps in target_qps_values:
+        if qps <= 0:
+            raise click.BadParameter(
+                f"target_qps must be positive, got {qps}",
+                param_hint=["--target-qps"],
+            )
 
     # Check mutual exclusivity with spawn_rate
     if spawn_rate is not None:
@@ -471,19 +470,48 @@ def validate_qps_mode(ctx, param, value):
             param_hint=["--target-qps", "--batch-size"],
         )
 
-    # Validate qps_users makes sense
-    if qps_users <= 0:
+    # Validate qps_users if explicitly provided
+    if qps_users is not None and qps_users <= 0:
         raise click.BadParameter(
             f"qps_users must be positive, got {qps_users}",
             param_hint=["--qps-users"],
         )
 
-    # Warn if per-user rate is too low
-    per_user_rate = target_qps / qps_users
-    if per_user_rate < 0.1:
-        logger.warning(
-            f"Per-user request rate is very low ({per_user_rate:.3f} req/s). "
-            f"Consider reducing --qps-users for better performance."
+    # Auto-adjust qps_users if not explicitly set by user
+    if qps_users is None:
+        min_qps = min(target_qps_values)
+
+        # Calculate optimal users for the minimum QPS
+        if min_qps < 1:
+            # Very low QPS: 1 user per 0.5 QPS (e.g., 0.5 QPS -> 1 user, 0.1 QPS -> 1 user)
+            qps_users = max(1, int(min_qps / 0.5))
+        elif min_qps < 10:
+            # Low QPS: aim for ~1 req/s per user (e.g., 5 QPS -> 5 users)
+            qps_users = max(1, int(min_qps))
+        elif min_qps < 50:
+            # Medium QPS: aim for ~2 req/s per user (e.g., 20 QPS -> 10 users)
+            qps_users = max(5, int(min_qps / 2))
+        else:
+            # High QPS: calculate based on target
+            # Aim for at least 1 req/s per user, cap at reasonable maximum
+            qps_users = min(100, max(25, int(min_qps / 2)))
+
+        # Update context with auto-adjusted value
+        ctx.params["qps_users"] = qps_users
+        logger.info(
+            f"Auto-adjusted --qps-users to {qps_users} based on minimum "
+            f"QPS={min_qps} (per-user rate: {min_qps/qps_users:.2f} req/s). "
+            f"You can override this by explicitly setting --qps-users."
         )
 
-    return target_qps
+    # Warn if per-user rate is still too low for any QPS value
+    for qps in target_qps_values:
+        per_user_rate = qps / qps_users
+        if per_user_rate < 0.1:
+            logger.warning(
+                f"Per-user request rate is very low for QPS={qps} "
+                f"({per_user_rate:.3f} req/s). "
+                f"Consider reducing --qps-users for better performance."
+            )
+
+    return target_qps_values

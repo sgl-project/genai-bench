@@ -614,21 +614,26 @@ def distributed_locust_options(func):
     func = click.option(
         "--target-qps",
         type=int,
+        multiple=True,
         default=None,
         required=False,
         callback=validate_qps_mode,
         help="Target queries per second (QPS) for the benchmark. "
         "When specified, the benchmark runs in QPS mode instead of concurrency mode. "
         "Mutually exclusive with --num-concurrency and --spawn-rate. "
-        "In distributed mode, QPS is split evenly across all workers.",
+        "In distributed mode, QPS is split evenly across all workers. "
+        "Multiple values can be specified to test different QPS levels. "
+        "Example: --target-qps 10 --target-qps 50 --target-qps 100",
     )(func)
     func = click.option(
         "--qps-users",
         type=int,
-        default=50,
+        default=None,
         required=False,
         help="Number of Locust users to spawn in QPS mode. Each user will send "
-        "requests at target_qps/qps_users rate. Default: 50. "
+        "requests at target_qps/qps_users rate. "
+        "If not specified, automatically calculated based on target QPS to maintain "
+        "optimal per-user request rates (0.5-2 req/s). "
         "Higher values provide smoother request distribution. "
         "Only applicable when --target-qps is specified.",
     )(func)

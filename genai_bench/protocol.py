@@ -191,7 +191,7 @@ class ExperimentMetadata(BaseModel):
     iteration_type: Literal["num_concurrency", "batch_size", "qps"] = Field(
         "num_concurrency", description="Type of iteration used in the experiment."
     )
-    target_qps: Optional[int] = Field(
+    target_qps: Optional[List[int]] = Field(
         None, description="Target queries per second (QPS) when running in QPS mode."
     )
     qps_users: Optional[int] = Field(
