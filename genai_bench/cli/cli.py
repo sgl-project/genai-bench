@@ -402,14 +402,13 @@ def benchmark(
                 f"{iteration_type}": [],
             }
 
-            for iteration in iteration_values:
+            for iteration_val in iteration_values:
                 dashboard.reset_panels()
 
                 if qps_mode:
-                    current_qps = iteration
+                    current_qps = iteration_val
                     iteration_header = "QPS"
                     batch_size = 1
-                    concurrency = qps_users
 
                     total_workers = max(num_workers, 1)
                     per_worker_qps = current_qps / total_workers
@@ -424,21 +423,21 @@ def benchmark(
                     )
 
                     dashboard.create_benchmark_progress_task(
-                        f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
+                        f"Scenario: {scenario_str}, {iteration_header}: {iteration_val}"
                     )
                 else:
                     iteration_header, batch_size, concurrency = get_run_params(
-                        iteration_type, iteration
+                        iteration_type, iteration_val
                     )
                     dashboard.create_benchmark_progress_task(
-                        f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
+                        f"Scenario: {scenario_str}, {iteration_header}: {iteration_val}"
                     )
 
                 # Update batch size for each iteration
                 runner.update_batch_size(batch_size)
 
                 aggregated_metrics_collector.set_run_metadata(
-                    iteration, scenario_str, iteration_type
+                    iteration_val, scenario_str, iteration_type
                 )
 
                 # Start the run
@@ -481,7 +480,7 @@ def benchmark(
                     )
                 except ValueError as e:
                     debug_file_name = (
-                        f"debug_for_run_{sanitized_scenario_str}_{concurrency}.json"
+                        f"debug_for_run_{sanitized_scenario_str}_{iteration_val}.json"
                     )
                     aggregated_metrics_collector.save(
                         os.path.join(experiment_folder_abs_path, debug_file_name),
@@ -502,24 +501,24 @@ def benchmark(
 
                 logger.info(
                     f"⏩ Run for scenario {scenario_str}, "
-                    f"{iteration_type} {iteration} has finished after "
+                    f"{iteration_type} {iteration_val} has finished after "
                     f"{int(end_time - start_time)} seconds."
                 )
 
                 # Save and clear metrics after each run
                 run_name = (
                     f"{sanitized_scenario_str}_{task}_{iteration_type}_"
-                    f"{iteration}_time_{total_run_time}s.json"
+                    f"{iteration_val}_time_{total_run_time}s.json"
                 )
                 aggregated_metrics_collector.save(
                     os.path.join(experiment_folder_abs_path, run_name),
                     metrics_time_unit,
                 )
                 # Store metrics in memory for interim plot
-                scenario_metrics["data"][iteration] = {
+                scenario_metrics["data"][iteration_val] = {
                     "aggregated_metrics": aggregated_metrics_collector.aggregated_metrics  # noqa: E501
                 }
-                scenario_metrics[f"{iteration_type}"].append(iteration)
+                scenario_metrics[f"{iteration_type}"].append(iteration_val)
 
                 aggregated_metrics_collector.clear()
 
