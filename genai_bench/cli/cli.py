@@ -28,7 +28,7 @@ from genai_bench.cli.option_groups import (
     storage_auth_options,
 )
 from genai_bench.cli.report import excel, plot
-from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
+from genai_bench.cli.utils import get_experiment_path, manage_run_time
 from genai_bench.cli.validation import validate_tokenizer
 from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.factory import DataLoaderFactory
@@ -377,19 +377,14 @@ def benchmark(
         raise RuntimeError("Metrics collector not initialized")
     aggregated_metrics_collector = runner.metrics_collector
 
-    qps_mode = target_qps and target_qps != ()
-
-    if qps_mode:
-        logger.info(
-            f"🎯 Running in QPS mode: target_qps={list(target_qps)}, "
-            f"qps_users={qps_users}, workers={max(num_workers, 1)}"
-        )
+    if iteration_type == "qps":
         iteration_values = list(target_qps)
-        iteration_type = "qps"
-        total_runs = len(traffic_scenario) * len(iteration_values)
+    elif iteration_type == "batch_size":
+        iteration_values = batch_size
     else:
-        iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
-        total_runs = len(traffic_scenario) * len(iteration_values)
+        iteration_values = num_concurrency
+    total_runs = len(traffic_scenario) * len(iteration_values)
+    
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
@@ -405,15 +400,16 @@ def benchmark(
             for iteration_val in iteration_values:
                 dashboard.reset_panels()
 
-                if qps_mode:
-                    current_qps = iteration_val
+                # Determine iteration parameters based on mode
+                if iteration_type == "qps":
                     iteration_header = "QPS"
-                    batch_size = 1
+                    batch_size_val = 1
+                    num_users = qps_users
+                    current_qps = iteration_val
 
                     total_workers = max(num_workers, 1)
                     per_worker_qps = current_qps / total_workers
                     per_user_rate = per_worker_qps / qps_users
-
                     user_class.wait_time = constant_throughput(per_user_rate)
 
                     logger.info(
@@ -421,21 +417,20 @@ def benchmark(
                         f"Per-worker QPS={per_worker_qps:.2f}, "
                         f"Per-user rate={per_user_rate:.2f} req/s"
                     )
-
-                    dashboard.create_benchmark_progress_task(
-                        f"Scenario: {scenario_str}, {iteration_header}: {iteration_val}"
-                    )
+                elif iteration_type == "batch_size":
+                    iteration_header = "Batch Size"
+                    batch_size_val = iteration_val
+                    num_users = 1
                 else:
-                    iteration_header, batch_size, concurrency = get_run_params(
-                        iteration_type, iteration_val
-                    )
-                    dashboard.create_benchmark_progress_task(
-                        f"Scenario: {scenario_str}, {iteration_header}: {iteration_val}"
-                    )
+                    iteration_header = "Concurrency"
+                    batch_size_val = 1
+                    num_users = iteration_val
 
-                # Update batch size for each iteration
-                runner.update_batch_size(batch_size)
+                dashboard.create_benchmark_progress_task(
+                    f"Scenario: {scenario_str}, {iteration_header}: {iteration_val}"
+                )
 
+                runner.update_batch_size(batch_size_val)
                 aggregated_metrics_collector.set_run_metadata(
                     iteration_val, scenario_str, iteration_type
                 )
@@ -444,21 +439,18 @@ def benchmark(
                 start_time = time.monotonic()
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
-                if qps_mode:
+                actual_spawn_rate = spawn_rate if spawn_rate is not None else num_users
+                if iteration_type == "qps":
                     logger.info(
-                        f"Starting benchmark in QPS mode with {qps_users} users "
+                        f"Starting benchmark in QPS mode with {num_users} users "
                         f"at {current_qps} QPS"
                     )
-                    environment.runner.start(qps_users, spawn_rate=qps_users)
                 else:
-                    actual_spawn_rate = (
-                        spawn_rate if spawn_rate is not None else concurrency
-                    )
                     logger.info(
-                        f"Starting benchmark with concurrency={concurrency}, "
-                        f"spawn_rate={actual_spawn_rate}"
+                        f"Starting benchmark with {iteration_header.lower()}={iteration_val}, "
+                        f"num_users={num_users}, spawn_rate={actual_spawn_rate}"
                     )
-                    environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
+                environment.runner.start(num_users, spawn_rate=actual_spawn_rate)
 
                 total_run_time = manage_run_time(
                     max_time_per_run=max_time_per_run,

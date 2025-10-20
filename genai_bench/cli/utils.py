@@ -3,7 +3,7 @@ from locust.env import Environment
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 from genai_bench.logging import init_logger
 
@@ -105,13 +105,3 @@ def get_experiment_path(
 
     experiment_path.mkdir(parents=True, exist_ok=True)
     return experiment_path
-
-
-def get_run_params(iteration_type: str, iteration_value: int) -> Tuple[str, int, int]:
-    """
-    Returns appropriate header, batch_size, and num_concurrency based on iteration_type
-    and iteration_value.
-    """
-    if iteration_type == "batch_size":
-        return "Batch Size", iteration_value, 1
-    return "Concurrency", 1, iteration_value
