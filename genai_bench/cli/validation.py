@@ -428,6 +428,20 @@ def validate_qps_mode(ctx, param, value):
             param_hint=["--target-qps", "--spawn-rate"],
         )
 
+    if num_concurrency != tuple(DEFAULT_NUM_CONCURRENCIES):
+        raise click.BadParameter(
+            "--target-qps and --num-concurrency are mutually exclusive. "
+            "Use --target-qps for QPS mode or --num-concurrency for concurrency mode.",
+            param_hint=["--target-qps", "--num-concurrency"],
+        )
+
+    if batch_size != tuple(DEFAULT_BATCH_SIZES):
+        raise click.BadParameter(
+            "--target-qps and --batch-size are mutually exclusive. "
+            "Use --target-qps for QPS mode or --batch-size for batch mode.",
+            param_hint=["--target-qps", "--batch-size"],
+        )
+
     if qps_users is not None and qps_users <= 0:
         raise click.BadParameter(
             f"qps_users must be positive, got {qps_users}",
