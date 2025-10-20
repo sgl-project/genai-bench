@@ -184,25 +184,14 @@ def validate_tokenizer(model_tokenizer):
 
 
 def validate_iteration_params(ctx, param, value) -> str:
-    """
-    Validate and determine iteration parameters based on task type.
-
-    Args:
-        ctx: Click context
-        param: Click parameter
-        value: Current parameter value (iteration_type)
-
-    Returns:
-        str: The validated iteration_type
-    """
+    """Validate and determine iteration parameters based on task type."""
     task = ctx.params.get("task")
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
     target_qps = ctx.params.get("target_qps")
-
+    
+    # For QPS mode, early return
     if target_qps and target_qps != ():
-        # QPS mode - force batch_size and num_concurrency to [1] since we don't
-        # iterate over them
         ctx.params.update(
             {
                 "iteration_type": "qps",
@@ -228,7 +217,6 @@ def validate_iteration_params(ctx, param, value) -> str:
         value = "num_concurrency"
         batch_size = [1]
 
-    # Update context with validated values
     ctx.params.update(
         {
             "iteration_type": value,
@@ -416,17 +404,7 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
 
 
 def validate_qps_mode(ctx, param, value):
-    """
-    Validate QPS mode parameters and ensure mutual exclusivity.
-
-    Args:
-        ctx: Click context
-        param: Click parameter (target_qps)
-        value: Current parameter value (tuple of QPS values)
-
-    Returns:
-        tuple or None: The validated target_qps values
-    """
+    """Validate QPS mode parameters and ensure mutual exclusivity."""
     target_qps_values = value
     spawn_rate = ctx.params.get("spawn_rate")
     num_concurrency = ctx.params.get("num_concurrency", [])
@@ -436,7 +414,6 @@ def validate_qps_mode(ctx, param, value):
     if not target_qps_values or target_qps_values == ():
         return ()
 
-    # Validate all QPS values are positive
     for qps in target_qps_values:
         if qps <= 0:
             raise click.BadParameter(
@@ -444,7 +421,6 @@ def validate_qps_mode(ctx, param, value):
                 param_hint=["--target-qps"],
             )
 
-    # Check mutual exclusivity with spawn_rate
     if spawn_rate is not None:
         raise click.BadParameter(
             "--target-qps and --spawn-rate are mutually exclusive. "
@@ -452,25 +428,6 @@ def validate_qps_mode(ctx, param, value):
             param_hint=["--target-qps", "--spawn-rate"],
         )
 
-    # Check mutual exclusivity with num_concurrency
-    # num_concurrency has defaults, so check if it was explicitly provided
-    if num_concurrency != tuple(DEFAULT_NUM_CONCURRENCIES):
-        raise click.BadParameter(
-            "--target-qps and --num-concurrency are mutually exclusive. "
-            "Use --target-qps for QPS mode or --num-concurrency for concurrency mode.",
-            param_hint=["--target-qps", "--num-concurrency"],
-        )
-
-    # Check mutual exclusivity with batch_size
-    # batch_size has defaults, so check if it was explicitly provided
-    if batch_size != tuple(DEFAULT_BATCH_SIZES):
-        raise click.BadParameter(
-            "--target-qps and --batch-size are mutually exclusive. "
-            "Use --target-qps for QPS mode or --batch-size for batch iteration mode.",
-            param_hint=["--target-qps", "--batch-size"],
-        )
-
-    # Validate qps_users if explicitly provided
     if qps_users is not None and qps_users <= 0:
         raise click.BadParameter(
             f"qps_users must be positive, got {qps_users}",
@@ -481,7 +438,6 @@ def validate_qps_mode(ctx, param, value):
     if qps_users is None:
         min_qps = min(target_qps_values)
 
-        # Calculate optimal users for the minimum QPS
         if min_qps < 1:
             # Very low QPS: 1 user per 0.5 QPS (e.g., 0.5 QPS -> 1 user, 0.1 QPS -> 1 user)
             qps_users = max(1, int(min_qps / 0.5))
@@ -496,7 +452,6 @@ def validate_qps_mode(ctx, param, value):
             # Aim for at least 1 req/s per user, cap at reasonable maximum
             qps_users = min(100, max(25, int(min_qps / 2)))
 
-        # Update context with auto-adjusted value
         ctx.params["qps_users"] = qps_users
         logger.info(
             f"Auto-adjusted --qps-users to {qps_users} based on minimum "
@@ -504,7 +459,6 @@ def validate_qps_mode(ctx, param, value):
             f"You can override this by explicitly setting --qps-users."
         )
 
-    # Warn if per-user rate is still too low for any QPS value
     for qps in target_qps_values:
         per_user_rate = qps / qps_users
         if per_user_rate < 0.1:

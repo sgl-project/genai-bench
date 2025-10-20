@@ -377,21 +377,17 @@ def benchmark(
         raise RuntimeError("Metrics collector not initialized")
     aggregated_metrics_collector = runner.metrics_collector
 
-    # Detect QPS mode vs concurrency mode
-    # With multiple=True, target_qps is a tuple (empty tuple if not provided)
     qps_mode = target_qps and target_qps != ()
 
     if qps_mode:
-        # QPS mode: iterate over QPS values
         logger.info(
             f"🎯 Running in QPS mode: target_qps={list(target_qps)}, "
             f"qps_users={qps_users}, workers={max(num_workers, 1)}"
         )
-        iteration_values = list(target_qps)  # Convert tuple to list
+        iteration_values = list(target_qps)
         iteration_type = "qps"
         total_runs = len(traffic_scenario) * len(iteration_values)
     else:
-        # Standard concurrency mode
         iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
         total_runs = len(traffic_scenario) * len(iteration_values)
     with dashboard.live:
@@ -410,18 +406,15 @@ def benchmark(
                 dashboard.reset_panels()
 
                 if qps_mode:
-                    # QPS mode: iteration is the target QPS value
                     current_qps = iteration
                     iteration_header = "QPS"
-                    batch_size = 1  # Not used in QPS mode
-                    concurrency = qps_users  # Use qps_users as effective concurrency
+                    batch_size = 1
+                    concurrency = qps_users
 
-                    # Calculate per-user request rate for this QPS level
                     total_workers = max(num_workers, 1)
                     per_worker_qps = current_qps / total_workers
                     per_user_rate = per_worker_qps / qps_users
 
-                    # Set wait_time on the user class for this QPS level
                     user_class.wait_time = constant_throughput(per_user_rate)
 
                     logger.info(
@@ -434,7 +427,6 @@ def benchmark(
                         f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
                     )
                 else:
-                    # Concurrency or Batch-Size mode: use normal iteration params
                     iteration_header, batch_size, concurrency = get_run_params(
                         iteration_type, iteration
                     )
@@ -454,14 +446,12 @@ def benchmark(
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
                 if qps_mode:
-                    # QPS mode: spawn all users quickly (wait_time handles rate limiting)
                     logger.info(
                         f"Starting benchmark in QPS mode with {qps_users} users "
                         f"at {current_qps} QPS"
                     )
                     environment.runner.start(qps_users, spawn_rate=qps_users)
                 else:
-                    # Concurrency mode: use custom spawn rate if provided
                     actual_spawn_rate = (
                         spawn_rate if spawn_rate is not None else concurrency
                     )
