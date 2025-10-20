@@ -198,6 +198,20 @@ def validate_iteration_params(ctx, param, value) -> str:
     task = ctx.params.get("task")
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
+    target_qps = ctx.params.get("target_qps")
+
+    # If QPS mode is enabled, skip iteration type logic
+    if target_qps is not None:
+        # QPS mode doesn't use iteration - it runs once per scenario
+        # Force batch_size and num_concurrency to [1] since we don't iterate over them
+        ctx.params.update(
+            {
+                "iteration_type": "qps",
+                "batch_size": [1],
+                "num_concurrency": [1],
+            }
+        )
+        return "qps"
 
     # For text-to-embeddings tasks, always use batch_size iteration
     if task == "text-to-embeddings" or task == "text-to-rerank":
@@ -417,6 +431,7 @@ def validate_qps_mode(ctx, param, value):
     target_qps = value
     spawn_rate = ctx.params.get("spawn_rate")
     num_concurrency = ctx.params.get("num_concurrency", [])
+    batch_size = ctx.params.get("batch_size", [])
     qps_users = ctx.params.get("qps_users", 50)
 
     # If QPS mode is not enabled, return early
@@ -445,6 +460,15 @@ def validate_qps_mode(ctx, param, value):
             "--target-qps and --num-concurrency are mutually exclusive. "
             "Use --target-qps for QPS mode or --num-concurrency for concurrency mode.",
             param_hint=["--target-qps", "--num-concurrency"],
+        )
+
+    # Check mutual exclusivity with batch_size
+    # batch_size has defaults, so check if it was explicitly provided
+    if batch_size != tuple(DEFAULT_BATCH_SIZES):
+        raise click.BadParameter(
+            "--target-qps and --batch-size are mutually exclusive. "
+            "Use --target-qps for QPS mode or --batch-size for batch iteration mode.",
+            param_hint=["--target-qps", "--batch-size"],
         )
 
     # Validate qps_users makes sense

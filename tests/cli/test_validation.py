@@ -519,7 +519,11 @@ def test_validate_qps_mode_basic():
     param = MagicMock()
 
     # Test QPS mode not enabled (target_qps is None)
-    ctx.params = {"spawn_rate": None, "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES)}
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
+    }
     result = validate_qps_mode(ctx, param, None)
     assert result is None
 
@@ -527,6 +531,7 @@ def test_validate_qps_mode_basic():
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
         "qps_users": 50,
     }
     result = validate_qps_mode(ctx, param, 100)
@@ -542,6 +547,7 @@ def test_validate_qps_mode_mutual_exclusivity():
     ctx.params = {
         "spawn_rate": 10,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
         "qps_users": 50,
     }
     with pytest.raises(click.BadParameter) as exc_info:
@@ -552,6 +558,7 @@ def test_validate_qps_mode_mutual_exclusivity():
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": (1, 2, 4),  # Custom values (tuple)
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
         "qps_users": 50,
     }
     with pytest.raises(click.BadParameter) as exc_info:
@@ -570,6 +577,7 @@ def test_validate_qps_mode_value_validation():
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
         "qps_users": 50,
     }
     with pytest.raises(click.BadParameter) as exc_info:
@@ -585,6 +593,7 @@ def test_validate_qps_mode_value_validation():
     ctx.params = {
         "spawn_rate": None,
         "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": tuple(DEFAULT_BATCH_SIZES),
         "qps_users": -10,
     }
     with pytest.raises(click.BadParameter) as exc_info:
@@ -602,9 +611,46 @@ def test_validate_qps_mode_warning_low_rate(caplog):
         ctx.params = {
             "spawn_rate": None,
             "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+            "batch_size": tuple(DEFAULT_BATCH_SIZES),
             "qps_users": 1000,  # 1 QPS / 1000 users = 0.001 req/s per user
         }
         result = validate_qps_mode(ctx, param, 1)
         assert result == 1
     assert "Per-user request rate is very low" in caplog.text
     assert "Consider reducing --qps-users" in caplog.text
+
+
+def test_validate_qps_mode_batch_size_exclusivity():
+    """Test QPS mode mutual exclusivity with batch_size."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test mutual exclusivity with custom batch_size
+    ctx.params = {
+        "spawn_rate": None,
+        "num_concurrency": tuple(DEFAULT_NUM_CONCURRENCIES),
+        "batch_size": (8, 16, 32),  # Custom values
+        "qps_users": 50,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_qps_mode(ctx, param, 100)
+    assert "--target-qps and --batch-size are mutually exclusive" in str(
+        exc_info.value
+    )
+
+
+def test_validate_iteration_params_qps_mode():
+    """Test iteration params validation when QPS mode is enabled."""
+    ctx = MagicMock()
+    param = MagicMock()
+
+    # Test that QPS mode overrides iteration type
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": [1, 2, 4],
+        "batch_size": [1],
+        "target_qps": 100,
+    }
+    result = validate_iteration_params(ctx, param, "num_concurrency")
+    assert result == "qps"
+    assert ctx.params["iteration_type"] == "qps"
