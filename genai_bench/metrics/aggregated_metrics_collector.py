@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -108,6 +108,8 @@ class AggregatedMetricsCollector:
         start_time: float,
         end_time: float,
         dataset_character_to_token_ratio: float,
+        warmup_ratio: Optional[float],
+        cooldown_ratio: Optional[float],
     ):
         """
         Aggregates collected metrics data over all requests.
@@ -118,6 +120,10 @@ class AggregatedMetricsCollector:
             dataset_character_to_token_ratio (float): The ratio of characters
                 to tokens. It is required to calculate character-level metric:
                 mean_total_chars_per_hour.
+            warmup_ratio (Optional[float]): The portion of initial requests
+                to exclude from the aggregation as warmup.
+            cooldown_ratio (Optional[float]): The portion of final requests
+                to exclude from the aggregation as cooldown.
         """
         if not self.all_request_metrics:
             logger.warning(
@@ -135,6 +141,22 @@ class AggregatedMetricsCollector:
             if key not in {"error_code", "error_message"}
         ]
 
+        warmup_number = 0
+        if warmup_ratio:
+            warmup_number = int(len(self.all_request_metrics) * warmup_ratio)
+            logger.info(
+                f"Filtering out first {warmup_number}/{len(self.all_request_metrics)} "
+                f"warmup requests."
+            )
+
+        cooldown_number = 0
+        if cooldown_ratio:
+            cooldown_number = int(len(self.all_request_metrics) * cooldown_ratio)
+            logger.info(
+                f"Filtering out last {cooldown_number}/{len(self.all_request_metrics)} "
+                f"cooldown requests."
+            )
+
         for key in filtered_keys:
             # Extract the list of values for this metric from all requests
             values: List[float] = []
@@ -146,7 +168,8 @@ class AggregatedMetricsCollector:
                 if value is None:
                     logger.info(f"{i}th request has NoneType value in metric {key}.")
                     continue
-                values.append(value)
+                if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
+                    values.append(value)
 
             # Validate that all values are valid for processing
             if not values:
@@ -246,24 +269,25 @@ class AggregatedMetricsCollector:
             "stats": {},
         }
 
-    def save(self, file_path: str, time_unit: str = "s"):
+    def save(self, file_path: str, metrics_time_unit: str = "s"):
         if not self.all_request_metrics:
             return
 
         # Convert aggregated metrics to the specified time unit
         aggregated_dict = TimeUnitConverter.convert_metrics_dict(
-            self.aggregated_metrics.model_dump(), time_unit
+            self.aggregated_metrics.model_dump(), metrics_time_unit
         )
 
         # Convert individual request metrics to the specified time unit
         individual_dicts = TimeUnitConverter.convert_metrics_list(
-            [metrics.model_dump() for metrics in self.all_request_metrics], time_unit
+            [metrics.model_dump() for metrics in self.all_request_metrics],
+            metrics_time_unit,
         )
 
         data_to_save = {
             "aggregated_metrics": aggregated_dict,
             "individual_request_metrics": individual_dicts,
-            "_time_unit": time_unit,  # Store metadata for reference
+            "_time_unit": metrics_time_unit,  # Store metadata for reference
         }
         with open(file_path, "w") as metrics_file:
             json.dump(data_to_save, metrics_file, indent=4)
@@ -272,7 +296,9 @@ class AggregatedMetricsCollector:
         """Returns the latest live metrics for use in the UI."""
         return self._live_metrics_data
 
-    def get_ui_scatter_plot_metrics(self, time_unit: str = "s") -> List[float] | None:
+    def get_ui_scatter_plot_metrics(
+        self, metrics_time_unit: str = "s"
+    ) -> List[float] | None:
         """Returns the plot metrics for use in the UI."""
         mean_ttft = self.aggregated_metrics.stats.ttft.mean
         mean_output_latency = self.aggregated_metrics.stats.output_latency.mean
@@ -280,9 +306,11 @@ class AggregatedMetricsCollector:
             return None
 
         # Convert time-based metrics to the specified time unit for UI display
-        converted_ttft = TimeUnitConverter.convert_value(mean_ttft, "s", time_unit)
+        converted_ttft = TimeUnitConverter.convert_value(
+            mean_ttft, "s", metrics_time_unit
+        )
         converted_output_latency = TimeUnitConverter.convert_value(
-            mean_output_latency, "s", time_unit
+            mean_output_latency, "s", metrics_time_unit
         )
 
         return [

@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Protocol
 
 import gevent
 import psutil
+from pydantic import ValidationError
 
 from genai_bench.logging import WorkerLoggingManager, init_logger
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
@@ -276,7 +277,14 @@ class DistributedRunner:
 
         def handler(environment: Environment, msg: Any, **kwargs) -> None:
             # Master receives and aggregates metrics
-            metrics = RequestLevelMetrics.model_validate_json(msg.data)
+            try:
+                metrics = RequestLevelMetrics.model_validate_json(msg.data)
+            except ValidationError as e:
+                logger.warning(
+                    f"Dropping invalid metrics record due to validation error: {e}"
+                )
+                return
+
             if not self.metrics_collector:
                 return
 

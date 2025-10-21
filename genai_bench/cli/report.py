@@ -37,14 +37,14 @@ from genai_bench.utils import is_single_experiment_folder
     help="Name of the Excel file. The system will create a <excel-name>.xlsx.",
 )
 @click.option(
-    "--time-unit",
+    "--metrics-time-unit",
     type=click.Choice(["s", "ms"], case_sensitive=False),
     default="s",
     help="Time unit for latency metrics in the spreadsheet. "
     "Options: 's' (seconds), 'ms' (milliseconds). Default: s",
 )
 @click.pass_context
-def excel(ctx, experiment_folder, excel_name, metric_percentile, time_unit):
+def excel(ctx, experiment_folder, excel_name, metric_percentile, metrics_time_unit):
     """
     Exports the experiment results to an Excel file.
     """
@@ -53,7 +53,7 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile, time_unit):
     excel_path = os.path.join(experiment_folder, excel_name + ".xlsx")
     experiment_metadata, run_data = load_one_experiment(experiment_folder)
     create_workbook(
-        experiment_metadata, run_data, excel_path, metric_percentile, time_unit
+        experiment_metadata, run_data, excel_path, metric_percentile, metrics_time_unit
     )
 
 
@@ -98,7 +98,7 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile, time_unit):
     help="Use a built-in plot preset. Overrides --plot-config if both are provided.",
 )
 @click.option(
-    "--time-unit",
+    "--metrics-time-unit",
     type=click.Choice(["s", "ms"], case_sensitive=False),
     default="s",
     help="Time unit for latency metrics display and export. "
@@ -128,7 +128,7 @@ def plot(
     filter_criteria,
     plot_config,
     preset,
-    time_unit,
+    metrics_time_unit,
     list_fields,
     validate_only,
     verbose,
@@ -285,7 +285,7 @@ def plot(
             group_key=group_key,
             experiment_folder=experiments_folder,
             plot_config=config,
-            time_unit=time_unit,
+            metrics_time_unit=metrics_time_unit,
         )
         logger.info("Plot generation completed successfully")
     except Exception as e:

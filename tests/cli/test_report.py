@@ -16,7 +16,7 @@ def cli_runner():
 def mock_experiment_data():
     """Create mock experiment data."""
     metadata = Mock()
-    metadata.time_unit = "s"  # Source time unit from experiment
+    metadata.metrics_time_unit = "s"  # Source time unit from experiment
 
     run_data = {
         "scenario1": {
@@ -33,8 +33,8 @@ def mock_experiment_data():
     return [(metadata, run_data)]
 
 
-def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
-    """Test that the --time-unit CLI parameter is correctly passed through."""
+def test_cli_metrics_time_unit_parameter_passed(cli_runner, mock_experiment_data):
+    """Test that the --metrics-time-unit CLI parameter is correctly passed through."""
     with (
         patch(
             "genai_bench.cli.report.load_multiple_experiments",
@@ -51,17 +51,17 @@ def test_cli_time_unit_parameter_passed(cli_runner, mock_experiment_data):
                 "/tmp",
                 "--group-key",
                 "traffic_scenario",
-                "--time-unit",
+                "--metrics-time-unit",
                 "ms",
             ],
         )
 
         # Verify the plotting function was called with the correct time unit
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "ms"
+        assert call_args[1]["metrics_time_unit"] == "ms"
 
 
-def test_cli_time_unit_default_value(cli_runner, mock_experiment_data):
+def test_cli_metrics_time_unit_default_value(cli_runner, mock_experiment_data):
     """Test that the default time unit is 's' when not specified."""
     with (
         patch(
@@ -79,16 +79,16 @@ def test_cli_time_unit_default_value(cli_runner, mock_experiment_data):
                 "/tmp",
                 "--group-key",
                 "traffic_scenario",
-                # No --time-unit specified
+                # No --metrics-time-unit specified
             ],
         )
 
         # Verify the plotting function was called with default time unit
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "s"
+        assert call_args[1]["metrics_time_unit"] == "s"
 
 
-def test_cli_time_unit_parameter_validation(cli_runner):
+def test_cli_metrics_time_unit_parameter_validation(cli_runner):
     """Test that invalid time unit values are rejected."""
     result = cli_runner.invoke(
         plot,
@@ -97,17 +97,17 @@ def test_cli_time_unit_parameter_validation(cli_runner):
             "/tmp",
             "--group-key",
             "traffic_scenario",
-            "--time-unit",
+            "--metrics-time-unit",
             "invalid_unit",
         ],
     )
 
     # Should fail with invalid choice error
     assert result.exit_code != 0
-    assert "Invalid value for '--time-unit'" in result.output
+    assert "Invalid value for '--metrics-time-unit'" in result.output
 
 
-def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
+def test_cli_metrics_time_unit_with_preset(cli_runner, mock_experiment_data):
     """Test that time unit works correctly with preset configurations."""
     with (
         patch(
@@ -127,7 +127,7 @@ def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
                 "traffic_scenario",
                 "--preset",
                 "2x4_default",
-                "--time-unit",
+                "--metrics-time-unit",
                 "ms",
             ],
         )
@@ -135,4 +135,4 @@ def test_cli_time_unit_with_preset(cli_runner, mock_experiment_data):
         # Verify the plotting function was called with correct parameters
         mock_plot.assert_called_once()
         call_args = mock_plot.call_args
-        assert call_args[1]["time_unit"] == "ms"
+        assert call_args[1]["metrics_time_unit"] == "ms"

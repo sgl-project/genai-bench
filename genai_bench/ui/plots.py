@@ -9,7 +9,7 @@ logger = init_logger(__name__)
 
 
 def create_horizontal_colored_bar_chart(
-    values, width=40, bin_width=0.1, max_bins=10, time_unit="s"
+    values, width=40, bin_width=0.1, max_bins=10, metrics_time_unit="s"
 ):
     if not values:
         logger.warning("No data for histogram.")
@@ -32,8 +32,8 @@ def create_horizontal_colored_bar_chart(
     chart = Text()
 
     # Format the labels for the bins using integer or specified decimal width
-    # Convert bin edges if time_unit is "ms"
-    if time_unit == "ms":
+    # Convert bin edges if metrics_time_unit is "ms"
+    if metrics_time_unit == "ms":
         bin_labels = [
             f"{bin_edges[i] * 1000:.0f}-{bin_edges[i + 1] * 1000:.0f}ms"
             for i in range(len(bin_edges) - 1)

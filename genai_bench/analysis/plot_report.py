@@ -27,7 +27,7 @@ def plot_graph(
     concurrency_levels: List[int],
     label: str,
     plot_type: str = "line",
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     """
     Generalized plotting function that can handle both line and scatter plots.
@@ -112,7 +112,7 @@ def plot_metrics(
     concurrency_data_list: List[Dict[int, MetricsData]],
     label_to_concurrency_map: Dict[str, List[int]],
     labels: List[str],
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     """
     Plots various metrics on provided axes and saves each plot individually.
@@ -269,7 +269,7 @@ def plot_metrics(
                 concurrency_levels=concurrency_levels,
                 label=labels[i],
                 plot_type=spec["plot_type"],
-                time_unit=time_unit,
+                metrics_time_unit=metrics_time_unit,
             )
 
         # Add stacked error rate plot
@@ -328,7 +328,7 @@ def plot_experiment_data(
 
     # Extract time unit from experiment metadata (all experiments should use the
     # same unit)
-    time_unit = run_data_list[0][0].time_unit if run_data_list else "s"
+    metrics_time_unit = run_data_list[0][0].metrics_time_unit if run_data_list else "s"
 
     if group_key == "traffic_scenario":
         fig, axs = plt.subplots(2, 4, figsize=(32, 12))
@@ -337,7 +337,11 @@ def plot_experiment_data(
             run_data_list
         )
         plot_metrics(
-            axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+            axs,
+            concurrency_data_list,
+            label_to_concurrency_map,
+            labels,
+            metrics_time_unit,
         )
         finalize_and_save_plots(axs, fig, labels, experiment_folder, "traffic_scenario")
     else:
@@ -349,7 +353,11 @@ def plot_experiment_data(
                 run_data_list, traffic_scenario, group_key
             )
             plot_metrics(
-                axs, concurrency_data_list, label_to_concurrency_map, labels, time_unit
+                axs,
+                concurrency_data_list,
+                label_to_concurrency_map,
+                labels,
+                metrics_time_unit,
             )
             finalize_and_save_plots(
                 axs,
@@ -573,7 +581,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
     task: str,
     scenario_metrics: Dict[str, Any],
     iteration_type: str,
-    time_unit: str = "s",
+    metrics_time_unit: str = "s",
 ) -> None:
     """
     Plots metrics for a single scenario immediately after it completes.
@@ -587,7 +595,8 @@ def plot_single_scenario_inference_speed_vs_throughput(
                 or batch
              iteration_type: List of concurrency levels/batch
         iteration_type: Type of iteration for the benchmark. E.g. concurrency levels.
-        time_unit (str): [s|ms] Time unit for latency metrics display and export.
+        metrics_time_unit (str):
+            [s|ms] Time unit for latency metrics display and export.
     """
     # TODO: This logic should be de-coupled.
     if (
@@ -644,7 +653,7 @@ def plot_single_scenario_inference_speed_vs_throughput(
         concurrency_levels=valid_concurrency,
         label=f"Scenario: {scenario_label}",
         plot_type="line",
-        time_unit=time_unit,
+        metrics_time_unit=metrics_time_unit,
     )
 
     ax.legend()

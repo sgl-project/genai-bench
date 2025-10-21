@@ -47,7 +47,7 @@ dev: ## Install development dependencies.
 
 .PHONY: test
 test: ## Run tests.
-	uv run --no-reinstall pytest $(TEST_DIR) --cov --cov-config=.coveragerc -vv -s
+	uv run pytest $(TEST_DIR) --cov --cov-config=.coveragerc -vv -s
 
 .PHONY: test_changed
 test_changed: ## Run tests only for changed files with coverage.
@@ -55,7 +55,7 @@ test_changed: ## Run tests only for changed files with coverage.
 	if ! git diff --diff-filter=ACM --quiet --exit-code $$MERGEBASE -- '*.py' '*.pyi' &>/dev/null; then \
 		changed_files=$$(git diff --name-only --diff-filter=ACM $$MERGEBASE -- '*.py' '*.pyi'); \
 		echo "Changed files: $$changed_files"; \
-		uv run --no-reinstall pytest $$changed_files --cov-config=.coveragerc -vv -s; \
+		uv run pytest $$changed_files --cov-config=.coveragerc -vv -s; \
 	else \
 		echo "No Python files have changed."; \
 	fi
@@ -66,13 +66,13 @@ clean: ## Remove build artifacts.
 
 .PHONY: format
 format: ## Format code using ruff.
-	uv run --no-reinstall isort $(SRC_DIR) $(TEST_DIR)
-	uv run --no-reinstall ruff format $(SRC_DIR) $(TEST_DIR); uv run --no-reinstall ruff check --fix $(SRC_DIR) $(TEST_DIR)
+	uv run isort $(SRC_DIR) $(TEST_DIR)
+	uv run ruff format $(SRC_DIR) $(TEST_DIR); uv run  ruff check --fix $(SRC_DIR) $(TEST_DIR)
 
 .PHONY: lint
 lint: ## Run linters using ruff.
-	uv run --no-reinstall ruff format --diff $(SRC_DIR) $(TEST_DIR)
-	uv run --no-reinstall mypy $(SRC_DIR)
+	uv run ruff format --diff $(SRC_DIR) $(TEST_DIR)
+	uv run mypy $(SRC_DIR)
 
 .PHONY: check
 check: format lint ## Run format and lint.
