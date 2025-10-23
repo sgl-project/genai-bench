@@ -155,4 +155,4 @@ After successful installation:
 
 1. Read the [Task Definition Guide](task-definition.md) to understand different benchmark tasks
 2. Explore the [User Guide](../user-guide/run-benchmark.md) for detailed usage
-3. Check out [Entrypoints](entrypoints.md) for practical scenarios 
+3. Check out [Command Guidelines](command-guidelines.md) for practical scenarios 

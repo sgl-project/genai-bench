@@ -1,4 +1,4 @@
-# Entrypoints
+# Command Guidelines
 
 Once you install it in your local environment, you can use `--help` to read
 about what command options it supports.
@@ -7,7 +7,7 @@ about what command options it supports.
 genai-bench --help
 ```
 
-`genai-bench` has three CLI entrypoints:
+`genai-bench` has three CLI commands:
 
 ```shell
 Commands:

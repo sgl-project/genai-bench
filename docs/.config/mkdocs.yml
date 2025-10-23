@@ -116,7 +116,7 @@ nav:
       - getting-started/index.md
       - Installation: getting-started/installation.md
       - Task Definition: getting-started/task-definition.md
-      - Entrypoints: getting-started/entrypoints.md
+      - Command Guidelines: getting-started/command-guidelines.md
       - Metrics Definition: getting-started/metrics-definition.md
   - User Guide:
       - user-guide/index.md
