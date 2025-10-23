@@ -128,8 +128,6 @@ nav:
       - Excel Reports: user-guide/generate-excel-sheet.md
       - Visualizations: user-guide/generate-plot.md
       - Upload Results: user-guide/upload-benchmark-result.md
-  - Examples:
-      - examples/index.md
   - Development:
       - development/index.md
       - Contributing: development/contributing.md

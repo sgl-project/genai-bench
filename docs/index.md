@@ -68,16 +68,21 @@ GenAI Bench supports multiple benchmark types:
 ### 📖 User Guide
 
 - [Run Benchmark](user-guide/run-benchmark.md) - How to run benchmarks
+- [Traffic Scenarios](user-guide/scenario-definition.md) - Understanding traffic scenario syntax
 - [Multi-Cloud Authentication & Storage](user-guide/multi-cloud-auth-storage.md) - Comprehensive guide for cloud provider authentication
 - [Multi-Cloud Quick Reference](user-guide/multi-cloud-quick-reference.md) - Quick examples for common scenarios
 - [Docker Deployment](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
-- [Generate Excel Sheet](user-guide/generate-excel-sheet.md) - Creating Excel reports
-- [Generate Plot](user-guide/generate-plot.md) - Creating visualizations
-- [Upload Benchmark Results](user-guide/upload-benchmark-result.md) - Uploading results
+- [Excel Reports](user-guide/generate-excel-sheet.md) - Creating Excel reports
+- [Visualizations](user-guide/generate-plot.md) - Creating visualizations
+- [Upload Results](user-guide/upload-benchmark-result.md) - Uploading results
 
 ### 🔧 Development
 
 - [Contributing](development/contributing.md) - How to contribute to GenAI Bench
+
+### 📚 API Reference
+
+- [API Documentation](api/index.md) - Complete API reference and code examples
 
 ## Support
 

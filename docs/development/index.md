@@ -73,8 +73,7 @@ genai-bench/
 │   ├── storage/         # Storage providers
 │   └── user/            # User implementations
 ├── tests/               # Test suite
-├── docs/                # Documentation
-└── examples/            # Example configurations
+└── docs/                # Documentation
 ```
 
 ## Key Components
