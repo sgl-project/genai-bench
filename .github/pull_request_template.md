@@ -1,15 +1,15 @@
 ## Description
 <!--Please provide a brief description of the changes in this PR.-->
 
-## What type of PR is this?
+## PR Type / Label
 <!-- 
 Add one of the following:
-/kind Bug
-/kind Core
-/kind Frontend
-/kind Docs
-/kind CI/Tests
-/kind Misc
+/kind bug
+/kind feature
+/kind enhancement
+/kind documentation
+/kind ci
+/kind misc
 -->
 
 ## Related Issue
