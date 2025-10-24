@@ -78,7 +78,7 @@ GenAI Bench supports multiple benchmark types:
 
 ### 🔧 Development
 
-- [Contributing](development/contributing.md) - How to contribute to GenAI Bench
+- [Development](development/index.md) - How to contribute to GenAI Bench
 
 ### 📚 API Reference
 

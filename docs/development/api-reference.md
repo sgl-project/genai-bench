@@ -200,4 +200,4 @@ We welcome contributions to improve our API documentation! If you'd like to help
 3. Document edge cases and gotchas
 4. Submit a pull request
 
-See our [Contributing Guide](contributing.md) for more details.
+See our [Development Guide](index.md) for more details.

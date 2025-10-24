@@ -130,6 +130,5 @@ nav:
       - Upload Results: user-guide/upload-benchmark-result.md
   - Development:
       - development/index.md
-      - Contributing: development/contributing.md
       - Adding New Features: development/adding-new-features.md
       - API Reference: development/api-reference.md

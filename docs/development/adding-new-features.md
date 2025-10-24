@@ -123,4 +123,4 @@ class OpenAIUser(BaseUser):
 
 1. Add the new task to the list of supported tasks in the [Task Definition guide](../getting-started/task-definition.md).
 2. Provide sample commands and explain any required configuration changes.
-3. Mention the new task in this contributing guide for future developers.
+3. Mention the new task in this development guide for future developers.
