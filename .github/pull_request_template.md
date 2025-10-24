@@ -9,6 +9,7 @@ Add one of the following:
 /kind enhancement
 /kind documentation
 /kind ci
+/kind misc
 -->
 
 ## Related Issue
