@@ -1,5 +1,5 @@
 ## Description
-Please provide a brief description of the changes in this PR.
+<!--Please provide a brief description of the changes in this PR.-->
 
 ## What type of PR is this?
 <!-- 
@@ -17,7 +17,6 @@ Add one of the following:
 Automatically closes linked issue when PR is merged.
 Usage: Fixes #<issue number>, or Fixes (paste link of issue).
 -->
-Fixes #<issue_number>
 
 ## Changes
 <!-- 
