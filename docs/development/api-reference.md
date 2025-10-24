@@ -1,57 +1,346 @@
 # API Reference
 
-This section provides detailed API documentation for GenAI Bench components.
+This section provides comprehensive API documentation for all GenAI Bench components, organized by functional category.
 
-!!! info "Coming Soon"
-    Comprehensive API documentation is being developed. In the meantime, please refer to the source code docstrings.
+## Project Structure
 
-## Core Components
+```
+genai-bench/
+├── genai_bench/        # Main package
+│   ├── analysis/       # Result analysis and reporting
+│   ├── auth/           # Authentication providers
+│   ├── cli/            # CLI implementation
+│   ├── data/           # Dataset loading and management
+│   ├── distributed/    # Distributed execution
+│   ├── metrics/        # Metrics collection
+│   ├── sampling/       # Data sampling
+│   ├── scenarios/      # Traffic generation scenarios
+│   ├── storage/        # Storage providers
+│   ├── ui/             # User interface components
+│   └── user/           # User implementations
+├── tests/              # Test suite
+└── docs/               # Documentation
+```
 
-### Authentication
+## Analysis
 
-- **UnifiedAuthFactory** - Factory for creating authentication providers
-- **ModelAuthProvider** - Base class for model authentication
-- **StorageAuthProvider** - Base class for storage authentication
-
-### Storage
-
-- **BaseStorage** - Abstract base class for storage implementations
-- **StorageFactory** - Factory for creating storage providers
-
-### CLI
-
-- **option_groups** - Modular CLI option definitions
-- **validation** - Input validation functions
-
-### Metrics
-
-- **AggregatedMetricsCollector** - Collects and aggregates benchmark metrics
-- **RequestMetricsCollector** - Collects per-request metrics
+Components for analyzing benchmark results and generating reports.
 
 ### Data Loading
 
-- **DatasetConfig** - Configuration for dataset loading
-- **DatasetSourceConfig** - Configuration for dataset sources
-- **DataLoaderFactory** - Factory for loading datasets
-- **TextDatasetLoader** - Text dataset loader
-- **ImageDatasetLoader** - Image dataset loader
+- **`ExperimentLoader`** - Loads experiment data from files
+- **`load_multiple_experiments()`** - Loads multiple experiment results
+- **`load_one_experiment()`** - Loads single experiment result
 
-### Benchmarking
+### Plot Generation
 
-- **DistributedRunner** - Distributed benchmark execution with multiple workers
-- **DistributedConfig** - Configuration for distributed runs
-- **BaseUser** - Abstract base class for user implementations
-- **OpenAIUser** - OpenAI API implementation
-- **AWSBedrockUser** - AWS Bedrock implementation
-- **AzureOpenAIUser** - Azure OpenAI implementation
-- **GCPVertexUser** - GCP Vertex AI implementation
-- **OCICohereUser** - OCI Cohere implementation
+- **`FlexiblePlotGenerator`** - Generates plots using flexible configuration
+- **`plot_experiment_data_flexible()`** - Generates flexible plots
 
-### Analysis
+### Configuration
 
-- **PlotConfig** - Configuration for visualizations
-- **ExperimentLoader** - Loading experiment results
-- **FlexiblePlotGenerator** - Generate plots with flexible configuration
+- **`PlotConfig`** - Configuration for plot generation
+- **`PlotConfigManager`** - Manages plot configurations
+- **`PlotSpec`** - Specification for individual plots
+
+### Report Generation
+
+- **`create_workbook()`** - Creates Excel workbooks from experiment data
+
+### Data Types
+
+- **`ExperimentMetrics`** - Metrics data structure for experiments
+- **`MetricsData`** - Union type for aggregated or individual metrics
+
+## Authentication
+
+Components for handling authentication across different cloud providers and services.
+
+### Base Classes
+
+- **`AuthProvider`** - Base class for authentication providers
+
+### Factories
+
+- **`UnifiedAuthFactory`** - Unified factory for creating authentication providers
+- **`AuthFactory`** - Legacy factory for authentication providers
+
+### Model Authentication Providers
+
+- **`ModelAuthProvider`** - Base class for model endpoint authentication
+- **`OpenAIAuth`** - OpenAI API authentication
+- **`AWSBedrockAuth`** - AWS Bedrock authentication
+- **`AzureOpenAIAuth`** - Azure OpenAI authentication
+- **`GCPVertexAuth`** - GCP Vertex AI authentication
+- **`OCIModelAuthAdapter`** - OCI model authentication adapter
+
+### Storage Authentication Providers
+
+- **`StorageAuthProvider`** - Base class for storage authentication
+- **`AWSS3Auth`** - AWS S3 authentication
+- **`AzureBlobAuth`** - Azure Blob Storage authentication
+- **`GCPStorageAuth`** - GCP Cloud Storage authentication
+- **`GitHubAuth`** - GitHub authentication
+- **`OCIStorageAuthAdapter`** - OCI storage authentication adapter
+
+### OCI Authentication Providers
+
+- **`OCIUserPrincipalAuth`** - OCI user principal authentication
+- **`OCIInstancePrincipalAuth`** - OCI instance principal authentication
+- **`OCISessionAuth`** - OCI session authentication
+- **`OCIOBOTokenAuth`** - OCI on-behalf-of token authentication
+
+## Storage
+
+Components for multi-cloud storage operations.
+
+### Base Classes
+
+- **`BaseStorage`** - Abstract base class for storage providers
+- **`StorageFactory`** - Factory for creating storage providers
+
+### Storage Implementations
+
+- **`AWSS3Storage`** - AWS S3 storage implementation
+- **`AzureBlobStorage`** - Azure Blob Storage implementation
+- **`GCPCloudStorage`** - GCP Cloud Storage implementation
+- **`OCIObjectStorage`** - OCI Object Storage implementation
+- **`GitHubStorage`** - GitHub storage implementation
+
+### OCI Object Storage Components
+
+- **`DataStore`** - Interface for data store operations
+- **`OSDataStore`** - OCI Object Storage data store
+- **`ObjectURI`** - Object URI representation
+
+### Operations
+
+- **File Operations**: `upload_file`, `download_file`, `delete_object`
+- **Folder Operations**: `upload_folder`
+- **Listing**: `list_objects`
+- **Multi-cloud Support**: AWS, Azure, GCP, OCI, GitHub
+
+## CLI
+
+Command-line interface components for user interaction.
+
+### Commands
+
+- **`cli`** - Main CLI entry point
+- **`benchmark`** - Benchmark command
+- **`excel`** - Excel report generation command
+- **`plot`** - Plot generation command
+
+### Option Groups
+
+- **`api_options`** - API-related CLI options
+- **`model_auth_options`** - Model authentication options
+- **`storage_auth_options`** - Storage authentication options
+- **`distributed_locust_options`** - Distributed execution options
+- **`experiment_options`** - Experiment configuration options
+- **`sampling_options`** - Data sampling options
+- **`server_options`** - Server configuration options
+- **`object_storage_options`** - Object storage options
+- **`oci_auth_options`** - OCI-specific authentication options
+
+### Utilities
+
+- **`get_experiment_path()`** - Get experiment file paths
+- **`get_run_params()`** - Extract run parameters
+- **`manage_run_time()`** - Manage run time limits
+- **`validate_tokenizer()`** - Validate tokenizer configuration
+
+### Validation
+
+- **`validate_api_backend()`** - Validate API backend selection
+- **`validate_api_key()`** - Validate API keys
+- **`validate_task()`** - Validate task selection
+- **`validate_dataset_config()`** - Validate dataset configuration
+- **`validate_additional_request_params()`** - Validate request parameters
+
+## Data
+
+Components for loading and managing datasets.
+
+### Configuration
+
+- **`DatasetConfig`** - Configuration for dataset loading
+- **`DatasetSourceConfig`** - Configuration for dataset sources
+
+### Loaders
+
+- **`DatasetLoader`** - Abstract base class for dataset loaders
+- **`TextDatasetLoader`** - Text dataset loader
+- **`ImageDatasetLoader`** - Image dataset loader
+- **`DataLoaderFactory`** - Factory for creating data loaders
+
+### Sources
+
+- **`DatasetSource`** - Abstract base class for dataset sources
+- **`FileDatasetSource`** - Local file dataset source
+- **`HuggingFaceDatasetSource`** - HuggingFace Hub dataset source
+- **`CustomDatasetSource`** - Custom dataset source
+- **`DatasetSourceFactory`** - Factory for creating dataset sources
+
+## Distributed
+
+Components for distributed benchmark execution.
+
+### Core Components
+
+- **`DistributedRunner`** - Manages distributed load test execution
+- **`DistributedConfig`** - Configuration for distributed runs
+- **`MessageHandler`** - Protocol for message handling
+
+### Architecture Features
+
+- Master-worker architecture
+- Message passing between processes
+- Metrics aggregation
+- Process management and cleanup
+
+## Metrics
+
+Components for collecting and analyzing performance metrics.
+
+### Data Structures
+
+- **`RequestLevelMetrics`** - Metrics for individual requests
+- **`AggregatedMetrics`** - Aggregated metrics for entire runs
+- **`MetricStats`** - Statistical metrics (mean, std, percentiles)
+
+### Collectors
+
+- **`AggregatedMetricsCollector`** - Collects and aggregates metrics
+- **`RequestMetricsCollector`** - Collects per-request metrics
+
+### Metric Types
+
+- **Time Metrics**: TTFT (Time to First Token), TPOT (Time Per Output Token), E2E Latency
+- **Throughput Metrics**: Input/Output throughput in tokens/second
+- **Token Metrics**: Input/output token counts
+- **Error Metrics**: Error rates and codes
+- **Performance Metrics**: Requests per second, run duration
+
+## Sampling
+
+Components for sampling data and creating requests.
+
+### Base Classes
+
+- **`Sampler`** - Abstract base class for samplers
+
+### Sampler Implementations
+
+- **`TextSampler`** - Sampler for text-based tasks
+- **`ImageSampler`** - Sampler for image-based tasks
+
+### Supported Tasks
+
+- **Text Tasks**: text-to-text, text-to-embeddings, text-to-rerank
+- **Image Tasks**: image-text-to-text, image-to-embeddings
+
+### Features
+
+- Automatic task registry
+- Modality-based sampling
+- Dataset integration
+- Request generation
+
+## Scenarios
+
+Components for defining traffic generation scenarios.
+
+### Base Classes
+
+- **`Scenario`** - Abstract base class for scenarios
+
+### Scenario Implementations
+
+- **`DatasetScenario`** - Dataset-based scenario
+- **`NormalDistribution`** - Normal distribution scenario
+- **`DeterministicDistribution`** - Deterministic scenario
+- **`EmbeddingScenario`** - Embedding-specific scenario
+- **`ReRankScenario`** - Re-ranking scenario
+- **`ImageModality`** - Image modality scenario
+
+### Distribution Types
+
+- **`TextDistribution`** - NORMAL, DETERMINISTIC, UNIFORM
+- **`EmbeddingDistribution`** - Embedding-specific distributions
+- **`ReRankDistribution`** - Re-ranking distributions
+- **`MultiModality`** - Multi-modal scenarios
+
+### Features
+
+- String-based scenario parsing
+- Automatic scenario registry
+- Parameter validation
+- Distribution sampling
+
+## UI
+
+Components for user interface and visualization.
+
+### Dashboard Implementations
+
+- **`Dashboard`** - Union type for dashboard implementations
+- **`RichLiveDashboard`** - Rich library-based dashboard
+- **`MinimalDashboard`** - Minimal dashboard for non-UI scenarios
+
+### Layout Functions
+
+- **`create_layout()`** - Creates dashboard layout
+- **`create_metric_panel()`** - Creates metric display panels
+- **`create_progress_bars()`** - Creates progress tracking bars
+
+### Visualization Functions
+
+- **`create_horizontal_colored_bar_chart()`** - Creates histogram charts
+- **`create_scatter_plot()`** - Creates scatter plots
+- **`update_progress()`** - Updates progress displays
+
+### Features
+
+- Real-time metrics visualization
+- Progress tracking
+- Interactive charts and histograms
+- Configurable UI components
+
+## User
+
+Components for interacting with different model APIs.
+
+### Base Classes
+
+- **`BaseUser`** - Abstract base class for user implementations
+
+### User Implementations
+
+- **`OpenAIUser`** - OpenAI API user
+- **`AWSBedrockUser`** - AWS Bedrock user
+- **`AzureOpenAIUser`** - Azure OpenAI user
+- **`GCPVertexUser`** - GCP Vertex AI user
+- **`OCICohereUser`** - OCI Cohere user
+- **`OCIGenAIUser`** - OCI Generative AI user
+- **`CohereUser`** - Cohere API user
+
+### Supported Tasks
+
+Each user implementation supports different combinations of:
+
+- **text-to-text**: Chat and generation tasks
+- **image-text-to-text**: Vision-based chat tasks
+- **text-to-embeddings**: Text embedding generation
+- **image-to-embeddings**: Image embedding generation
+- **text-to-rerank**: Text re-ranking tasks
+
+### Features
+
+- Task-based request handling
+- Metrics collection
+- Error handling
+- Authentication integration
 
 ## Example Usage
 

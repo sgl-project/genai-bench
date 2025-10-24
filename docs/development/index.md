@@ -135,14 +135,20 @@ make lint
 
 ```
 genai-bench/
-├── genai_bench/          # Main package
-│   ├── auth/            # Authentication providers
-│   ├── cli/             # CLI implementation
-│   ├── metrics/         # Metrics collection
-│   ├── storage/         # Storage providers
-│   └── user/            # User implementations
-├── tests/               # Test suite
-└── docs/                # Documentation
+├── genai_bench/        # Main package
+│   ├── analysis/       # Result analysis and reporting
+│   ├── auth/           # Authentication providers
+│   ├── cli/            # CLI implementation
+│   ├── data/           # Dataset loading and management
+│   ├── distributed/    # Distributed execution
+│   ├── metrics/        # Metrics collection
+│   ├── sampling/       # Data sampling
+│   ├── scenarios/      # Traffic generation scenarios
+│   ├── storage/        # Storage providers
+│   ├── ui/             # User interface components
+│   └── user/           # User implementations
+├── tests/              # Test suite
+└── docs/               # Documentation
 ```
 
 ## Testing
