@@ -47,7 +47,34 @@ Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/get
 
 ## How to use
 
-Please check [User Guide](https://docs.sglang.ai/genai-bench/user-guide/) for instructions on using genai-bench.
+### Quick Start
+
+1. **Run a benchmark** against your model:
+   ```bash
+   genai-bench benchmark --api-backend openai \
+     --api-base "http://localhost:8080" \
+     --api-key "your-api-key" \
+     --api-model-name "your-model" \
+     --task text-to-text \
+     --max-time-per-run 5 \
+     --max-requests-per-run 100
+   ```
+
+2. **Generate Excel reports** from your results:
+   ```bash
+   genai-bench excel --experiment-folder ./experiments/your_experiment \
+     --excel-name results --metric-percentile mean
+   ```
+
+3. **Create visualizations**:
+   ```bash
+   genai-bench plot --experiments-folder ./experiments \
+     --group-key traffic_scenario --preset 2x4_default
+   ```
+
+### Next Steps
+
+For detailed instructions, advanced configuration options, and comprehensive examples, check out the [User Guide](https://docs.sglang.ai/genai-bench/user-guide/).
 
 ## Development
 

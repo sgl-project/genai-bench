@@ -15,6 +15,23 @@ Commands:
 
 The `benchmark` command runs performance tests against AI models. It's the core command for executing benchmarks.
 
+### Example Usage
+```bash
+# Start a chat benchmark
+genai-bench benchmark --api-backend openai \
+            --api-base "http://localhost:8082" \
+            --api-key "your-openai-api-key" \
+            --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
+            --model-tokenizer "/mnt/data/models/Meta-Llama-3.1-70B-Instruct" \
+            --task text-to-text \
+            --max-time-per-run 15 \
+            --max-requests-per-run 300 \
+            --server-engine "SGLang" \
+            --server-gpu-type "H100" \
+            --server-version "v0.6.0" \
+            --server-gpu-count 4
+```
+
 ### Essential Options
 
 #### **API Configuration**
@@ -48,34 +65,11 @@ The `benchmark` command runs performance tests against AI models. It's the core 
 - `--server-gpu-type` - GPU type (H100, A100-80G, etc.)
 - `--server-gpu-count` - Number of GPUs
 
-### Example Usage
-```bash
-# Start a chat benchmark
-genai-bench benchmark --api-backend openai \
-            --api-base "http://localhost:8082" \
-            --api-key "your-openai-api-key" \
-            --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
-            --model-tokenizer "/mnt/data/models/Meta-Llama-3.1-70B-Instruct" \
-            --task text-to-text \
-            --max-time-per-run 15 \
-            --max-requests-per-run 300 \
-            --server-engine "SGLang" \
-            --server-gpu-type "H100" \
-            --server-version "v0.6.0" \
-            --server-gpu-count 4
-```
 For more information and examples, check out [Run Benchmark](../user-guide/run-benchmark.md).
 
 ## Excel
 
 The `excel` command exports experiment results to Excel spreadsheets for detailed analysis.
-
-### Essential Options
-
-- `--experiment-folder` - Path to experiment results folder (required)
-- `--excel-name` - Name for the output Excel file (required)
-- `--metric-percentile` - Statistical percentile (mean, p25, p50, p75, p90, p95, p99) to select from
-- `--metrics-time-unit [s|ms]` - Time unit to use when showing latency metrics in the spreadsheet. Defaults to seconds
 
 ### Example Usage
 
@@ -95,9 +89,33 @@ genai-bench excel \
   --metrics-time-unit ms
 ```
 
+### Essential Options
+
+- `--experiment-folder` - Path to experiment results folder (required)
+- `--excel-name` - Name for the output Excel file (required)
+- `--metric-percentile` - Statistical percentile (mean, p25, p50, p75, p90, p95, p99) to select from
+- `--metrics-time-unit [s|ms]` - Time unit to use when showing latency metrics in the spreadsheet. Defaults to seconds
+
 ## Plot
 
 The `plot` command generates visualizations from experiment data with flexible configuration options.
+
+### Example Usage
+
+```bash
+# Simple plot with default 2x4 layout
+genai-bench plot \
+  --experiments-folder ./experiments \
+  --group-key traffic_scenario \
+  --filter-criteria "{'model': 'gpt-3.5-turbo'}"
+
+# Use built-in preset for latency analysis
+genai-bench plot \
+  --experiments-folder ./experiments \
+  --group-key server_version \
+  --preset multi_line_latency \
+  --metrics-time-unit ms
+```
 
 ### Essential Options
 
@@ -115,24 +133,6 @@ The `plot` command generates visualizations from experiment data with flexible c
 - `--verbose` - Enable detailed logging
 
 For more information and examples, check out [Generate Plot](../user-guide/generate-plot.md).
-
-### Example Usage
-
-```bash
-# Simple plot with default 2x4 layout
-genai-bench plot \
-  --experiments-folder ./experiments \
-  --group-key traffic_scenario \
-  --filter-criteria "{'model': 'gpt-3.5-turbo'}"
-
-# Use built-in preset for latency analysis
-genai-bench plot \
-  --experiments-folder ./experiments \
-  --group-key server_version \
-  --preset multi_line_latency \
-  --metrics-time-unit ms
-
-```
 
 ## Getting Help
 
