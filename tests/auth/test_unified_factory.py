@@ -96,6 +96,15 @@ class TestUnifiedAuthFactory:
         assert auth.location == "us-central1"
         assert auth.credentials_path == "/path/to/creds.json"
 
+    def test_create_together_model_auth(self):
+        """Test creating Together model auth provider."""
+        auth = UnifiedAuthFactory.create_model_auth("together", api_key="test_key")
+
+        assert isinstance(auth, ModelAuthProvider)
+        assert auth.get_auth_type() == "api_key"
+        creds = auth.get_credentials()
+        assert creds["api_key"] == "test_key"
+
     def test_create_model_auth_unsupported(self):
         """Test creating model auth with unsupported provider."""
         with pytest.raises(ValueError) as exc_info:

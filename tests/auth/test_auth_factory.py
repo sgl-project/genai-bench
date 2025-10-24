@@ -6,6 +6,7 @@ from genai_bench.auth.oci.obo_token import OCIOBOTokenAuth
 from genai_bench.auth.oci.session import OCISessionAuth
 from genai_bench.auth.oci.user_principal import OCIUserPrincipalAuth
 from genai_bench.auth.openai.auth import OpenAIAuth
+from genai_bench.auth.together.auth import TogetherAuth
 
 MOCK_API_KEY = "genai-bench-test-123456789"
 MOCK_CONFIG_PATH = "~/.oci/config"
@@ -19,6 +20,12 @@ class TestAuthFactory:
         """Test creating OpenAI auth provider."""
         auth = AuthFactory.create_openai_auth(MOCK_API_KEY)
         assert isinstance(auth, OpenAIAuth)
+        assert auth.api_key == MOCK_API_KEY
+
+    def test_create_together_auth(self):
+        """Test creating Together auth provider."""
+        auth = AuthFactory.create_together_auth(MOCK_API_KEY)
+        assert isinstance(auth, TogetherAuth)
         assert auth.api_key == MOCK_API_KEY
 
     def test_create_oci_user_principal_auth(self):
