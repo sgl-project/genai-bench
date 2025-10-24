@@ -145,4 +145,4 @@ genai-bench excel --help
 genai-bench plot --help
 ```
 
-For further information, refer to the [User Guide](../user-guide/index.md) and the [API Reference](../api/index.md). You can also look at [option_groups.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/option_groups.py) directly.
+For further information, refer to the [User Guide](../user-guide/index.md) and the [API Reference](../development/api-reference.md). You can also look at [option_groups.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/option_groups.py) directly.

@@ -14,6 +14,14 @@ Welcome to the GenAI Bench development guide! This section covers everything you
 
     [:octicons-arrow-right-24: Contributing Guide](contributing.md)
 
+- :material-cog:{ .lg .middle } **Adding New Features**
+
+    ---
+
+    Learn how to add new providers and tasks
+
+    [:octicons-arrow-right-24: Adding New Features](adding-new-features.md)
+
 </div>
 
 ## Development Setup
@@ -96,22 +104,6 @@ genai-bench/
 - Modular option groups
 - Comprehensive validation
 
-## Adding New Features
-
-### Adding a New Model Provider
-
-1. Create auth provider in `genai_bench/auth/`
-2. Create user class in `genai_bench/user/`
-3. Update `UnifiedAuthFactory`
-4. Add validation in `cli/validation.py`
-5. Write tests
-
-### Adding a New Storage Provider
-
-1. Create storage auth in `genai_bench/auth/`
-2. Create storage implementation in `genai_bench/storage/`
-3. Update `StorageFactory`
-4. Write tests
 
 ## Testing
 

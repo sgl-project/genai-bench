@@ -82,7 +82,7 @@ GenAI Bench supports multiple benchmark types:
 
 ### 📚 API Reference
 
-- [API Documentation](api/index.md) - Complete API reference and code examples
+- [API Documentation](development/api-reference.md) - Complete API reference and code examples
 
 ## Support
 
