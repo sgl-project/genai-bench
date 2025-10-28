@@ -291,7 +291,7 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content")
+                content = delta.get("content") or delta.get("reasoning_content") or delta.get("reasoning")
                 usage = delta.get("usage")
 
                 if usage:
