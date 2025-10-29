@@ -6,6 +6,7 @@ from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
     NormalDistribution,
+    PrefixRepetitionScenario,
     ReRankScenario,
     UniformDistribution,
 )
@@ -254,3 +255,52 @@ def test_rerank_from_string():
     # Fails validation
     with pytest.raises(ValueError, match="Invalid scenario string"):
         ReRankScenario.from_string("E(1024,100)")
+
+
+def test_prefix_repetition_from_string():
+    """Test PrefixRepetitionScenario parsing from string via Scenario.from_string()."""
+    scenario = Scenario.from_string("P(2000,500)/200")
+    assert isinstance(scenario, PrefixRepetitionScenario)
+    assert scenario.prefix_len == 2000
+    assert scenario.suffix_len == 500
+    assert scenario.output_len == 200
+
+
+def test_prefix_repetition_sample():
+    """Test PrefixRepetitionScenario sampling."""
+    scenario = PrefixRepetitionScenario(
+        prefix_len=2000,
+        suffix_len=500,
+        output_len=200,
+    )
+    prefix_len, suffix_len, output_len = scenario.sample()
+    assert prefix_len == 2000
+    assert suffix_len == 500
+    assert output_len == 200
+
+
+def test_prefix_repetition_to_string():
+    """Test PrefixRepetitionScenario to_string roundtrip."""
+    scenario = Scenario.from_string("P(4000,1000)/500")
+    assert scenario.to_string() == "P(4000,1000)/500"
+    
+    # Test roundtrip
+    scenario2 = Scenario.from_string(scenario.to_string())
+    assert isinstance(scenario2, PrefixRepetitionScenario)
+    assert scenario2.prefix_len == 4000
+    assert scenario2.suffix_len == 1000
+    assert scenario2.output_len == 500
+
+
+def test_prefix_repetition_invalid_formats():
+    """Test that invalid prefix repetition formats fail validation."""
+    invalid_formats = [
+        "P(2000,500)",  # Missing output
+        "P(2000)/200",  # Missing suffix
+        "P2000,500/200",  # Missing parentheses
+        "P(2000,500,200)",  # Wrong format - should use /
+    ]
+    
+    for invalid_format in invalid_formats:
+        with pytest.raises(ValueError, match="Invalid scenario string"):
+            Scenario.from_string(invalid_format)
