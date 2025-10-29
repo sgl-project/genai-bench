@@ -4,6 +4,7 @@ from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
     NormalDistribution,
+    PrefixRepetitionScenario,
     ReRankScenario,
     UniformDistribution,
 )
@@ -109,3 +110,67 @@ def test_rerank_scenario_to_string():
     """Test ReRankScenario string representation."""
     scenario = ReRankScenario(tokens_per_document=1024, tokens_per_query=100)
     assert scenario.to_string() == "R(1024,100)"
+
+
+def test_prefix_repetition_scenario():
+    """Test PrefixRepetitionScenario creation and sampling."""
+    scenario = PrefixRepetitionScenario(
+        prefix_len=2000,
+        suffix_len=500,
+        output_len=200,
+    )
+
+    prefix_len, suffix_len, output_len = scenario.sample()
+    assert prefix_len == 2000
+    assert suffix_len == 500
+    assert output_len == 200
+
+
+def test_prefix_repetition_scenario_to_string():
+    """Test PrefixRepetitionScenario string representation."""
+    scenario = PrefixRepetitionScenario(
+        prefix_len=2000,
+        suffix_len=500,
+        output_len=200,
+    )
+    assert scenario.to_string() == "P(2000,500)/200"
+
+
+def test_prefix_repetition_scenario_parse():
+    """Test PrefixRepetitionScenario parsing from string."""
+    scenario = PrefixRepetitionScenario.parse("(2000,500)/200")
+    
+    assert scenario.prefix_len == 2000
+    assert scenario.suffix_len == 500
+    assert scenario.output_len == 200
+
+
+def test_prefix_repetition_scenario_parse_different_values():
+    """Test PrefixRepetitionScenario parsing with various values."""
+    test_cases = [
+        ("(1000,500)/100", 1000, 500, 100),
+        ("(4000,1000)/200", 4000, 1000, 200),
+        ("(8000,2000)/500", 8000, 2000, 500),
+    ]
+    
+    for params_str, expected_prefix, expected_suffix, expected_output in test_cases:
+        scenario = PrefixRepetitionScenario.parse(params_str)
+        assert scenario.prefix_len == expected_prefix
+        assert scenario.suffix_len == expected_suffix
+        assert scenario.output_len == expected_output
+
+
+def test_prefix_repetition_scenario_invalid_format():
+    """Test PrefixRepetitionScenario parsing with invalid format."""
+    import pytest
+    
+    invalid_formats = [
+        "(2000,500)",  # Missing output
+        "(2000)/200",  # Missing suffix
+        "2000,500/200",  # Missing parentheses
+        "(2000,500,200)",  # Wrong separator
+    ]
+    
+    for invalid_format in invalid_formats:
+        with pytest.raises(ValueError):
+            PrefixRepetitionScenario.parse(invalid_format)

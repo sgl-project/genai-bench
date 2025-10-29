@@ -461,6 +461,14 @@ def experiment_options(func):
                                U(100,200)
 
                 \b
+                4. **Prefix Repetition (P)**: For KV cache benchmarking.
+                   - Format: P(prefix_len,suffix_len)/output_len
+                   - Example: P(2000,500)/200
+                   - All requests share same prefix (cached after 1st request)
+                   - Each request has unique suffix
+                   - Tests automatic prefix caching (APC) and TTFT improvements
+
+                \b
                 Supported modalities are:
 
                 \b
