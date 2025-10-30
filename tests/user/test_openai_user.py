@@ -19,6 +19,7 @@ def mock_openai_user():
     # Set up mock auth provider
     mock_auth = MagicMock()
     mock_auth.get_credentials.return_value = "fake_api_key"
+    mock_auth.get_headers.return_value = {"Authorization": "Bearer fake_api_key"}
     mock_auth.get_config.return_value = {
         "api_base": "http://example.com",
         "api_key": "fake_api_key",
@@ -27,10 +28,6 @@ def mock_openai_user():
     OpenAIUser.host = "http://example.com"
 
     user = OpenAIUser(environment=MagicMock())
-    user.headers = {
-        "Authorization": "Bearer fake_api_key",
-        "Content-Type": "application/json",
-    }
     user.user_requests = [
         UserChatRequest(
             model="gpt-3",
