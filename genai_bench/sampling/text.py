@@ -73,7 +73,9 @@ class TextSampler(Sampler):
         if self._is_dataset_mode(scenario):
             # Use dataset-mode sampling
             num_input_tokens, num_output_tokens = None, None
-            self.additional_request_params["ignore_eos"] = False
+            # Only set ignore_eos to False if not already specified by user
+            if "ignore_eos" not in self.additional_request_params:
+                self.additional_request_params["ignore_eos"] = False
         else:
             # Check if this is a prefix repetition scenario
             from genai_bench.scenarios.text import PrefixRepetitionScenario

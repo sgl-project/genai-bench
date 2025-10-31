@@ -38,14 +38,19 @@ class BasetenUser(OpenAIUser):
                 f"{type(user_request)}"
             )
 
+        logger.info(f"🎯 Processing chat request - model: {user_request.model}, max_tokens: {user_request.max_tokens}")
+        logger.info(f"🔧 Additional request params keys: {list(user_request.additional_request_params.keys())}")
+
         # Check if we should use prompt format
         use_prompt_format = user_request.additional_request_params.get("use_prompt_format", False)
         
         if use_prompt_format:
+            logger.info("📋 Using prompt format (non-instruct model)")
             # Use simple prompt format for non-instruct models
             payload = self._prepare_prompt_request(user_request)
             endpoint = "prompt"  # Use different endpoint name for metrics
         else:
+            logger.info("💬 Using OpenAI-compatible chat format")
             # Use OpenAI-compatible chat format (default)
             payload = self._prepare_chat_request(user_request)
             endpoint = "/v1/chat/completions"
@@ -73,7 +78,25 @@ class BasetenUser(OpenAIUser):
 
     def _prepare_chat_request(self, user_request: UserChatRequest) -> Dict[str, Any]:
         """Prepare OpenAI-compatible chat request."""
-        if isinstance(user_request, UserImageChatRequest):
+        
+        # Log the dataset prompt (truncate if too long)
+        prompt_preview = user_request.prompt[:200] + "..." if len(user_request.prompt) > 200 else user_request.prompt
+        logger.info(f"📝 Dataset prompt (first 200 chars): {prompt_preview}")
+        
+        # Check if custom messages are provided in additional_request_params
+        custom_messages = user_request.additional_request_params.get("custom_messages")
+        
+        if custom_messages:
+            logger.info(f"✅ Using custom_messages from additional_request_params")
+            logger.info(f"📨 Custom messages received: {json.dumps(custom_messages, indent=2)}")
+            # When custom_messages is provided, use them exactly as specified
+            # This allows full control over the message structure
+            if isinstance(custom_messages, list):
+                messages = [msg.copy() if isinstance(msg, dict) else msg for msg in custom_messages]
+            else:
+                messages = custom_messages
+            logger.info(f"💬 Using custom_messages as-is (dataset prompt ignored when custom_messages provided)")
+        elif isinstance(user_request, UserImageChatRequest):
             text_content = [{"type": "text", "text": user_request.prompt}]
             image_content = [
                 {
@@ -83,34 +106,39 @@ class BasetenUser(OpenAIUser):
                 for image in user_request.image_content
             ]
             content = text_content + image_content
+            messages = [{"role": "user", "content": content}]
+            logger.debug(f"🖼️ Using image chat request with prompt")
         else:
             content = user_request.prompt
+            messages = [{"role": "user", "content": content}]
+            logger.debug(f"📄 Using dataset prompt as user message")
+
+        logger.info(f"💬 Final messages being sent: {json.dumps(messages, indent=2)}")
 
         # Use global disable_streaming setting (consistent with other backends)
         use_streaming = not self.disable_streaming
 
+        # Build payload - prioritize max_tokens from additional_request_params if present
+        max_tokens = user_request.additional_request_params.get("max_tokens") or user_request.max_tokens
+        
         payload = {
             "model": user_request.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": content,
-                }
-            ],
-            "max_tokens": user_request.max_tokens,
+            "messages": messages,
+            "max_tokens": max_tokens,
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
             "ignore_eos": user_request.additional_request_params.get(
                 "ignore_eos",
-                bool(user_request.max_tokens),
+                bool(max_tokens),
             ),
             "stream": use_streaming,
         }
         
-        # Add additional params except use_prompt_format and stream
+        # Add additional params except use_prompt_format, stream, and custom_messages
+        # Note: max_tokens and ignore_eos are already set above, but can be overridden here if needed
         for key, value in user_request.additional_request_params.items():
-            if key not in ["use_prompt_format", "stream"]:
+            if key not in ["use_prompt_format", "stream", "custom_messages"]:
                 payload[key] = value
         
         # Only add stream_options if streaming is enabled
@@ -118,6 +146,21 @@ class BasetenUser(OpenAIUser):
             payload["stream_options"] = {
                 "include_usage": True,
             }
+        
+        logger.info(f"📦 Payload summary - model: {payload['model']}, max_tokens: {payload['max_tokens']}, stream: {payload['stream']}, ignore_eos: {payload['ignore_eos']}")
+        
+        # Log full payload with messages (truncate message content if too long for readability)
+        payload_for_logging = payload.copy()
+        if "messages" in payload_for_logging:
+            messages_copy = []
+            for msg in payload_for_logging["messages"]:
+                msg_copy = msg.copy()
+                if "content" in msg_copy and isinstance(msg_copy["content"], str):
+                    if len(msg_copy["content"]) > 1000:
+                        msg_copy["content"] = msg_copy["content"][:1000] + "...[truncated, full length: " + str(len(msg_copy["content"])) + " chars]"
+                messages_copy.append(msg_copy)
+            payload_for_logging["messages"] = messages_copy
+        logger.debug(f"📤 Full payload being sent: {json.dumps(payload_for_logging, indent=2)}")
             
         return payload
 
@@ -333,6 +376,7 @@ class BasetenUser(OpenAIUser):
 
         try:
             start_time = time.monotonic()
+            logger.debug(f"🌐 Sending request to: {self.host}")
             # For Baseten, use the host directly as the URL
             response = requests.post(
                 url=self.host,  # Use host directly instead of host + endpoint
@@ -341,6 +385,8 @@ class BasetenUser(OpenAIUser):
                 headers=self.headers,
             )
             non_stream_post_end_time = time.monotonic()
+            
+            logger.info(f"📡 Response status code: {response.status_code}")
 
             if response.status_code == 200:
                 metrics_response = parse_strategy(
@@ -349,7 +395,15 @@ class BasetenUser(OpenAIUser):
                     num_prefill_tokens,
                     non_stream_post_end_time,
                 )
+                # Log response summary
+                if hasattr(metrics_response, 'generated_text'):
+                    response_text = metrics_response.generated_text
+                    preview = response_text[:500] + "..." if len(response_text) > 500 else response_text
+                    logger.info(f"📤 Response preview (first 500 chars): {preview}")
+                    logger.info(f"📊 Response metrics - tokens_received: {getattr(metrics_response, 'tokens_received', 'N/A')}, "
+                               f"status_code: {metrics_response.status_code}")
             else:
+                logger.error(f"❌ Request failed with status {response.status_code}: {response.text[:500]}")
                 metrics_response = UserResponse(
                     status_code=response.status_code,
                     error_message=response.text,
