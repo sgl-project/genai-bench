@@ -51,6 +51,10 @@ class CohereUser(BaseUser):
     @task
     def chat(self):
         """Handles the chat task by sending a streaming request to Cohere's chat API."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
+
         endpoint = "/v2/chat"
         user_request = self.sample()
 
@@ -83,6 +87,9 @@ class CohereUser(BaseUser):
     @task
     def embeddings(self):
         """Handles the embeddings task by sending a request to Cohere's embed API."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
         endpoint = "/v2/embed"
         user_request = self.sample()
 

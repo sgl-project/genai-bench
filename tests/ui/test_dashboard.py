@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -239,3 +239,238 @@ def test_minimal_dashboard_update_scatter_plot_does_not_crash():
     dashboard.update_scatter_plot_panel(mock_metrics, "ms")
 
     dashboard.update_scatter_plot_panel(None, "s")
+
+
+class TestRateWarningLogs:
+    """Test rate warning log functionality in RichLiveDashboard."""
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_below_target_with_advice(self, mock_time, mock_logger):
+        """Test rate warning includes advice when actual rate is below target."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 94.0  # 6% below target (>3% threshold)
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": True,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_called_once()
+        warning_message = mock_logger.warning.call_args[0][0]
+        assert "Rate warning" in warning_message
+        assert f"{actual_rate:.1f}" in warning_message
+        assert f"{target_rate:.1f}" in warning_message
+        assert "below target" in warning_message
+        assert "--max-concurrency" in warning_message
+        assert "--num-workers" in warning_message
+        assert dashboard._last_rate_warning_time == 100.0
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_above_target_without_advice(self, mock_time, mock_logger):
+        """Test rate warning does not include advice when rate is above target."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 106.0  # 6% above target (>3% threshold)
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": True,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_called_once()
+        warning_message = mock_logger.warning.call_args[0][0]
+        assert "Rate warning" in warning_message
+        assert f"{actual_rate:.1f}" in warning_message
+        assert f"{target_rate:.1f}" in warning_message
+        assert "above target" in warning_message
+        assert "--max-concurrency" not in warning_message
+        assert "--num-workers" not in warning_message
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_info_message_within_range(self, mock_time, mock_logger):
+        """Test info message when rate is within 3% of target."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 99.0  # 1% below target (within 3% threshold)
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": False,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.info.assert_called_once()
+        info_message = mock_logger.info.call_args[0][0]
+        assert "Rate OK" in info_message
+        assert f"{actual_rate:.1f}" in info_message
+        assert f"{target_rate:.1f}" in info_message
+        assert "within 3%" in info_message
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", side_effect=[100.0, 105.0, 115.0])
+    def test_rate_warning_rate_limited(self, mock_time, mock_logger):
+        """Test that warnings are rate-limited to once per 10 seconds."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 94.0  # Below target
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": True,
+            }
+        }
+
+        # First call at time 100.0
+        dashboard._check_send_rate(live_metrics)
+        assert mock_logger.warning.call_count == 1
+
+        # Second call at time 105.0 (only 5 seconds later, should be skipped)
+        dashboard._check_send_rate(live_metrics)
+        assert mock_logger.warning.call_count == 1  # Still 1
+
+        # Third call at time 115.0 (15 seconds after first, should log)
+        dashboard._check_send_rate(live_metrics)
+        assert mock_logger.warning.call_count == 2  # Now 2
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_no_action_when_rate_info_missing(
+        self, mock_time, mock_logger
+    ):
+        """Test no action when rate_info is missing from live_metrics."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        live_metrics = {}  # No send_rate_info
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_not_called()
+        mock_logger.info.assert_not_called()
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_no_action_when_rate_info_not_dict(
+        self, mock_time, mock_logger
+    ):
+        """Test no action when rate_info is not a dict."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        live_metrics = {"send_rate_info": "not a dict"}
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_not_called()
+        mock_logger.info.assert_not_called()
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_no_action_when_actual_rate_none(self, mock_time, mock_logger):
+        """Test no action when actual_rate is None."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": None,
+                "target_rate": 100.0,
+                "is_outside_range": False,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_not_called()
+        mock_logger.info.assert_not_called()
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_no_action_when_target_rate_none(self, mock_time, mock_logger):
+        """Test no action when target_rate is None."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": 100.0,
+                "target_rate": None,
+                "is_outside_range": False,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_not_called()
+        mock_logger.info.assert_not_called()
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_boundary_exactly_3_percent_below(
+        self, mock_time, mock_logger
+    ):
+        """Test warning at exactly 3% below target."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 97.0  # Exactly 3% below
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": True,  # Should be True for exactly 3% below
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.warning.assert_called_once()
+        warning_message = mock_logger.warning.call_args[0][0]
+        assert "below target" in warning_message
+
+    @patch("genai_bench.ui.dashboard.logger")
+    @patch("time.monotonic", return_value=100.0)
+    def test_rate_warning_boundary_just_within_range(self, mock_time, mock_logger):
+        """Test info message when rate is just within 3% range."""
+        dashboard = RichLiveDashboard("s")
+        dashboard._last_rate_warning_time = 0
+
+        target_rate = 100.0
+        actual_rate = 97.1  # Just above 97% (within 3% threshold)
+        live_metrics = {
+            "send_rate_info": {
+                "actual_rate": actual_rate,
+                "target_rate": target_rate,
+                "is_outside_range": False,
+            }
+        }
+
+        dashboard._check_send_rate(live_metrics)
+
+        mock_logger.info.assert_called_once()
+        mock_logger.warning.assert_not_called()

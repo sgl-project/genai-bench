@@ -78,6 +78,10 @@ class AWSBedrockUser(BaseUser):
     @task
     def chat(self):
         """Perform a chat request to AWS Bedrock."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
+
         # Get request using sample method
         user_request = self.sample()
 
@@ -176,6 +180,10 @@ class AWSBedrockUser(BaseUser):
     @task
     def embeddings(self):
         """Perform an embeddings request to AWS Bedrock."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
+
         # Get request using sample method
         user_request = self.sample()
 
