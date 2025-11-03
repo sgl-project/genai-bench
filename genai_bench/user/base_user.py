@@ -1,10 +1,11 @@
 from locust import HttpUser
 
-from typing import Dict
+from typing import Dict, Optional
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.request_metrics_collector import RequestMetricsCollector
 from genai_bench.protocol import UserRequest, UserResponse
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 
 logger = init_logger(__name__)
 
@@ -19,6 +20,20 @@ class BaseUser(HttpUser):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+    def acquire_rate_limit_token(self) -> None:
+        """
+        Acquire a token from the rate limiter if one is configured.
+
+        This should be called before making any request to enforce rate limiting.
+        Blocks until a token is available if rate limiting is enabled.
+        """
+        if hasattr(self.environment, "rate_limiter") and self.environment.rate_limiter:
+            rate_limiter: Optional[TokenBucketRateLimiter] = (
+                self.environment.rate_limiter
+            )
+            if rate_limiter:
+                rate_limiter.acquire()
 
     @classmethod
     def is_task_supported(cls, task: str) -> bool:

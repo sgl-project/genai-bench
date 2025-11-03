@@ -200,6 +200,7 @@ def validate_iteration_params(ctx, param, value) -> str:
     task = ctx.params.get("task")
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
+    request_rate = ctx.params.get("request_rate")
 
     # For text-to-embeddings tasks, always use batch_size iteration
     if task == "text-to-embeddings" or task == "text-to-rerank":
@@ -208,6 +209,19 @@ def validate_iteration_params(ctx, param, value) -> str:
         batch_size = batch_size or DEFAULT_BATCH_SIZES
         value = "batch_size"
         num_concurrency = [1]
+
+    # If request_rate is provided, use request_rate iteration
+    elif request_rate:
+        if value != "request_rate":
+            click.echo(
+                "Note: Using request_rate iteration since --request-rate "
+                "was provided"
+            )
+        value = "request_rate"
+        # For request_rate, we'll use a moderate concurrency level
+        # The rate limiter controls the actual rate
+        num_concurrency = [1]  # Will be adjusted dynamically
+        batch_size = [1]
 
     # For all other tasks, use num_concurrency iteration
     else:

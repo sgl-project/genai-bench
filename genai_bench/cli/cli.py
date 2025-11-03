@@ -79,6 +79,7 @@ def benchmark(
     task,
     iteration_type,
     num_concurrency,
+    request_rate,
     warmup_ratio,
     cooldown_ratio,
     batch_size,
@@ -383,9 +384,14 @@ def benchmark(
         raise RuntimeError("Metrics collector not initialized")
     aggregated_metrics_collector = runner.metrics_collector
 
-    # Iterate over each scenario_str and concurrency level,
+    # Iterate over each scenario_str and iteration value,
     # and run the experiment
-    iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
+    if iteration_type == "batch_size":
+        iteration_values = batch_size
+    elif iteration_type == "request_rate":
+        iteration_values = request_rate
+    else:
+        iteration_values = num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
     with dashboard.live:
         for scenario_str in traffic_scenario:
@@ -420,14 +426,41 @@ def benchmark(
                 start_time = time.monotonic()
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
+                # For request_rate runs, initialize rate limiter
+                if iteration_type == "request_rate":
+                    from genai_bench.rate_limiter import TokenBucketRateLimiter
+
+                    # Create rate limiter for this target rate
+                    environment.rate_limiter = TokenBucketRateLimiter(
+                        rate=iteration  # iteration value is the target rate
+                    )
+                    logger.info(
+                        f"🪣 Initialized Token Bucket Rate Limiter at "
+                        f"{iteration} req/s"
+                    )
+
+                    # For rate-limited runs, use high concurrency to ensure we
+                    # can hit the target rate (rate limiter controls actual rate)
+                    concurrency = max(int(iteration * 2), 10)
+                    logger.info(
+                        f"Starting benchmark with request_rate={iteration} req/s, "
+                        f"concurrency={concurrency} "
+                        f"(rate limiter controls actual rate)"
+                    )
+                else:
+                    # Remove any existing rate limiter for non-rate-limited runs
+                    environment.rate_limiter = None
+
                 # Use custom spawn rate if provided, otherwise use concurrency
                 actual_spawn_rate = (
                     spawn_rate if spawn_rate is not None else concurrency
                 )
-                logger.info(
-                    f"Starting benchmark with concurrency={concurrency}, "
-                    f"spawn_rate={actual_spawn_rate}"
-                )
+                if iteration_type != "request_rate":
+                    logger.info(
+                        f"Starting benchmark with concurrency={concurrency}, "
+                        f"spawn_rate={actual_spawn_rate}"
+                    )
+
                 environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
 
                 total_run_time = manage_run_time(

@@ -561,13 +561,34 @@ def experiment_options(func):
              """,
     )(func)
     func = click.option(
+        "--request-rate",
+        type=click.FLOAT,
+        multiple=True,
+        is_eager=True,
+        default=None,
+        help="""
+                List of target request rates (requests/second) to test.
+                Uses token bucket rate limiting for precise rate control.
+
+                \b
+                Example to input multiple values:
+                --request-rate 1.0 --request-rate 5.0 \\
+                --request-rate 10.0 --request-rate 20.0
+
+                If provided, this will use request_rate iteration instead of
+                num_concurrency.
+             """,
+    )(func)
+    func = click.option(
         "--iteration-type",
-        type=click.Choice(["num_concurrency", "batch_size"], case_sensitive=False),
+        type=click.Choice(
+            ["num_concurrency", "batch_size", "request_rate"], case_sensitive=False
+        ),
         default="num_concurrency",
         callback=validate_iteration_params,
         help="Type of iteration to use for the experiment. "
         "Note: batch_size is auto-selected for text-to-embeddings tasks, "
-        "num_concurrency for others.",
+        "num_concurrency for others, request_rate when --request-rate is provided.",
     )(func)
     func = click.option(
         "--model",
