@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
@@ -220,11 +220,13 @@ def load_run_data(
 
         # Get the iteration type and value
         iteration_type = aggregated_metrics.iteration_type
-        iteration_value = (
-            aggregated_metrics.batch_size
-            if iteration_type == "batch_size"
-            else aggregated_metrics.num_concurrency
-        )
+        iteration_value: Union[int, float, None]
+        if iteration_type == "batch_size":
+            iteration_value = aggregated_metrics.batch_size
+        elif iteration_type == "request_rate":
+            iteration_value = aggregated_metrics.request_rate
+        else:
+            iteration_value = aggregated_metrics.num_concurrency
 
         # Store iteration values in scenario data
         iteration_key = f"{iteration_type}_levels"

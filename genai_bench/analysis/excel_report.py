@@ -139,6 +139,7 @@ def _create_summary_sheet_common(
     summary_iteration_header_map = {
         "batch_size": "Batch Size at target throughput (>{} tokens/s)",
         "num_concurrency": "Concurrency at target speed (>{} tokens/s)",
+        "request_rate": "Request Rate at target speed (>{} tokens/s)",
     }
 
     threshold = 100 if is_embedding else 10
@@ -234,6 +235,7 @@ def _create_appendix_sheet_common(
     iteration_header_map = {
         "batch_size": "Batch Size",
         "num_concurrency": "Concurrency",
+        "request_rate": "Request Rate (req/s)",
     }
     headers = [
         "GPU Type",
@@ -394,7 +396,14 @@ def create_aggregated_metrics_sheet(
         key
         for key in AggregatedMetrics.model_fields
         if key
-        not in {"stats", "scenario", "iteration_type", "num_concurrency", "batch_size"}
+        not in {
+            "stats",
+            "scenario",
+            "iteration_type",
+            "num_concurrency",
+            "batch_size",
+            "request_rate",
+        }
     ]
 
     filtered_keys = [
@@ -522,6 +531,10 @@ def create_single_request_metrics_sheet(
 
 
 def merge_cells(worksheet: Worksheet, start_row: int, end_row: int, column_index: int):
+    # Only merge if there are multiple rows to merge
+    if start_row >= end_row:
+        return
+
     start_cell = f"{get_column_letter(column_index)}{start_row}"
     end_cell = f"{get_column_letter(column_index)}{end_row}"
     value_to_keep = worksheet[start_cell].value
