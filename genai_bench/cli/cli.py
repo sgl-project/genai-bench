@@ -36,6 +36,7 @@ from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.logging import LoggingManager, init_logger
 from genai_bench.protocol import ExperimentMetadata
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.sampling.base import Sampler
 from genai_bench.storage.factory import StorageFactory
 from genai_bench.ui.dashboard import create_dashboard
@@ -81,6 +82,8 @@ def benchmark(
     task,
     iteration_type,
     num_concurrency,
+    request_rate,
+    max_concurrency,
     warmup_ratio,
     cooldown_ratio,
     batch_size,
@@ -336,6 +339,8 @@ def benchmark(
         task=task,
         num_concurrency=num_concurrency,
         batch_size=batch_size,
+        request_rate=request_rate,
+        max_concurrency=max_concurrency,
         iteration_type=iteration_type,
         traffic_scenario=traffic_scenario,
         server_engine=server_engine,
@@ -383,9 +388,14 @@ def benchmark(
         raise RuntimeError("Metrics collector not initialized")
     aggregated_metrics_collector = runner.metrics_collector
 
-    # Iterate over each scenario_str and concurrency level,
+    # Iterate over each scenario_str and iteration value,
     # and run the experiment
-    iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
+    if iteration_type == "batch_size":
+        iteration_values = batch_size
+    elif iteration_type == "request_rate":
+        iteration_values = request_rate
+    else:
+        iteration_values = num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
     with dashboard.live:
         for scenario_str in traffic_scenario:
@@ -403,7 +413,7 @@ def benchmark(
                 dashboard.reset_panels()
                 # Create a new progress bar on dashboard
                 iteration_header, batch_size, concurrency = get_run_params(
-                    iteration_type, iteration
+                    iteration_type, iteration, max_concurrency
                 )
                 dashboard.create_benchmark_progress_task(
                     f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
@@ -423,14 +433,71 @@ def benchmark(
                 start_time = time.monotonic()
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
-                # Use custom spawn rate if provided, otherwise use concurrency
-                actual_spawn_rate = (
-                    spawn_rate if spawn_rate is not None else concurrency
-                )
-                logger.info(
-                    f"Starting benchmark with concurrency={concurrency}, "
-                    f"spawn_rate={actual_spawn_rate}"
-                )
+                # For request_rate runs, ensure old rate limiter is stopped and
+                # cleaned up before creating a new one for this run
+                if iteration_type == "request_rate":
+                    # Ensure old rate limiter is stopped and cleaned up
+                    if (
+                        hasattr(environment, "rate_limiter")
+                        and environment.rate_limiter
+                    ):
+                        environment.rate_limiter.stop()
+                        environment.rate_limiter = None
+                    if num_workers > 0:
+                        # Distributed mode: divide rate among workers
+                        per_worker_rate = iteration / num_workers
+
+                        # Warn if per-worker rate is very low
+                        # (could cause precision issues)
+                        if per_worker_rate < 0.1:
+                            logger.warning(
+                                f"⚠️  Per-worker rate ({per_worker_rate:.4f} req/s) "
+                                f"is very low. Consider using fewer workers or a "
+                                f"higher target rate for better accuracy."
+                            )
+
+                        runner.update_rate_limiter(per_worker_rate)
+                        logger.info(
+                            f"Distributed mode: Target rate {iteration:.2f} req/s "
+                            f"divided among {num_workers} workers "
+                            f"({per_worker_rate:.4f} req/s per worker, "
+                            f"total: {per_worker_rate * num_workers:.2f} req/s)"
+                        )
+                        # Master doesn't need rate limiter in distributed mode
+                        environment.rate_limiter = None
+                    else:
+                        # Local mode: create rate limiter directly
+                        environment.rate_limiter = TokenBucketRateLimiter(
+                            rate=iteration,  # iteration value is the target rate
+                        )
+                        logger.info(
+                            f"Initialized Token Bucket Rate Limiter at "
+                            f"{iteration} req/s"
+                        )
+                    # Set target rate for rate monitoring
+                    aggregated_metrics_collector.set_target_rate(iteration)
+                    logger.info(
+                        f"Starting benchmark with request_rate={iteration} req/s, "
+                        f"concurrency={concurrency} "
+                        f"(rate limiter controls actual rate)"
+                    )
+                    # Use custom spawn rate if provided, otherwise use concurrency
+                    actual_spawn_rate = (
+                        spawn_rate if spawn_rate is not None else concurrency
+                    )
+                else:
+                    # Remove any existing rate limiter for non-rate-limited runs
+                    environment.rate_limiter = None
+                    aggregated_metrics_collector.set_target_rate(None)
+                    # Use custom spawn rate if provided, otherwise use concurrency
+                    actual_spawn_rate = (
+                        spawn_rate if spawn_rate is not None else concurrency
+                    )
+                    logger.info(
+                        f"Starting benchmark with concurrency={concurrency}, "
+                        f"spawn_rate={actual_spawn_rate}"
+                    )
+
                 environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
 
                 total_run_time = manage_run_time(
@@ -438,6 +505,26 @@ def benchmark(
                     max_requests_per_run=max_requests_per_run,
                     environment=environment,
                 )
+
+                # For request_rate runs, stop the rate limiter to clean up
+                # pending acquisitions
+                if iteration_type == "request_rate":
+                    if (
+                        hasattr(environment, "rate_limiter")
+                        and environment.rate_limiter
+                    ):
+                        environment.rate_limiter.stop()
+                        logger.debug(
+                            "Stopped rate limiter to clean up pending token "
+                            "acquisitions"
+                        )
+
+                    # In distributed mode, also stop rate limiters on workers
+                    if num_workers > 0:
+                        # Send message to workers to stop their rate limiters
+                        runner.update_rate_limiter(None)  # None signals stop
+                        # Wait for workers to confirm rate limiter stop
+                        runner.wait_for_rate_limiter_stop(timeout=2.0)
 
                 environment.runner.stop()
 

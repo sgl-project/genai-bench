@@ -4,7 +4,7 @@ This guide shows how to migrate from SGLang and vLLM benchmarking to GenAI Bench
 
 ## SGLang Benchmarking
 
-GenAI Bench uses [traffic scenarios](../user-guide/scenario-definition.md) to control input and output token lengths instead of SGLang's `--random-input-len`, `--random-output-len`, and `--random-range-ratio` parameters. For benchmark intensity, SGLang uses `--request-rate` parameters to control how requests are sent over time, while GenAI Bench uses concurrency levels (`--num-concurrency`) to manage benchmark intensity instead.
+GenAI Bench uses [traffic scenarios](../user-guide/scenario-definition.md) to control input and output token lengths instead of SGLang's `--random-input-len`, `--random-output-len`, and `--random-range-ratio` parameters. For benchmark intensity, GenAI Bench supports both request rate control (`--request-rate`) and concurrency levels (`--num-concurrency`), giving you flexibility to match SGLang's `--request-rate` behavior or use concurrency-based testing. For request rate benchmarks, GenAI Bench uses a maximum concurrency of 5000 by default, which can be overridden with `--max-concurrency`.
 
 ### Basic Text Benchmark
 
@@ -35,6 +35,36 @@ genai-bench benchmark \
 ```
 
 **Note:** With default `--random-range-ratio 0.0`, SGLang samples from `[1, 512]` for inputs and `[0, 512]` for outputs. Use GenAI Bench's uniform distribution `U(min,max)/(min,max)` to match this behavior. The uniform distribution also can mimic any other `--random-range-ratio` value that is not `1.0`. 
+
+### Request Rate Benchmark
+
+**SGLang Command:**
+```bash
+python -m sglang.bench_serving \
+    --backend sglang-oai-chat \
+    --num-prompts 500 \
+    --random-input-len 512 \
+    --random-output-len 512 \
+    --model meta-llama/Llama-3.1-8B-Instruct \
+    --base-url http://127.0.0.1:8080 \
+    --request-rate 20
+```
+
+**GenAI Bench Equivalent:**
+```bash
+genai-bench benchmark \
+    --api-backend sglang \
+    --api-base http://127.0.0.1:8080 \
+    --api-model-name sglang-model \
+    --model-tokenizer meta-llama/Llama-3.1-8B-Instruct \
+    --task text-to-text \
+    --max-requests-per-run 500 \
+    --max-time-per-run 30 \
+    --traffic-scenario "U(1,512)/(0,512)" \
+    --request-rate 20 \
+    --server-engine "SGLang"
+```
+
 
 ### Benchmark a specific number of tokens
 
@@ -88,7 +118,6 @@ genai-bench benchmark \
     --server-engine "SGLang"
 ```
 
-**Note:** SGLang provides controls for request rate and max concurrency. GenAI Bench does not yet have request rate control, but allows explicitly setting the number of concurrent users to test performance under different loads.
 
 ### Image Benchmarking
 
@@ -127,7 +156,7 @@ For more details on available distribution types, see the [Traffic Scenarios](..
 
 ## vLLM Benchmarking
 
-To set benchmark intensity, vLLM uses `--request-rate` parameters to control how requests are sent over time. GenAI Bench does not currently support request rate benchmarks and instead uses concurrency levels (`--num-concurrency`) to manage benchmark intensity. Additionally, vLLM's `--burstiness` parameter controls traffic variability using a Gamma distribution to create variable bursts of traffic. GenAI Bench handles similar variability through [traffic distributions](../user-guide/scenario-definition.md), where distributions with higher variance (e.g., normal distributions with larger standard deviations) can simulate bursty traffic patterns, while deterministic distributions or low-variance distributions create more uniform patterns. Traffic distributions can also be used to set input and output token length.
+To set benchmark intensity, vLLM uses `--request-rate` parameters to control how requests are sent over time, paired with `--max-concurrency`. GenAI Bench supports setting benchmark intensity through request rate control (`--request-rate`) as well as setting concurrency levels (`--num-concurrency`) to manage benchmark intensity. GenAI Bench supports setting max concurrency with `--max-concurrency`, which defaults to 5000 for request rate benchmarks to ensure sufficient workers are available. Additionally, vLLM's `--burstiness` parameter controls traffic variability using a Gamma distribution to create variable bursts of traffic. GenAI Bench handles similar variability through [traffic distributions](../user-guide/scenario-definition.md), where distributions with higher variance (e.g., normal distributions with larger standard deviations) can simulate bursty traffic patterns, while deterministic distributions or low-variance distributions create more uniform patterns. Traffic distributions can also be used to set input and output token length.
 
 ### Basic Text Benchmark
 
@@ -158,7 +187,7 @@ genai-bench benchmark \
     --server-engine "vLLM"
 ```
 
-**Note:** vLLM's `--request-rate` defaults to infinite, sending all requests immediately. The `--max-concurrency` parameter defaults to unlimited if not specified. Since GenAI Bench does not support unlimited concurrency, use a high value (e.g., 1000) to approximate this behavior. For benchmarks where a column of a dataset should be used as input, use `--traffic-scenario dataset` and and configure the dataset using a [dataset config](../user-guide/run-benchmark.md#selecting-datasets).
+**Note:** vLLM's `--request-rate` defaults to infinite, sending all requests immediately. The `--max-concurrency` parameter defaults to unlimited if not specified. Since GenAI Bench does not support unlimited concurrency, use a high value (e.g., 1000) with `--num-concurrency` to approximate this behavior. For benchmarks where a column of a dataset should be used as input, use `--traffic-scenario dataset` and configure the dataset using a [dataset config](../user-guide/run-benchmark.md#selecting-datasets).
 
 ### Ramp-up Request Rate
 
@@ -181,8 +210,27 @@ genai-bench benchmark \
     --num-concurrency 16 \
     --server-engine "vLLM"
 ```
+You can also test multiple request rates:
 
-**Note:** GenAI Bench does not have explicit request rate control, but allows testing multiple concurrency levels in a single run, which provides similar stress testing capabilities. vLLM supports ramp-up request rate (linear or exponential) using `--ramp-up-strategy`, `--ramp-up-start-rps`, and `--ramp-up-end-rps`. GenAI Bench's equivalent is to run benchmarks at different concurrency levels to test how the server performs at different throughputs.
+```bash
+genai-bench benchmark \
+    --api-backend vllm \
+    --api-base http://127.0.0.1:8000 \
+    --api-model-name vllm-model \
+    --model-tokenizer NousResearch/Hermes-3-Llama-3.1-8B \
+    --task text-to-text \
+    --max-requests-per-run 10 \
+    --max-time-per-run 30 \
+    --traffic-scenario dataset \
+    --dataset-config <configs path>/sharegpt_config.json \
+    --request-rate 1 \
+    --request-rate 5 \
+    --request-rate 20 \
+    --request-rate 100 \
+    --server-engine "vLLM"
+```
+
+**Note:**  vLLM supports ramp-up request rate (linear or exponential) using `--ramp-up-strategy`, `--ramp-up-start-rps`, and `--ramp-up-end-rps`. GenAI Bench's equivalent is to run benchmarks at different request rates (using `--request-rate`) or concurrency levels (using `--num-concurrency`) to test how the server performs at different throughputs.
 
 ### Image Benchmarking
 

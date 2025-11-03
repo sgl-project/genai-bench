@@ -5,6 +5,7 @@ import atexit
 import logging
 import multiprocessing
 import os
+import time
 from dataclasses import dataclass
 from multiprocessing.queues import Queue
 from typing import Any, Dict, List, Optional, Protocol
@@ -16,6 +17,7 @@ from pydantic import ValidationError
 from genai_bench.logging import WorkerLoggingManager, init_logger
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import RequestLevelMetrics
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.scenarios.base import Scenario
 from genai_bench.ui.dashboard import Dashboard
 
@@ -63,13 +65,15 @@ class DistributedRunner:
        - Worker processes: Execute actual API requests and send metrics to master
        - Local mode: Single process handles both execution and aggregation
 
-    2. Message Flow:
-       - Master → Workers:
-           * "update_scenario": Updates test scenario configuration
-           * "update_batch_size": Updates batch size for requests
-       - Workers → Master:
-           * "request_metrics": Sends metrics from each request for aggregation
-           * "worker_log": Sends worker logs to master
+       2. Message Flow:
+           - Master → Workers:
+               * "update_scenario": Updates test scenario configuration
+               * "update_batch_size": Updates batch size for requests
+               * "update_rate_limiter": Updates rate limiter with per-worker rate
+           - Workers → Master:
+               * "request_metrics": Sends metrics from each request for aggregation
+               * "worker_log": Sends worker logs to master
+               * "rate_limiter_stopped": Confirmation that rate limiter has been stopped
 
     3. Execution Flow:
        - Master process:
@@ -128,6 +132,7 @@ class DistributedRunner:
         self._worker_processes: List[multiprocessing.Process] = []
         self.metrics_collector: Optional[AggregatedMetricsCollector] = None
         self.worker_log_queue: Queue = multiprocessing.Queue()
+        self._rate_limiter_stop_confirmations: int = 0
 
     def setup(self) -> None:
         """Set up distributed or local test environment"""
@@ -362,14 +367,17 @@ class DistributedRunner:
 
         Message Flow:
         1. Master Process:
-           - SENDS: "update_scenario", "update_batch_size" to workers
+           - SENDS: "update_scenario", "update_batch_size",
+             "update_rate_limiter" to workers
            - RECEIVES: "request_metrics", "worker_log" from workers
            - REGISTERS: "request_metrics", "worker_log" handler
 
         2. Worker Process:
            - SENDS: "request_metrics" to master
-           - RECEIVES: "update_scenario", "update_batch_size" from master
-           - REGISTERS: "update_scenario", "update_batch_size" handlers
+           - RECEIVES: "update_scenario", "update_batch_size",
+             "update_rate_limiter" from master
+           - REGISTERS: "update_scenario", "update_batch_size",
+             "update_rate_limiter" handlers
 
         3. Local Mode:
            - SENDS/RECEIVES: all messages (single process)
@@ -399,6 +407,9 @@ class DistributedRunner:
                 self.environment.runner.register_message(
                     "update_batch_size", self._handle_batch_size_update
                 )
+                self.environment.runner.register_message(
+                    "update_rate_limiter", self._handle_rate_limiter_update
+                )
             if isinstance(self.environment.runner, MasterRunner):
                 # Master receives metrics and logs from workers
                 self.environment.runner.register_message(
@@ -407,6 +418,9 @@ class DistributedRunner:
                 self.environment.runner.register_message(
                     "worker_log", self._create_log_handler()
                 )
+                self.environment.runner.register_message(
+                    "rate_limiter_stopped", self._handle_rate_limiter_stopped
+                )
         else:
             # Local mode needs all handlers since it's both sender and receiver
             self.environment.runner.register_message(
@@ -414,6 +428,9 @@ class DistributedRunner:
             )
             self.environment.runner.register_message(
                 "update_batch_size", self._handle_batch_size_update
+            )
+            self.environment.runner.register_message(
+                "update_rate_limiter", self._handle_rate_limiter_update
             )
             self.environment.runner.register_message(
                 "request_metrics", self._create_metrics_handler()
@@ -429,9 +446,81 @@ class DistributedRunner:
         if self.environment.runner:
             self.environment.runner.send_message("update_batch_size", batch_size)
 
+    def update_rate_limiter(self, rate: float) -> None:
+        """Update rate limiter on all nodes"""
+        if self.environment.runner:
+            if rate is None or rate <= 0:
+                self._rate_limiter_stop_confirmations = 0
+            self.environment.runner.send_message("update_rate_limiter", rate)
+
     def _handle_batch_size_update(self, environment: Environment, msg: Any) -> None:
         """Handle batch size update messages"""
         if not msg:
             raise RuntimeError("Received empty batch size message")
         if hasattr(environment, "sampler"):
             environment.sampler.batch_size = msg.data
+
+    def _handle_rate_limiter_update(self, environment: Environment, msg: Any) -> None:
+        """Handle rate limiter update messages"""
+        if not msg:
+            raise RuntimeError("Received empty rate limiter message")
+        rate = msg.data
+        if rate is None or rate <= 0:
+            # Stop existing rate limiter if present
+            if hasattr(environment, "rate_limiter") and environment.rate_limiter:
+                environment.rate_limiter.stop()
+            environment.rate_limiter = None  # type: ignore[attr-defined]
+            # Send confirmation to master that rate limiter has been stopped
+            if isinstance(environment.runner, WorkerRunner):
+                environment.runner.send_message("rate_limiter_stopped", True)
+        else:
+            # Create rate limiter with the per-worker rate
+            environment.rate_limiter = TokenBucketRateLimiter(rate=rate)  # type: ignore[attr-defined]
+            logger.info(
+                f"Worker initialized Token Bucket Rate Limiter at "
+                f"{rate:.2f} req/s (per-worker rate)"
+            )
+
+    def _handle_rate_limiter_stopped(self, environment: Environment, msg: Any) -> None:
+        """Handle rate limiter stopped confirmation from workers"""
+        if not msg:
+            return
+        # Count confirmations (each worker sends one confirmation)
+        self._rate_limiter_stop_confirmations += 1
+        logger.debug("Received rate limiter stop confirmation from worker")
+
+    def wait_for_rate_limiter_stop(
+        self, timeout: float = 2.0, expected_workers: Optional[int] = None
+    ) -> bool:
+        """
+        Wait for rate limiter stop confirmations from workers.
+
+        Args:
+            timeout: Maximum time to wait in seconds
+            expected_workers: Expected number of workers
+                (if None, uses config.num_workers)
+
+        Returns:
+            True if all expected workers confirmed, False if timeout
+        """
+        if self.config.num_workers == 0:
+            # Local mode, no need to wait
+            return True
+
+        expected = expected_workers or self.config.num_workers
+        start_time = time.monotonic()
+        while time.monotonic() - start_time < timeout:
+            if self._rate_limiter_stop_confirmations >= expected:
+                logger.debug(f"All {expected} workers confirmed rate limiter stop")
+                return True
+            # Poll every 0.1 seconds
+            gevent.sleep(0.1)
+
+        confirmed = self._rate_limiter_stop_confirmations
+        if confirmed < expected:
+            logger.warning(
+                f"Timeout waiting for rate limiter stop confirmations: "
+                f"{confirmed}/{expected} workers confirmed"
+            )
+            return False
+        return True
