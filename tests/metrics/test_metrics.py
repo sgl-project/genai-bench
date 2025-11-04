@@ -10,9 +10,14 @@ from unittest.mock import MagicMock
 import pytest
 
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
-from genai_bench.metrics.metrics import RequestLevelMetrics
+from genai_bench.metrics.metrics import (
+    AggregatedMetrics,
+    MetricStats,
+    RequestLevelMetrics,
+    StatField,
+)
 from genai_bench.metrics.request_metrics_collector import RequestMetricsCollector
-from genai_bench.protocol import UserChatResponse, UserResponse
+from genai_bench.protocol import ExperimentMetadata, UserChatResponse, UserResponse
 
 
 @pytest.fixture
@@ -483,3 +488,297 @@ def test_validate_metrics_from_json():
     )
     with pytest.raises(ValueError, match="tpot must not be None if error_code is None"):
         RequestLevelMetrics.model_validate_json(none_value_json)
+
+
+# Tests for request_rate in metrics and aggregation
+
+
+def create_test_metadata(**kwargs):
+    """Helper to create ExperimentMetadata with required fields."""
+    defaults = {
+        "cmd": "test command",
+        "benchmark_version": "1.0.0",
+        "model": "test-model",
+        "api_model_name": "test-model",
+        "api_backend": "openai",
+        "task": "text-to-text",
+        "num_concurrency": [1],
+        "max_time_per_run_s": 60,
+        "max_requests_per_run": 1000,
+        "experiment_folder_name": "test_experiment",
+    }
+    defaults.update(kwargs)
+    return ExperimentMetadata(**defaults)
+
+
+def create_test_stat_field(**kwargs):
+    """Helper to create a StatField with sensible defaults."""
+    defaults = {
+        "min": 0.01,
+        "max": 1.0,
+        "mean": 0.5,
+        "stddev": 0.1,
+        "sum": 50.0,
+        "p25": 0.4,
+        "p50": 0.5,
+        "p75": 0.6,
+        "p90": 0.7,
+        "p95": 0.8,
+        "p99": 0.9,
+    }
+    defaults.update(kwargs)
+    return StatField(**defaults)
+
+
+def create_test_metric_stats():
+    """Helper to create MetricStats with all required StatField objects."""
+    return MetricStats(
+        ttft=create_test_stat_field(),
+        tpot=create_test_stat_field(min=0.01, max=0.05, mean=0.02),
+        e2e_latency=create_test_stat_field(min=0.5, max=2.0, mean=1.5),
+        output_latency=create_test_stat_field(min=0.4, max=1.8, mean=1.3),
+        output_inference_speed=create_test_stat_field(min=40.0, max=200.0, mean=70.0),
+        num_input_tokens=create_test_stat_field(min=90.0, max=110.0, mean=100.0),
+        num_output_tokens=create_test_stat_field(min=90.0, max=110.0, mean=100.0),
+        total_tokens=create_test_stat_field(min=180.0, max=220.0, mean=200.0),
+        input_throughput=create_test_stat_field(min=400.0, max=1000.0, mean=600.0),
+        output_throughput=create_test_stat_field(min=40.0, max=200.0, mean=70.0),
+    )
+
+
+class TestRequestRateInAggregatedMetrics:
+    """Test request_rate field in AggregatedMetrics."""
+
+    def test_aggregated_metrics_with_request_rate(self):
+        """Test creating AggregatedMetrics with request_rate."""
+        metrics = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=10,
+            batch_size=1,
+            request_rate=15.5,
+            iteration_type="request_rate",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=15.5,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=930,
+            num_requests=930,
+            stats=create_test_metric_stats(),
+        )
+
+        assert metrics.request_rate == 15.5
+        assert metrics.iteration_type == "request_rate"
+        assert metrics.num_concurrency == 10
+        assert metrics.batch_size == 1
+
+    def test_aggregated_metrics_request_rate_optional(self):
+        """Test that request_rate is optional (can be None)."""
+        metrics = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=5,
+            batch_size=1,
+            iteration_type="num_concurrency",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=10.0,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=600,
+            num_requests=600,
+            stats=create_test_metric_stats(),
+        )
+
+        # request_rate should be None for non-request_rate runs
+        assert metrics.request_rate is None
+        assert metrics.iteration_type == "num_concurrency"
+
+    def test_aggregated_metrics_request_rate_float_precision(self):
+        """Test request_rate handles float precision correctly."""
+        metrics = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=10,
+            batch_size=1,
+            request_rate=2.5,  # Fractional rate
+            iteration_type="request_rate",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=2.5,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=150,
+            num_requests=150,
+            stats=create_test_metric_stats(),
+        )
+
+        assert metrics.request_rate == 2.5
+        assert isinstance(metrics.request_rate, float)
+
+
+class TestRequestRateInExperimentMetadata:
+    """Test request_rate field in ExperimentMetadata."""
+
+    def test_experiment_metadata_with_request_rate(self):
+        """Test creating ExperimentMetadata with request_rate."""
+        metadata = create_test_metadata(
+            iteration_type="request_rate",
+            request_rate=[5.0, 10.0, 20.0],
+        )
+
+        assert metadata.iteration_type == "request_rate"
+        assert metadata.request_rate == [5.0, 10.0, 20.0]
+        assert metadata.batch_size is None
+
+    def test_experiment_metadata_request_rate_optional(self):
+        """Test that request_rate is optional for non-request_rate runs."""
+        metadata = create_test_metadata(
+            iteration_type="num_concurrency",
+            num_concurrency=[1, 5, 10],
+        )
+
+        assert metadata.iteration_type == "num_concurrency"
+        assert metadata.num_concurrency == [1, 5, 10]
+        assert metadata.request_rate is None
+
+    def test_experiment_metadata_iteration_type_validation(self):
+        """Test that iteration_type accepts request_rate as valid literal."""
+        # Should not raise validation error
+        metadata = create_test_metadata(
+            iteration_type="request_rate",
+            request_rate=[10.0],
+        )
+
+        assert metadata.iteration_type == "request_rate"
+
+    def test_experiment_metadata_invalid_iteration_type(self):
+        """Test that invalid iteration_type is rejected."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            create_test_metadata(
+                iteration_type="invalid_type",
+            )
+
+    def test_experiment_metadata_request_rate_with_floats(self):
+        """Test request_rate list accepts float values."""
+        metadata = create_test_metadata(
+            iteration_type="request_rate",
+            request_rate=[0.5, 2.5, 10.5, 100.0],
+        )
+
+        assert metadata.request_rate == [0.5, 2.5, 10.5, 100.0]
+        assert all(isinstance(r, float) for r in metadata.request_rate)
+
+    def test_experiment_metadata_request_rate_single_value(self):
+        """Test request_rate with single value in list."""
+        metadata = create_test_metadata(
+            iteration_type="request_rate",
+            request_rate=[15.0],
+        )
+
+        assert len(metadata.request_rate) == 1
+        assert metadata.request_rate[0] == 15.0
+
+
+class TestRequestRateMetricsIntegration:
+    """Integration tests for request_rate in metrics."""
+
+    def test_metrics_serialization_with_request_rate(self):
+        """Test that metrics with request_rate can be serialized."""
+        metrics = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=10,
+            batch_size=1,
+            request_rate=20.0,
+            iteration_type="request_rate",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=20.0,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=1200,
+            num_requests=1200,
+            stats=create_test_metric_stats(),
+        )
+
+        # Should be able to convert to dict
+        metrics_dict = metrics.dict()
+        assert "request_rate" in metrics_dict
+        assert metrics_dict["request_rate"] == 20.0
+
+    def test_metadata_serialization_with_request_rate(self):
+        """Test that metadata with request_rate can be serialized."""
+        metadata = create_test_metadata(
+            iteration_type="request_rate",
+            request_rate=[5.0, 10.0, 20.0],
+        )
+
+        # Should be able to convert to dict
+        metadata_dict = metadata.dict()
+        assert "request_rate" in metadata_dict
+        assert metadata_dict["request_rate"] == [5.0, 10.0, 20.0]
+
+    def test_metrics_comparison_request_rate_vs_concurrency(self):
+        """Test that metrics can distinguish request_rate from num_concurrency runs."""
+        metrics_rate = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=10,
+            batch_size=1,
+            request_rate=20.0,
+            iteration_type="request_rate",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=20.0,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=1200,
+            num_requests=1200,
+            stats=create_test_metric_stats(),
+        )
+
+        metrics_concurrency = AggregatedMetrics(
+            scenario="test_scenario",
+            num_concurrency=10,
+            batch_size=1,
+            iteration_type="num_concurrency",
+            run_duration=60.0,
+            mean_output_throughput_tokens_per_s=1000.0,
+            mean_input_throughput_tokens_per_s=1000.0,
+            mean_total_tokens_throughput_tokens_per_s=2000.0,
+            mean_total_chars_per_hour=10000000.0,
+            requests_per_second=20.0,
+            error_codes_frequency={},
+            error_rate=0.0,
+            num_error_requests=0,
+            num_completed_requests=1200,
+            num_requests=1200,
+            stats=create_test_metric_stats(),
+        )
+
+        # Should have different iteration types
+        assert metrics_rate.iteration_type == "request_rate"
+        assert metrics_concurrency.iteration_type == "num_concurrency"
+
+        # request_rate should be set only for rate run
+        assert metrics_rate.request_rate == 20.0
+        assert metrics_concurrency.request_rate is None

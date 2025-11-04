@@ -18,7 +18,6 @@ from locust.runners import WorkerRunner
 
 import logging
 import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -98,8 +97,13 @@ def mock_makedirs():
 def mock_file_system():
     with (
         patch("genai_bench.cli.cli.Path.write_text") as mock_write_text,
+        patch("genai_bench.cli.utils.Path.mkdir") as mock_utils_mkdir,
     ):
-        yield mock_write_text
+        # Mock both write_text and mkdir to prevent any file operations
+        yield {
+            "write_text": mock_write_text,
+            "utils_mkdir": mock_utils_mkdir,
+        }
 
 
 # Mock HTTP requests
@@ -144,8 +148,15 @@ def mock_report_and_plot():
 
 @pytest.fixture
 def mock_experiment_path():
+    """Mock experiment path to return a mock path string."""
     with patch("genai_bench.cli.cli.get_experiment_path") as mock_path:
-        mock_path.return_value = Path("/mock/experiment/path")
+        # Return a mock Path-like object that won't create real directories
+        mock_path_obj = MagicMock()
+        mock_path_obj.absolute.return_value = MagicMock()
+        mock_path_obj.absolute.return_value.__str__ = (
+            lambda self: "/mock/experiment/path"
+        )
+        mock_path.return_value = mock_path_obj
         yield mock_path
 
 
@@ -719,3 +730,183 @@ def test_spawn_rate_option_in_help(cli_runner):
     assert result.exit_code == 0
     assert "--spawn-rate" in result.output
     assert "Number of users to spawn per second" in result.output
+
+
+# Tests for request_rate functionality
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_command_with_request_rate(
+    cli_runner, default_options, mock_report_and_plot
+):
+    """Test benchmark command with request-rate option."""
+    result = cli_runner.invoke(
+        benchmark,
+        [
+            *default_options,
+            "--request-rate",
+            "10.0",
+            "--request-rate",
+            "20.0",
+        ],
+    )
+    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+
+    # Verify report generation
+    assert mock_report_and_plot["load_experiment"].called
+    assert mock_report_and_plot["create_workbook"].called
+    assert mock_report_and_plot["plot_experiment_data_flexible"].called
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_request_rate_iteration_type(cli_runner, default_options):
+    """Test that request_rate option sets iteration_type correctly."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "5.0",
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        # Note shown in output when using request_rate
+        assert "Using request_rate iteration" in result.output
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_request_rate_creates_rate_limiter(cli_runner, default_options):
+    """Test that request_rate run creates a TokenBucketRateLimiter."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+        patch(
+            "genai_bench.rate_limiter.TokenBucketRateLimiter"
+        ) as mock_rate_limiter_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+        mock_rate_limiter = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_rate_limiter_class.return_value = mock_rate_limiter
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "15.0",
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        # Verify rate limiter was created
+        mock_rate_limiter_class.assert_called_with(rate=15.0)
+
+
+def test_request_rate_option_in_help(cli_runner):
+    """Test that request-rate option appears in the CLI help output."""
+    result = cli_runner.invoke(benchmark, ["--help"])
+    assert result.exit_code == 0
+    assert "--request-rate" in result.output
+    assert "request rates (requests/second)" in result.output
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_request_rate_with_multiple_values(cli_runner, default_options):
+    """Test request_rate with multiple values runs correctly."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "5.0",
+                "--request-rate",
+                "10.0",
+                "--request-rate",
+                "20.0",
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"

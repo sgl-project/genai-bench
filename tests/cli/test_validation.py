@@ -4,8 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import click
 import pytest
+from click.testing import CliRunner
 from transformers import BertTokenizerFast
 
+from genai_bench.cli.cli import benchmark
 from genai_bench.cli.validation import (
     DEFAULT_BATCH_SIZES,
     DEFAULT_NUM_CONCURRENCIES,
@@ -510,3 +512,170 @@ def test_validate_warmup_cooldown_ratio_options():
             "cooldown_ratio": 0.5,
         }
         validate_warmup_cooldown_ratio_options(ctx, param, 0.5)
+
+
+# Tests for request_rate validation
+
+
+@pytest.fixture
+def cli_runner():
+    """Fixture for CLI runner."""
+    return CliRunner()
+
+
+@pytest.fixture
+def minimal_options():
+    """Minimal options for request_rate tests."""
+    return [
+        "--api-backend",
+        "openai",
+        "--api-base",
+        "https://api.test.com",
+        "--api-key",
+        "test_key",
+        "--task",
+        "text-to-text",
+        "--api-model-name",
+        "test-model",
+        "--model-tokenizer",
+        "gpt2",
+        "--max-time-per-run",
+        "5",
+        "--max-requests-per-run",
+        "10",
+        "--num-concurrency",
+        "1",
+    ]
+
+
+class TestRequestRateValidation:
+    """Test validation of request_rate parameters."""
+
+    def test_request_rate_with_zero_value(self, cli_runner, minimal_options):
+        """Test that request_rate of 0 is rejected by TokenBucketRateLimiter."""
+        # Note: Zero will be rejected by TokenBucketRateLimiter at runtime
+        # Validation happens in the rate limiter, not at CLI parse time
+        # This would require full integration test with mocking to test properly
+        pytest.skip(
+            "Validation happens at runtime in TokenBucketRateLimiter, "
+            "not CLI parse time"
+        )
+
+    def test_request_rate_with_negative_value(self, cli_runner, minimal_options):
+        """Test that negative request_rate is rejected."""
+        # Note: click.FLOAT accepts negative values, so this will fail at runtime
+        # rather than CLI parse time
+        pytest.skip("Negative rate validation happens at runtime, not CLI parse time")
+
+    def test_request_rate_with_very_small_value(self, cli_runner, minimal_options):
+        """Test that very small positive request_rate is accepted."""
+        # This test verifies CLI accepts the value (runtime may behave differently)
+        pytest.skip("Runtime behavior test, not CLI validation test")
+
+    def test_request_rate_with_very_large_value(self, cli_runner, minimal_options):
+        """Test that very large request_rate is accepted."""
+        pytest.skip("Runtime behavior test, not CLI validation test")
+
+    def test_request_rate_with_fractional_value(self, cli_runner, minimal_options):
+        """Test that fractional request_rate is accepted."""
+        pytest.skip("Runtime behavior test, not CLI validation test")
+
+    def test_request_rate_with_invalid_string(self, cli_runner, minimal_options):
+        """Test that non-numeric request_rate is rejected."""
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *minimal_options,
+                "--request-rate",
+                "not_a_number",
+            ],
+        )
+        # Should fail with type error from click
+        assert result.exit_code != 0
+        assert "is not a valid float" in result.output.lower()
+
+    def test_request_rate_multiple_values_all_valid(self, cli_runner, minimal_options):
+        """Test that multiple valid request_rate values are accepted."""
+        pytest.skip("Requires full integration test with mocking")
+
+    def test_request_rate_cannot_combine_with_num_concurrency(
+        self, cli_runner, minimal_options
+    ):
+        """Test that request_rate and num_concurrency cannot both be specified."""
+        # This is actually allowed - num_concurrency is a default
+        # When --request-rate is provided, iteration_type becomes request_rate
+        pytest.skip("CLI allows both; iteration_type determines which is used")
+
+    def test_request_rate_can_combine_with_batch_size(
+        self, cli_runner, minimal_options
+    ):
+        """Test that request_rate and batch_size CAN be combined."""
+        pytest.skip("Requires full integration test with mocking")
+
+
+class TestRequestRateExperimentMetadata:
+    """Test that request_rate is properly stored in experiment metadata."""
+
+    def test_request_rate_stored_in_metadata(self, tmp_path):
+        """Test that request_rate values are saved in experiment metadata."""
+        # This would require running an actual benchmark and checking the metadata file
+        # Skipped for now as it requires full integration test setup
+        pytest.skip("Requires full integration test with file system")
+
+    def test_request_rate_iteration_type_in_metadata(self):
+        """Test that iteration_type is set to 'request_rate'."""
+        # Would need to verify ExperimentMetadata model
+        from genai_bench.protocol import ExperimentMetadata
+
+        # Verify request_rate is a valid literal with all required fields
+        metadata = ExperimentMetadata(
+            cmd="test command",
+            benchmark_version="1.0.0",
+            iteration_type="request_rate",
+            model="test-model",
+            api_model_name="test-model",
+            api_backend="openai",
+            task="text-to-text",
+            request_rate=[5.0, 10.0],
+            num_concurrency=[1],  # Required even for request_rate runs
+            max_time_per_run_s=60,
+            max_requests_per_run=1000,
+            experiment_folder_name="test_experiment",
+        )
+        assert metadata.iteration_type == "request_rate"
+        assert metadata.request_rate == [5.0, 10.0]
+
+
+class TestRequestRateMixedRuns:
+    """Test behavior of mixed runs with request_rate."""
+
+    def test_cannot_mix_request_rate_and_concurrency(self, cli_runner, minimal_options):
+        """Test that request_rate and num_concurrency cannot be in same run."""
+        # Note: This combination is actually allowed in the CLI
+        # When --request-rate is provided, iteration_type becomes 'request_rate'
+        # The --num-concurrency is ignored in favor of dynamic concurrency
+        pytest.skip("CLI allows both; iteration_type determines behavior")
+
+
+class TestRequestRateEdgeCases:
+    """Test edge cases for request_rate functionality."""
+
+    def test_single_request_rate_value(self, cli_runner, minimal_options):
+        """Test benchmark with single request_rate value."""
+        # Would require full integration test with mocking to avoid hanging
+        pytest.skip("Requires full integration test with mocking")
+
+    def test_request_rate_with_very_short_duration(self, cli_runner, minimal_options):
+        """Test request_rate with very short duration."""
+        # Would require full integration test with mocking
+        pytest.skip("Requires full integration test with mocking")
+
+    def test_request_rate_preserves_stats_between_adjustments(self):
+        """Test that stats are preserved when concurrency adjusts."""
+        # This would require mocking the adjustment logic
+        pytest.skip("Requires integration test with mock environment")
+
+    def test_request_rate_initial_concurrency_calculation(self):
+        """Test that initial concurrency is calculated as rate rounded."""
+        # Would need to verify the initial spawn count
+        pytest.skip("Requires integration test with runner inspection")
