@@ -81,14 +81,14 @@ class BasetenUser(OpenAIUser):
         
         # Log the dataset prompt (truncate if too long)
         prompt_preview = user_request.prompt[:200] + "..." if len(user_request.prompt) > 200 else user_request.prompt
-        logger.info(f"📝 Dataset prompt (first 200 chars): {prompt_preview}")
+        logger.debug(f"📝 Dataset prompt (first 200 chars): {prompt_preview}")
         
         # Check if custom messages are provided in additional_request_params
         custom_messages = user_request.additional_request_params.get("custom_messages")
         
         if custom_messages:
             logger.info(f"✅ Using custom_messages from additional_request_params")
-            logger.info(f"📨 Custom messages received: {json.dumps(custom_messages, indent=2)}")
+            logger.debug(f"📨 Custom messages received: {json.dumps(custom_messages, indent=2)}")
             # When custom_messages is provided, use them exactly as specified
             # This allows full control over the message structure
             if isinstance(custom_messages, list):
@@ -113,7 +113,7 @@ class BasetenUser(OpenAIUser):
             messages = [{"role": "user", "content": content}]
             logger.debug(f"📄 Using dataset prompt as user message")
 
-        logger.info(f"💬 Final messages being sent: {json.dumps(messages, indent=2)}")
+        logger.debug(f"💬 Final messages being sent: {json.dumps(messages, indent=2)}")
 
         # Use global disable_streaming setting (consistent with other backends)
         use_streaming = not self.disable_streaming
