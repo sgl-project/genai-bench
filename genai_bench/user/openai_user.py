@@ -250,16 +250,18 @@ class OpenAIUser(BaseUser):
                 break
             data = json.loads(chunk)
 
+            # Don't set time_at_first_token here - we'll set it after processing usage
+
             # Handle streaming error response as OpenAI API server handles it
             # differently. Some might return 200 first and generate error response
             # later in the chunk
             if data.get("error") is not None:
-                return UserResponse(
-                    status_code=data["error"].get("code", -1),
-                    error_message=data["error"].get(
-                        "message", "Unknown error, please check server logs"
-                    ),
-                )
+                        return UserResponse(
+                            status_code=data["error"].get("code", -1),
+                            error_message=data["error"].get(
+                                "message", "Unknown error, please check server logs"
+                            ),
+                        )
 
             # Standard OpenAI API streams include "finish_reason"
             # in the second-to-last chunk,
@@ -286,25 +288,45 @@ class OpenAIUser(BaseUser):
                         )
                         time_at_first_token = time.monotonic()
                     else:
-                        raise Exception("Invalid Response")
+                        # Use end_time as fallback instead of raising exception
+                        # This handles edge cases where response format is unexpected
+                        time_at_first_token = time.monotonic()
+                        logger.warning(
+                            f"⚠️ Response had ≤1 tokens ({tokens_received}) in usage chunk. "
+                            f"Using current time as time_at_first_token fallback."
+                        )
                 break
 
             try:
+                # Skip chunks with empty choices
+                if not data["choices"]:
+                    # Even if choices are empty, set time_at_first_token on first chunk
+                    # to ensure we have a timestamp even if response format is unexpected
+                    if not time_at_first_token:
+                        time_at_first_token = time.monotonic()
+                        logger.warning(
+                            f"⚠️ Setting time_at_first_token on chunk with empty choices. "
+                            f"This may indicate unusual response format. Chunk data: {data}"
+                        )
+                    continue
+                    
                 delta = data["choices"][0]["delta"]
                 content = delta.get("content") or delta.get("reasoning_content") or delta.get("reasoning")
                 usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
+                
+                if not time_at_first_token:
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                    time_at_first_token = time.monotonic()
+                
                 if content:
-                    if not time_at_first_token:
-                        if tokens_received > 1:
-                            logger.warning(
-                                f"🚨🚨🚨 The first chunk the server returned "
-                                f"has >1 tokens: {tokens_received}. It will "
-                                f"affect the accuracy of time_at_first_token!"
-                            )
-                        time_at_first_token = time.monotonic()
                     generated_text += content
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
@@ -318,6 +340,13 @@ class OpenAIUser(BaseUser):
                     break
 
             except (IndexError, KeyError) as e:
+                # Even when exceptions occur, try to set time_at_first_token on first chunk
+                if not time_at_first_token:
+                    time_at_first_token = time.monotonic()
+                    logger.warning(
+                        f"⚠️ Setting time_at_first_token after exception on first chunk. "
+                        f"Exception: {e}, data: {data}"
+                    )
                 logger.warning(
                     f"Error processing chunk: {e}, data: {data}, "
                     f"previous_data: {previous_data}, "
@@ -346,6 +375,16 @@ class OpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
+        
+        # Ensure time_at_first_token is never None (fallback to end_time)
+        # This can happen if no content chunks were received or all chunks were skipped
+        if time_at_first_token is None:
+            time_at_first_token = end_time
+            logger.warning(
+                f"⚠️ time_at_first_token was None, using end_time ({end_time}) as fallback. "
+                f"This may indicate an issue with the streaming response format or that no content chunks were received."
+            )
+        
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -467,6 +506,19 @@ class OpenAIUser(BaseUser):
                 "🚨🚨🚨 There is no usage info returned from the model "
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
+            )
+        
+        # Ensure time_at_first_token is never None (fallback to end_time)
+        # This can happen if:
+        # 1. No content chunks were received (e.g., only reasoning tokens in unexpected format)
+        # 2. All chunks were skipped due to empty choices
+        # 3. Response format is unexpected
+        if time_at_first_token is None:
+            time_at_first_token = end_time
+            logger.warning(
+                f"⚠️ time_at_first_token was None, using end_time ({end_time}) as fallback. "
+                f"tokens_received: {tokens_received}, generated_text length: {len(generated_text)}. "
+                f"This may indicate reasoning-only tokens or an unusual response format."
             )
             
         return UserChatResponse(
