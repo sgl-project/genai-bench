@@ -41,4 +41,4 @@ class BasetenAuth(AuthProvider):
         """
         if not self.api_key:
             raise ValueError("Baseten API key is not set")
-        return self.api_key 
+        return self.api_key

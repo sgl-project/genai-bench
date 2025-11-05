@@ -1,6 +1,5 @@
 """Tests for Baseten user implementation."""
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,7 +36,9 @@ class TestBasetenUser:
         env = MagicMock()
         env.sampler = MagicMock()
         env.sampler.get_token_length.return_value = 50
-        BasetenUser.host = "https://model-test.api.baseten.co/environments/production/predict"
+        BasetenUser.host = (
+            "https://model-test.api.baseten.co/environments/production/predict"
+        )
         user = BasetenUser(environment=env)
         user.auth_provider = mock_auth
         user.headers = {
@@ -60,7 +61,9 @@ class TestBasetenUser:
 
     def test_init(self):
         """Test initialization."""
-        BasetenUser.host = "https://model-test.api.baseten.co/environments/production/predict"
+        BasetenUser.host = (
+            "https://model-test.api.baseten.co/environments/production/predict"
+        )
         user = BasetenUser(environment=MagicMock())
         assert hasattr(user, "client")
         assert user.disable_streaming is False
@@ -68,13 +71,17 @@ class TestBasetenUser:
     def test_on_start_missing_auth(self, baseten_user):
         """Test on_start without auth provider."""
         baseten_user.auth_provider = None
-        with pytest.raises(ValueError, match="API key and base must be set for OpenAIUser."):
+        with pytest.raises(
+            ValueError, match="API key and base must be set for OpenAIUser."
+        ):
             baseten_user.on_start()
 
     def test_on_start_missing_host(self, baseten_user):
         """Test on_start without host."""
         baseten_user.host = None
-        with pytest.raises(ValueError, match="API key and base must be set for OpenAIUser."):
+        with pytest.raises(
+            ValueError, match="API key and base must be set for OpenAIUser."
+        ):
             baseten_user.on_start()
 
     @patch("genai_bench.user.baseten_user.requests.post")
@@ -99,7 +106,9 @@ class TestBasetenUser:
         mock_post.return_value = response_mock
 
         # Mock the parse method to return a proper response
-        with patch.object(baseten_user, 'parse_non_streaming_chat_response') as mock_parse:
+        with patch.object(
+            baseten_user, "parse_non_streaming_chat_response"
+        ) as mock_parse:
             mock_parse.return_value = UserChatResponse(
                 status_code=200,
                 generated_text="This is a test response",
@@ -110,7 +119,7 @@ class TestBasetenUser:
                 end_time=1.2,
             )
             # Mock the collect_metrics method to avoid the assertion error
-            with patch.object(baseten_user, 'collect_metrics'):
+            with patch.object(baseten_user, "collect_metrics"):
                 baseten_user.chat()
 
         # Verify request was made with correct payload
@@ -180,11 +189,13 @@ class TestBasetenUser:
         # Mock response
         response_mock = MagicMock()
         response_mock.status_code = 200
-        response_mock.text = '{"choices": [{"message": {"content": "This is a test response"}}]}'
+        response_mock.text = (
+            '{"choices": [{"message": {"content": "This is a test response"}}]}'
+        )
         mock_post.return_value = response_mock
 
         # Mock the parse method to return a proper response
-        with patch.object(baseten_user, 'parse_chat_response') as mock_parse:
+        with patch.object(baseten_user, "parse_chat_response") as mock_parse:
             mock_parse.return_value = UserChatResponse(
                 status_code=200,
                 generated_text="This is a test response",
@@ -238,11 +249,13 @@ class TestBasetenUser:
         # Mock response
         response_mock = MagicMock()
         response_mock.status_code = 200
-        response_mock.text = '{"choices": [{"message": {"content": "This is an image description"}}]}'
+        response_mock.text = (
+            '{"choices": [{"message": {"content": "This is an image description"}}]}'
+        )
         mock_post.return_value = response_mock
 
         # Mock the parse method to return a proper response
-        with patch.object(baseten_user, 'parse_chat_response') as mock_parse:
+        with patch.object(baseten_user, "parse_chat_response") as mock_parse:
             mock_parse.return_value = UserChatResponse(
                 status_code=200,
                 generated_text="This is an image description",
@@ -266,7 +279,9 @@ class TestBasetenUser:
                             {"type": "text", "text": "Describe this image"},
                             {
                                 "type": "image_url",
-                                "image_url": {"url": "data:image/jpeg;base64,base64_image_data"},
+                                "image_url": {
+                                    "url": "data:image/jpeg;base64,base64_image_data"
+                                },
                             },
                         ],
                     }
@@ -291,7 +306,9 @@ class TestBasetenUser:
             additional_request_params={},
         )
 
-        with pytest.raises(AttributeError, match="user_request should be of type UserChatRequest"):
+        with pytest.raises(
+            AttributeError, match="user_request should be of type UserChatRequest"
+        ):
             baseten_user.chat()
 
     @patch("genai_bench.user.baseten_user.requests.post")
@@ -527,7 +544,9 @@ class TestBasetenUser:
                         {"type": "text", "text": "Describe this image"},
                         {
                             "type": "image_url",
-                            "image_url": {"url": "data:image/jpeg;base64,base64_image_data"},
+                            "image_url": {
+                                "url": "data:image/jpeg;base64,base64_image_data"
+                            },
                         },
                     ],
                 }
@@ -547,7 +566,7 @@ class TestBasetenUser:
         # Mock response
         response_mock = MagicMock()
         response_mock.text = "This is a plain text response"
-        
+
         result = baseten_user._parse_plain_text_response(
             response_mock,
             start_time=1.0,
@@ -568,7 +587,7 @@ class TestBasetenUser:
         # Mock response with JSON
         response_mock = MagicMock()
         response_mock.text = '{"text": "This is a JSON response"}'
-        
+
         result = baseten_user._parse_plain_text_response(
             response_mock,
             start_time=1.0,
@@ -586,7 +605,7 @@ class TestBasetenUser:
         # Test with "output" field
         response_mock = MagicMock()
         response_mock.text = '{"output": "This is an output response"}'
-        
+
         result = baseten_user._parse_plain_text_response(
             response_mock,
             start_time=1.0,
@@ -623,9 +642,9 @@ class TestBasetenUser:
         # Mock response that raises exception during json.loads
         response_mock = MagicMock()
         response_mock.text = "Invalid JSON"
-        
+
         # Mock json.loads to raise an exception
-        with patch('json.loads', side_effect=Exception("Test error")):
+        with patch("json.loads", side_effect=Exception("Test error")):
             result = baseten_user._parse_plain_text_response(
                 response_mock,
                 start_time=1.0,
@@ -646,7 +665,7 @@ class TestBasetenUser:
             b"Second chunk",
             b"Third chunk",
         ]
-        
+
         result = baseten_user._parse_plain_text_streaming_response(
             response_mock,
             start_time=1.0,
@@ -667,7 +686,7 @@ class TestBasetenUser:
         # Mock response that raises exception
         response_mock = MagicMock()
         response_mock.iter_lines.side_effect = Exception("Test error")
-        
+
         result = baseten_user._parse_plain_text_streaming_response(
             response_mock,
             start_time=1.0,
@@ -700,7 +719,7 @@ class TestBasetenUser:
         assert payload["temperature"] == 0.7
         assert payload["top_p"] == 0.9
         # Check that stream is set by our logic (not from additional_request_params)
-        assert payload["stream"] == True  # Default streaming enabled
+        assert payload["stream"]  # Default streaming enabled
 
     def test_use_prompt_format_parameter_filtering(self, baseten_user):
         """Test that use_prompt_format parameter is filtered out from additional_request_params."""
@@ -722,4 +741,4 @@ class TestBasetenUser:
         assert "use_prompt_format" not in payload
         # Check that other parameters are preserved
         assert payload["temperature"] == 0.7
-        assert payload["top_p"] == 0.9 
+        assert payload["top_p"] == 0.9

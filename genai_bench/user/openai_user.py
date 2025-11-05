@@ -94,7 +94,7 @@ class OpenAIUser(BaseUser):
             "stream": not self.disable_streaming,
             **user_request.additional_request_params,
         }
-        
+
         # Only add stream_options if streaming is enabled
         if not self.disable_streaming:
             payload["stream_options"] = {
@@ -256,12 +256,12 @@ class OpenAIUser(BaseUser):
             # differently. Some might return 200 first and generate error response
             # later in the chunk
             if data.get("error") is not None:
-                        return UserResponse(
-                            status_code=data["error"].get("code", -1),
-                            error_message=data["error"].get(
-                                "message", "Unknown error, please check server logs"
-                            ),
-                        )
+                return UserResponse(
+                    status_code=data["error"].get("code", -1),
+                    error_message=data["error"].get(
+                        "message", "Unknown error, please check server logs"
+                    ),
+                )
 
             # Standard OpenAI API streams include "finish_reason"
             # in the second-to-last chunk,
@@ -309,14 +309,18 @@ class OpenAIUser(BaseUser):
                             f"This may indicate unusual response format. Chunk data: {data}"
                         )
                     continue
-                    
+
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content") or delta.get("reasoning")
+                content = (
+                    delta.get("content")
+                    or delta.get("reasoning_content")
+                    or delta.get("reasoning")
+                )
                 usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
-                
+
                 if not time_at_first_token:
                     if tokens_received > 1:
                         logger.warning(
@@ -325,7 +329,7 @@ class OpenAIUser(BaseUser):
                             f"affect the accuracy of time_at_first_token!"
                         )
                     time_at_first_token = time.monotonic()
-                
+
                 if content:
                     generated_text += content
 
@@ -375,7 +379,7 @@ class OpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
-        
+
         # Ensure time_at_first_token is never None (fallback to end_time)
         # This can happen if no content chunks were received or all chunks were skipped
         if time_at_first_token is None:
@@ -384,7 +388,7 @@ class OpenAIUser(BaseUser):
                 f"⚠️ time_at_first_token was None, using end_time ({end_time}) as fallback. "
                 f"This may indicate an issue with the streaming response format or that no content chunks were received."
             )
-        
+
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -464,7 +468,7 @@ class OpenAIUser(BaseUser):
             UserChatResponse: A response object with metrics and generated text.
         """
         data = response.json()
-        
+
         # Handle error response
         if data.get("error") is not None:
             return UserResponse(
@@ -477,18 +481,18 @@ class OpenAIUser(BaseUser):
         # Extract response content
         generated_text = data["choices"][0]["message"]["content"]
         finish_reason = data["choices"][0].get("finish_reason", None)
-        
+
         # Get usage information
-        num_prefill_tokens, num_prompt_tokens, tokens_received = (
-            self._get_usage_info(data, num_prefill_tokens)
+        num_prefill_tokens, num_prompt_tokens, tokens_received = self._get_usage_info(
+            data, num_prefill_tokens
         )
-        
+
         end_time = time.monotonic()
-        
+
         # For non-streaming, we can't measure TTFT, so we use a small offset
         # This prevents division by zero in metrics calculation
         time_at_first_token = start_time + 0.001  # 1ms offset
-        
+
         logger.debug(
             f"Generated text: {generated_text} \n"
             f"Finish reason: {finish_reason}\n"
@@ -497,7 +501,7 @@ class OpenAIUser(BaseUser):
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}"
         )
-        
+
         if not tokens_received:
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False
@@ -507,7 +511,7 @@ class OpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
-        
+
         # Ensure time_at_first_token is never None (fallback to end_time)
         # This can happen if:
         # 1. No content chunks were received (e.g., only reasoning tokens in unexpected format)
@@ -520,7 +524,7 @@ class OpenAIUser(BaseUser):
                 f"tokens_received: {tokens_received}, generated_text length: {len(generated_text)}. "
                 f"This may indicate reasoning-only tokens or an unusual response format."
             )
-            
+
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -530,4 +534,3 @@ class OpenAIUser(BaseUser):
             start_time=start_time,
             end_time=end_time,
         )
-

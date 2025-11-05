@@ -1,8 +1,9 @@
 """Tests for Baseten authentication provider."""
 
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from genai_bench.auth.baseten.auth import BasetenAuth
 from genai_bench.auth.baseten.model_auth_adapter import BasetenModelAuthAdapter
@@ -30,8 +31,9 @@ class TestBasetenAuth:
 
     def test_init_with_empty_api_key(self):
         """Test initialization with empty API key raises error."""
-        with pytest.raises(ValueError, match="Baseten API key must be provided"):
-            BasetenAuth(api_key="")
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match="Baseten API key must be provided"):
+                BasetenAuth(api_key="")
 
     def test_get_config(self):
         """Test get_config returns empty dict."""
@@ -88,4 +90,4 @@ class TestBasetenModelAuthAdapter:
         baseten_auth = BasetenAuth(api_key="test-key")
         adapter = BasetenModelAuthAdapter(baseten_auth)
         credentials = adapter.get_credentials()
-        assert credentials == "test-key" 
+        assert credentials == "test-key"
