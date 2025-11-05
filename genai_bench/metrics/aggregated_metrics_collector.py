@@ -250,7 +250,10 @@ class AggregatedMetricsCollector:
         )
 
     def set_run_metadata(
-        self, iteration: int, scenario_str: str, iteration_type: str = "num_concurrency"
+        self,
+        iteration: float,
+        scenario_str: str,
+        iteration_type: str = "num_concurrency",
     ):
         """Set metadata for the current run"""
         setattr(self.aggregated_metrics, iteration_type, iteration)

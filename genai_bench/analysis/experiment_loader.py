@@ -81,8 +81,10 @@ def load_one_experiment(
 
     for file_name in sorted(os.listdir(folder_name)):
         file_path = os.path.join(folder_name, file_name)
+        # Match both integer and decimal numbers in the iteration value
+        # This handles both regular concurrency (integers) and QPS values (decimals) in filenames
         if re.match(
-            r"^.+_.+_(?:concurrency|batch_size)_\d+_time_\d+s\.json$", file_name
+            r"^.+_.+_(?:concurrency|batch_size)_[\d.]+_time_\d+s\.json$", file_name
         ):
             load_run_data(file_path, run_data, filter_criteria)
 

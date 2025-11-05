@@ -627,6 +627,42 @@ def distributed_locust_options(func):
     return func
 
 
+def execution_engine_options(func):
+    """Execution engine options for choosing between Locust and async runner."""
+    func = click.option(
+        "--execution-engine",
+        type=click.Choice(["locust", "async"], case_sensitive=False),
+        default="locust",
+        help="Execution engine: 'locust' (distributed, all backends) or "
+        "'async' (single-process async, OpenAI-compatible backends only)",
+    )(func)
+    func = click.option(
+        "--qps-level",
+        type=click.FLOAT,
+        multiple=True,
+        default=None,
+        required=False,
+        help="QPS (queries per second) for async execution engine. "
+        "Can be specified multiple times to test different QPS levels. "
+        "Required when --execution-engine=async (for open-loop mode). "
+        "Async runner uses QPS-based execution (open-loop), which is different from "
+        "Locust's concurrency-based execution (closed-loop). Use Little's Law to choose QPS: "
+        "QPS = Target Concurrency / Expected Average Latency. "
+        "\n\n"
+        "Example to input multiple values:\n"
+        "--qps-level 0.5 --qps-level 1.0 --qps-level 2.0 --qps-level 5.0",
+    )(func)
+    func = click.option(
+        "--distribution",
+        type=click.Choice(["exponential", "uniform", "constant"], case_sensitive=False),
+        default="exponential",
+        required=False,
+        help="Inter-arrival distribution for async runner: "
+        "'exponential' (default), 'uniform', or 'constant'",
+    )(func)
+    return func
+
+
 # Storage provider authentication options
 def storage_auth_options(func):
     """Storage provider authentication options.

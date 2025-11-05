@@ -227,19 +227,19 @@ class ReRankScenario(Scenario):
 class PrefixRepetitionScenario(Scenario):
     """
     Prefix repetition scenario for KV cache benchmarking.
-    
+
     All concurrent requests share the same prefix but have unique suffixes.
     This enables benchmarking of KV cache performance, chunked prefill efficiency,
     and automatic prefix caching (APC) features in LLM serving engines.
-    
+
     Format: P(prefix_len,suffix_len)/output_len
     Example: P(2000,500)/200
-    
+
     In this example:
     - All requests share a 2000-token prefix (cached after first request)
     - Each request has a unique 500-token suffix
     - Expected output is 200 tokens
-    
+
     This scenario is particularly useful for:
     - Testing KV cache hit rates and speedups
     - Benchmarking prefill performance with cached prefixes
@@ -270,13 +270,14 @@ class PrefixRepetitionScenario(Scenario):
     def parse(cls, params_str: str) -> "PrefixRepetitionScenario":
         """
         Parse the prefix repetition scenario from a string.
-        
+
         Example: "(2000,500)/200" -> PrefixRepetitionScenario(2000, 500, 200)
         """
         # Parse P(prefix_len,suffix_len)/output_len
         # params_str will be "(2000,500)/200"
         import re
-        match = re.match(r'\((\d+),(\d+)\)/(\d+)', params_str)
+
+        match = re.match(r"\((\d+),(\d+)\)/(\d+)", params_str)
         if not match:
             raise ValueError(
                 f"Invalid prefix repetition format: {params_str}. "
