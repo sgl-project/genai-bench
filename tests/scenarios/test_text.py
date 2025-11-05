@@ -139,7 +139,7 @@ def test_prefix_repetition_scenario_to_string():
 def test_prefix_repetition_scenario_parse():
     """Test PrefixRepetitionScenario parsing from string."""
     scenario = PrefixRepetitionScenario.parse("(2000,500)/200")
-    
+
     assert scenario.prefix_len == 2000
     assert scenario.suffix_len == 500
     assert scenario.output_len == 200
@@ -152,7 +152,7 @@ def test_prefix_repetition_scenario_parse_different_values():
         ("(4000,1000)/200", 4000, 1000, 200),
         ("(8000,2000)/500", 8000, 2000, 500),
     ]
-    
+
     for params_str, expected_prefix, expected_suffix, expected_output in test_cases:
         scenario = PrefixRepetitionScenario.parse(params_str)
         assert scenario.prefix_len == expected_prefix
@@ -163,14 +163,14 @@ def test_prefix_repetition_scenario_parse_different_values():
 def test_prefix_repetition_scenario_invalid_format():
     """Test PrefixRepetitionScenario parsing with invalid format."""
     import pytest
-    
+
     invalid_formats = [
         "(2000,500)",  # Missing output
         "(2000)/200",  # Missing suffix
         "2000,500/200",  # Missing parentheses
         "(2000,500,200)",  # Wrong separator
     ]
-    
+
     for invalid_format in invalid_formats:
         with pytest.raises(ValueError):
             PrefixRepetitionScenario.parse(invalid_format)
