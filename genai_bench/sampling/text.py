@@ -41,7 +41,7 @@ class TextSampler(Sampler):
 
         self.data = data
         self.batch_size = 1  # Default batch size
-        
+
         # Cache for shared prefixes in prefix repetition scenarios
         # Key: scenario identifier, Value: generated prefix text
         self._shared_prefix_cache: Dict[str, str] = {}
@@ -76,9 +76,10 @@ class TextSampler(Sampler):
         else:
             # Check if this is a prefix repetition scenario
             from genai_bench.scenarios.text import PrefixRepetitionScenario
+
             if isinstance(scenario, PrefixRepetitionScenario):
                 return self._sample_prefix_repetition_request(scenario)
-            
+
             # Use scenario-based sampling
             self._validate_scenario(scenario)
             num_input_tokens, num_output_tokens = scenario.sample()
@@ -199,9 +200,11 @@ class TextSampler(Sampler):
             for line in data_copy:
                 # Tokenize line with space prefix to match how it will be concatenated
                 line_with_space = (" " if prompt else "") + line
-                line_tokens = self.tokenizer.encode(line_with_space, add_special_tokens=False)
+                line_tokens = self.tokenizer.encode(
+                    line_with_space, add_special_tokens=False
+                )
                 num_line_tokens = len(line_tokens)
-                
+
                 if num_line_tokens > left_tokens_to_sample:
                     # Truncate at token level, decode only needed tokens
                     truncated_text = self.tokenizer.decode(
@@ -209,8 +212,9 @@ class TextSampler(Sampler):
                     )
                     prompt += (" " if prompt else "") + truncated_text
                     return prompt
-                
-                # Add line with space separator (consistent with truncated text handling)
+
+                # Add line with space separator
+                # (consistent with truncated text handling)
                 prompt += (" " if prompt else "") + line
                 left_tokens_to_sample -= num_line_tokens
         return prompt
@@ -238,77 +242,80 @@ class TextSampler(Sampler):
                 f"discrepancy={discrepancy}"
             )
 
-    def _sample_prefix_repetition_request(
-        self, scenario
-    ) -> UserChatRequest:
+    def _sample_prefix_repetition_request(self, scenario) -> UserChatRequest:
         """Generate request with shared prefix for KV cache benchmarking.
-        
-        This method creates requests where all concurrent requests share the 
+
+        This method creates requests where all concurrent requests share the
         exact same prefix text, enabling benchmarking of:
         - KV cache hit rates and speedups
         - Automatic prefix caching (APC) performance
         - Chunked prefill efficiency
         - Time To First Token (TTFT) improvements
-        
+
         Args:
             scenario: PrefixRepetitionScenario with prefix_len, suffix_len, output_len
-            
+
         Returns:
             UserChatRequest with shared prefix + unique suffix
         """
         prefix_len, suffix_len, output_len = scenario.sample()
-        
+
         # Get or create shared prefix (cached for ALL requests in this scenario run)
         cache_key = f"prefix_{prefix_len}"
         if cache_key not in self._shared_prefix_cache:
             # Generate the shared prefix once
             prefix = self._sample_text(prefix_len)
             self._shared_prefix_cache[cache_key] = prefix
-            
+
             # Calculate hash for verification
             import hashlib
+
             prefix_hash = hashlib.md5(prefix.encode()).hexdigest()[:8]
-            
+
             logger.info(
-                f"🔑 Generated shared prefix ({prefix_len} tokens) for KV cache benchmarking. "
+                f"🔑 Generated shared prefix ({prefix_len} tokens) "
+                f"for KV cache benchmarking. "
                 f"All subsequent requests in this scenario will reuse this prefix."
             )
             logger.debug(
-                f"   Prefix hash: {prefix_hash} | "
-                f"Preview: {prefix[:100]}..."
+                f"   Prefix hash: {prefix_hash} | " f"Preview: {prefix[:100]}..."
             )
         else:
             prefix = self._shared_prefix_cache[cache_key]
-            
+
             # Log cache reuse (only for first few to avoid spam)
             if self._suffix_counter < 5:
                 import hashlib
+
                 prefix_hash = hashlib.md5(prefix.encode()).hexdigest()[:8]
                 logger.debug(
-                    f"♻️  Reusing cached prefix (hash: {prefix_hash}) for request #{self._suffix_counter + 1}"
+                    f"♻️  Reusing cached prefix (hash: {prefix_hash}) "
+                    f"for request #{self._suffix_counter + 1}"
                 )
-        
+
         # Generate unique suffix for THIS specific request
         suffix = self._sample_text(suffix_len)
         self._suffix_counter += 1
-        
+
         # Log suffix info for first few requests
         if self._suffix_counter <= 5:
             import hashlib
+
             suffix_hash = hashlib.md5(suffix.encode()).hexdigest()[:8]
             suffix_actual_tokens = self.get_token_length(suffix)
             logger.debug(
-                f"📝 Request #{self._suffix_counter}: Unique suffix generated (hash: {suffix_hash}), "
+                f"📝 Request #{self._suffix_counter}: "
+                f"Unique suffix generated (hash: {suffix_hash}), "
                 f"requested {suffix_len} tokens, actual {suffix_actual_tokens} tokens"
             )
-        
+
         # Combine prefix + separator + suffix
         # The separator helps distinguish requests while keeping prefix identical
         separator = f"\n\n--- Request #{self._suffix_counter} ---\n\n"
         prompt = f"{prefix}{separator}{suffix}"
-        
+
         num_prefill_tokens = self.get_token_length(prompt)
-        
+
         # Log actual token breakdown for first request
         if self._suffix_counter <= 2:
             prefix_tokens = self.get_token_length(prefix)
@@ -316,17 +323,18 @@ class TextSampler(Sampler):
             suffix_tokens = self.get_token_length(suffix)
             logger.debug(
                 f"🔍 Token breakdown for request #{self._suffix_counter}: "
-                f"prefix={prefix_tokens}, separator={separator_tokens}, suffix={suffix_tokens}, "
-                f"total={num_prefill_tokens} (expected ~{prefix_len + suffix_len + 20})"
+                f"prefix={prefix_tokens}, separator={separator_tokens}, "
+                f"suffix={suffix_tokens}, total={num_prefill_tokens} "
+                f"(expected ~{prefix_len + suffix_len + 20})"
             )
-        
+
         # Expected tokens: prefix + suffix + separator overhead (~20 tokens)
         expected_tokens = prefix_len + suffix_len + 20
         self._check_discrepancy(expected_tokens, num_prefill_tokens, threshold=0.15)
-        
+
         # Set ignore_eos to ensure we get the expected output length
         self.additional_request_params["ignore_eos"] = True
-        
+
         return UserChatRequest(
             model=self.model,
             prompt=prompt,
@@ -334,16 +342,17 @@ class TextSampler(Sampler):
             max_tokens=output_len,
             additional_request_params=self.additional_request_params,
         )
-    
+
     def reset_prefix_cache(self):
         """Clear the prefix cache and reset counter.
-        
+
         This should be called between different scenario runs to ensure
         each scenario gets a fresh prefix.
         """
         if self._suffix_counter > 0:
             logger.info(
-                f"🔄 Resetting prefix cache. Previous scenario generated {self._suffix_counter} requests "
+                f"🔄 Resetting prefix cache. "
+                f"Previous scenario generated {self._suffix_counter} requests "
                 f"with {len(self._shared_prefix_cache)} cached prefix(es)."
             )
         self._shared_prefix_cache.clear()
