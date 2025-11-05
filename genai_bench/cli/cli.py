@@ -18,6 +18,7 @@ from genai_bench.auth.unified_factory import UnifiedAuthFactory
 from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
+    execution_engine_options,
     experiment_options,
     model_auth_options,
     object_storage_options,
@@ -64,6 +65,7 @@ def cli(ctx):
 @experiment_options
 @sampling_options
 @distributed_locust_options
+@execution_engine_options
 @object_storage_options
 @storage_auth_options
 @click.pass_context
@@ -121,6 +123,9 @@ def benchmark(
     num_workers,
     master_port,
     spawn_rate,
+    execution_engine,
+    qps_level,
+    distribution,
     upload_results,
     namespace,
     # Storage auth options
@@ -162,9 +167,16 @@ def benchmark(
 
     # Log all parameters (filtering out sensitive information)
     logger.info("Options you provided:")
-    sensitive_params = {"api_key", "model_api_key", "aws_access_key_id", "aws_secret_access_key", 
-                       "aws_session_token", "azure_ad_token", "github_token"}
-    
+    sensitive_params = {
+        "api_key",
+        "model_api_key",
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "aws_session_token",
+        "azure_ad_token",
+        "github_token",
+    }
+
     for key, value in ctx.params.items():
         # Check if this is a sensitive parameter that came from environment variable
         if key in sensitive_params and os.getenv(key.upper().replace("-", "_")):
@@ -236,7 +248,12 @@ def benchmark(
     elif api_backend == "baseten":
         # Baseten uses API key authentication
         # Check for API key in order: model_api_key, api_key, MODEL_API_KEY, BASETEN_API_KEY
-        baseten_api_key = model_api_key or api_key or os.getenv("MODEL_API_KEY") or os.getenv("BASETEN_API_KEY")
+        baseten_api_key = (
+            model_api_key
+            or api_key
+            or os.getenv("MODEL_API_KEY")
+            or os.getenv("BASETEN_API_KEY")
+        )
         auth_kwargs["api_key"] = baseten_api_key
 
     # Map backend names for auth factory
@@ -256,9 +273,16 @@ def benchmark(
 
     # Rebuild the cmd_line from ctx.params, filtering out sensitive information
     cmd_line_parts = [sys.argv[0]]
-    sensitive_params = {"api_key", "model_api_key", "aws_access_key_id", "aws_secret_access_key", 
-                       "aws_session_token", "azure_ad_token", "github_token"}
-    
+    sensitive_params = {
+        "api_key",
+        "model_api_key",
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "aws_session_token",
+        "azure_ad_token",
+        "github_token",
+    }
+
     for key, value in ctx.params.items():
         if isinstance(value, (list, tuple)):
             for item in value:
@@ -371,7 +395,378 @@ def benchmark(
     )
     experiment_metadata_file.write_text(experiment_metadata.model_dump_json(indent=4))
 
-    # Initialize environment
+    # Route to appropriate execution engine
+    if execution_engine.lower() == "async":
+        # Warn if backend not fully supported
+        if api_backend not in ["openai", "baseten"]:
+            logger.warning(
+                f"⚠️ Async runner currently supports OpenAI-compatible backends only. "
+                f"Backend '{api_backend}' may not work correctly. "
+                f"Consider using --execution-engine=locust instead."
+            )
+
+        # Determine async runner execution mode
+        # Open-loop: QPS input (--qps-level specified)
+        # Closed-loop: Concurrency input (--num-concurrency specified, no --qps-level)
+        # Handle qps_level as tuple when multiple values provided, or single value/None
+        qps_level_list = (
+            list(qps_level)
+            if isinstance(qps_level, (tuple, list))
+            else ([qps_level] if qps_level is not None else [])
+        )
+
+        if not qps_level_list and not num_concurrency:
+            raise ValueError(
+                "Async runner requires either --qps-level (open-loop mode) or --num-concurrency "
+                "(closed-loop mode). Use --qps-level for QPS-based load, or --num-concurrency "
+                "for concurrency-based load with better streaming metrics than Locust."
+            )
+
+        use_closed_loop = not qps_level_list and num_concurrency is not None
+
+        if use_closed_loop:
+            logger.info(
+                "🔄 Using async runner in closed-loop mode: maintaining target concurrency "
+                "(better streaming metrics than Locust)"
+            )
+        else:
+            logger.info(
+                "📊 Using async runner in open-loop mode: fixed QPS arrival rate"
+            )
+
+        # Use async runner factory
+        from genai_bench.async_runner.factory import create_runner
+
+        # Create aggregated metrics collector for async runner
+        from genai_bench.metrics.aggregated_metrics_collector import (
+            AggregatedMetricsCollector,
+        )
+
+        aggregated_metrics_collector = AggregatedMetricsCollector()
+
+        # Iterate over each scenario and run with async runner
+        # For open-loop mode with qps_level, use QPS as iteration value instead of concurrency
+        if not use_closed_loop and qps_level_list:
+            # Open-loop mode: iterate over QPS values
+            iteration_values = qps_level_list
+            iteration_type_display = "qps"
+        else:
+            # Closed-loop mode or batch_size: use normal iteration
+            iteration_values = (
+                batch_size if iteration_type == "batch_size" else num_concurrency
+            )
+            iteration_type_display = iteration_type
+
+        # Create runner once - QPS value is passed to run() method, not constructor
+        # For open-loop mode, pass first QPS value just to determine runner type (not stored)
+        # For closed-loop mode, pass first concurrency value just to determine runner type (not stored)
+        if use_closed_loop:
+            runner = create_runner(
+                sampler=sampler,
+                api_backend=api_backend,
+                api_base=api_base,
+                api_model_name=api_model_name,
+                auth_provider=auth_provider,
+                aggregated_metrics_collector=aggregated_metrics_collector,
+                dashboard=dashboard,
+                qps_level=None,
+                target_concurrency=num_concurrency[0]
+                if num_concurrency
+                else None,  # Just for validation, actual value set in run()
+            )
+        else:
+            # Open-loop mode: pass first QPS value just to determine runner type
+            # Actual QPS values are passed to run() method per-iteration
+            runner = create_runner(
+                sampler=sampler,
+                api_backend=api_backend,
+                api_base=api_base,
+                api_model_name=api_model_name,
+                auth_provider=auth_provider,
+                aggregated_metrics_collector=aggregated_metrics_collector,
+                dashboard=dashboard,
+                qps_level=qps_level_list[0]
+                if qps_level_list
+                else None,  # Just for validation, actual value set in run()
+                target_concurrency=None,
+            )
+
+        total_runs = len(traffic_scenario) * len(iteration_values)
+        dashboard.initialize_total_progress_bars(total_runs)
+
+        with dashboard.live:
+            for scenario_str in traffic_scenario:
+                dashboard.reset_plot_metrics()
+                sanitized_scenario_str = sanitize_string(scenario_str)
+
+                # Store metrics for current scenario for interim plot
+                scenario_metrics = {
+                    "data": {},
+                    f"{iteration_type_display}": [],
+                }
+
+                # Reset prefix cache for new scenario
+                if hasattr(sampler, "reset_prefix_cache"):
+                    sampler.reset_prefix_cache()
+
+                for iteration in iteration_values:
+                    dashboard.reset_panels()
+                    # Create a new progress bar on dashboard
+                    if not use_closed_loop and qps_level_list:
+                        # Open-loop mode: show QPS
+                        iteration_header = "QPS"
+                        batch_size = 1
+                        concurrency = None
+                        progress_label = (
+                            f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
+                        )
+                    else:
+                        # Closed-loop mode or batch_size: use normal logic
+                        iteration_header, batch_size, concurrency = get_run_params(
+                            iteration_type, iteration
+                        )
+                        progress_label = (
+                            f"Scenario: {scenario_str}, {iteration_header}: {iteration}"
+                        )
+
+                    dashboard.create_benchmark_progress_task(progress_label)
+
+                    # Clear metrics for new run (must be done before setting metadata)
+                    aggregated_metrics_collector.clear()
+
+                    # Set run metadata (after clear to ensure it's not wiped)
+                    # For QPS (open-loop mode), store QPS value directly in num_concurrency field
+                    # This matches the simpler approach: store decimals as-is, handle in filenames/regex
+                    if not use_closed_loop and qps_level_list:
+                        # Store QPS value directly (0.5 stays 0.5) in num_concurrency field
+                        # Use iteration_type="num_concurrency" for compatibility with existing code
+                        aggregated_metrics_collector.set_run_metadata(
+                            iteration=iteration,  # Store QPS value as-is (e.g., 0.5)
+                            scenario_str=scenario_str,
+                            iteration_type="num_concurrency",  # Use existing field for compatibility
+                        )
+                    else:
+                        aggregated_metrics_collector.set_run_metadata(
+                            iteration=iteration,
+                            scenario_str=scenario_str,
+                            iteration_type=iteration_type,
+                        )
+
+                    start_time = time.monotonic()
+
+                    # Run with async runner (either open-loop or closed-loop mode)
+                    if use_closed_loop:
+                        # Closed-loop mode: maintain target concurrency
+                        runner.run(
+                            target_concurrency=iteration,
+                            duration_s=max_time_per_run,
+                            distribution=distribution.lower(),
+                            random_seed=42,  # Fixed seed for reproducibility
+                            max_requests=max_requests_per_run,
+                            max_time_s=max_time_per_run,
+                            scenario=scenario_str,
+                        )
+                    else:
+                        # Open-loop mode: fixed QPS (use current iteration value)
+                        runner.run(
+                            qps_level=iteration,  # Current QPS value from iteration_values
+                            duration_s=max_time_per_run,
+                            distribution=distribution.lower(),
+                            random_seed=42,  # Fixed seed for reproducibility
+                            max_requests=max_requests_per_run,
+                            max_time_s=max_time_per_run,
+                            scenario=scenario_str,
+                        )
+
+                    end_time = time.monotonic()
+
+                    # Aggregate metrics after each run
+                    try:
+                        aggregated_metrics_collector.aggregate_metrics_data(
+                            start_time,
+                            end_time,
+                            sonnet_character_token_ratio,
+                            warmup_ratio,
+                            cooldown_ratio,
+                        )
+                    except ValueError as e:
+                        debug_file_name = (
+                            f"debug_for_run_{sanitized_scenario_str}_{iteration}.json"
+                        )
+                        aggregated_metrics_collector.save(
+                            os.path.join(experiment_folder_abs_path, debug_file_name),
+                            metrics_time_unit,
+                        )
+                        raise ValueError(
+                            f"{str(e)} Please check out "
+                            f"{debug_file_name} to see the detailed individual "
+                            f"metrics!"
+                        ) from e
+
+                    dashboard.update_scatter_plot_panel(
+                        aggregated_metrics_collector.get_ui_scatter_plot_metrics(
+                            metrics_time_unit
+                        ),
+                        metrics_time_unit,
+                    )
+
+                    logger.info(
+                        f"⏩ Run for scenario {scenario_str}, "
+                        f"{iteration_type_display} {iteration} has finished after "
+                        f"{int(end_time - start_time)} seconds."
+                    )
+
+                    # Save and clear metrics after each run
+                    # For QPS, use iteration_type for filename to maintain compatibility
+                    # Store QPS values as decimals in filename (handled by regex pattern)
+                    filename_iteration_type = (
+                        iteration_type
+                        if iteration_type_display == "qps"
+                        else iteration_type_display
+                    )
+                    run_name = (
+                        f"{sanitized_scenario_str}_{task}_{filename_iteration_type}_"
+                        f"{iteration}_time_{max_time_per_run}s.json"
+                    )
+                    aggregated_metrics_collector.save(
+                        os.path.join(experiment_folder_abs_path, run_name),
+                        metrics_time_unit,
+                    )
+                    # Store metrics in memory for interim plot
+                    # Use QPS value as-is (decimals) as key to match what's stored in num_concurrency
+                    # This ensures consistency between in-memory storage and file loading
+                    scenario_metrics["data"][iteration] = {
+                        "aggregated_metrics": aggregated_metrics_collector.aggregated_metrics
+                    }
+                    scenario_metrics[f"{iteration_type_display}"].append(iteration)
+                    aggregated_metrics_collector.clear()
+
+                    dashboard.update_total_progress_bars(total_runs)
+
+                    # Sleep for 1 sec for server to clear aborted requests
+                    time.sleep(1)
+
+                # Plot using in-memory data after all concurrency levels are done
+                plot_single_scenario_inference_speed_vs_throughput(
+                    scenario_str,
+                    experiment_folder_abs_path,
+                    task,
+                    scenario_metrics,
+                    iteration_type_display,
+                )
+
+        # Sleep for 2 secs before the UI disappears
+        time.sleep(2)
+
+        # Flash all the logs to terminal
+        if delayed_log_handler:
+            delayed_log_handler.flush_buffer()
+        logger.info("🚀 The whole experiment has finished!")
+
+        # Generate excel and plots for report
+        experiment_metadata, run_data = load_one_experiment(experiment_folder_abs_path)
+        create_workbook(
+            experiment_metadata,
+            run_data,
+            os.path.join(
+                experiment_folder_abs_path,
+                f"{Path(experiment_folder_abs_path).name}_summary.xlsx",
+            ),
+            percentile="mean",
+            metrics_time_unit=metrics_time_unit,
+        )
+        plot_experiment_data_flexible(
+            [
+                (experiment_metadata, run_data),
+            ],
+            group_key="traffic_scenario",
+            experiment_folder=experiment_folder_abs_path,
+            metrics_time_unit=metrics_time_unit,
+        )
+        logger.info(
+            f"📁 Please check {experiment_folder_abs_path} "
+            f"for the detailed results, sheets, and plots."
+        )
+
+        # Upload experiment results to object storage
+        if upload_results:
+            # Determine storage provider and bucket
+            storage_provider_final = storage_provider or "oci"
+            storage_bucket_final = storage_bucket
+            storage_prefix_final = storage_prefix
+
+            # Create storage authentication
+            storage_auth_kwargs = {}
+            if storage_provider_final == "oci":
+                storage_auth_kwargs.update(
+                    {
+                        "auth_type": storage_auth_type or auth,
+                        "config_file": config_file,
+                        "profile": profile,
+                        "security_token": security_token,
+                        "region": region,
+                    }
+                )
+            elif storage_provider_final == "aws":
+                storage_auth_kwargs.update(
+                    {
+                        "access_key_id": storage_aws_access_key_id,
+                        "secret_access_key": storage_aws_secret_access_key,
+                        "session_token": storage_aws_session_token,
+                        "region": storage_aws_region,
+                        "profile": storage_aws_profile,
+                    }
+                )
+            elif storage_provider_final == "azure":
+                storage_auth_kwargs.update(
+                    {
+                        "account_name": storage_azure_account_name,
+                        "account_key": storage_azure_account_key,
+                        "connection_string": storage_azure_connection_string,
+                        "sas_token": storage_azure_sas_token,
+                    }
+                )
+            elif storage_provider_final == "gcp":
+                storage_auth_kwargs.update(
+                    {
+                        "project_id": storage_gcp_project_id,
+                        "credentials_path": storage_gcp_credentials_path,
+                    }
+                )
+            elif storage_provider_final == "github":
+                storage_auth_kwargs.update(
+                    {
+                        "token": github_token,
+                        "owner": github_owner,
+                        "repo": github_repo,
+                    }
+                )
+
+            # Create storage auth provider
+            storage_auth_provider = UnifiedAuthFactory.create_storage_auth(
+                storage_provider_final, **storage_auth_kwargs
+            )
+
+            # Create storage instance and upload
+            storage_kwargs = {}
+            if storage_provider_final == "oci" and namespace:
+                storage_kwargs["namespace"] = namespace
+
+            storage = StorageFactory.create_storage(
+                storage_provider_final, storage_auth_provider, **storage_kwargs
+            )
+            storage.upload_directory(
+                experiment_folder_abs_path,
+                storage_bucket_final,
+                storage_prefix_final,
+            )
+            logger.info(
+                f"✅ Results uploaded to {storage_provider_final}://{storage_bucket_final}/{storage_prefix_final}"
+            )
+
+        return
+
+    # Initialize environment (Locust path)
     environment = Environment(user_classes=[user_class])
     # Assign the selected task to the user class
     environment.user_classes[0].tasks = [user_task]
@@ -403,15 +798,16 @@ def benchmark(
     # and run the experiment
     iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
+    dashboard.initialize_total_progress_bars(total_runs)
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
             sanitized_scenario_str = sanitize_string(scenario_str)
             runner.update_scenario(scenario_str)
-            
+
             # Reset prefix cache for new scenario to ensure fresh prefix
             # This is critical for prefix repetition scenarios to work correctly
-            if hasattr(sampler, 'reset_prefix_cache'):
+            if hasattr(sampler, "reset_prefix_cache"):
                 sampler.reset_prefix_cache()
 
             # Store metrics for current scenario for interim plot

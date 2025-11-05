@@ -127,7 +127,9 @@ class AggregatedMetrics(BaseModel):
 
     # Run Metadata
     scenario: Optional[str] = Field(None, description="The sample scenario")
-    num_concurrency: int = Field(1, description="Number of concurrency")
+    num_concurrency: float = Field(
+        1, description="Number of concurrency (or QPS for open-loop mode)"
+    )
     batch_size: int = Field(1, description="Batch size for embedding tasks")
     iteration_type: str = Field(
         "num_concurrency",
@@ -166,6 +168,12 @@ class AggregatedMetrics(BaseModel):
     num_error_requests: int = Field(0, description="Number of error requests")
     num_completed_requests: int = Field(0, description="Number of completed requests")
     num_requests: int = Field(0, description="Number of total requests")
+    total_arrivals: Optional[int] = Field(
+        None, description="Total number of arrivals (for QPS-based traffic)"
+    )
+    arrival_requests_per_second: Optional[float] = Field(
+        None, description="Arrival rate in requests per second (for QPS-based traffic)"
+    )
 
     stats: MetricStats = Field(
         default_factory=MetricStats,

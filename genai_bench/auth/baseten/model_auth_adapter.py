@@ -46,4 +46,4 @@ class BasetenModelAuthAdapter(ModelAuthProvider):
         Returns:
             Optional[str]: Baseten API key
         """
-        return self.baseten_auth.get_credentials() 
+        return self.baseten_auth.get_credentials()
