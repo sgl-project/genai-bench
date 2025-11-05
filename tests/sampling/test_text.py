@@ -274,7 +274,7 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             output_modality="text",
             data=self.test_data,
         )
-        
+
         # Mock tokenizer to return predictable results
         self.tokenizer.encode.return_value = list(range(10))
         self.tokenizer.decode.return_value = "test text"
@@ -286,9 +286,9 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         request = self.sampler.sample(scenario)
-        
+
         self.assertIsInstance(request, UserChatRequest)
         self.assertEqual(request.model, "mock_model")
         self.assertEqual(request.max_tokens, 200)
@@ -302,28 +302,29 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Mock _sample_text to return predictable values
         call_count = [0]
+
         def mock_sample_text(num_tokens):
             call_count[0] += 1
             return f"text_chunk_{call_count[0]}_tokens_{num_tokens}"
-        
-        with patch.object(self.sampler, '_sample_text', side_effect=mock_sample_text):
+
+        with patch.object(self.sampler, "_sample_text", side_effect=mock_sample_text):
             # Generate multiple requests
             request1 = self.sampler._sample_prefix_repetition_request(scenario)
             request2 = self.sampler._sample_prefix_repetition_request(scenario)
             request3 = self.sampler._sample_prefix_repetition_request(scenario)
-            
+
             # Extract prefixes (text before the separator)
             prefix1 = request1.prompt.split("\n\n--- Request #")[0]
             prefix2 = request2.prompt.split("\n\n--- Request #")[0]
             prefix3 = request3.prompt.split("\n\n--- Request #")[0]
-            
+
             # All prefixes should be identical
             self.assertEqual(prefix1, prefix2)
             self.assertEqual(prefix2, prefix3)
-            
+
             # But full prompts should be different (different suffixes)
             self.assertNotEqual(request1.prompt, request2.prompt)
             self.assertNotEqual(request2.prompt, request3.prompt)
@@ -335,24 +336,23 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Initially, cache should be empty
         self.assertEqual(len(self.sampler._shared_prefix_cache), 0)
-        
+
         # Generate first request - should create cache entry
         _ = self.sampler._sample_prefix_repetition_request(scenario)
         self.assertEqual(len(self.sampler._shared_prefix_cache), 1)
         self.assertIn("prefix_2000", self.sampler._shared_prefix_cache)
-        
+
         # Generate second request - should reuse cache
         cached_prefix = self.sampler._shared_prefix_cache["prefix_2000"]
         _ = self.sampler._sample_prefix_repetition_request(scenario)
-        
+
         # Cache should still have the same entry
         self.assertEqual(len(self.sampler._shared_prefix_cache), 1)
         self.assertEqual(
-            self.sampler._shared_prefix_cache["prefix_2000"],
-            cached_prefix
+            self.sampler._shared_prefix_cache["prefix_2000"], cached_prefix
         )
 
     def test_suffix_counter_increments(self):
@@ -362,17 +362,17 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Initially counter should be 0
         self.assertEqual(self.sampler._suffix_counter, 0)
-        
+
         # Generate requests and check counter
         _ = self.sampler._sample_prefix_repetition_request(scenario)
         self.assertEqual(self.sampler._suffix_counter, 1)
-        
+
         _ = self.sampler._sample_prefix_repetition_request(scenario)
         self.assertEqual(self.sampler._suffix_counter, 2)
-        
+
         _ = self.sampler._sample_prefix_repetition_request(scenario)
         self.assertEqual(self.sampler._suffix_counter, 3)
 
@@ -383,18 +383,18 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Generate some requests
         _ = self.sampler._sample_prefix_repetition_request(scenario)
         _ = self.sampler._sample_prefix_repetition_request(scenario)
-        
+
         # Verify cache and counter are populated
         self.assertGreater(len(self.sampler._shared_prefix_cache), 0)
         self.assertGreater(self.sampler._suffix_counter, 0)
-        
+
         # Reset cache
         self.sampler.reset_prefix_cache()
-        
+
         # Verify cache and counter are cleared
         self.assertEqual(len(self.sampler._shared_prefix_cache), 0)
         self.assertEqual(self.sampler._suffix_counter, 0)
@@ -411,27 +411,28 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Mock _sample_text to return distinct values
         call_count = [0]
+
         def mock_sample_text(num_tokens):
             call_count[0] += 1
             return f"prefix_{num_tokens}_call_{call_count[0]}"
-        
-        with patch.object(self.sampler, '_sample_text', side_effect=mock_sample_text):
+
+        with patch.object(self.sampler, "_sample_text", side_effect=mock_sample_text):
             # Generate requests with different prefix lengths
             _ = self.sampler._sample_prefix_repetition_request(scenario1)
             _ = self.sampler._sample_prefix_repetition_request(scenario2)
-            
+
             # Should have two different cache entries
             self.assertEqual(len(self.sampler._shared_prefix_cache), 2)
             self.assertIn("prefix_1000", self.sampler._shared_prefix_cache)
             self.assertIn("prefix_2000", self.sampler._shared_prefix_cache)
-            
+
             # Cache values should be different
             self.assertNotEqual(
                 self.sampler._shared_prefix_cache["prefix_1000"],
-                self.sampler._shared_prefix_cache["prefix_2000"]
+                self.sampler._shared_prefix_cache["prefix_2000"],
             )
 
     def test_prefix_repetition_with_ignore_eos(self):
@@ -441,9 +442,9 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         request = self.sampler._sample_prefix_repetition_request(scenario)
-        
+
         # ignore_eos should be True for prefix repetition scenarios
         self.assertTrue(request.additional_request_params.get("ignore_eos"))
 
@@ -454,32 +455,27 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Simulate 10 concurrent requests
         num_requests = 10
         requests = []
-        
+
         for _ in range(num_requests):
             request = self.sampler._sample_prefix_repetition_request(scenario)
             requests.append(request)
-        
+
         # Extract all prefixes
-        prefixes = [
-            req.prompt.split("\n\n--- Request #")[0]
-            for req in requests
-        ]
-        
+        prefixes = [req.prompt.split("\n\n--- Request #")[0] for req in requests]
+
         # All prefixes should be identical
         self.assertEqual(len(set(prefixes)), 1, "All prefixes should be identical")
-        
+
         # But all full prompts should be unique (different request numbers)
         full_prompts = [req.prompt for req in requests]
         self.assertEqual(
-            len(set(full_prompts)),
-            num_requests,
-            "All full prompts should be unique"
+            len(set(full_prompts)), num_requests, "All full prompts should be unique"
         )
-        
+
         # Verify request numbers are sequential
         for i, request in enumerate(requests, start=1):
             self.assertIn(f"Request #{i}", request.prompt)
@@ -491,18 +487,18 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         with self.assertLogs("genai_bench.sampling.text", level="INFO") as log:
             # First request should log prefix generation
             _ = self.sampler._sample_prefix_repetition_request(scenario)
-            
+
             self.assertTrue(
                 any("Generated shared prefix" in msg for msg in log.output),
-                "Should log when prefix is generated"
+                "Should log when prefix is generated",
             )
             self.assertTrue(
                 any("2000 tokens" in msg for msg in log.output),
-                "Should log prefix length"
+                "Should log prefix length",
             )
 
     def test_cache_isolation_between_samplers(self):
@@ -512,7 +508,7 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             suffix_len=500,
             output_len=200,
         )
-        
+
         # Create second sampler
         sampler2 = TextSampler(
             tokenizer=self.tokenizer,
@@ -520,12 +516,12 @@ class TestTextSamplerPrefixRepetition(unittest.TestCase):
             output_modality="text",
             data=self.test_data,
         )
-        
+
         # Generate request with first sampler
         _ = self.sampler._sample_prefix_repetition_request(scenario)
-        
+
         # First sampler should have cache
         self.assertEqual(len(self.sampler._shared_prefix_cache), 1)
-        
+
         # Second sampler should have empty cache
         self.assertEqual(len(sampler2._shared_prefix_cache), 0)

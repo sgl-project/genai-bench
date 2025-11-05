@@ -283,7 +283,7 @@ def test_prefix_repetition_to_string():
     """Test PrefixRepetitionScenario to_string roundtrip."""
     scenario = Scenario.from_string("P(4000,1000)/500")
     assert scenario.to_string() == "P(4000,1000)/500"
-    
+
     # Test roundtrip
     scenario2 = Scenario.from_string(scenario.to_string())
     assert isinstance(scenario2, PrefixRepetitionScenario)
@@ -300,7 +300,7 @@ def test_prefix_repetition_invalid_formats():
         "P2000,500/200",  # Missing parentheses
         "P(2000,500,200)",  # Wrong format - should use /
     ]
-    
+
     for invalid_format in invalid_formats:
         with pytest.raises(ValueError, match="Invalid scenario string"):
             Scenario.from_string(invalid_format)
