@@ -137,13 +137,13 @@ class BaseAsyncRunner:
                 latency = response.end_time - response.start_time
                 latencies.append(latency)
                 logger.info(
-                    f"  Probe request {i+1}/{num_probe_requests}: "
+                    f"  Probe request {i + 1}/{num_probe_requests}: "
                     f"latency = {latency:.3f}s"
                 )
             else:
                 error_msg = response.error_message or "Unknown error"
                 logger.warning(
-                    f"  Probe request {i+1}/{num_probe_requests} failed: "
+                    f"  Probe request {i + 1}/{num_probe_requests} failed: "
                     f"status={response.status_code}, error={error_msg[:200]}"
                 )
 

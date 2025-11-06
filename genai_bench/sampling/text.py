@@ -282,9 +282,7 @@ class TextSampler(Sampler):
                 f"🔑 Generated shared prefix ({prefix_len} tokens) for KV cache benchmarking. "
                 f"All subsequent requests in this scenario will reuse this prefix."
             )
-            logger.debug(
-                f"   Prefix hash: {prefix_hash} | " f"Preview: {prefix[:100]}..."
-            )
+            logger.debug(f"   Prefix hash: {prefix_hash} | Preview: {prefix[:100]}...")
         else:
             prefix = self._shared_prefix_cache[cache_key]
 

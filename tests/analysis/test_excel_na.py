@@ -128,9 +128,9 @@ def test_time_unit_conversion_seconds_to_milliseconds():
         # Check that TTFT column header shows milliseconds
         headers = [cell.value for cell in ws[1]]
         ttft_header = headers[3]  # TTFT column
-        assert "ms" in str(
-            ttft_header
-        ), f"Expected TTFT header to show ms, got: {ttft_header}"
+        assert "ms" in str(ttft_header), (
+            f"Expected TTFT header to show ms, got: {ttft_header}"
+        )
 
         # Check that the actual TTFT value was converted from 0.5s to 500ms
         ttft_value = ws[2][3].value  # Row 2, column 4 (TTFT value)
@@ -138,9 +138,9 @@ def test_time_unit_conversion_seconds_to_milliseconds():
 
         # Check that e2e_latency value was converted from 1.0s to 1000ms
         e2e_latency_value = ws[2][6].value  # Row 2, column 7 (e2e_latency value)
-        assert (
-            e2e_latency_value == 1000.0
-        ), f"Expected e2e_latency value 1000.0ms, got: {e2e_latency_value}"
+        assert e2e_latency_value == 1000.0, (
+            f"Expected e2e_latency value 1000.0ms, got: {e2e_latency_value}"
+        )
 
 
 def test_time_unit_conversion_milliseconds_to_seconds():
@@ -178,9 +178,9 @@ def test_time_unit_conversion_milliseconds_to_seconds():
         # Check that TTFT column header shows seconds
         headers = [cell.value for cell in ws[1]]
         ttft_header = headers[3]  # TTFT column
-        assert "s" in str(
-            ttft_header
-        ), f"Expected TTFT header to show s, got: {ttft_header}"
+        assert "s" in str(ttft_header), (
+            f"Expected TTFT header to show s, got: {ttft_header}"
+        )
 
         # Check that the actual TTFT value was converted from 500ms to 0.5s
         ttft_value = ws[2][3].value  # Row 2, column 4 (TTFT value)
@@ -188,6 +188,6 @@ def test_time_unit_conversion_milliseconds_to_seconds():
 
         # Check that e2e_latency value was converted from 1000ms to 1.0s
         e2e_latency_value = ws[2][6].value  # Row 2, column 7 (e2e_latency value)
-        assert (
-            e2e_latency_value == 1
-        ), f"Expected e2e_latency value 1s, got: {e2e_latency_value}"
+        assert e2e_latency_value == 1, (
+            f"Expected e2e_latency value 1s, got: {e2e_latency_value}"
+        )
