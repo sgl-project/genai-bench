@@ -1,7 +1,6 @@
 # Automatic labeler configuration for genai-bench
 # This file defines which labels should be applied to PRs based on changed files
 
-# Infrastructure & DevOps
 ci:
   - changed-files:
     - any-glob-to-any-file:
@@ -19,14 +18,12 @@ docker:
       - 'Dockerfile'
       - '.dockerignore'
 
-# Authentication
 auth:
   - changed-files:
     - any-glob-to-any-file:
       - 'genai_bench/auth/**'
       - 'tests/auth/**'
 
-# Storage
 storage:
   - changed-files:
     - any-glob-to-any-file:
@@ -34,7 +31,6 @@ storage:
       - 'tests/storage/**'
       - 'tests/oci_object_storage/**'
 
-# Core Functionality
 core:
   - changed-files:
     - any-glob-to-any-file:
@@ -82,7 +78,6 @@ data:
       - 'tests/data/**'
       - 'examples/dataset_configs/**'
 
-# Analysis & Visualization
 analysis:
   - changed-files:
     - any-glob-to-any-file:
@@ -109,7 +104,6 @@ multimodal:
       - 'tests/scenarios/test_multimodal*.py'
       - 'tests/sampling/test_image*.py'
 
-# Documentation & Testing
 documentation:
   - changed-files:
     - any-glob-to-any-file:
@@ -126,7 +120,6 @@ examples:
     - any-glob-to-any-file:
       - 'examples/**'
 
-# Tooling & Configuration
 linting:
   - changed-files:
     - any-glob-to-any-file:
