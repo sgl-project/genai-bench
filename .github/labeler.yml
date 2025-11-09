@@ -114,7 +114,6 @@ documentation:
   - changed-files:
     - any-glob-to-any-file:
       - 'docs/**'
-      - 'README.md'
       - '*.md'
 
 tests:
