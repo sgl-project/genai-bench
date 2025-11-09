@@ -6,7 +6,7 @@
   },
   "plots": [
     {
-      "title": "Latency Percentiles Comparison",
+      "title": "Latency Percentiles Comparison, test test",
       "x_field": "requests_per_second",
       "y_fields": [
         {

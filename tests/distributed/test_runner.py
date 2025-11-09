@@ -207,7 +207,7 @@ def test_cpu_affinity_mapping(mock_process, mock_environment, mock_dashboard):
         [0]
     )  # Should fallback to worker_id % cpu_count
 
-    # Test affinity setting failure
+    # Test affinity setting failure test test
     mock_process_instance.cpu_affinity.side_effect = Exception("Failed to set affinity")
     runner._set_cpu_affinity(0)  # Should log warning but not fail
 
