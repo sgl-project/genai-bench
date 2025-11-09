@@ -1,0 +1,141 @@
+# Automatic labeler configuration for genai-bench
+# This file defines which labels should be applied to PRs based on changed files
+
+# Infrastructure & DevOps
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.coveragerc'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'pyproject.toml'
+
+docker:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Dockerfile'
+      - '.dockerignore'
+
+# Authentication
+auth:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/auth/**'
+      - 'tests/auth/**'
+
+# Storage
+storage:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/storage/**'
+      - 'tests/storage/**'
+      - 'tests/oci_object_storage/**'
+
+# Core Functionality
+core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/logging.py'
+      - 'genai_bench/protocol.py'
+      - 'genai_bench/utils.py'
+      - 'genai_bench/version.py'
+      - 'genai_bench/py.typed'
+      - 'genai_bench/__init__.py'
+
+cli:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/cli/**'
+      - 'tests/cli/**'
+
+metrics:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/metrics/**'
+      - 'tests/metrics/**'
+
+scenarios:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/scenarios/**'
+      - 'tests/scenarios/**'
+
+sampling:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/sampling/**'
+      - 'tests/sampling/**'
+
+distributed:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/distributed/**'
+      - 'tests/distributed/**'
+
+data:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/data/**'
+      - 'tests/data/**'
+      - 'examples/dataset_configs/**'
+
+# Analysis & Visualization
+analysis:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/analysis/**'
+      - 'tests/analysis/**'
+
+ui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/ui/**'
+      - 'tests/ui/**'
+
+user:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/user/**'
+      - 'tests/user/**'
+
+multimodal:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/scenarios/multimodal.py'
+      - 'genai_bench/sampling/image.py'
+      - 'tests/scenarios/test_multimodal*.py'
+      - 'tests/sampling/test_image*.py'
+
+# Documentation & Testing
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - 'README.md'
+      - '*.md'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/**'
+
+examples:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'examples/**'
+
+# Tooling & Configuration
+linting:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+
+makefile:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Makefile'
+
