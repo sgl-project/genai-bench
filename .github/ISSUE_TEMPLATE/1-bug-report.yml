@@ -29,8 +29,9 @@ body:
     required: true
 - type: textarea
   attributes:
-    label: Environment
+    label: Additional information
     description: |
-      Please provide necessary environment information here with `python3 -m pip debug`. Otherwise the issue will be closed.
+      Please provide any additional information here you think is relevant.
+    placeholder: Optional
   validations:
-    required: true
+    required: false
