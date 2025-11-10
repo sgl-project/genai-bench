@@ -1,5 +1,7 @@
 """Tests for text scenario implementations."""
 
+import pytest
+
 from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
@@ -162,8 +164,6 @@ def test_prefix_repetition_scenario_parse_different_values():
 
 def test_prefix_repetition_scenario_invalid_format():
     """Test PrefixRepetitionScenario parsing with invalid format."""
-    import pytest
-
     invalid_formats = [
         "(2000,500)",  # Missing output
         "(2000)/200",  # Missing suffix

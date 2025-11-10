@@ -1,3 +1,4 @@
+import hashlib
 import random
 from typing import Any, Dict, List, Optional
 
@@ -11,6 +12,7 @@ from genai_bench.protocol import (
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDistribution
+from genai_bench.scenarios.text import PrefixRepetitionScenario
 
 logger = init_logger(__name__)
 
@@ -75,8 +77,6 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = False
         else:
             # Check if this is a prefix repetition scenario
-            from genai_bench.scenarios.text import PrefixRepetitionScenario
-
             if isinstance(scenario, PrefixRepetitionScenario):
                 return self._sample_prefix_repetition_request(scenario)
 
@@ -268,8 +268,6 @@ class TextSampler(Sampler):
             self._shared_prefix_cache[cache_key] = prefix
 
             # Calculate hash for verification
-            import hashlib
-
             prefix_hash = hashlib.md5(prefix.encode()).hexdigest()[:8]
 
             logger.info(
@@ -285,8 +283,6 @@ class TextSampler(Sampler):
 
             # Log cache reuse (only for first few to avoid spam)
             if self._suffix_counter < 5:
-                import hashlib
-
                 prefix_hash = hashlib.md5(prefix.encode()).hexdigest()[:8]
                 logger.debug(
                     f"♻️  Reusing cached prefix (hash: {prefix_hash}) "
@@ -299,8 +295,6 @@ class TextSampler(Sampler):
 
         # Log suffix info for first few requests
         if self._suffix_counter <= 5:
-            import hashlib
-
             suffix_hash = hashlib.md5(suffix.encode()).hexdigest()[:8]
             suffix_actual_tokens = self.get_token_length(suffix)
             logger.debug(

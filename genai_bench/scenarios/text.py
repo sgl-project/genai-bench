@@ -1,3 +1,4 @@
+import re
 from typing import Optional, Tuple
 
 import numpy as np
@@ -275,8 +276,6 @@ class PrefixRepetitionScenario(Scenario):
         """
         # Parse P(prefix_len,suffix_len)/output_len
         # params_str will be "(2000,500)/200"
-        import re
-
         match = re.match(r"\((\d+),(\d+)\)/(\d+)", params_str)
         if not match:
             raise ValueError(
