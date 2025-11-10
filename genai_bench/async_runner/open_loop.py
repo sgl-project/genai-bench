@@ -149,10 +149,21 @@ class OpenLoopRunner(BaseAsyncRunner):
             # Generate requests on-demand to match Locust's behavior and avoid memory issues
             # This matches Locust (base_user.py:44, openai_user.py:53) and closed-loop runner (closed_loop.py:68)
             tasks = []
+            actual_arrivals = 0
             for wait_s in intervals:
+                # Check timeout before sleeping
+                if max_time_s is not None and max_time_s > 0:
+                    elapsed = time.monotonic() - start
+                    if elapsed >= max_time_s:
+                        logger.info(
+                            f"Open-loop run reached max_time_s ({max_time_s}s), "
+                            f"stopping request generation. Elapsed: {elapsed:.2f}s"
+                        )
+                        break
                 await asyncio.sleep(wait_s)
                 req = self._prepare_request(scenario)
                 tasks.append(asyncio.create_task(self._send_one(req)))
+                actual_arrivals += 1
             if tasks:
                 # Handle CancelledError and other exceptions gracefully
                 try:
@@ -160,8 +171,8 @@ class OpenLoopRunner(BaseAsyncRunner):
                 except Exception as e:
                     self._handle_error(e, "open-loop task execution")
 
-            # Record total arrivals for open-loop mode
-            self.aggregated.aggregated_metrics.total_arrivals = n
+            # Record total arrivals for open-loop mode (use actual count if timeout occurred)
+            self.aggregated.aggregated_metrics.total_arrivals = actual_arrivals if actual_arrivals < n else n
 
             if tick_task is not None:
                 done_flag["done"] = True
@@ -188,13 +199,8 @@ class OpenLoopRunner(BaseAsyncRunner):
             if "cannot be called from an async context" in str(e):
                 raise  # Re-raise our custom error
             # No running loop, safe to use asyncio.run()
-            try:
-                if max_time_s is not None and max_time_s > 0:
-                    asyncio.run(asyncio.wait_for(produce(), timeout=max_time_s))
-                else:
-                    asyncio.run(produce())
-            except asyncio.TimeoutError:
-                logger.info("Open-loop run timed out per max_time_s")
+            # Note: max_time_s is now handled internally in the produce loop for graceful shutdown
+            asyncio.run(produce())
         end = time.monotonic()
         actual_duration = end - start
         # Record arrivals as an arrival rate metric for this run

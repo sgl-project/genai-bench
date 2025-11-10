@@ -26,6 +26,7 @@ class ClosedLoopRunner(BaseAsyncRunner):
         done_flag: dict,
         max_requests: Optional[int],
         max_time_s: Optional[int],
+        start_time: float,
     ) -> None:
         """
         Run in closed-loop mode: maintain target_concurrency concurrent requests.
@@ -36,7 +37,8 @@ class ClosedLoopRunner(BaseAsyncRunner):
             scenario: Scenario string
             done_flag: Dict with "done" key to signal completion
             max_requests: Optional maximum number of requests
-            max_time_s: Optional maximum time in seconds (handled by timeout in run())
+            max_time_s: Optional maximum time in seconds
+            start_time: Start time (monotonic) for timeout calculation
         """
         # Track total requests sent
         request_counter = {"count": 0}  # Use dict for mutability in nested function
@@ -120,13 +122,25 @@ class ClosedLoopRunner(BaseAsyncRunner):
             task.add_done_callback(active_tasks.discard)
 
         # Wait until done_flag is set (by max_requests or max_time_s timeout)
-        # Note: max_time_s timeout is handled at the run() level via asyncio.wait_for()
         consecutive_empty_checks = 0
         max_empty_checks = 10  # If we check 10 times with no tasks, something is wrong
 
         # Continue while we haven't hit the limit
         # Exit condition: done_flag is set OR (no active tasks AND max_requests reached)
         while not done_flag["done"]:
+            # Check timeout first (before max_requests) to allow graceful shutdown
+            if max_time_s is not None and max_time_s > 0:
+                elapsed = time.monotonic() - start_time
+                if elapsed >= max_time_s:
+                    logger.info(
+                        f"Closed-loop run reached max_time_s ({max_time_s}s), "
+                        f"initiating graceful shutdown. Elapsed: {elapsed:.2f}s"
+                    )
+                    done_flag["done"] = True
+                    # Don't cancel tasks immediately - let them complete if they're close
+                    # The cleanup will wait for them below
+                    break
+
             # Primary check: have we hit max_requests?
             if max_requests is not None and request_counter["count"] >= max_requests:
                 done_flag["done"] = True
@@ -251,6 +265,7 @@ class ClosedLoopRunner(BaseAsyncRunner):
                 done_flag=done_flag,
                 max_requests=max_requests,
                 max_time_s=max_time_s,
+                start_time=start,
             )
 
             if tick_task is not None:
@@ -278,13 +293,8 @@ class ClosedLoopRunner(BaseAsyncRunner):
             if "cannot be called from an async context" in str(e):
                 raise  # Re-raise our custom error
             # No running loop, safe to use asyncio.run()
-            try:
-                if max_time_s is not None and max_time_s > 0:
-                    asyncio.run(asyncio.wait_for(produce(), timeout=max_time_s))
-                else:
-                    asyncio.run(produce())
-            except asyncio.TimeoutError:
-                logger.info("Closed-loop run timed out per max_time_s")
+            # Note: max_time_s is now handled internally in _run_closed_loop for graceful shutdown
+            asyncio.run(produce())
         end = time.monotonic()
         actual_duration = end - start
         # Record arrivals as an arrival rate metric for this run

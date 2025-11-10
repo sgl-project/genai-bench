@@ -454,22 +454,38 @@ class BaseAsyncRunner:
 
     async def _send_one(self, req) -> None:
         """Send a single request and record metrics."""
-        response = await self._send_request(req)
-        # Convert to RequestLevelMetrics and add to collector
         collector = RequestMetricsCollector()
-        if response.status_code == 200:
-            collector.calculate_metrics(response)
-        else:
-            collector.metrics.error_code = response.status_code
-            collector.metrics.error_message = response.error_message
-        self.aggregated.add_single_request_metrics(collector.metrics)
-        # Update dashboard live if available
-        if self.dashboard is not None:
-            live = self.aggregated.get_live_metrics()
-            total_requests = (
-                self.aggregated.aggregated_metrics.num_completed_requests
-                + self.aggregated.aggregated_metrics.num_error_requests
-            )
-            self.dashboard.handle_single_request(
-                live, total_requests, collector.metrics.error_code
-            )
+        try:
+            response = await self._send_request(req)
+            # Convert to RequestLevelMetrics and add to collector
+            if response.status_code == 200:
+                collector.calculate_metrics(response)
+            else:
+                collector.metrics.error_code = response.status_code
+                collector.metrics.error_message = response.error_message
+        except asyncio.CancelledError:
+            # Task was cancelled - record as error to match Locust behavior
+            # Locust always collects metrics, even for cancelled/failed requests
+            collector.metrics.error_code = 0  # Use 0 to indicate cancellation
+            collector.metrics.error_message = "Request was cancelled"
+            raise  # Re-raise to allow proper cleanup
+        except Exception as e:
+            # Handle other exceptions (timeouts, connection errors, etc.)
+            # Match Locust behavior: always collect metrics, even for failures
+            collector.metrics.error_code = 0  # Use 0 for non-HTTP errors
+            collector.metrics.error_message = f"{type(e).__name__}: {str(e)}"
+            self._handle_error(e, "request execution")
+        finally:
+            # Always record metrics (matches Locust behavior)
+            # This ensures we have metrics even if request was cancelled or failed
+            self.aggregated.add_single_request_metrics(collector.metrics)
+            # Update dashboard live if available
+            if self.dashboard is not None:
+                live = self.aggregated.get_live_metrics()
+                total_requests = (
+                    self.aggregated.aggregated_metrics.num_completed_requests
+                    + self.aggregated.aggregated_metrics.num_error_requests
+                )
+                self.dashboard.handle_single_request(
+                    live, total_requests, collector.metrics.error_code
+                )
