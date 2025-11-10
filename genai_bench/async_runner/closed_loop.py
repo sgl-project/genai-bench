@@ -120,11 +120,7 @@ class ClosedLoopRunner(BaseAsyncRunner):
             task.add_done_callback(active_tasks.discard)
 
         # Wait until done_flag is set (by max_requests or max_time_s timeout)
-        # Use a timeout to prevent infinite loops
-        import time
-
-        start_time = time.monotonic()
-        timeout = 300  # 5 minute safety timeout
+        # Note: max_time_s timeout is handled at the run() level via asyncio.wait_for()
         consecutive_empty_checks = 0
         max_empty_checks = 10  # If we check 10 times with no tasks, something is wrong
 
@@ -135,16 +131,6 @@ class ClosedLoopRunner(BaseAsyncRunner):
             if max_requests is not None and request_counter["count"] >= max_requests:
                 done_flag["done"] = True
                 # Cancel all active tasks to ensure clean shutdown
-                for task in active_tasks:
-                    if not task.done():
-                        task.cancel()
-                break
-
-            # Safety timeout check
-            if time.monotonic() - start_time > timeout:
-                logger.warning("Closed-loop run exceeded safety timeout, forcing exit")
-                done_flag["done"] = True
-                # Cancel all active tasks
                 for task in active_tasks:
                     if not task.done():
                         task.cancel()
