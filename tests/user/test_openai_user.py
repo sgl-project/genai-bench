@@ -1,8 +1,8 @@
 import logging
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock
 
+import httpx
 import pytest
-import requests
 
 from genai_bench.protocol import (
     UserChatRequest,
@@ -40,6 +40,14 @@ def mock_openai_user():
     return user
 
 
+def create_mock_httpx_stream_response(mock_response):
+    """Helper to create a context manager mock for httpx.stream()"""
+    mock_stream = MagicMock()
+    mock_stream.__enter__ = MagicMock(return_value=mock_response)
+    mock_stream.__exit__ = MagicMock(return_value=None)
+    return mock_stream
+
+
 def test_on_start_missing_api_key_base():
     env = MagicMock()
     OpenAIUser.host = "https://api.openai.com"
@@ -52,8 +60,7 @@ def test_on_start_missing_api_key_base():
         user.on_start()
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat(mock_post, mock_openai_user):
+def test_chat(mock_openai_user):
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
         model="gpt-3",
@@ -65,7 +72,7 @@ def test_chat(mock_post, mock_openai_user):
 
     response_mock = MagicMock()
     response_mock.status_code = 200
-    # Mock the iter_content method to simulate streaming
+    # Mock the iter_lines method to simulate streaming
     response_mock.iter_lines = MagicMock(
         return_value=[
             b'data: {"id":"chat-c084b07b809048d88f3fad11cface2b7","object":"chat.completion.chunk","created":1724364845,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}]}',  # noqa:E501
@@ -84,12 +91,16 @@ def test_chat(mock_post, mock_openai_user):
             b"data: [DONE]",
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     mock_openai_user.chat()
 
-    mock_post.assert_called_once_with(
-        url="http://example.com/v1/chat/completions",
+    mock_openai_user._http_client.stream.assert_called_once_with(
+        "POST",
+        "http://example.com/v1/chat/completions",
         json={
             "model": "gpt-3",
             "messages": [{"role": "user", "content": ANY}],
@@ -101,7 +112,6 @@ def test_chat(mock_post, mock_openai_user):
                 "include_usage": True,
             },
         },
-        stream=True,
         headers={
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
@@ -109,8 +119,7 @@ def test_chat(mock_post, mock_openai_user):
     )
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_vision(mock_post, mock_openai_user):
+def test_vision(mock_openai_user):
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserImageChatRequest(
         model="Phi-3-vision-128k-instruct",
@@ -138,7 +147,10 @@ def test_vision(mock_post, mock_openai_user):
             b"data: [DONE]",
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     text_content = [{"type": "text", "text": "what's in the image?"}]
     image = "UklGRhowDgBXRUJQVlA4WAoAAAAgAAAA/wkAhAYASUNDUAwCAAAAAAIMbGNtcwIQAABtbnRyUkdCIFhZWiAH3AABABkAAwApADlhY3NwQVBQTAAAAAAA"  # noqa:E501
@@ -151,8 +163,9 @@ def test_vision(mock_post, mock_openai_user):
 
     mock_openai_user.chat()
 
-    mock_post.assert_called_once_with(
-        url="http://example.com/v1/chat/completions",
+    mock_openai_user._http_client.stream.assert_called_once_with(
+        "POST",
+        "http://example.com/v1/chat/completions",
         json={
             "model": "Phi-3-vision-128k-instruct",
             "messages": [{"role": "user", "content": text_content + image_content}],
@@ -164,7 +177,6 @@ def test_vision(mock_post, mock_openai_user):
                 "include_usage": True,
             },
         },
-        stream=True,
         headers={
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
@@ -172,8 +184,7 @@ def test_vision(mock_post, mock_openai_user):
     )
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_embeddings(mock_post, mock_openai_user):
+def test_embeddings(mock_openai_user):
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserEmbeddingRequest(
         model="gpt-3", documents=["Document 1", "Document 2"]
@@ -182,18 +193,20 @@ def test_embeddings(mock_post, mock_openai_user):
     response_mock = MagicMock()
     response_mock.status_code = 200
     response_mock.usage = {"prompt_tokens": 8, "total_tokens": 8}
-    mock_post.return_value = response_mock
+    response_mock.close = MagicMock()
+
+    # Mock httpx client's post method (for non-streaming tests)
+    mock_openai_user._http_client.post = MagicMock(return_value=response_mock)
 
     mock_openai_user.embeddings()
 
-    mock_post.assert_called_once_with(
-        url="http://example.com/v1/embeddings",
+    mock_openai_user._http_client.post.assert_called_once_with(
+        "http://example.com/v1/embeddings",
         json={
             "model": "gpt-3",
             "input": ANY,
             "encoding_format": "float",
         },
-        stream=False,
         headers={
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
@@ -224,15 +237,17 @@ def test_embeddings_with_wrong_request_type(mock_openai_user):
         mock_openai_user.embeddings()
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_send_request_non_200_response(mock_post, mock_openai_user):
+def test_send_request_non_200_response(mock_openai_user):
     mock_openai_user.on_start()
 
     # Simulate a non-200 response
     response_mock = MagicMock()
     response_mock.status_code = 500
     response_mock.text = "Internal Server Error"
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     user_response = mock_openai_user.send_request(
         stream=True,
@@ -246,18 +261,20 @@ def test_send_request_non_200_response(mock_post, mock_openai_user):
     assert isinstance(user_response, UserResponse)
     assert user_response.status_code == 500
     assert user_response.error_message == "Internal Server Error"
-    mock_post.assert_called_once()  # fix for python 3.12
+    mock_openai_user._http_client.stream.assert_called_once()  # fix for python 3.12
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_send_request_embeddings_response(mock_post, mock_openai_user):
+def test_send_request_embeddings_response(mock_openai_user):
     mock_openai_user.on_start()
 
     # Simulate a 200 embeddings response
     response_mock = MagicMock()
     response_mock.status_code = 200
     response_mock.json.return_value = {"usage": {"prompt_tokens": 5, "total_tokens": 5}}
-    mock_post.return_value = response_mock
+    response_mock.close = MagicMock()
+
+    # Mock httpx client's post method (for non-streaming tests)
+    mock_openai_user._http_client.post = MagicMock(return_value=response_mock)
 
     user_response = mock_openai_user.send_request(
         stream=False,
@@ -271,11 +288,10 @@ def test_send_request_embeddings_response(mock_post, mock_openai_user):
     assert isinstance(user_response, UserResponse)
     assert user_response.status_code == 200
     assert user_response.num_prefill_tokens == 5
-    mock_post.assert_called_once()
+    mock_openai_user._http_client.post.assert_called_once()
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_send_request_chat_response(mock_post, mock_openai_user):
+def test_send_request_chat_response(mock_openai_user):
     mock_openai_user.on_start()
 
     # Simulate a 200 chat response
@@ -293,7 +309,10 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
             b"data: [DONE]",
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     user_response = mock_openai_user.send_request(
         stream=True,
@@ -309,11 +328,10 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
     assert user_response.tokens_received == 5
     assert user_response.num_prefill_tokens == 5
     assert user_response.generated_text == "The image depicts a serene"
-    mock_post.assert_called_once()
+    mock_openai_user._http_client.stream.assert_called_once()
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
+def test_chat_no_usage_info(mock_openai_user, caplog):
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
         lambda text, add_special_tokens=True: len(text)
@@ -348,7 +366,10 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
             b"data: [DONE]",
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     with caplog.at_level(logging.WARNING):
         user_response = mock_openai_user.send_request(
@@ -366,8 +387,7 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
     assert user_response.tokens_received == len(user_response.generated_text)
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_request_exception(mock_post, mock_openai_user):
+def test_chat_request_exception(mock_openai_user):
     """Test handling of request exceptions during chat."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -379,7 +399,9 @@ def test_chat_request_exception(mock_post, mock_openai_user):
     )
 
     # Simulate a request exception
-    mock_post.side_effect = requests.exceptions.RequestException("Network error")
+    mock_openai_user._http_client.stream = MagicMock(
+        side_effect=httpx.HTTPError("Network error")
+    )
 
     user_response = mock_openai_user.send_request(
         stream=True,
@@ -391,8 +413,10 @@ def test_chat_request_exception(mock_post, mock_openai_user):
 
     assert user_response.status_code == 500
 
-    # Simulate a request exception
-    mock_post.side_effect = requests.exceptions.ConnectionError("Connection refused")
+    # Simulate a connection error
+    mock_openai_user._http_client.stream = MagicMock(
+        side_effect=httpx.ConnectError("Connection refused")
+    )
 
     user_response = mock_openai_user.send_request(
         stream=True,
@@ -406,8 +430,7 @@ def test_chat_request_exception(mock_post, mock_openai_user):
     assert user_response.error_message == "Connection error: Connection refused"
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_with_warning_first_chunk_tokens(mock_post, mock_openai_user, caplog):
+def test_chat_with_warning_first_chunk_tokens(mock_openai_user, caplog):
     """Test warning when first chunk has multiple tokens."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -427,7 +450,10 @@ def test_chat_with_warning_first_chunk_tokens(mock_post, mock_openai_user, caplo
             b"data: [DONE]",
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     with caplog.at_level(logging.WARNING):
         mock_openai_user.chat()
@@ -435,8 +461,7 @@ def test_chat_with_warning_first_chunk_tokens(mock_post, mock_openai_user, caplo
     assert "The first chunk the server returned has >1 tokens: 5" in caplog.text
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_empty_choices_warning(mock_post, mock_openai_user, caplog):
+def test_chat_empty_choices_warning(mock_openai_user, caplog):
     """Test warning when choices array is empty."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -455,7 +480,10 @@ def test_chat_empty_choices_warning(mock_post, mock_openai_user, caplog):
             b'data: {"choices":[{"delta":{"content":"First chunk with multiple tokens"},"finish_reason":null,"usage":{"completion_tokens":5}}]}',  # noqa:E501
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     with caplog.at_level(logging.WARNING):
         mock_openai_user.chat()
@@ -463,8 +491,7 @@ def test_chat_empty_choices_warning(mock_post, mock_openai_user, caplog):
     assert "Error processing chunk: " in caplog.text
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_significant_token_difference(mock_post, mock_openai_user, caplog):
+def test_chat_significant_token_difference(mock_openai_user, caplog):
     """Test warning when there's a significant difference in prompt tokens."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -483,7 +510,10 @@ def test_chat_significant_token_difference(mock_post, mock_openai_user, caplog):
             b'data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":1}}',
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     with caplog.at_level(logging.WARNING):
         mock_openai_user.chat()
@@ -495,8 +525,7 @@ def test_chat_significant_token_difference(mock_post, mock_openai_user, caplog):
     )
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_chat_vision_without_prefill_tokens(mock_post, mock_openai_user):
+def test_chat_vision_without_prefill_tokens(mock_openai_user):
     """Test chat with vision request without prefill tokens."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserImageChatRequest(
@@ -517,7 +546,10 @@ def test_chat_vision_without_prefill_tokens(mock_post, mock_openai_user):
             b'data: {"choices":[],"usage":{"prompt_tokens":50,"completion_tokens":3}}',
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     response = mock_openai_user.send_request(
         stream=True,
@@ -531,8 +563,7 @@ def test_chat_vision_without_prefill_tokens(mock_post, mock_openai_user):
     )  # Should use prompt_tokens as prefill tokens
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_vllm_model_format(mock_post, mock_openai_user):
+def test_vllm_model_format(mock_openai_user):
     """Test handling of meta-llama/Meta-Llama-3-70B-Instruct format chunks."""
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
@@ -558,7 +589,10 @@ def test_vllm_model_format(mock_post, mock_openai_user):
             b'data: {"id":"chatcmpl-213c0c2a84f145f1b7c934a794b6fc82","object":"chat.completion.chunk","created":1744238720,"model":"meta-llama/Meta-Llama-3-70B-Instruct","choices":[],"usage":{"prompt_tokens":5,"total_tokens":7,"completion_tokens":2}}',  # noqa:E501
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     response = mock_openai_user.send_request(
         stream=True,
@@ -574,8 +608,7 @@ def test_vllm_model_format(mock_post, mock_openai_user):
     assert response.num_prefill_tokens == 5
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_openai_model_format(mock_post, mock_openai_user):
+def test_openai_model_format(mock_openai_user):
     """Test handling of OpenAI model format chunks."""
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
@@ -602,7 +635,10 @@ def test_openai_model_format(mock_post, mock_openai_user):
             b'data: {"id": "chatcmpl-BmQFhYgMLvmAaaI8bPdesZN8z42iv", "choices": [], "created": 1750880357, "model": "gpt-3.5-turbo-0125", "object": "chat.completion.chunk", "service_tier": "default", "system_fingerprint": null, "usage": {"completion_tokens": 1, "prompt_tokens": 8, "total_tokens": 9, "completion_tokens_details": {"accepted_prediction_tokens": 0, "audio_tokens": 0, "reasoning_tokens": 0, "rejected_prediction_tokens": 0}, "prompt_tokens_details": {"audio_tokens": 0, "cached_tokens": 0}}}',  # noqa:E501
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     response = mock_openai_user.send_request(
         stream=True,
@@ -617,8 +653,7 @@ def test_openai_model_format(mock_post, mock_openai_user):
     assert response.num_prefill_tokens == 8
 
 
-@patch("genai_bench.user.openai_user.requests.post")
-def test_sgl_model_format(mock_post, mock_openai_user):
+def test_sgl_model_format(mock_openai_user):
     """Test handling of sgl-model format chunks."""
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
@@ -642,7 +677,10 @@ def test_sgl_model_format(mock_post, mock_openai_user):
             b'data: {"id":"4e28a148aa324b98b91853b724469d91","object":"chat.completion.chunk","created":1744317699,"model":"sgl-model","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":null,"tool_calls":null},"logprobs":null,"finish_reason":"length","matched_stop":null}],"usage":{"prompt_tokens":5,"total_tokens":6,"completion_tokens":1,"prompt_tokens_details":null}}',  # noqa:E501
         ]
     )
-    mock_post.return_value = response_mock
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     response = mock_openai_user.send_request(
         stream=True,
@@ -658,9 +696,7 @@ def test_sgl_model_format(mock_post, mock_openai_user):
     assert response.num_prefill_tokens == 5
 
 
-@patch("genai_bench.user.openai_user.requests.post")
 def test_chat_with_reasoning_content_and_token_estimation(
-    mock_post,
     mock_openai_user,
     caplog,
 ):
@@ -713,7 +749,9 @@ def test_chat_with_reasoning_content_and_token_estimation(
         ]
     )
 
-    mock_post.return_value = response_mock
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(response_mock)
+    mock_openai_user._http_client.stream = MagicMock(return_value=mock_stream)
 
     with caplog.at_level(logging.WARNING):
         # Call send_request directly to get a UserChatResponse

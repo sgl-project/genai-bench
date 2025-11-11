@@ -1,7 +1,7 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import httpx
 import pytest
-import requests
 
 from genai_bench.protocol import (
     UserChatRequest,
@@ -12,10 +12,20 @@ from genai_bench.protocol import (
 from genai_bench.user.cohere_user import CohereUser
 
 
+def create_mock_httpx_stream_response(mock_response):
+    """Helper to create a context manager mock for httpx.stream()"""
+    mock_stream = MagicMock()
+    mock_stream.__enter__ = MagicMock(return_value=mock_response)
+    mock_stream.__exit__ = MagicMock(return_value=None)
+    return mock_stream
+
+
 @pytest.fixture
 def mock_response():
-    response = MagicMock(spec=requests.Response)
+    response = MagicMock()
     response.status_code = 200
+    response.close = MagicMock()
+    response.raise_for_status = MagicMock()
     return response
 
 
@@ -43,7 +53,12 @@ def cohere_user(mock_env):
     CohereUser.auth_provider = mock_auth
 
     user = CohereUser(mock_env)
-    user.headers = {"Authorization": "Bearer test-key"}
+    user.headers = {
+        "Authorization": "Bearer test-key",
+        "Content-Type": "application/json",
+    }
+    # Initialize httpx client for mocking
+    user._http_client = MagicMock()
     return user
 
 
@@ -79,19 +94,69 @@ def test_chat_success(cohere_user, mock_response):
         "data: [DONE]\n\n",
     ]
 
-    mock_response.iter_lines.return_value = [line.encode() for line in chat_events]
+    mock_response.iter_lines.return_value = chat_events
 
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample chat request
-        chat_request = UserChatRequest(
-            model="command-r",
-            prompt="Hello world!",
-            max_tokens=100,
-            num_prefill_tokens=5,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=chat_request)
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(mock_response)
+    cohere_user._http_client.stream = MagicMock(return_value=mock_stream)
 
+    # Create a sample chat request
+    chat_request = UserChatRequest(
+        model="command-r",
+        prompt="Hello world!",
+        max_tokens=100,
+        num_prefill_tokens=5,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=chat_request)
+
+    # Execute chat
+    response = cohere_user.chat()
+
+    # Verify response
+    assert isinstance(response, UserChatResponse)
+    assert response.status_code == 200
+    assert response.generated_text == "Hello world"
+    assert response.tokens_received == 22
+    assert response.num_prefill_tokens == 5
+    assert response.time_at_first_token is not None
+
+    # Verify the stream was called correctly
+    cohere_user._http_client.stream.assert_called_once_with(
+        "POST",
+        "https://api.cohere.com/v2/chat",
+        json={
+            "model": "command-r",
+            "messages": [{"role": "user", "content": "Hello world!"}],
+            "stream": True,
+        },
+        headers={
+            "Authorization": "Bearer test-key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_chat_without_usage(cohere_user, mock_response):
+    # Mock the streaming response for chat
+    chat_events = []
+
+    mock_response.iter_lines.return_value = chat_events
+
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(mock_response)
+    cohere_user._http_client.stream = MagicMock(return_value=mock_stream)
+
+    # Create a sample chat request
+    chat_request = UserChatRequest(
+        model="command-r",
+        prompt="Hello world!",
+        max_tokens=100,
+        num_prefill_tokens=5,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=chat_request)
+    with pytest.raises(AssertionError):
         # Execute chat
         response = cohere_user.chat()
 
@@ -104,35 +169,6 @@ def test_chat_success(cohere_user, mock_response):
         assert response.time_at_first_token is not None
 
 
-def test_chat_without_usage(cohere_user, mock_response):
-    # Mock the streaming response for chat
-    chat_events = []
-
-    mock_response.iter_lines.return_value = [line.encode() for line in chat_events]
-
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample chat request
-        chat_request = UserChatRequest(
-            model="command-r",
-            prompt="Hello world!",
-            max_tokens=100,
-            num_prefill_tokens=5,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=chat_request)
-        with pytest.raises(AssertionError):
-            # Execute chat
-            response = cohere_user.chat()
-
-            # Verify response
-            assert isinstance(response, UserChatResponse)
-            assert response.status_code == 200
-            assert response.generated_text == "Hello world"
-            assert response.tokens_received == 22
-            assert response.num_prefill_tokens == 5
-            assert response.time_at_first_token is not None
-
-
 def test_embeddings_text_success(cohere_user, mock_response):
     # Mock the embedding response for text
     embedding_response = {
@@ -143,40 +179,57 @@ def test_embeddings_text_success(cohere_user, mock_response):
     }
     mock_response.json.return_value = embedding_response
 
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample embedding request
-        embedding_request = UserEmbeddingRequest(
-            model="embed-english-v3.0",
-            documents=["test text"],
-            num_prefill_tokens=3,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=embedding_request)
+    # Mock httpx client's post method
+    cohere_user._http_client.post = MagicMock(return_value=mock_response)
 
-        # Execute embeddings
-        response = cohere_user.embeddings()
+    # Create a sample embedding request
+    embedding_request = UserEmbeddingRequest(
+        model="embed-english-v3.0",
+        documents=["test text"],
+        num_prefill_tokens=3,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=embedding_request)
 
-        # Verify response
-        assert response.status_code == 200
-        assert response.num_prefill_tokens == 3
-        assert response.time_at_first_token is not None
+    # Execute embeddings
+    response = cohere_user.embeddings()
+
+    # Verify response
+    assert response.status_code == 200
+    assert response.num_prefill_tokens == 3
+    assert response.time_at_first_token is not None
+
+    # Verify the post was called correctly
+    cohere_user._http_client.post.assert_called_once_with(
+        "https://api.cohere.com/v2/embed",
+        json={
+            "model": "embed-english-v3.0",
+            "texts": ["test text"],
+            "input_type": "CLUSTERING",
+            "embedding_types": ["float"],
+            "truncate": "END",
+        },
+        headers={
+            "Authorization": "Bearer test-key",
+            "Content-Type": "application/json",
+        },
+    )
 
 
 def test_embeddings_text_chatRequest(cohere_user, mock_response):
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample embedding request
-        chat_request = UserChatRequest(
-            model="command-r",
-            prompt="Hello world!",
-            max_tokens=100,
-            num_prefill_tokens=5,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=chat_request)
+    # Create a sample embedding request
+    chat_request = UserChatRequest(
+        model="command-r",
+        prompt="Hello world!",
+        max_tokens=100,
+        num_prefill_tokens=5,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=chat_request)
 
-        with pytest.raises(AttributeError):
-            # Execute embeddings
-            cohere_user.embeddings()
+    with pytest.raises(AttributeError):
+        # Execute embeddings
+        cohere_user.embeddings()
 
 
 def test_embeddings_text_no_documents(cohere_user, mock_response):
@@ -189,22 +242,24 @@ def test_embeddings_text_no_documents(cohere_user, mock_response):
     }
     mock_response.json.return_value = embedding_response
 
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample embedding request
-        embedding_request = UserEmbeddingRequest(
-            model="embed-english-v3.0",
-            documents=["test text"],
-            num_prefill_tokens=0,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=embedding_request)
+    # Mock httpx client's post method
+    cohere_user._http_client.post = MagicMock(return_value=mock_response)
 
-        # Execute embeddings
-        response = cohere_user.embeddings()
+    # Create a sample embedding request
+    embedding_request = UserEmbeddingRequest(
+        model="embed-english-v3.0",
+        documents=["test text"],
+        num_prefill_tokens=0,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=embedding_request)
 
-        # Verify response
-        assert response.status_code == 200
-        assert response.time_at_first_token is not None
+    # Execute embeddings
+    response = cohere_user.embeddings()
+
+    # Verify response
+    assert response.status_code == 200
+    assert response.time_at_first_token is not None
 
 
 def test_embeddings_image_success(cohere_user, mock_response):
@@ -217,25 +272,27 @@ def test_embeddings_image_success(cohere_user, mock_response):
     }
     mock_response.json.return_value = embedding_response
 
-    with patch("requests.post", return_value=mock_response):
-        # Create a sample image embedding request
-        embedding_request = UserImageEmbeddingRequest(
-            documents=[],
-            model="embed-english-v3.0",
-            image_content=["base64_image_content"],
-            num_images=1,
-            num_prefill_tokens=1,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=embedding_request)
+    # Mock httpx client's post method
+    cohere_user._http_client.post = MagicMock(return_value=mock_response)
 
-        # Execute embeddings
-        response = cohere_user.embeddings()
+    # Create a sample image embedding request
+    embedding_request = UserImageEmbeddingRequest(
+        documents=[],
+        model="embed-english-v3.0",
+        image_content=["base64_image_content"],
+        num_images=1,
+        num_prefill_tokens=1,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=embedding_request)
 
-        # Verify response
-        assert response.status_code == 200
-        assert response.num_prefill_tokens == 1
-        assert response.time_at_first_token is not None
+    # Execute embeddings
+    response = cohere_user.embeddings()
+
+    # Verify response
+    assert response.status_code == 200
+    assert response.num_prefill_tokens == 1
+    assert response.time_at_first_token is not None
 
 
 def test_embeddings_multiple_images_error(cohere_user):
@@ -258,38 +315,42 @@ def test_embeddings_multiple_images_error(cohere_user):
 
 
 def test_chat_request_error(cohere_user):
-    with patch(
-        "requests.post",
-        side_effect=requests.exceptions.RequestException("Network error"),
-    ):
-        chat_request = UserChatRequest(
-            model="command-r",
-            prompt="Hello",
-            max_tokens=100,
-            num_prefill_tokens=1,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=chat_request)
+    # Simulate httpx HTTP error
+    cohere_user._http_client.stream = MagicMock(
+        side_effect=httpx.HTTPError("Network error")
+    )
 
-        user_response = cohere_user.chat()
-        assert user_response.status_code == 500
+    chat_request = UserChatRequest(
+        model="command-r",
+        prompt="Hello",
+        max_tokens=100,
+        num_prefill_tokens=1,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=chat_request)
+
+    user_response = cohere_user.chat()
+    assert user_response.status_code == 500
 
 
 def test_chat_invalid_json_response(cohere_user, mock_response):
     # Mock an invalid JSON response
-    mock_response.iter_lines.return_value = [b"data: {invalid json}"]
+    mock_response.iter_lines.return_value = ["data: {invalid json}"]
 
-    with patch("requests.post", return_value=mock_response):
-        chat_request = UserChatRequest(
-            model="command-r",
-            prompt="Hello",
-            max_tokens=100,
-            num_prefill_tokens=1,
-            additional_request_params={},
-        )
-        cohere_user.sample = MagicMock(return_value=chat_request)
+    # Mock httpx client's stream method
+    mock_stream = create_mock_httpx_stream_response(mock_response)
+    cohere_user._http_client.stream = MagicMock(return_value=mock_stream)
 
-        # The chat should complete but log a warning about the invalid JSON
-        response = cohere_user.chat()
-        assert isinstance(response, UserChatResponse)
-        assert response.generated_text == ""
+    chat_request = UserChatRequest(
+        model="command-r",
+        prompt="Hello",
+        max_tokens=100,
+        num_prefill_tokens=1,
+        additional_request_params={},
+    )
+    cohere_user.sample = MagicMock(return_value=chat_request)
+
+    # The chat should complete but log a warning about the invalid JSON
+    response = cohere_user.chat()
+    assert isinstance(response, UserChatResponse)
+    assert response.generated_text == ""

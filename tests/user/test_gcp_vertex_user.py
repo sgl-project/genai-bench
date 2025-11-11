@@ -4,8 +4,8 @@ import json
 import time
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
-import requests
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.protocol import (
@@ -16,6 +16,14 @@ from genai_bench.protocol import (
     UserResponse,
 )
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
+
+
+def create_mock_httpx_stream_response(mock_response):
+    """Helper to create a context manager mock for httpx.stream()"""
+    mock_stream = MagicMock()
+    mock_stream.__enter__ = MagicMock(return_value=mock_response)
+    mock_stream.__exit__ = MagicMock(return_value=None)
+    return mock_stream
 
 
 class TestGCPVertexUser:
@@ -125,8 +133,7 @@ class TestGCPVertexUser:
             with pytest.raises(ImportError, match="google-auth is required"):
                 vertex_user.on_start()
 
-    @patch("requests.post")
-    def test_chat_gemini_text_request(self, mock_post, vertex_user):
+    def test_chat_gemini_text_request(self, vertex_user):
         """Test chat with Gemini text-only request."""
         # Setup
         vertex_user.on_start()
@@ -139,7 +146,10 @@ class TestGCPVertexUser:
                 {"candidates": [{"content": {"parts": [{"text": "Test response"}]}}]}
             ).encode()
         ]
-        mock_post.return_value = mock_response
+
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        vertex_user._http_client.stream = MagicMock(return_value=mock_stream)
 
         # Create request
         request = UserChatRequest(
@@ -159,11 +169,12 @@ class TestGCPVertexUser:
         vertex_user.chat()
 
         # Verify
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
+        vertex_user._http_client.stream.assert_called_once()
+        call_args = vertex_user._http_client.stream.call_args
 
-        # Check the URL
-        url = call_args.kwargs["url"]
+        # Check the method and URL (stream takes method as first arg, url as second)
+        assert call_args.args[0] == "POST"
+        url = call_args.args[1]
         assert ":streamGenerateContent" in url
         assert "test-project" in url
         assert "us-central1" in url
@@ -181,8 +192,7 @@ class TestGCPVertexUser:
         assert response.status_code == 200
         assert response.generated_text == "Test response"
 
-    @patch("requests.post")
-    def test_chat_gemini_image_request(self, mock_post, vertex_user):
+    def test_chat_gemini_image_request(self, vertex_user):
         """Test chat with Gemini image request."""
         # Setup
         vertex_user.on_start()
@@ -199,7 +209,10 @@ class TestGCPVertexUser:
                 }
             ).encode()
         ]
-        mock_post.return_value = mock_response
+
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        vertex_user._http_client.stream = MagicMock(return_value=mock_stream)
 
         # Create request
         request = UserImageChatRequest(
@@ -219,7 +232,7 @@ class TestGCPVertexUser:
         vertex_user.chat()
 
         # Verify
-        call_args = mock_post.call_args
+        call_args = vertex_user._http_client.stream.call_args
         body = call_args.kwargs["json"]
 
         parts = body["contents"][0]["parts"]
@@ -228,8 +241,7 @@ class TestGCPVertexUser:
         assert parts[1]["inlineData"]["data"] == "base64_image_data"
         assert parts[1]["inlineData"]["mimeType"] == "image/jpeg"
 
-    @patch("requests.post")
-    def test_chat_palm_model(self, mock_post, vertex_user):
+    def test_chat_palm_model(self, vertex_user):
         """Test chat with PaLM model."""
         # Setup
         vertex_user.on_start()
@@ -241,7 +253,9 @@ class TestGCPVertexUser:
         mock_response.json.return_value = {
             "predictions": [{"content": "PaLM response"}]
         }
-        mock_post.return_value = mock_response
+
+        # Mock httpx client's post method
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
 
         # Create request
         request = UserChatRequest(
@@ -263,8 +277,9 @@ class TestGCPVertexUser:
         vertex_user.chat()
 
         # Verify
-        call_args = mock_post.call_args
-        url = call_args.kwargs["url"]
+        call_args = vertex_user._http_client.post.call_args
+        # post takes url as first arg
+        url = call_args.args[0]
         assert ":predict" in url
         assert "text-bison" in url
 
@@ -275,8 +290,7 @@ class TestGCPVertexUser:
         assert body["parameters"]["topP"] == 0.9
         assert body["parameters"]["topK"] == 40
 
-    @patch("requests.post")
-    def test_chat_non_streaming(self, mock_post, vertex_user):
+    def test_chat_non_streaming(self, vertex_user):
         """Test chat with non-streaming response."""
         # Setup
         vertex_user.on_start()
@@ -298,7 +312,9 @@ class TestGCPVertexUser:
                 }
             ).encode()
         ]
-        mock_post.return_value = mock_response
+
+        # Mock httpx client's post method (non-streaming uses post, not stream)
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
 
         # Create request with streaming disabled
         request = UserChatRequest(
@@ -317,17 +333,19 @@ class TestGCPVertexUser:
         vertex_user.chat()
 
         # Verify
-        url = mock_post.call_args.kwargs["url"]
+        # post takes url as first arg
+        url = vertex_user._http_client.post.call_args.args[0]
         assert ":generateContent" in url
         response = vertex_user.collect_metrics.call_args[0][0]
         assert response.generated_text == "Non-streaming response"
 
-    @patch("requests.post")
-    def test_chat_error_handling(self, mock_post, vertex_user):
+    def test_chat_error_handling(self, vertex_user):
         """Test chat error handling."""
         # Setup
         vertex_user.on_start()
-        mock_post.side_effect = requests.exceptions.RequestException("API Error")
+        vertex_user._http_client.stream = MagicMock(
+            side_effect=httpx.HTTPError("API Error")
+        )
 
         # Create request
         request = UserChatRequest(
@@ -349,8 +367,7 @@ class TestGCPVertexUser:
         assert response.status_code == 500
         assert "API Error" in response.error_message
 
-    @patch("requests.post")
-    def test_embeddings_request(self, mock_post, vertex_user):
+    def test_embeddings_request(self, vertex_user):
         """Test embeddings request."""
         # Setup
         vertex_user.on_start()
@@ -365,7 +382,9 @@ class TestGCPVertexUser:
                 {"embeddings": {"values": [0.4, 0.5, 0.6]}},
             ]
         }
-        mock_post.return_value = mock_response
+
+        # Mock httpx client's post method
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
 
         # Create request
         request = UserEmbeddingRequest(
@@ -382,7 +401,7 @@ class TestGCPVertexUser:
         vertex_user.embeddings()
 
         # Verify
-        call_args = mock_post.call_args
+        call_args = vertex_user._http_client.post.call_args
         body = call_args.kwargs["json"]
 
         assert len(body["instances"]) == 2
@@ -392,14 +411,18 @@ class TestGCPVertexUser:
         response = vertex_user.collect_metrics.call_args[0][0]
         assert response.status_code == 200
 
-    @patch("requests.post")
-    def test_embeddings_error_handling(self, mock_post, vertex_user):
+    def test_embeddings_error_handling(self, vertex_user):
         """Test embeddings error handling."""
         # Setup
         vertex_user.on_start()
         vertex_user.config.model = "textembedding-gecko"
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.text = "Bad request"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad request"
+
+        # Mock httpx client's post method
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
 
         # Create request
         request = UserEmbeddingRequest(
@@ -427,35 +450,36 @@ class TestGCPVertexUser:
         mock_response = MagicMock()
         mock_response.status_code = 200
 
-        with patch("requests.post", return_value=mock_response) as mock_post:
-            # The send_request method has different signature
-            parse_fn = MagicMock(
-                return_value=UserResponse(
-                    status_code=200,
-                    num_prefill_tokens=10,
-                    end_to_end_time=1.0,
-                    time_at_first_token=0.5,
-                    start_time=time.time(),
-                    end_time=time.time() + 1.0,
-                )
-            )
-            response = vertex_user.send_request(
-                stream=False,
-                endpoint="/test/endpoint",
-                payload={"test": "data"},
-                parse_strategy=parse_fn,
-                num_prefill_tokens=10,
-                model_name="test-model",
-            )
+        # Mock httpx client's post method
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
 
-            assert isinstance(response, UserResponse)
-            assert response.status_code == 200
-            mock_post.assert_called_once_with(
-                url="https://us-central1-aiplatform.googleapis.com/test/endpoint",
-                headers=vertex_user.headers,
-                json={"test": "data"},
-                stream=False,
+        # The send_request method has different signature
+        parse_fn = MagicMock(
+            return_value=UserResponse(
+                status_code=200,
+                num_prefill_tokens=10,
+                end_to_end_time=1.0,
+                time_at_first_token=0.5,
+                start_time=time.time(),
+                end_time=time.time() + 1.0,
             )
+        )
+        response = vertex_user.send_request(
+            stream=False,
+            endpoint="/test/endpoint",
+            payload={"test": "data"},
+            parse_strategy=parse_fn,
+            num_prefill_tokens=10,
+            model_name="test-model",
+        )
+
+        assert isinstance(response, UserResponse)
+        assert response.status_code == 200
+        vertex_user._http_client.post.assert_called_once_with(
+            "https://us-central1-aiplatform.googleapis.com/test/endpoint",
+            json={"test": "data"},
+            headers=vertex_user.headers,
+        )
 
     def test_send_request_error(self, vertex_user):
         """Test send_request with error response."""
@@ -464,20 +488,24 @@ class TestGCPVertexUser:
         mock_response = MagicMock()
         mock_response.status_code = 400
         mock_response.text = "Error message"
-        mock_response.raise_for_status.side_effect = requests.HTTPError()
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "Error", request=MagicMock(), response=mock_response
+        )
 
-        with patch("requests.post", return_value=mock_response):
-            parse_fn = MagicMock()
-            response = vertex_user.send_request(
-                stream=False,
-                endpoint="/test/endpoint",
-                payload={},
-                parse_strategy=parse_fn,
-                num_prefill_tokens=10,
-                model_name="test-model",
-            )
-            # The method catches errors and returns UserResponse with error
-            assert response.status_code == 400
+        # Mock httpx client's post method
+        vertex_user._http_client.post = MagicMock(return_value=mock_response)
+
+        parse_fn = MagicMock()
+        response = vertex_user.send_request(
+            stream=False,
+            endpoint="/test/endpoint",
+            payload={},
+            parse_strategy=parse_fn,
+            num_prefill_tokens=10,
+            model_name="test-model",
+        )
+        # The method catches errors and returns UserResponse with error
+        assert response.status_code == 400
 
     def test_parse_streaming_response_gemini(self, vertex_user):
         """Test parsing streaming response for Gemini."""

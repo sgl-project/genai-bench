@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
-import requests
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.protocol import (
@@ -13,6 +13,14 @@ from genai_bench.protocol import (
     UserImageChatRequest,
 )
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
+
+
+def create_mock_httpx_stream_response(mock_response):
+    """Helper to create a context manager mock for httpx.stream()"""
+    mock_stream = MagicMock()
+    mock_stream.__enter__ = MagicMock(return_value=mock_response)
+    mock_stream.__exit__ = MagicMock(return_value=None)
+    return mock_stream
 
 
 class TestAzureOpenAIUser:
@@ -94,8 +102,7 @@ class TestAzureOpenAIUser:
         assert azure_user.api_version == "2024-02-01"  # default
         assert azure_user.deployment_name is None
 
-    @patch("requests.post")
-    def test_chat_text_request(self, mock_post, azure_user):
+    def test_chat_text_request(self, azure_user):
         """Test chat with text-only request."""
         # Setup
         azure_user.on_start()
@@ -103,12 +110,13 @@ class TestAzureOpenAIUser:
         # Mock response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_lines.return_value = [
-            b'data: {"choices":[{"delta":{"content":"Hello "}}]}',
-            b'data: {"choices":[{"delta":{"content":"world!"}}]}',
-            b"data: [DONE]",
-        ]
-        mock_post.return_value = mock_response
+        mock_response.iter_lines = MagicMock(
+            return_value=[
+                b'data: {"choices":[{"delta":{"content":"Hello "}}]}',
+                b'data: {"choices":[{"delta":{"content":"world!"}}]}',
+                b"data: [DONE]",
+            ]
+        )
 
         # Create request
         request = UserChatRequest(
@@ -123,20 +131,24 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        azure_user._http_client.stream = MagicMock(return_value=mock_stream)
+
         # Execute
         azure_user.chat()
 
         # Verify
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
+        azure_user._http_client.stream.assert_called_once()
+        call_args = azure_user._http_client.stream.call_args
 
         expected_url = (
             "https://test.openai.azure.com/openai/deployments/"
             "test-deployment/chat/completions?api-version=2024-02-15-preview"
         )
-        assert call_args.kwargs["url"] == expected_url
+        assert call_args[0][1] == expected_url
 
-        body = call_args.kwargs["json"]
+        body = call_args[1]["json"]
         assert body["messages"][0]["content"] == "Test prompt"
         assert body["max_tokens"] == 100
         assert body["temperature"] == 0.7
@@ -148,8 +160,7 @@ class TestAzureOpenAIUser:
         assert response.status_code == 200
         assert response.generated_text == "Hello world!"
 
-    @patch("requests.post")
-    def test_chat_image_request(self, mock_post, azure_user):
+    def test_chat_image_request(self, azure_user):
         """Test chat with image request."""
         # Setup
         azure_user.on_start()
@@ -157,11 +168,12 @@ class TestAzureOpenAIUser:
         # Mock response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_lines.return_value = [
-            b'data: {"choices":[{"delta":{"content":"I see an image"}}]}',
-            b"data: [DONE]",
-        ]
-        mock_post.return_value = mock_response
+        mock_response.iter_lines = MagicMock(
+            return_value=[
+                b'data: {"choices":[{"delta":{"content":"I see an image"}}]}',
+                b"data: [DONE]",
+            ]
+        )
 
         # Create request
         request = UserImageChatRequest(
@@ -177,11 +189,15 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        azure_user._http_client.stream = MagicMock(return_value=mock_stream)
+
         # Execute
         azure_user.chat()
 
         # Verify
-        call_args = mock_post.call_args
+        call_args = azure_user._http_client.stream.call_args
         body = call_args[1]["json"]
 
         content = body["messages"][0]["content"]
@@ -193,8 +209,7 @@ class TestAzureOpenAIUser:
             content[1]["image_url"]["url"] == "data:image/jpeg;base64,base64_image_data"
         )
 
-    @patch("requests.post")
-    def test_chat_non_streaming(self, mock_post, azure_user):
+    def test_chat_non_streaming(self, azure_user):
         """Test chat with non-streaming response."""
         # Setup
         azure_user.on_start()
@@ -203,12 +218,14 @@ class TestAzureOpenAIUser:
         mock_response = MagicMock()
         mock_response.status_code = 200
         # Azure sends non-streaming as a single data chunk
-        mock_response.iter_lines.return_value = [
-            b'data: {"choices":[{"message":{"content":"Non-streaming response"},'
-            + b'"delta":{"content":"Non-streaming response"},"finish_reason":"stop"}]}',
-            b"data: [DONE]",
-        ]
-        mock_post.return_value = mock_response
+        mock_response.iter_lines = MagicMock(
+            return_value=[
+                b'data: {"choices":[{"message":{"content":"Non-streaming response"},'
+                + b'"delta":{"content":"Non-streaming response"},'
+                + b'"finish_reason":"stop"}]}',
+                b"data: [DONE]",
+            ]
+        )
 
         # Create request with streaming disabled
         request = UserChatRequest(
@@ -223,18 +240,22 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's post method for non-streaming
+        # (stream=False uses post not stream)
+        azure_user._http_client.post = MagicMock(return_value=mock_response)
+
         # Execute
         azure_user.chat()
 
         # Verify
-        body = mock_post.call_args.kwargs["json"]
+        azure_user._http_client.post.assert_called_once()
+        body = azure_user._http_client.post.call_args[1]["json"]
         assert body["stream"] is False
 
         response = azure_user.collect_metrics.call_args[0][0]
         assert response.generated_text == "Non-streaming response"
 
-    @patch("requests.post")
-    def test_chat_with_system_message(self, mock_post, azure_user):
+    def test_chat_with_system_message(self, azure_user):
         """Test chat with system message."""
         # Setup
         azure_user.on_start()
@@ -242,11 +263,12 @@ class TestAzureOpenAIUser:
         # Mock response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_lines.return_value = [
-            b'data: {"choices":[{"delta":{"content":"Response"}}]}',
-            b"data: [DONE]",
-        ]
-        mock_post.return_value = mock_response
+        mock_response.iter_lines = MagicMock(
+            return_value=[
+                b'data: {"choices":[{"delta":{"content":"Response"}}]}',
+                b"data: [DONE]",
+            ]
+        )
 
         # Create request with system message
         request = UserChatRequest(
@@ -266,21 +288,26 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        azure_user._http_client.stream = MagicMock(return_value=mock_stream)
+
         # Execute
         azure_user.chat()
 
         # Verify
-        body = mock_post.call_args.kwargs["json"]
+        body = azure_user._http_client.stream.call_args[1]["json"]
         assert len(body["messages"]) == 2
         assert body["messages"][0]["role"] == "system"
         assert body["messages"][1]["role"] == "user"
 
-    @patch("requests.post")
-    def test_chat_error_handling(self, mock_post, azure_user):
+    def test_chat_error_handling(self, azure_user):
         """Test chat error handling."""
         # Setup
         azure_user.on_start()
-        mock_post.side_effect = requests.exceptions.RequestException("API Error")
+        azure_user._http_client.stream = MagicMock(
+            side_effect=httpx.HTTPError("API Error")
+        )
 
         # Create request
         request = UserChatRequest(
@@ -302,8 +329,7 @@ class TestAzureOpenAIUser:
         assert response.status_code == 500
         assert "API Error" in response.error_message
 
-    @patch("requests.post")
-    def test_chat_http_error(self, mock_post, azure_user):
+    def test_chat_http_error(self, azure_user):
         """Test chat with HTTP error response."""
         # Setup
         azure_user.on_start()
@@ -311,7 +337,6 @@ class TestAzureOpenAIUser:
         mock_response = MagicMock()
         mock_response.status_code = 429
         mock_response.text = "Rate limit exceeded"
-        mock_post.return_value = mock_response
 
         # Create request
         request = UserChatRequest(
@@ -325,6 +350,10 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's stream method
+        mock_stream = create_mock_httpx_stream_response(mock_response)
+        azure_user._http_client.stream = MagicMock(return_value=mock_stream)
+
         # Execute
         azure_user.chat()
 
@@ -333,8 +362,7 @@ class TestAzureOpenAIUser:
         assert response.status_code == 429
         assert "Rate limit exceeded" in response.error_message
 
-    @patch("requests.post")
-    def test_embeddings_request(self, mock_post, azure_user):
+    def test_embeddings_request(self, azure_user):
         """Test embeddings request."""
         # Setup
         azure_user.on_start()
@@ -350,7 +378,6 @@ class TestAzureOpenAIUser:
             ],
             "usage": {"prompt_tokens": 10, "total_tokens": 10},
         }
-        mock_post.return_value = mock_response
 
         # Create request
         request = UserEmbeddingRequest(
@@ -363,32 +390,36 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's post method for non-streaming embeddings
+        azure_user._http_client.post = MagicMock(return_value=mock_response)
+
         # Execute
         azure_user.embeddings()
 
         # Verify
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
+        azure_user._http_client.post.assert_called_once()
+        call_args = azure_user._http_client.post.call_args
 
         expected_url = (
             "https://test.openai.azure.com/openai/deployments/"
             "text-embedding-ada-002/embeddings?api-version=2024-02-15-preview"
         )
-        assert call_args.kwargs["url"] == expected_url
+        assert call_args[0][0] == expected_url
 
-        body = call_args.kwargs["json"]
+        body = call_args[1]["json"]
         assert body["input"] == ["Doc 1", "Doc 2"]
 
         response = azure_user.collect_metrics.call_args[0][0]
         assert response.status_code == 200
 
-    @patch("requests.post")
-    def test_embeddings_error_handling(self, mock_post, azure_user):
+    def test_embeddings_error_handling(self, azure_user):
         """Test embeddings error handling."""
         # Setup
         azure_user.on_start()
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.text = "Bad request"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad request"
 
         # Create request
         request = UserEmbeddingRequest(
@@ -400,6 +431,9 @@ class TestAzureOpenAIUser:
         # Mock sample method
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
+
+        # Mock httpx client's post method for non-streaming embeddings
+        azure_user._http_client.post = MagicMock(return_value=mock_response)
 
         # Execute
         azure_user.embeddings()
@@ -564,8 +598,7 @@ class TestAzureOpenAIUser:
         ):
             azure_user.embeddings()
 
-    @patch("requests.post")
-    def test_chat_with_n_parameter(self, mock_post, azure_user):
+    def test_chat_with_n_parameter(self, azure_user):
         """Test chat with n parameter for multiple completions."""
         # Setup
         azure_user.on_start()
@@ -573,14 +606,16 @@ class TestAzureOpenAIUser:
         # Mock response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.iter_lines.return_value = [
-            b'data: {"choices":[{"message":{"content":"Response 1"},'
-            + b'"delta":{"content":"Response 1"},"finish_reason":"stop"},'
-            + b'{"message":{"content":"Response 2"},"delta":{"content":"Response 2"},'
-            + b'"finish_reason":"stop"}]}',
-            b"data: [DONE]",
-        ]
-        mock_post.return_value = mock_response
+        mock_response.iter_lines = MagicMock(
+            return_value=[
+                b'data: {"choices":[{"message":{"content":"Response 1"},'
+                + b'"delta":{"content":"Response 1"},"finish_reason":"stop"},'
+                + b'{"message":{"content":"Response 2"},'
+                + b'"delta":{"content":"Response 2"},'
+                + b'"finish_reason":"stop"}]}',
+                b"data: [DONE]",
+            ]
+        )
 
         # Create request
         request = UserChatRequest(
@@ -595,11 +630,16 @@ class TestAzureOpenAIUser:
         azure_user.sample = MagicMock(return_value=request)
         azure_user.collect_metrics = MagicMock()
 
+        # Mock httpx client's post method for non-streaming
+        # (stream=False uses post not stream)
+        azure_user._http_client.post = MagicMock(return_value=mock_response)
+
         # Execute
         azure_user.chat()
 
         # Verify
-        body = mock_post.call_args.kwargs["json"]
+        azure_user._http_client.post.assert_called_once()
+        body = azure_user._http_client.post.call_args[1]["json"]
         assert body["n"] == 2
 
         response = azure_user.collect_metrics.call_args[0][0]
@@ -632,12 +672,13 @@ class TestAzureOpenAIUser:
             azure_user.deployment_name is None
         )  # deployment_name only comes from auth config
 
-    @patch("requests.post")
-    def test_chat_connection_error(self, mock_post, azure_user):
+    def test_chat_connection_error(self, azure_user):
         """Test chat with connection error."""
         # Setup
         azure_user.on_start()
-        mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        azure_user._http_client.stream = MagicMock(
+            side_effect=httpx.ConnectError("Connection failed")
+        )
 
         # Create request
         request = UserChatRequest(
@@ -659,12 +700,13 @@ class TestAzureOpenAIUser:
         assert response.status_code == 503
         assert "Connection error" in response.error_message
 
-    @patch("requests.post")
-    def test_chat_timeout_error(self, mock_post, azure_user):
+    def test_chat_timeout_error(self, azure_user):
         """Test chat with timeout error."""
         # Setup
         azure_user.on_start()
-        mock_post.side_effect = requests.exceptions.Timeout("Request timed out")
+        azure_user._http_client.stream = MagicMock(
+            side_effect=httpx.TimeoutException("Request timed out")
+        )
 
         # Create request
         request = UserChatRequest(
@@ -840,12 +882,13 @@ class TestAzureOpenAIUser:
         assert result.generated_text == "Hello world"
         assert result.tokens_received == 50  # From mock sampler
 
-    @patch("requests.post")
-    def test_embeddings_connection_error(self, mock_post, azure_user):
+    def test_embeddings_connection_error(self, azure_user):
         """Test embeddings with connection error."""
         # Setup
         azure_user.on_start()
-        mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        azure_user._http_client.post = MagicMock(
+            side_effect=httpx.ConnectError("Connection failed")
+        )
 
         # Create request
         request = UserEmbeddingRequest(
@@ -866,12 +909,13 @@ class TestAzureOpenAIUser:
         assert response.status_code == 503
         assert "Connection error" in response.error_message
 
-    @patch("requests.post")
-    def test_embeddings_timeout_error(self, mock_post, azure_user):
+    def test_embeddings_timeout_error(self, azure_user):
         """Test embeddings with timeout error."""
         # Setup
         azure_user.on_start()
-        mock_post.side_effect = requests.exceptions.Timeout("Request timed out")
+        azure_user._http_client.post = MagicMock(
+            side_effect=httpx.TimeoutException("Request timed out")
+        )
 
         # Create request
         request = UserEmbeddingRequest(
