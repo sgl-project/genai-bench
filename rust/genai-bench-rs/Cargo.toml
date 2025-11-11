@@ -1,0 +1,74 @@
+[package]
+name = "genai-bench-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["GenAI Bench Contributors"]
+description = "High-performance LLM benchmarking tool written in Rust"
+license = "MIT"
+repository = "https://github.com/anthropics/genai-bench"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "stream"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+# Progress bars and terminal UI
+indicatif = "0.17"
+
+# Random number generation
+rand = "0.8"
+rand_distr = "0.4"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+tokio-stream = "0.1"
+bytes = "1.5"
+
+# Time and duration
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CSV output
+csv = "1.3"
+
+# Environment variables
+dotenvy = "0.15"
+
+# Excel export
+rust_xlsxwriter = "0.68"
+
+# Plotting
+plotters = "0.3"
+
+# Terminal UI (TUI)
+ratatui = "0.26"
+crossterm = "0.27"
+
+[dev-dependencies]
+# Testing utilities
+tokio-test = "0.4"
+mockito = "1.2"
+tempfile = "3.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

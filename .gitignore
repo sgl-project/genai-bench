@@ -47,3 +47,10 @@ genai_bench*.log
 # MkDocs
 site/
 .cache/
+
+coverage.xml
+
+**/.claude/**
+**/.serena/**
+
+rust/genai-bench-rs/target
