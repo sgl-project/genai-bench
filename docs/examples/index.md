@@ -3,6 +3,27 @@
 This section provides practical examples and configurations for GenAI Bench.
 
 ## Quick Examples
+### Open-loop QPS (non-Locust) — tore-speed style
+
+Use an open-loop arrival process that schedules requests by inter-arrival times.
+
+```bash
+genai-bench benchmark \
+  --non-locust \
+  --qps-level 0.1 --qps-level 0.3 \
+  --qps-distribution uniform \
+  --max-requests-per-run 1500 --max-time-per-run 2 \
+  --api-backend together --api-base https://api.together.xyz \
+  --api-model-name <model> --model-tokenizer <hf-tokenizer> \
+  --task text-to-text \
+  --traffic-scenario "D(10000,825)" \
+  --synthetic --synthetic-cached-input-length 3000
+```
+
+Notes:
+- `--max-time-per-run` is in minutes (floats allowed); internally converted to seconds. It also drives the open-loop schedule duration per level.
+- Arrival rate (QPS) sets the schedule; completion-based metrics (RPS) reflect how many finished within the window.
+
 
 ### OpenAI GPT-4 Benchmark
 
@@ -74,6 +95,24 @@ GenAI Bench supports various traffic patterns:
 - `D(100,100)` - Deterministic: 100 input tokens, 100 output tokens
 - `N(480,240)/(300,150)` - Normal distribution
 - `U(50,100)/(200,250)` - Uniform distribution
+
+### Synthetic Tore-style Prompts
+
+To mimic tore-speed’s synthetic dataset with a cached prefix and exact token counts:
+
+```bash
+genai-bench benchmark \
+  --api-backend together \
+  --api-base https://api.together.xyz \
+  --api-model-name <model> \
+  --model-tokenizer <hf-tokenizer> \
+  --task text-to-text \
+  --traffic-scenario "D(10000,825)" \
+  --synthetic --synthetic-cached-input-length 3000 \
+  --max-requests-per-run 1500 --max-time-per-run 2
+```
+
+This constructs prompts with a leading 3000-token cacheable region and a unique uncached suffix, matching tore-speed synthetic behavior.
 
 ### Embedding Scenarios
 

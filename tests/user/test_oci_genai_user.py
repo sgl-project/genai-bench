@@ -46,8 +46,7 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         '"content": [{"type": "TEXT", "text": " world"}]}}'
     )
     exclamation_msg = (
-        '{"message": {"role": "ASSISTANT", '
-        '"content": [{"type": "TEXT", "text": "!"}]}}'
+        '{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "!"}]}}'
     )
 
     mock_client_instance.chat.return_value.data.events.return_value = iter(

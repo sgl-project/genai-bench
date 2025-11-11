@@ -18,6 +18,7 @@ from genai_bench.auth.unified_factory import UnifiedAuthFactory
 from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
+    open_loop_options,
     experiment_options,
     model_auth_options,
     object_storage_options,
@@ -64,6 +65,7 @@ def cli(ctx):
 @experiment_options
 @sampling_options
 @distributed_locust_options
+@open_loop_options
 @object_storage_options
 @storage_auth_options
 @click.pass_context
@@ -117,9 +119,21 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
+    # Synthetic Tore-style options (added via sampling_options)
+    synthetic,
+    synthetic_input_length,
+    synthetic_input_length_stdev,
+    synthetic_output_length,
+    synthetic_output_length_stdev,
+    synthetic_cached_input_length,
     num_workers,
     master_port,
     spawn_rate,
+    # Open-loop options
+    non_locust,
+    qps_level,
+    qps_distribution,
+    random_seed,
     upload_results,
     namespace,
     # Storage auth options
@@ -221,6 +235,10 @@ def benchmark(
             }
         )
 
+    elif api_backend == "together":
+        # Together uses API key for authentication
+        auth_kwargs["api_key"] = model_api_key or api_key
+
     elif api_backend in ["vllm", "sglang"]:
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
@@ -274,6 +292,12 @@ def benchmark(
             dataset_path=dataset_path,
             prompt_column=dataset_prompt_column,
             image_column=dataset_image_column,
+            synthetic=ctx.params.get("synthetic", False),
+            synthetic_input_length=ctx.params.get("synthetic_input_length"),
+            synthetic_input_length_stdev=ctx.params.get("synthetic_input_length_stdev"),
+            synthetic_output_length=ctx.params.get("synthetic_output_length"),
+            synthetic_output_length_stdev=ctx.params.get("synthetic_output_length_stdev"),
+            synthetic_cached_input_length=ctx.params.get("synthetic_cached_input_length"),
         )
 
     # Load data using the factory
@@ -344,43 +368,55 @@ def benchmark(
     )
     experiment_metadata_file.write_text(experiment_metadata.model_dump_json(indent=4))
 
-    # Initialize environment
-    environment = Environment(user_classes=[user_class])
-    # Assign the selected task to the user class
-    environment.user_classes[0].tasks = [user_task]
-    environment.sampler = sampler
+    if not non_locust:
+        # Initialize environment
+        environment = Environment(user_classes=[user_class])
+        # Assign the selected task to the user class
+        environment.user_classes[0].tasks = [user_task]
+        environment.sampler = sampler
 
-    # Set up distributed runner
-    config = DistributedConfig(
-        num_workers=num_workers,
-        master_port=master_port,
-    )
-    runner = DistributedRunner(
-        environment=environment,
-        config=config,
-        dashboard=dashboard,
-    )
-    runner.setup()
+        # Set up distributed runner
+        config = DistributedConfig(
+            num_workers=num_workers,
+            master_port=master_port,
+        )
+        runner = DistributedRunner(
+            environment=environment,
+            config=config,
+            dashboard=dashboard,
+        )
+        runner.setup()
+    else:
+        # Non-Locust open-loop mode uses an in-process metrics collector
+        from genai_bench.metrics.aggregated_metrics_collector import (
+            AggregatedMetricsCollector,
+        )
+        aggregated_metrics_collector = AggregatedMetricsCollector()
 
     # Worker process doesn't need to run the main benchmark flow as it only
     # sends requests and collects response
-    if num_workers > 0 and isinstance(environment.runner, WorkerRunner):
+    if (not non_locust) and num_workers > 0 and isinstance(environment.runner, WorkerRunner):
         return
 
     # Get metrics collector from runner for master/local mode
-    if not runner.metrics_collector:
-        raise RuntimeError("Metrics collector not initialized")
-    aggregated_metrics_collector = runner.metrics_collector
+    if not non_locust:
+        if not runner.metrics_collector:
+            raise RuntimeError("Metrics collector not initialized")
+        aggregated_metrics_collector = runner.metrics_collector
 
-    # Iterate over each scenario_str and concurrency level,
-    # and run the experiment
-    iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
+    # Iterate over each scenario_str and concurrency/QPS level, and run the experiment
+    if non_locust and qps_level:
+        iteration_values = list(qps_level)
+        iteration_type = "num_concurrency"
+    else:
+        iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
             sanitized_scenario_str = sanitize_string(scenario_str)
-            runner.update_scenario(scenario_str)
+            if not non_locust:
+                runner.update_scenario(scenario_str)
 
             # Store metrics for current scenario for interim plot
             scenario_metrics = {
@@ -399,7 +435,8 @@ def benchmark(
                 )
 
                 # Update batch size for each iteration
-                runner.update_batch_size(batch_size)
+                if not non_locust:
+                    runner.update_batch_size(batch_size)
 
                 aggregated_metrics_collector.set_run_metadata(
                     iteration, scenario_str, iteration_type
@@ -410,22 +447,48 @@ def benchmark(
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
                 # Use custom spawn rate if provided, otherwise use concurrency
-                actual_spawn_rate = (
-                    spawn_rate if spawn_rate is not None else concurrency
-                )
-                logger.info(
-                    f"Starting benchmark with concurrency={concurrency}, "
-                    f"spawn_rate={actual_spawn_rate}"
-                )
-                environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
+                if not non_locust:
+                    actual_spawn_rate = (
+                        spawn_rate if spawn_rate is not None else concurrency
+                    )
+                    logger.info(
+                        f"Starting benchmark with concurrency={concurrency}, "
+                        f"spawn_rate={actual_spawn_rate}"
+                    )
+                    environment.runner.start(concurrency, spawn_rate=actual_spawn_rate)
 
-                total_run_time = manage_run_time(
-                    max_time_per_run=max_time_per_run,
-                    max_requests_per_run=max_requests_per_run,
-                    environment=environment,
-                )
+                    total_run_time = manage_run_time(
+                        max_time_per_run=max_time_per_run,
+                        max_requests_per_run=max_requests_per_run,
+                        environment=environment,
+                    )
 
-                environment.runner.stop()
+                    environment.runner.stop()
+                else:
+                    # Open-loop QPS: treat iteration 'concurrency' as target QPS
+                    from genai_bench.openloop.runner import OpenLoopRunner
+                    ol = OpenLoopRunner(
+                        sampler=sampler,
+                        api_backend=api_backend,
+                        api_base=api_base,
+                        api_model_name=api_model_name,
+                        auth_provider=auth_provider,
+                        aggregated_metrics_collector=aggregated_metrics_collector,
+                        dashboard=dashboard,
+                    )
+                    logger.info(
+                        f"Starting open-loop run with qps={concurrency}, "
+                        f"duration_s={max_time_per_run}, distribution={qps_distribution}"
+                    )
+                    total_run_time = ol.run(
+                        qps_level=concurrency,
+                        duration_s=max_time_per_run,
+                        distribution=qps_distribution,
+                        random_seed=random_seed,
+                        max_requests=max_requests_per_run,
+                        max_time_s=None,
+                        scenario=scenario_str,
+                    )
 
                 # Aggregate metrics after each run
                 end_time = time.monotonic()
@@ -499,7 +562,8 @@ def benchmark(
         time.sleep(2)
 
     # Final cleanup
-    runner.cleanup()
+    if not non_locust:
+        runner.cleanup()
 
     # Flash all the logs to terminal
     if delayed_log_handler:
