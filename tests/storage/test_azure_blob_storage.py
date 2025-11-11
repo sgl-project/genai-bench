@@ -443,9 +443,15 @@ class TestAzureBlobStorage:
 
             storage = AzureBlobStorage(mock_auth)
 
-        with patch("pathlib.Path.mkdir"):
-            with pytest.raises(FileNotFoundError, match="Blob not found"):
-                storage.download_file("missing.txt", "local.txt", "container")
+        local_file = Path("local.txt")
+        try:
+            with patch("pathlib.Path.mkdir"):
+                with pytest.raises(FileNotFoundError, match="Blob not found"):
+                    storage.download_file("missing.txt", "local.txt", "container")
+        finally:
+            # Clean up the created file
+            if local_file.exists():
+                local_file.unlink()
 
     def test_download_file_general_error(self, mock_auth):
         """Test download file with general error."""
@@ -463,9 +469,15 @@ class TestAzureBlobStorage:
 
             storage = AzureBlobStorage(mock_auth)
 
-        with patch("pathlib.Path.mkdir"):
-            with pytest.raises(Exception, match="Download failed"):
-                storage.download_file("file.txt", "local.txt", "container")
+        local_file = Path("local.txt")
+        try:
+            with patch("pathlib.Path.mkdir"):
+                with pytest.raises(Exception, match="Download failed"):
+                    storage.download_file("file.txt", "local.txt", "container")
+        finally:
+            # Clean up the created file
+            if local_file.exists():
+                local_file.unlink()
 
     def test_list_objects_error(self, mock_auth):
         """Test list objects with error."""
