@@ -6,8 +6,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-import requests
-from requests import Response
+import httpx
 
 from genai_bench.auth.auth_provider import AuthProvider
 from genai_bench.logging import init_logger
@@ -40,6 +39,7 @@ class GCPVertexUser(BaseUser):
     project_id: Optional[str] = None
     location: Optional[str] = None
     headers: Dict[str, str] = {}
+    _http_client: Optional[httpx.Client] = None
 
     def on_start(self):
         """Initialize GCP Vertex AI client using auth provider."""
@@ -96,8 +96,21 @@ class GCPVertexUser(BaseUser):
                 "Content-Type": "application/json",
             }
 
+        # Initialize httpx client for proper streaming support
+        # httpx.Client() has better iter_lines() implementation than requests
+        # which fixes the buffering issue in gevent/greenlet contexts
+        self._http_client = httpx.Client(
+            timeout=None,  # No timeout for streaming requests
+        )
+
         logger.info(f"Initialized GCP Vertex AI client for project {self.project_id}")
         super().on_start()
+
+    def on_stop(self):
+        """Cleanup httpx client when stopping"""
+        if self._http_client:
+            self._http_client.close()
+        super().on_stop()
 
     @task
     def chat(self):
@@ -206,55 +219,77 @@ class GCPVertexUser(BaseUser):
         Returns:
             UserResponse: A response object containing status and metrics data.
         """
-        response = None
         base_url = f"https://{self.location}-aiplatform.googleapis.com"
 
         try:
             start_time = time.monotonic()
-            response = requests.post(
-                url=f"{base_url}{endpoint}",
-                json=payload,
-                stream=stream,
-                headers=self.headers,
-            )
-            non_stream_post_end_time = time.monotonic()
 
-            if response.status_code == 200:
-                metrics_response = parse_strategy(
-                    response,
-                    start_time,
-                    num_prefill_tokens,
-                    non_stream_post_end_time,
-                    model_name,
-                )
+            if stream:
+                # Use httpx streaming for Gemini streaming responses
+                with self._http_client.stream(
+                    "POST",
+                    f"{base_url}{endpoint}",
+                    json=payload,
+                    headers=self.headers,
+                ) as response:
+                    non_stream_post_end_time = time.monotonic()
+
+                    if response.status_code == 200:
+                        metrics_response = parse_strategy(
+                            response,
+                            start_time,
+                            num_prefill_tokens,
+                            non_stream_post_end_time,
+                            model_name,
+                        )
+                    else:
+                        metrics_response = UserResponse(
+                            status_code=response.status_code,
+                            error_message=response.text,
+                        )
             else:
-                metrics_response = UserResponse(
-                    status_code=response.status_code,
-                    error_message=response.text,
+                # Non-streaming request for embeddings and non-Gemini models
+                response = self._http_client.post(
+                    f"{base_url}{endpoint}",
+                    json=payload,
+                    headers=self.headers,
                 )
-        except requests.exceptions.ConnectionError as e:
+                non_stream_post_end_time = time.monotonic()
+
+                if response.status_code == 200:
+                    metrics_response = parse_strategy(
+                        response,
+                        start_time,
+                        num_prefill_tokens,
+                        non_stream_post_end_time,
+                        model_name,
+                    )
+                else:
+                    metrics_response = UserResponse(
+                        status_code=response.status_code,
+                        error_message=response.text,
+                    )
+                response.close()
+        except httpx.ConnectError as e:
             metrics_response = UserResponse(
                 status_code=503, error_message=f"Connection error: {e}"
             )
-        except requests.exceptions.Timeout as e:
+        except httpx.TimeoutException as e:
             metrics_response = UserResponse(
                 status_code=408, error_message=f"Request timed out: {e}"
             )
-        except requests.exceptions.RequestException as e:
+        except httpx.HTTPError as e:
             metrics_response = UserResponse(
                 status_code=500,
                 error_message=str(e),
             )
-        finally:
-            if response is not None:
-                response.close()
 
         self.collect_metrics(metrics_response, endpoint)
         return metrics_response
 
     def parse_chat_response(
         self,
-        response: Response,
+        response: httpx.Response,
         start_time: float,
         num_prefill_tokens: int,
         _: float,
@@ -264,7 +299,7 @@ class GCPVertexUser(BaseUser):
         Parses a Gemini streaming response.
 
         Args:
-            response (Response): The response object.
+            response (httpx.Response): The response object.
             start_time (float): The time when the request was started.
             num_prefill_tokens (int): The num of tokens in the prefill/prompt.
             _ (float): Placeholder for an unused var.
@@ -316,7 +351,7 @@ class GCPVertexUser(BaseUser):
 
     def parse_palm_response(
         self,
-        response: Response,
+        response: httpx.Response,
         start_time: float,
         num_prefill_tokens: int,
         end_time: float,
@@ -326,7 +361,7 @@ class GCPVertexUser(BaseUser):
         Parses a PaLM/non-Gemini response.
 
         Args:
-            response (Response): The response object.
+            response (httpx.Response): The response object.
             start_time (float): The time when the request was started.
             num_prefill_tokens (int): The num of tokens in the prefill/prompt.
             end_time (float): The time when the request was finished.
@@ -358,7 +393,7 @@ class GCPVertexUser(BaseUser):
 
     @staticmethod
     def parse_embedding_response(
-        response: Response,
+        response: httpx.Response,
         start_time: float,
         _: Optional[int],
         end_time: float,
@@ -368,7 +403,7 @@ class GCPVertexUser(BaseUser):
         Parses an embedding response.
 
         Args:
-            response (Response): The response object.
+            response (httpx.Response): The response object.
             start_time (float): The time when the request was started.
             _ (Optional[int]): Placeholder for unused parameter.
             end_time (float): The time when the request was finished.

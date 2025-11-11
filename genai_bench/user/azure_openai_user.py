@@ -6,8 +6,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-import requests
-from requests import Response
+import httpx
 
 from genai_bench.auth.auth_provider import AuthProvider
 from genai_bench.logging import init_logger
@@ -40,6 +39,7 @@ class AzureOpenAIUser(BaseUser):
     api_version: Optional[str] = None
     deployment_name: Optional[str] = None
     headers: Dict[str, str] = {}
+    _http_client: Optional[httpx.Client] = None
 
     def on_start(self):
         """Initialize Azure OpenAI client using auth provider."""
@@ -62,7 +62,16 @@ class AzureOpenAIUser(BaseUser):
         if config.get("azure_endpoint"):
             self.host = config["azure_endpoint"].rstrip("/")
 
+        # Initialize httpx client for proper streaming support
+        self._http_client = httpx.Client(timeout=None)
+
         super().on_start()
+
+    def on_stop(self):
+        """Cleanup httpx client when stopping"""
+        if self._http_client:
+            self._http_client.close()
+        super().on_stop()
 
     @task
     def chat(self):
@@ -144,67 +153,87 @@ class AzureOpenAIUser(BaseUser):
         num_prefill_tokens: Optional[int] = None,
     ) -> UserResponse:
         """
-        Sends a POST request, handling both streaming and non-streaming responses.
+        Sends a POST request using httpx, handling both streaming and
+        non-streaming responses.
 
         Args:
             endpoint (str): The API endpoint.
             payload (Dict[str, Any]): The JSON payload for the request.
             stream (bool): Whether to stream the response.
-            parse_strategy (Callable[[Response, float, int, float], UserResponse]):
-                The function to parse the response.
+            parse_strategy (Callable): The function to parse the response.
             num_prefill_tokens (Optional[int]): The num of tokens in the
                 prefill/prompt. Only need for streaming requests.
 
         Returns:
             UserResponse: A response object containing status and metrics data.
         """
-        response = None
-
         try:
             start_time = time.monotonic()
-            response = requests.post(
-                url=f"{self.host}{endpoint}",
-                json=payload,
-                stream=stream,
-                headers=self.headers,
-            )
-            non_stream_post_end_time = time.monotonic()
 
-            if response.status_code == 200:
-                metrics_response = parse_strategy(
-                    response,
-                    start_time,
-                    num_prefill_tokens,
-                    non_stream_post_end_time,
-                )
+            if stream:
+                # Use streaming for chat completions
+                with self._http_client.stream(
+                    "POST",
+                    f"{self.host}{endpoint}",
+                    json=payload,
+                    headers=self.headers,
+                ) as response:
+                    non_stream_post_end_time = time.monotonic()
+
+                    if response.status_code == 200:
+                        metrics_response = parse_strategy(
+                            response,
+                            start_time,
+                            num_prefill_tokens,
+                            non_stream_post_end_time,
+                        )
+                    else:
+                        metrics_response = UserResponse(
+                            status_code=response.status_code,
+                            error_message=response.text,
+                        )
             else:
-                metrics_response = UserResponse(
-                    status_code=response.status_code,
-                    error_message=response.text,
+                # Non-streaming request (embeddings)
+                response = self._http_client.post(
+                    f"{self.host}{endpoint}",
+                    json=payload,
+                    headers=self.headers,
                 )
-        except requests.exceptions.ConnectionError as e:
+                non_stream_post_end_time = time.monotonic()
+
+                if response.status_code == 200:
+                    metrics_response = parse_strategy(
+                        response,
+                        start_time,
+                        num_prefill_tokens,
+                        non_stream_post_end_time,
+                    )
+                else:
+                    metrics_response = UserResponse(
+                        status_code=response.status_code,
+                        error_message=response.text,
+                    )
+
+        except httpx.ConnectError as e:
             metrics_response = UserResponse(
                 status_code=503, error_message=f"Connection error: {e}"
             )
-        except requests.exceptions.Timeout as e:
+        except httpx.TimeoutException as e:
             metrics_response = UserResponse(
                 status_code=408, error_message=f"Request timed out: {e}"
             )
-        except requests.exceptions.RequestException as e:
+        except httpx.HTTPError as e:
             metrics_response = UserResponse(
                 status_code=500,  # Assign a generic 500
                 error_message=str(e),
             )
-        finally:
-            if response is not None:
-                response.close()
 
         self.collect_metrics(metrics_response, endpoint)
         return metrics_response
 
     def parse_chat_response(
         self,
-        response: Response,
+        response: httpx.Response,
         start_time: float,
         num_prefill_tokens: int,
         _: float,
@@ -354,7 +383,7 @@ class AzureOpenAIUser(BaseUser):
 
     @staticmethod
     def parse_embedding_response(
-        response: Response, start_time: float, _: Optional[int], end_time: float
+        response: httpx.Response, start_time: float, _: Optional[int], end_time: float
     ) -> UserResponse:
         """
         Parses a non-streaming response.

@@ -4,8 +4,7 @@ import json
 import time
 from typing import Any, Callable, Dict, Optional
 
-import requests
-from requests import Response
+import httpx
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
@@ -34,6 +33,7 @@ class CohereUser(BaseUser):
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
+    _http_client: Optional[httpx.Client] = None
 
     def on_start(self):
         """Initialize Cohere client on start."""
@@ -46,7 +46,16 @@ class CohereUser(BaseUser):
             "Content-Type": "application/json",
         }
 
+        # Initialize httpx client for proper streaming support
+        self._http_client = httpx.Client(timeout=None)
+
         super().on_start()
+
+    def on_stop(self):
+        """Cleanup httpx client when stopping"""
+        if self._http_client:
+            self._http_client.close()
+        super().on_stop()
 
     @task
     def chat(self):
@@ -140,48 +149,74 @@ class CohereUser(BaseUser):
         """
         start_time = time.monotonic()
         url = f"{self.host}{endpoint}"
-        response = None
 
         try:
-            response = requests.post(
-                url=url,
-                headers=self.headers,
-                json=payload,
-                stream=stream,
-            )
-            response.raise_for_status()
-            logger.debug(
-                f"Request to {url} succeeded with status code {response.status_code}."
-            )
-            non_stream_post_end_time = time.monotonic()
+            if stream:
+                # Use httpx streaming for chat completions
+                with self._http_client.stream(
+                    "POST",
+                    url,
+                    json=payload,
+                    headers=self.headers,
+                ) as response:
+                    response.raise_for_status()
+                    logger.debug(
+                        f"Request to {url} succeeded with status code "
+                        f"{response.status_code}."
+                    )
+                    non_stream_post_end_time = time.monotonic()
 
-            if response.status_code == 200:
-                metrics_response = parse_strategy(
-                    response,
-                    start_time,
-                    num_prefill_tokens,
-                    non_stream_post_end_time,
-                )
+                    if response.status_code == 200:
+                        metrics_response = parse_strategy(
+                            response,
+                            start_time,
+                            num_prefill_tokens,
+                            non_stream_post_end_time,
+                        )
+                    else:
+                        metrics_response = UserResponse(
+                            status_code=response.status_code,
+                            error_message=response.text,
+                        )
             else:
-                metrics_response = UserResponse(
-                    status_code=response.status_code,
-                    error_message=response.text,
+                # Non-streaming request for embeddings
+                response = self._http_client.post(
+                    url,
+                    json=payload,
+                    headers=self.headers,
                 )
-        except requests.exceptions.RequestException as e:
+                response.raise_for_status()
+                logger.debug(
+                    f"Request to {url} succeeded with status code "
+                    f"{response.status_code}."
+                )
+                non_stream_post_end_time = time.monotonic()
+
+                if response.status_code == 200:
+                    metrics_response = parse_strategy(
+                        response,
+                        start_time,
+                        num_prefill_tokens,
+                        non_stream_post_end_time,
+                    )
+                else:
+                    metrics_response = UserResponse(
+                        status_code=response.status_code,
+                        error_message=response.text,
+                    )
+                response.close()
+        except httpx.HTTPError as e:
             metrics_response = UserResponse(
                 status_code=500,
                 error_message=str(e),
             )
-        finally:
-            if response:
-                response.close()
 
         self.collect_metrics(metrics_response, endpoint)
         return metrics_response
 
     def parse_chat_response(
         self,
-        response: Response,
+        response: httpx.Response,
         start_time: float,
         num_prefill_tokens: int,
         _: float,
@@ -190,7 +225,7 @@ class CohereUser(BaseUser):
         Parses a streaming chat response for Cohere API.
 
         Args:
-            response (Response): The response object.
+            response (httpx.Response): The response object.
             start_time (float): The time when the request was started.
             num_prefill_tokens (int): Number of tokens in the prefill/prompt.
             _(float): The time when the request was finished.
@@ -289,7 +324,7 @@ class CohereUser(BaseUser):
 
     def parse_embedding_response(
         self,
-        _: Response,
+        _: httpx.Response,
         start_time: float,
         num_prefill_tokens: int,
         end_time: float,
@@ -298,7 +333,7 @@ class CohereUser(BaseUser):
         Parses a non-streaming response for Cohere API.
 
         Args:
-            _ (Response): The response object.
+            _ (httpx.Response): The response object.
             start_time (float): The time when the request was started.
             num_prefill_tokens (int): Number of tokens in the prefill/prompt.
             end_time(float): The time when the request was finished.
