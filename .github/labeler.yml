@@ -90,7 +90,7 @@ ui:
       - 'genai_bench/ui/**'
       - 'tests/ui/**'
 
-user:
+request-backend:
   - changed-files:
     - any-glob-to-any-file:
       - 'genai_bench/user/**'
@@ -130,4 +130,3 @@ makefile:
   - changed-files:
     - any-glob-to-any-file:
       - 'Makefile'
-

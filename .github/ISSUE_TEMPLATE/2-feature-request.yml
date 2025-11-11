@@ -1,7 +1,6 @@
 name: 🚀 Feature request
 description: Suggest an idea for this project
 title: "[Feature] "
-labels: ['feature']
 type: feature
 
 body:
@@ -9,8 +8,8 @@ body:
   attributes:
     label: Checklist
     options:
-    - label: 1. If the issue you raised is not a feature but a question, please raise a discussion at https://github.com/sgl-project/genai-bench/discussions Otherwise, it will be closed.
-    - label: 2. Please use English, otherwise it will be closed.
+    - label: If the issue you raised is not a feature but a question, please raise a discussion at https://github.com/sgl-project/genai-bench/discussions Otherwise, it will be closed.
+    - label: Please use English, otherwise it will be closed.
 - type: textarea
   attributes:
     label: Motivation
