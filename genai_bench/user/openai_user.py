@@ -143,6 +143,40 @@ class OpenAIUser(BaseUser):
         }
         self.send_request(False, endpoint, payload, self.parse_embedding_response)
 
+    def _process_response(
+        self,
+        response: httpx.Response,
+        start_time: float,
+        num_prefill_tokens: Optional[int],
+        parse_strategy: Callable[..., UserResponse],
+    ) -> UserResponse:
+        """
+        Process response and generate metrics.
+
+        Args:
+            response: The HTTP response object.
+            start_time: The time when the request was started.
+            num_prefill_tokens: The num of tokens in the prefill/prompt.
+            parse_strategy: The function to parse the response.
+
+        Returns:
+            UserResponse: A response object containing status and metrics data.
+        """
+        non_stream_post_end_time = time.monotonic()
+
+        if response.status_code == 200:
+            return parse_strategy(
+                response,
+                start_time,
+                num_prefill_tokens,
+                non_stream_post_end_time,
+            )
+        else:
+            return UserResponse(
+                status_code=response.status_code,
+                error_message=response.text,
+            )
+
     def send_request(
         self,
         stream: bool,
@@ -177,20 +211,9 @@ class OpenAIUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 ) as response:
-                    non_stream_post_end_time = time.monotonic()
-
-                    if response.status_code == 200:
-                        metrics_response = parse_strategy(
-                            response,
-                            start_time,
-                            num_prefill_tokens,
-                            non_stream_post_end_time,
-                        )
-                    else:
-                        metrics_response = UserResponse(
-                            status_code=response.status_code,
-                            error_message=response.text,
-                        )
+                    metrics_response = self._process_response(
+                        response, start_time, num_prefill_tokens, parse_strategy
+                    )
             else:
                 # Non-streaming request (embeddings)
                 response = self._http_client.post(
@@ -198,20 +221,12 @@ class OpenAIUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 )
-                non_stream_post_end_time = time.monotonic()
-
-                if response.status_code == 200:
-                    metrics_response = parse_strategy(
-                        response,
-                        start_time,
-                        num_prefill_tokens,
-                        non_stream_post_end_time,
+                try:
+                    metrics_response = self._process_response(
+                        response, start_time, num_prefill_tokens, parse_strategy
                     )
-                else:
-                    metrics_response = UserResponse(
-                        status_code=response.status_code,
-                        error_message=response.text,
-                    )
+                finally:
+                    response.close()
 
         except httpx.ConnectError as e:
             metrics_response = UserResponse(
@@ -259,7 +274,7 @@ class OpenAIUser(BaseUser):
         finish_reason = None
         previous_data = None
         num_prompt_tokens = None
-        for chunk in response.iter_lines(chunk_size=None):
+        for chunk in response.iter_lines():
             # Caution: Adding logs here can make debug mode unusable.
             chunk = chunk.strip()
 

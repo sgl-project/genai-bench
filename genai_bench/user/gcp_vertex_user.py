@@ -196,6 +196,43 @@ class GCPVertexUser(BaseUser):
             self.parse_embedding_response,
         )
 
+    def _process_response(
+        self,
+        response: httpx.Response,
+        start_time: float,
+        num_prefill_tokens: Optional[int],
+        parse_strategy: Callable[..., UserResponse],
+        model_name: Optional[str] = None,
+    ) -> UserResponse:
+        """
+        Process response and generate metrics.
+
+        Args:
+            response: The HTTP response object.
+            start_time: The time when the request was started.
+            num_prefill_tokens: The num of tokens in the prefill/prompt.
+            parse_strategy: The function to parse the response.
+            model_name: The model name for response parsing.
+
+        Returns:
+            UserResponse: A response object containing status and metrics data.
+        """
+        non_stream_post_end_time = time.monotonic()
+
+        if response.status_code == 200:
+            return parse_strategy(
+                response,
+                start_time,
+                num_prefill_tokens,
+                non_stream_post_end_time,
+                model_name,
+            )
+        else:
+            return UserResponse(
+                status_code=response.status_code,
+                error_message=response.text,
+            )
+
     def send_request(
         self,
         stream: bool,
@@ -232,21 +269,13 @@ class GCPVertexUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 ) as response:
-                    non_stream_post_end_time = time.monotonic()
-
-                    if response.status_code == 200:
-                        metrics_response = parse_strategy(
-                            response,
-                            start_time,
-                            num_prefill_tokens,
-                            non_stream_post_end_time,
-                            model_name,
-                        )
-                    else:
-                        metrics_response = UserResponse(
-                            status_code=response.status_code,
-                            error_message=response.text,
-                        )
+                    metrics_response = self._process_response(
+                        response,
+                        start_time,
+                        num_prefill_tokens,
+                        parse_strategy,
+                        model_name,
+                    )
             else:
                 # Non-streaming request for embeddings and non-Gemini models
                 response = self._http_client.post(
@@ -254,22 +283,16 @@ class GCPVertexUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 )
-                non_stream_post_end_time = time.monotonic()
-
-                if response.status_code == 200:
-                    metrics_response = parse_strategy(
+                try:
+                    metrics_response = self._process_response(
                         response,
                         start_time,
                         num_prefill_tokens,
-                        non_stream_post_end_time,
+                        parse_strategy,
                         model_name,
                     )
-                else:
-                    metrics_response = UserResponse(
-                        status_code=response.status_code,
-                        error_message=response.text,
-                    )
-                response.close()
+                finally:
+                    response.close()
         except httpx.ConnectError as e:
             metrics_response = UserResponse(
                 status_code=503, error_message=f"Connection error: {e}"

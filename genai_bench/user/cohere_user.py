@@ -125,6 +125,46 @@ class CohereUser(BaseUser):
             user_request.num_prefill_tokens or len(inputs),
         )
 
+    def _process_response(
+        self,
+        response: httpx.Response,
+        start_time: float,
+        num_prefill_tokens: Optional[int],
+        parse_strategy: Callable[..., UserResponse],
+        url: str,
+    ) -> UserResponse:
+        """
+        Process response and generate metrics.
+
+        Args:
+            response: The HTTP response object.
+            start_time: The time when the request was started.
+            num_prefill_tokens: The num of tokens in the prefill/prompt.
+            parse_strategy: The function to parse the response.
+            url: The request URL for logging.
+
+        Returns:
+            UserResponse: A response object containing status and metrics data.
+        """
+        response.raise_for_status()
+        logger.debug(
+            f"Request to {url} succeeded with status code " f"{response.status_code}."
+        )
+        non_stream_post_end_time = time.monotonic()
+
+        if response.status_code == 200:
+            return parse_strategy(
+                response,
+                start_time,
+                num_prefill_tokens,
+                non_stream_post_end_time,
+            )
+        else:
+            return UserResponse(
+                status_code=response.status_code,
+                error_message=response.text,
+            )
+
     def send_request(
         self,
         stream: bool,
@@ -159,25 +199,9 @@ class CohereUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 ) as response:
-                    response.raise_for_status()
-                    logger.debug(
-                        f"Request to {url} succeeded with status code "
-                        f"{response.status_code}."
+                    metrics_response = self._process_response(
+                        response, start_time, num_prefill_tokens, parse_strategy, url
                     )
-                    non_stream_post_end_time = time.monotonic()
-
-                    if response.status_code == 200:
-                        metrics_response = parse_strategy(
-                            response,
-                            start_time,
-                            num_prefill_tokens,
-                            non_stream_post_end_time,
-                        )
-                    else:
-                        metrics_response = UserResponse(
-                            status_code=response.status_code,
-                            error_message=response.text,
-                        )
             else:
                 # Non-streaming request for embeddings
                 response = self._http_client.post(
@@ -185,26 +209,12 @@ class CohereUser(BaseUser):
                     json=payload,
                     headers=self.headers,
                 )
-                response.raise_for_status()
-                logger.debug(
-                    f"Request to {url} succeeded with status code "
-                    f"{response.status_code}."
-                )
-                non_stream_post_end_time = time.monotonic()
-
-                if response.status_code == 200:
-                    metrics_response = parse_strategy(
-                        response,
-                        start_time,
-                        num_prefill_tokens,
-                        non_stream_post_end_time,
+                try:
+                    metrics_response = self._process_response(
+                        response, start_time, num_prefill_tokens, parse_strategy, url
                     )
-                else:
-                    metrics_response = UserResponse(
-                        status_code=response.status_code,
-                        error_message=response.text,
-                    )
-                response.close()
+                finally:
+                    response.close()
         except httpx.HTTPError as e:
             metrics_response = UserResponse(
                 status_code=500,
@@ -242,7 +252,7 @@ class CohereUser(BaseUser):
             if not line:
                 continue
 
-            output_line = line.decode("utf-8").strip()
+            output_line = line.strip()
             if "data: " not in output_line:
                 continue
 
