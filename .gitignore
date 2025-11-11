@@ -47,3 +47,10 @@ genai_bench*.log
 # MkDocs
 site/
 .cache/
+
+# Code agent folders
+**/.claude/
+**/.serena/
+
+# Test files
+coverage.xml
