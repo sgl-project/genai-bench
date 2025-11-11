@@ -6,6 +6,7 @@ ci:
     - any-glob-to-any-file:
       - '.github/workflows/**'
       - '.coveragerc'
+      - 'tests/**'
 
 dependencies:
   - changed-files:
@@ -71,7 +72,7 @@ distributed:
       - 'genai_bench/distributed/**'
       - 'tests/distributed/**'
 
-data:
+datasets:
   - changed-files:
     - any-glob-to-any-file:
       - 'genai_bench/data/**'
@@ -109,11 +110,6 @@ documentation:
     - any-glob-to-any-file:
       - 'docs/**'
       - '*.md'
-
-tests:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'tests/**'
 
 examples:
   - changed-files:
