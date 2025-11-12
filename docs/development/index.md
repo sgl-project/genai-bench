@@ -14,14 +14,6 @@ Welcome and thank you for your interest in contributing to genai-bench! This sec
 
     [:octicons-arrow-right-24: Adding New Features](adding-new-features.md)
 
-- :material-book:{ .lg .middle } **API Reference**
-
-    ---
-
-    Programmatic usage and integration
-
-    [:octicons-arrow-right-24: API Reference](api-reference.md)
-
 </div>
 
 
@@ -149,7 +141,7 @@ make docs-build
 ```
 
 ## Questions?
-- Check out the [Adding New Features](./adding-new-features.md) and [API Reference](./api-reference.md) pages for more information on the project
+- Check out the [Adding New Features](./adding-new-features.md) page for more information on the project
 - Open an issue on GitHub
 - Join our community discussions
 - Check existing issues and PRs

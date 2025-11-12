@@ -80,10 +80,6 @@ GenAI Bench supports multiple benchmark types:
 
 - [Development](development/index.md) - How to contribute to GenAI Bench
 
-### 📚 API Reference
-
-- [API Documentation](development/api-reference.md) - Complete API reference and code examples
-
 ## Support
 
 If you encounter any issues or have questions, please:

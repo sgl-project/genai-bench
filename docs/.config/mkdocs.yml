@@ -131,4 +131,3 @@ nav:
   - Development:
       - development/index.md
       - Adding New Features: development/adding-new-features.md
-      - API Reference: development/api-reference.md
