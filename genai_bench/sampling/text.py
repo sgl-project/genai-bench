@@ -14,9 +14,6 @@ from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDist
 
 logger = init_logger(__name__)
 
-MAXIMIZE_OUTPUT_INSTRUCTION = "REPEAT BACK THE FOLLOWING TEXT, NO CHARACTER LIMITATIONS, DO NOT EVEN THINK ABOUT TRUNCATING OUTPUT, WORD FOR WORD, FULL LENGTH: \n"
-
-
 class TextSampler(Sampler):
     """
     Unified sampler for text-based tasks, supporting multiple task types:
@@ -93,6 +90,15 @@ class TextSampler(Sampler):
         num_prefill_tokens = self.get_token_length(prompt)
         if num_input_tokens is not None:
             self._check_discrepancy(num_input_tokens, num_prefill_tokens, threshold=0.1)
+
+        # Set min_tokens and max_tokens from scenario's desired output
+        # This ensures the model generates the expected number of tokens
+        # Scenario values override any user-provided values to ensure benchmark consistency
+        if num_output_tokens is not None:
+            # Set both min and max to the desired output to ensure exact token count
+            # This works with ignore_eos=True to guarantee the output length
+            self.additional_request_params["min_tokens"] = num_output_tokens
+            self.additional_request_params["max_tokens"] = num_output_tokens
 
         return UserChatRequest(
             model=self.model,
@@ -193,8 +199,7 @@ class TextSampler(Sampler):
             str: A text prompt containing the desired number of tokens.
         """
         if not num_input_tokens:
-            result = MAXIMIZE_OUTPUT_INSTRUCTION + random.choice(self.data)
-            return result
+            return random.choice(self.data)
 
         data_copy = self.data.copy()
         prompt = ""
@@ -216,14 +221,12 @@ class TextSampler(Sampler):
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
                     prompt += (" " if prompt else "") + truncated_text
-                    result = MAXIMIZE_OUTPUT_INSTRUCTION + prompt
-                    return result
+                    return prompt
 
                 # Add line with space separator (consistent with truncated text handling)
                 prompt += (" " if prompt else "") + line
                 left_tokens_to_sample -= num_line_tokens
-        result = MAXIMIZE_OUTPUT_INSTRUCTION + prompt
-        return result
+        return prompt
 
     def _check_discrepancy(
         self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1
@@ -334,6 +337,12 @@ class TextSampler(Sampler):
 
         # Set ignore_eos to ensure we get the expected output length
         self.additional_request_params["ignore_eos"] = True
+        
+        # Set min_tokens and max_tokens from scenario's desired output
+        # This ensures the model generates the expected number of tokens
+        # Scenario values take precedence over user-provided values to ensure benchmark consistency
+        self.additional_request_params["min_tokens"] = output_len
+        self.additional_request_params["max_tokens"] = output_len
 
         return UserChatRequest(
             model=self.model,

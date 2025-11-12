@@ -144,6 +144,7 @@ class BasetenUser(OpenAIUser):
         use_streaming = not self.disable_streaming
 
         # Build payload - prioritize max_tokens from additional_request_params if present
+        # min_tokens and max_tokens are now automatically set by the sampler from the scenario
         max_tokens = (
             user_request.additional_request_params.get("max_tokens")
             or user_request.max_tokens
@@ -164,7 +165,7 @@ class BasetenUser(OpenAIUser):
         }
 
         # Add additional params except use_prompt_format, stream, and custom_messages
-        # Note: max_tokens and ignore_eos are already set above, but can be overridden here if needed
+        # This includes min_tokens and max_tokens which are set by the sampler from the scenario
         for key, value in user_request.additional_request_params.items():
             if key not in ["use_prompt_format", "stream", "custom_messages"]:
                 payload[key] = value

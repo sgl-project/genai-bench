@@ -176,6 +176,14 @@ class BaseAsyncRunner:
                 else:
                     content = req.prompt  # type: ignore[assignment]
 
+                # Build payload - prioritize max_tokens from additional_request_params if present
+                # min_tokens and max_tokens are now automatically set by the sampler from the scenario
+                # This matches BasetenUser's _prepare_chat_request logic
+                max_tokens = (
+                    req.additional_request_params.get("max_tokens", None)
+                    or getattr(req, "max_tokens", None)
+                )
+
                 payload = {
                     "model": req.model,
                     "messages": [
@@ -184,13 +192,12 @@ class BaseAsyncRunner:
                             "content": content,
                         }
                     ],
-                    "max_tokens": req.additional_request_params.get("max_tokens", None)
-                    or req.__dict__.get("max_tokens"),
+                    "max_tokens": max_tokens,
                     "temperature": req.additional_request_params.get(
                         "temperature", 0.0
                     ),
                     "ignore_eos": req.additional_request_params.get(
-                        "ignore_eos", bool(req.__dict__.get("max_tokens"))
+                        "ignore_eos", bool(max_tokens)
                     ),
                     # Force streaming to compute TTFT/TPOT properly
                     "stream": True,
@@ -239,6 +246,9 @@ class BaseAsyncRunner:
                         async for chunk_bytes in resp.content:
                             error_message_bytes += chunk_bytes
                         text = error_message_bytes.decode("utf-8")
+                        logger.error(
+                            f"❌ Request failed with status {resp.status}: {text[:500]}"
+                        )
                         return UserResponse(status_code=resp.status, error_message=text)
 
                     stream_chunk_prefix = "data: "
@@ -247,7 +257,7 @@ class BaseAsyncRunner:
                     generated_text = ""
                     tokens_received = 0
                     time_at_first_token: Optional[float] = None
-                    finish_reason = None
+                    finish_reason: Optional[str] = None
                     num_prompt_tokens = None
 
                     # Read streaming response line by line
@@ -275,11 +285,14 @@ class BaseAsyncRunner:
                                 continue
 
                             if data.get("error") is not None:
+                                error_msg = data["error"].get("message", "Unknown error")
+                                error_code = data["error"].get("code", -1)
+                                logger.error(
+                                    f"❌ Error in streaming response: code={error_code}, message={error_msg}"
+                                )
                                 return UserResponse(
-                                    status_code=data["error"].get("code", -1),
-                                    error_message=data["error"].get(
-                                        "message", "Unknown error"
-                                    ),
+                                    status_code=error_code,
+                                    error_message=error_msg,
                                 )
 
                             if (
@@ -322,9 +335,12 @@ class BaseAsyncRunner:
                                 if content_piece:
                                     generated_text += content_piece
 
-                                finish_reason = data["choices"][0].get(
-                                    "finish_reason", None
-                                )
+                                # Capture finish_reason when it appears (may appear before usage chunk)
+                                if "finish_reason" in data["choices"][0]:
+                                    finish_reason = data["choices"][0].get(
+                                        "finish_reason", None
+                                    )
+                                
                                 if finish_reason and data.get("usage"):
                                     usage = data["usage"]
                                     num_prompt_tokens = usage.get("prompt_tokens")
@@ -340,6 +356,22 @@ class BaseAsyncRunner:
                 if not tokens_received:
                     tokens_received = self.sampler.get_token_length(
                         generated_text, add_special_tokens=False
+                    )
+                    logger.warning(
+                        "🚨🚨🚨 There is no usage info returned from the model "
+                        "server. Estimated tokens_received based on the model "
+                        "tokenizer."
+                    )
+
+                # Check if min_tokens was set and if we got fewer tokens than expected
+                min_tokens_expected = req.additional_request_params.get("min_tokens")
+                if min_tokens_expected and tokens_received < min_tokens_expected:
+                    logger.warning(
+                        f"⚠️ min_tokens not respected! "
+                        f"Requested min_tokens: {min_tokens_expected}, "
+                        f"received: {tokens_received}, "
+                        f"finish_reason: {finish_reason}. "
+                        f"The server may not support min_tokens or it may have stopped early."
                     )
 
                 # Fallback: if server didn't return prompt_tokens in usage, derive from request
@@ -417,12 +449,15 @@ class BaseAsyncRunner:
                     status_code=400, error_message="Unsupported request type"
                 )
         except aiohttp.ClientConnectionError as e:
+            logger.error(f"❌ Connection error: {e}")
             return UserResponse(status_code=503, error_message=f"Connection error: {e}")
         except asyncio.TimeoutError as e:
+            logger.error(f"❌ Request timed out: {e}")
             return UserResponse(
                 status_code=408, error_message=f"Request timed out: {e}"
             )
         except Exception as e:
+            logger.error(f"❌ Unexpected error in _send_request: {type(e).__name__}: {e}", exc_info=True)
             return UserResponse(status_code=500, error_message=str(e))
 
     async def cleanup(self) -> None:
