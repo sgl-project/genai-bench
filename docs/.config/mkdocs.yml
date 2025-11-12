@@ -118,6 +118,7 @@ nav:
       - Task Definition: getting-started/task-definition.md
       - CLI Guidelines: getting-started/command-guidelines.md
       - Metrics Definition: getting-started/metrics-definition.md
+      - Migrating from SGLang/vLLM: getting-started/migrating-from-sglang-vllm.md
   - User Guide:
       - user-guide/index.md
       - Run Benchmark: user-guide/run-benchmark.md

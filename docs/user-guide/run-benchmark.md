@@ -63,7 +63,7 @@ genai-bench benchmark \
             --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
 
-For complex setups, we recommend use of [dataset configs](#using-dataset-configurations).
+For complex setups, we recommend use of [dataset configs](#selecting-datasets).
 
 ### Start an embedding benchmark
 
