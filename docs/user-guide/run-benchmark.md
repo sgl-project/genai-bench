@@ -2,11 +2,13 @@
 
 > **Note**: GenAI Bench now supports multiple cloud providers for both model endpoints and storage. For detailed multi-cloud configuration, see the [Multi-Cloud Authentication & Storage Guide](multi-cloud-auth-storage.md) or the [Multi-Cloud Quick Reference](multi-cloud-quick-reference.md).
 
-## Start a chat benchmark
-
 **IMPORTANT**: Use `genai-bench benchmark --help` to check out each command option and how to use it.
 
 For starter, you can try to type `genai-bench benchmark`, it will prompt the list of options you need to specify.
+
+## Examples
+
+### Start a chat benchmark
 
 Below is a sample command you can use to start a benchmark. The command will connect with a server running on address
 `http://localhost:8082`, using the default traffic scenario and num concurrency, and run each combination 1 minute.
@@ -32,7 +34,7 @@ genai-bench benchmark --api-backend openai \
             --server-gpu-count 4
 ```
 
-## Start a vision based chat benchmark
+### Start a vision based chat benchmark
 
 **IMPORTANT**: Image auto-generation pipeline is not yet implemented in this repository, hence we will be using a huggingface dataset instead.
 
@@ -63,7 +65,7 @@ genai-bench benchmark \
 
 For complex setups, we recommend use of [dataset configs](#using-dataset-configurations).
 
-## Start an embedding benchmark
+### Start an embedding benchmark
 
 Below is a sample command to trigger an embedding benchmark task. Note: when running an embedding benchmark, it is recommended to set `--num-concurrency` to 1.
 
@@ -86,8 +88,9 @@ genai-bench benchmark --api-backend openai \
             --server-gpu-count 1 \
             --batch-size 1 \
             --batch-size 8
+```
 
-## Start a rerank benchmark against OCI Cohere
+### Start a rerank benchmark against OCI Cohere
 
 Below is a sample command to trigger a benchmark against cohere chat API.
 
@@ -109,7 +112,7 @@ genai-bench benchmark --api-backend oci-cohere \
             --num-workers 4
 ```
 
-## Start a benchmark against OCI Cohere
+### Start a benchmark against OCI Cohere
 
 Below is a sample command to trigger a benchmark against cohere chat API.
 
@@ -349,6 +352,6 @@ If you want to benchmark a specific portion of a vision dataset, you can use the
 - Support for complex configurations
 - Future-proof (no CLI updates needed for new HuggingFace features)
 
-## Picking units
+## Picking Metrics Time Units
 
 Genai-bench defaults to measuring latency metrics (End-to-end latency, TTFT, TPOT, Input/Output latencies) in seconds. If you prefer milliseconds, you can select them with `--metrics-time-unit [s|ms]`. 

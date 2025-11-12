@@ -32,7 +32,7 @@ GenAI Bench is a powerful benchmark tool designed for comprehensive token-level 
 
     Master the command-line interface
 
-    [:octicons-arrow-right-24: Command Guidelines](command-guidelines.md)
+    [:octicons-arrow-right-24: CLI Guidelines](command-guidelines.md)
 
 -   :material-chart-line:{ .lg .middle } **Metrics**
 
@@ -48,7 +48,7 @@ GenAI Bench is a powerful benchmark tool designed for comprehensive token-level 
 
 Before you begin, ensure you have:
 
-- Python 3.8 or higher
+- Python 3.10-3.13
 - Access to at least one supported LLM endpoint
 - (Optional) Cloud storage credentials for result upload
 

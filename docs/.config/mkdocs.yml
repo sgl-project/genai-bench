@@ -116,7 +116,7 @@ nav:
       - getting-started/index.md
       - Installation: getting-started/installation.md
       - Task Definition: getting-started/task-definition.md
-      - Command Guidelines: getting-started/command-guidelines.md
+      - CLI Guidelines: getting-started/command-guidelines.md
       - Metrics Definition: getting-started/metrics-definition.md
   - User Guide:
       - user-guide/index.md
@@ -124,7 +124,7 @@ nav:
       - Traffic Scenarios: user-guide/scenario-definition.md
       - Multi-Cloud Authentication: user-guide/multi-cloud-auth-storage.md
       - Multi-Cloud Quick Reference: user-guide/multi-cloud-quick-reference.md
-      - Docker Deployment: user-guide/run-benchmark-using-docker.md
+      - Docker Usage Guide: user-guide/run-benchmark-using-docker.md
       - Excel Reports: user-guide/generate-excel-sheet.md
       - Visualizations: user-guide/generate-plot.md
       - Upload Results: user-guide/upload-benchmark-result.md

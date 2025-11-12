@@ -27,10 +27,9 @@ Welcome and thank you for your interest in contributing to genai-bench! This sec
 
 ## Coding Style Guide
 
-genai-bench uses python 3.11, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
+genai-bench uses Python 3.10-3.13, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
 
-We use `make format` to format our code using `isort` and `ruff`. The detailed configuration can be found in
-[pyproject.toml](https://github.com/sgl-project/genai-bench/blob/main/pyproject.toml).
+For code formatting, linting, and other development tasks, see the [Makefile](https://github.com/sgl-project/genai-bench/blob/main/Makefile).
 
 ### Guidelines
 
@@ -62,7 +61,7 @@ To make the review process as smooth as possible, please:
 
 ### Prerequisites
 
-- Python 3.11
+- Python 3.10-3.13
 - Git
 - Make (optional but recommended)
 
@@ -85,7 +84,7 @@ you can ask our GenerativeAI's chatbot about how to install it in your system.
 #### `uv`
 
 Install uv with `make uv` or install it from the [official website](https://docs.astral.sh/uv/).
-If installing from the website, create a project venv with `uv venv -p python3.11`.
+If installing from the website, create a project venv with `uv venv -p python3.11` (or another Python version 3.10-3.13).
 
 Once you have `make` and `uv` installed, you can follow the command below to build genai-bench wheel:
 
@@ -115,48 +114,13 @@ pip install <dest-addr>/<.wheel>
 
 ### Run Tests
 
+We use pytest for testing. You can run tests using:
+
 ```bash
+# Run all tests with coverage
 make test
-```
 
-### Code Formatting
-
-```bash
-make format
-```
-
-### Linting
-
-```bash
-make lint
-```
-
-## Project Structure
-
-```
-genai-bench/
-├── genai_bench/        # Main package
-│   ├── analysis/       # Result analysis and reporting
-│   ├── auth/           # Authentication providers
-│   ├── cli/            # CLI implementation
-│   ├── data/           # Dataset loading and management
-│   ├── distributed/    # Distributed execution
-│   ├── metrics/        # Metrics collection
-│   ├── sampling/       # Data sampling
-│   ├── scenarios/      # Traffic generation scenarios
-│   ├── storage/        # Storage providers
-│   ├── ui/             # User interface components
-│   └── user/           # User implementations
-├── tests/              # Test suite
-└── docs/               # Documentation
-```
-
-## Testing
-
-We use pytest for testing:
-
-```bash
-# Run all tests
+# Or run pytest directly
 pytest
 
 # Run specific test file

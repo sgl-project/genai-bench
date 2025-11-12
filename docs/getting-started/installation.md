@@ -16,7 +16,7 @@ pip install genai-bench
 
 For development or to use the latest features:
 
-1. Please make sure you have Python3.11 installed. You can check out online how to set it up.
+1. Please make sure you have Python 3.10-3.13 installed. You can check out online how to set it up.
 2. Use the virtual environment from uv. You can install it with: 
 
 ```shell
@@ -113,7 +113,7 @@ export OCI_CONFIG_FILE="~/.oci/config"
 # Check Python version
 python3 --version
 
-# If you have multiple Python versions, use specific version
+# If you have multiple Python versions, use specific version (3.10-3.13)
 python3.11 -m pip install genai-bench
 ```
 
@@ -155,4 +155,4 @@ After successful installation:
 
 1. Read the [Task Definition Guide](task-definition.md) to understand different benchmark tasks
 2. Explore the [User Guide](../user-guide/run-benchmark.md) for detailed usage
-3. Check out [Command Guidelines](command-guidelines.md) for practical scenarios 
+3. Check out [CLI Guidelines](command-guidelines.md) for practical scenarios 

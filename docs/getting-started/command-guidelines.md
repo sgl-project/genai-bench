@@ -1,6 +1,6 @@
-# Command Guidelines
+# CLI Guidelines
 
-GenAI Bench provides three main CLI commands for running benchmarks, generating reports, and creating visualizations. This guide covers the essential options for each command.
+GenAI Bench provides three main CLI commands for running benchmarks, generating reports, and creating visualizations. This guide covers the options for each command.
 
 ## Overview
 
@@ -32,26 +32,26 @@ genai-bench benchmark --api-backend openai \
             --server-gpu-count 4
 ```
 
-### Essential Options
+### Options
 
-#### **API Configuration**
-- `--api-backend` - Choose your model provider (openai, oci-cohere, aws-bedrock, azure-openai, gcp-vertex, vllm, sglang)
-- `--api-base` - API endpoint URL
-- `--api-model-name` - Model name for the request body
-- `--task` - Task type (text-to-text, text-to-embeddings, image-text-to-text, etc.)
+#### **API Configuration** (Required)
+- `--api-backend` - Choose your model provider (openai, oci-cohere, aws-bedrock, azure-openai, gcp-vertex, vllm, sglang) **(required)**
+- `--api-base` - API endpoint URL **(required)**
+- `--api-model-name` - Model name for the request body **(required)**
+- `--task` - Task type (text-to-text, text-to-embeddings, image-text-to-text, etc.) **(required)**
 
 #### **Authentication**
 - `--api-key` - API key (for OpenAI)
 - `--model-api-key` - Alternative API key parameter
 - Cloud-specific auth options (AWS, Azure, GCP, OCI)
 
-#### **Experiment Parameters**
-- `--max-requests-per-run` - Maximum requests to send each run
-- `--max-time-per-run` - Maximum duration for each run in minutes
+#### **Experiment Parameters** (Required)
+- `--max-requests-per-run` - Maximum requests to send each run **(required)**
+- `--max-time-per-run` - Maximum duration for each run in minutes **(required)**
+- `--model-tokenizer` - Path to the model tokenizer **(required)**
 - `--num-concurrency` - Number of concurrent requests to send (multiple values supported in different runs)
 - `--batch-size` - Batch sizes for embeddings/rerank tasks
 - `--traffic-scenario` - Define input/output token distributions, more info in [Traffic Scenarios](../user-guide/scenario-definition.md)
-- `--model-tokenizer` - Path to the model tokenizer
 
 #### **Dataset Options**
 - `--dataset-path` - Path to dataset (local file, HuggingFace ID, or 'default')
@@ -89,10 +89,10 @@ genai-bench excel \
   --metrics-time-unit ms
 ```
 
-### Essential Options
+### Options
 
-- `--experiment-folder` - Path to experiment results folder (required)
-- `--excel-name` - Name for the output Excel file (required)
+- `--experiment-folder` - Path to experiment results folder **(required)**
+- `--excel-name` - Name for the output Excel file **(required)**
 - `--metric-percentile` - Statistical percentile (mean, p25, p50, p75, p90, p95, p99) to select from
 - `--metrics-time-unit [s|ms]` - Time unit to use when showing latency metrics in the spreadsheet. Defaults to seconds
 
@@ -117,10 +117,10 @@ genai-bench plot \
   --metrics-time-unit ms
 ```
 
-### Essential Options
+### Options
 
-- `--experiments-folder` - Path to experiments folder, can be more than one experiment (required)
-- `--group-key` - Key to group data by (e.g., 'traffic_scenario', 'server_version', 'none') (required)
+- `--experiments-folder` - Path to experiments folder, can be more than one experiment **(required)**
+- `--group-key` - Key to group data by (e.g., 'traffic_scenario', 'server_version', 'none') **(required)**
 - `--filter-criteria` - Dictionary of filter criteria
 - `--plot-config` - Path to JSON plot configuration file. For more information use [Advanced Plot Configuration](../user-guide/generate-plot.md/#advanced-plot-configuration)
 - `--preset` - Built-in plot presets (2x4_default, simple_2x2, multi_line_latency, single_scenario_analysis). Overrides `--plot-config` if both given

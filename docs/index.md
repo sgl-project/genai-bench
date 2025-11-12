@@ -43,7 +43,7 @@ pip install genai-bench
 genai-bench benchmark --help
 ```
 
-For detailed installation and usage instructions, see our [Installation Guide](getting-started/installation.md).
+For detailed installation and usage instructions, see our [Getting Started Guide](getting-started/index.md).
 
 ## Supported Tasks
 
@@ -62,7 +62,7 @@ GenAI Bench supports multiple benchmark types:
 
 - [Installation](getting-started/installation.md) - Detailed installation guide
 - [Task Definition](getting-started/task-definition.md) - Understanding different benchmark tasks
-- [Command Guidelines](getting-started/command-guidelines.md) - Command usage guidelines
+- [CLI Guidelines](getting-started/command-guidelines.md) - CLI usage guidelines
 - [Metrics Definition](getting-started/metrics-definition.md) - Understanding benchmark metrics
 
 ### 📖 User Guide
@@ -71,7 +71,7 @@ GenAI Bench supports multiple benchmark types:
 - [Traffic Scenarios](user-guide/scenario-definition.md) - Understanding traffic scenario syntax
 - [Multi-Cloud Authentication & Storage](user-guide/multi-cloud-auth-storage.md) - Comprehensive guide for cloud provider authentication
 - [Multi-Cloud Quick Reference](user-guide/multi-cloud-quick-reference.md) - Quick examples for common scenarios
-- [Docker Deployment](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
+- [Docker Usage Guide](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
 - [Excel Reports](user-guide/generate-excel-sheet.md) - Creating Excel reports
 - [Visualizations](user-guide/generate-plot.md) - Creating visualizations
 - [Upload Results](user-guide/upload-benchmark-result.md) - Uploading results
