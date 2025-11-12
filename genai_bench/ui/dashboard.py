@@ -394,7 +394,9 @@ Dashboard = Union[RichLiveDashboard, MinimalDashboard]
 def create_dashboard(metrics_time_unit: str = "s") -> Dashboard:
     """Factory function that returns either a NoOpDashboard or RealDashboard based
     on ENABLE_UI."""
-    enable_ui = os.getenv("ENABLE_UI", "true").lower() == "true"
+    enable_ui_str = os.getenv("ENABLE_UI", "true").lower()
+    # Support: true, TRUE, True, 1, yes, YES, Yes, on, ON, On
+    enable_ui = enable_ui_str in ("true", "1", "yes", "on")
     return (
         RichLiveDashboard(metrics_time_unit)
         if enable_ui

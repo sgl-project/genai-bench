@@ -106,17 +106,20 @@ class WorkerRichHandler(RichHandler):
 
 
 class LoggingManager:
-    def __init__(self, command_type, layout=None, live=None):
+    def __init__(self, command_type, layout=None, live=None, log_dir=None):
         self.command_type = command_type
         self.layout = layout
         self.live = live
+        self.log_dir = log_dir
         self.delayed_handler = None
         self.init_logging()
 
     def init_logging(self):
         """Initialize logging based on command type."""
         log_level = os.getenv("GENAI_BENCH_LOGGING_LEVEL", "INFO").upper()
-        enable_ui = os.getenv("ENABLE_UI", "true").lower() == "true"
+        enable_ui_str = os.getenv("ENABLE_UI", "true").lower()
+        # Support: true, TRUE, True, 1, yes, YES, Yes, on, ON, On
+        enable_ui = enable_ui_str in ("true", "1", "yes", "on")
 
         if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             log_level = "INFO"
@@ -157,13 +160,19 @@ class LoggingManager:
 
         sys.excepthook = handle_uncaught_exception
 
-    @staticmethod
-    def get_file_handler():
+    def get_file_handler(self):
         """Return a file handler for logging."""
         file_log_format = "{levelname:<8} {asctime} - {name}:{funcName} - {message}"
         date_format = "%Y-%m-%d %H:%M:%S.%f"
 
-        file_handler = logging.FileHandler("genai_bench.log")
+        # Determine log file path
+        if self.log_dir:
+            os.makedirs(self.log_dir, exist_ok=True)
+            log_file = os.path.join(self.log_dir, "genai_bench.log")
+        else:
+            log_file = "genai_bench.log"
+
+        file_handler = logging.FileHandler(log_file)
 
         file_formatter = logging.Formatter(
             file_log_format, datefmt=date_format, style="{"
@@ -224,9 +233,10 @@ class LoggingManager:
 class WorkerLoggingManager:
     """Manages logging setup for worker processes."""
 
-    def __init__(self, worker_id: str, log_queue: multiprocessing.Queue):
+    def __init__(self, worker_id: str, log_queue: multiprocessing.Queue, log_dir=None):
         self.worker_id = worker_id
         self.log_queue = log_queue
+        self.log_dir = log_dir
         self.setup_logging()
 
     def setup_logging(self):
@@ -258,13 +268,19 @@ class WorkerLoggingManager:
         handler.setFormatter(logging.Formatter("%(message)s", style="%"))
         return handler
 
-    @staticmethod
-    def _get_file_handler(filename: str) -> logging.FileHandler:
+    def _get_file_handler(self, filename: str) -> logging.FileHandler:
         """Create a file handler for worker logs."""
         file_log_format = "{levelname:<8} {asctime} - {name}:{funcName} - {message}"
         date_format = "%Y-%m-%d %H:%M:%S.%f"
 
-        file_handler = logging.FileHandler(filename)
+        # Determine log file path
+        if self.log_dir:
+            os.makedirs(self.log_dir, exist_ok=True)
+            log_file = os.path.join(self.log_dir, filename)
+        else:
+            log_file = filename
+
+        file_handler = logging.FileHandler(log_file)
         file_formatter = logging.Formatter(
             file_log_format, datefmt=date_format, style="{"
         )

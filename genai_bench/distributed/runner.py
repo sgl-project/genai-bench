@@ -31,6 +31,7 @@ class DistributedConfig:
     master_host: str = "127.0.0.1"
     master_port: int = 5557
     wait_time: int = 2
+    log_dir: Optional[str] = None
 
     # Experimental:
     # CPU pinning is not supported on all platforms, so we disable it by default
@@ -225,7 +226,7 @@ class DistributedRunner:
     def _worker_process(self, worker_id: int) -> None:
         """Worker process function with CPU affinity"""
         try:
-            WorkerLoggingManager(str(worker_id), self.worker_log_queue)
+            WorkerLoggingManager(str(worker_id), self.worker_log_queue, self.config.log_dir)
 
             if self.config.pin_to_cores:
                 self._set_cpu_affinity(worker_id)
