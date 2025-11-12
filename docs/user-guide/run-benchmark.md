@@ -180,6 +180,12 @@ For heavier traffic scenarios, like `D(16000,200)` or `D(128000,200)`, use the f
             --num-concurrency 32 \
 ```
 
+To benchmark with prefix caching, you can make a given fraction of each prompt a common prefix with `--prompt-prefix-ratio`. For example, to set the first half of each prompt to a common prefix, use:
+
+```shell
+            --prompt-prefix-ratio 0.5 \
+```
+
 ## Distributed Benchmark
 
 If you see the message below in the genai-bench logs, it indicates that a single process is insufficient to generate the desired load.
