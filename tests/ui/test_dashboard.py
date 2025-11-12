@@ -173,7 +173,8 @@ def test_update_histogram_panel(mock_dashboard: create_dashboard):
 def test_dashboard_factory_with_env_var(monkeypatch, enable_ui, expected_type):
     """
     Test that create_dashboard returns the correct dashboard type based on ENABLE_UI
-    env var. Supports multiple truthy values: true, TRUE, 1, yes, YES, on, ON (case-insensitive).
+    env var. Supports multiple truthy values: true, TRUE, 1, yes, YES, on, ON
+    (case-insensitive).
     """
     monkeypatch.setenv("ENABLE_UI", enable_ui)
 

@@ -390,8 +390,11 @@ def experiment_options(func):
         "--log-dir",
         type=str,
         default=None,
-        help="Directory for storing log files (genai_bench.log and genai_bench_worker_*.log). "
-        "If not specified, logs will be written to the current working directory.",
+        help=(
+            "Directory for storing log files "
+            "(genai_bench.log and genai_bench_worker_*.log). "
+            "If not specified, logs will be written to the current working directory."
+        ),
     )(func)
     func = click.option(
         "--max-requests-per-run",

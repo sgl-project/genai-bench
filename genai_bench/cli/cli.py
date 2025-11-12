@@ -152,7 +152,9 @@ def benchmark(
 
     # Initialize logging with the layout for the log panel
     log_dir = ctx.params.get("log_dir")
-    logging_manager = LoggingManager("benchmark", dashboard.layout, dashboard.live, log_dir=log_dir)
+    logging_manager = LoggingManager(
+        "benchmark", dashboard.layout, dashboard.live, log_dir=log_dir
+    )
     delayed_log_handler = logging_manager.delayed_handler
     logger = init_logger("genai_bench.benchmark")
 

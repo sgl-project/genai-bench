@@ -226,7 +226,9 @@ class DistributedRunner:
     def _worker_process(self, worker_id: int) -> None:
         """Worker process function with CPU affinity"""
         try:
-            WorkerLoggingManager(str(worker_id), self.worker_log_queue, self.config.log_dir)
+            WorkerLoggingManager(
+                str(worker_id), self.worker_log_queue, self.config.log_dir
+            )
 
             if self.config.pin_to_cores:
                 self._set_cpu_affinity(worker_id)
