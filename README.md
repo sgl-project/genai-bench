@@ -74,6 +74,8 @@ Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/get
 
 ### Next Steps
 
+If you're new to GenAI Bench, check out the [Getting Started](https://docs.sglang.ai/genai-bench/getting-started/) page.
+
 For detailed instructions, advanced configuration options, and comprehensive examples, check out the [User Guide](https://docs.sglang.ai/genai-bench/user-guide/).
 
 ## Development
