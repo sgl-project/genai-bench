@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from genai_bench.logging import WorkerLoggingManager, init_logger
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import RequestLevelMetrics
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.scenarios.base import Scenario
 from genai_bench.ui.dashboard import Dashboard
 
@@ -68,6 +69,7 @@ class DistributedRunner:
        - Master → Workers:
            * "update_scenario": Updates test scenario configuration
            * "update_batch_size": Updates batch size for requests
+           * "update_rate_limiter": Updates rate limiter with per-worker rate
        - Workers → Master:
            * "request_metrics": Sends metrics from each request for aggregation
            * "worker_log": Sends worker logs to master
@@ -359,14 +361,17 @@ class DistributedRunner:
 
         Message Flow:
         1. Master Process:
-           - SENDS: "update_scenario", "update_batch_size" to workers
+           - SENDS: "update_scenario", "update_batch_size",
+             "update_rate_limiter" to workers
            - RECEIVES: "request_metrics", "worker_log" from workers
            - REGISTERS: "request_metrics", "worker_log" handler
 
         2. Worker Process:
            - SENDS: "request_metrics" to master
-           - RECEIVES: "update_scenario", "update_batch_size" from master
-           - REGISTERS: "update_scenario", "update_batch_size" handlers
+           - RECEIVES: "update_scenario", "update_batch_size",
+             "update_rate_limiter" from master
+           - REGISTERS: "update_scenario", "update_batch_size",
+             "update_rate_limiter" handlers
 
         3. Local Mode:
            - SENDS/RECEIVES: all messages (single process)
@@ -396,6 +401,9 @@ class DistributedRunner:
                 self.environment.runner.register_message(
                     "update_batch_size", self._handle_batch_size_update
                 )
+                self.environment.runner.register_message(
+                    "update_rate_limiter", self._handle_rate_limiter_update
+                )
             if isinstance(self.environment.runner, MasterRunner):
                 # Master receives metrics and logs from workers
                 self.environment.runner.register_message(
@@ -413,6 +421,9 @@ class DistributedRunner:
                 "update_batch_size", self._handle_batch_size_update
             )
             self.environment.runner.register_message(
+                "update_rate_limiter", self._handle_rate_limiter_update
+            )
+            self.environment.runner.register_message(
                 "request_metrics", self._create_metrics_handler()
             )
 
@@ -426,9 +437,30 @@ class DistributedRunner:
         if self.environment.runner:
             self.environment.runner.send_message("update_batch_size", batch_size)
 
+    def update_rate_limiter(self, rate: float) -> None:
+        """Update rate limiter on all nodes"""
+        if self.environment.runner:
+            self.environment.runner.send_message("update_rate_limiter", rate)
+
     def _handle_batch_size_update(self, environment: Environment, msg: Any) -> None:
         """Handle batch size update messages"""
         if not msg:
             raise RuntimeError("Received empty batch size message")
         if hasattr(environment, "sampler"):
             environment.sampler.batch_size = msg.data
+
+    def _handle_rate_limiter_update(self, environment: Environment, msg: Any) -> None:
+        """Handle rate limiter update messages"""
+        if not msg:
+            raise RuntimeError("Received empty rate limiter message")
+        rate = msg.data
+        if rate is None or rate <= 0:
+            # Remove rate limiter if rate is None or invalid
+            environment.rate_limiter = None  # type: ignore[attr-defined]
+        else:
+            # Create rate limiter with the per-worker rate
+            environment.rate_limiter = TokenBucketRateLimiter(rate=rate)  # type: ignore[attr-defined]
+            logger.info(
+                f"🪣 Worker initialized Token Bucket Rate Limiter at "
+                f"{rate:.2f} req/s (per-worker rate)"
+            )
