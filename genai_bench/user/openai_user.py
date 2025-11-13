@@ -164,12 +164,7 @@ class OpenAIUser(BaseUser):
         response = None
 
         try:
-            # Determine which backend key was selected. The CLI stores the
-            # chosen api_backend on the user class (see cli.py). Fall back to
-            # the class's BACKEND_NAME when not present.
-            backend_key = getattr(self, "api_backend", None) or getattr(
-                self, "BACKEND_NAME", "openai"
-            )
+            backend_key = getattr(self, "api_backend", self.BACKEND_NAME)
 
             unsupported = self.UNSUPPORTED_PARAMS_BY_BACKEND.get(backend_key, set())
             payload_to_send = {k: v for k, v in payload.items() if k not in unsupported}
