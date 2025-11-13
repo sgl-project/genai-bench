@@ -827,9 +827,7 @@ def test_benchmark_request_rate_creates_rate_limiter(cli_runner, default_options
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
         patch("genai_bench.cli.cli.Environment") as mock_env_class,
-        patch(
-            "genai_bench.rate_limiter.TokenBucketRateLimiter"
-        ) as mock_rate_limiter_class,
+        patch("genai_bench.cli.cli.TokenBucketRateLimiter") as mock_rate_limiter_class,
     ):
         mock_env = MagicMock()
         mock_runner = MagicMock()

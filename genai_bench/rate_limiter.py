@@ -10,6 +10,8 @@ from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
 
+BUCKET_SIZE = 1
+
 
 class TokenBucketRateLimiter:
     """
@@ -31,27 +33,23 @@ class TokenBucketRateLimiter:
         lock: Lock for thread-safe token operations
     """
 
-    def __init__(self, rate: float, bucket_size: Optional[float] = None):
+    def __init__(self, rate: float):
         """
         Initialize the token bucket rate limiter.
 
         Args:
             rate: Target request rate in requests per second
-            bucket_size: Maximum tokens in bucket. Defaults to rate * 2
-                        (allows brief bursts up to 2 seconds worth)
         """
         if rate <= 0:
             raise ValueError(f"Rate must be positive, got {rate}")
 
         self.rate = rate
-        self.bucket_size = bucket_size if bucket_size is not None else rate * 2
-        self.tokens = self.bucket_size  # Start with full bucket
+        self.tokens = BUCKET_SIZE  # Start with full bucket
         self.last_update = time.monotonic()
         self.lock = Semaphore(value=1)  # Gevent-compatible lock
 
         logger.info(
-            f"🪣 Token Bucket Rate Limiter initialized: "
-            f"rate={rate:.2f} req/s, bucket_size={self.bucket_size:.1f}"
+            f"🪣 Token Bucket Rate Limiter initialized: " f"rate={rate:.2f} req/s"
         )
 
     def _refill_tokens(self) -> None:
@@ -63,12 +61,17 @@ class TokenBucketRateLimiter:
         now = time.monotonic()
         time_passed = now - self.last_update
 
-        # Calculate tokens to add based on elapsed time
+        # Calculate how many tokens should have been generated
         tokens_to_add = time_passed * self.rate
 
-        # Add tokens but don't exceed bucket size
-        self.tokens = min(self.bucket_size, self.tokens + tokens_to_add)
-        self.last_update = now
+        if tokens_to_add >= 1.0:
+            tokens_added = int(tokens_to_add)
+            self.tokens = min(BUCKET_SIZE, self.tokens + tokens_added)
+
+            time_used = tokens_added / self.rate
+            self.last_update = self.last_update + time_used
+        # If tokens_to_add < 1.0, don't update last_update to preserve
+        # fractional progress for the next check
 
     def acquire(self, timeout: Optional[float] = None) -> bool:
         """
@@ -82,9 +85,6 @@ class TokenBucketRateLimiter:
 
         Returns:
             True if token acquired, False if timeout expired
-
-        Raises:
-            TimeoutError: If timeout expires (when timeout is not None)
         """
         start_time = time.monotonic()
 
@@ -92,13 +92,13 @@ class TokenBucketRateLimiter:
             with self.lock:
                 self._refill_tokens()
 
-                if self.tokens >= 1.0:
+                if self.tokens >= BUCKET_SIZE:
                     # Token available, consume it
-                    self.tokens -= 1.0
+                    self.tokens -= 1
                     return True
 
                 # Calculate how long until next token is available
-                tokens_needed = 1.0 - self.tokens
+                tokens_needed = BUCKET_SIZE - self.tokens
                 wait_time = tokens_needed / self.rate
 
             # Check timeout
@@ -122,7 +122,7 @@ class TokenBucketRateLimiter:
         """
         return self.rate
 
-    def get_available_tokens(self) -> float:
+    def get_available_tokens(self) -> int:
         """
         Get the number of tokens currently available.
 
@@ -140,6 +140,6 @@ class TokenBucketRateLimiter:
         Refills bucket to maximum size and resets timestamp.
         """
         with self.lock:
-            self.tokens = self.bucket_size
+            self.tokens = BUCKET_SIZE
             self.last_update = time.monotonic()
             logger.debug("Token bucket reset to full")

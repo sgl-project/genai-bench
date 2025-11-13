@@ -122,6 +122,6 @@ def get_run_params(
     elif iteration_type == "request_rate":
         # For request_rate, calculate concurrency to support the rate
         # The rate limiter will control the actual request rate
-        concurrency = max(int(iteration_value * 2), 10)
+        concurrency = max(int(iteration_value * 20), 10)
         return "Request Rate", 1, concurrency
     return "Concurrency", 1, int(iteration_value)

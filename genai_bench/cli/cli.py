@@ -34,6 +34,7 @@ from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.logging import LoggingManager, init_logger
 from genai_bench.protocol import ExperimentMetadata
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.sampling.base import Sampler
 from genai_bench.storage.factory import StorageFactory
 from genai_bench.ui.dashboard import create_dashboard
@@ -422,34 +423,31 @@ def benchmark(
 
                 # For request_rate runs, initialize rate limiter
                 if iteration_type == "request_rate":
-                    from genai_bench.rate_limiter import TokenBucketRateLimiter
-
                     # Create rate limiter for this target rate
+                    # BUCKET_SIZE=1 ensures constant rate without bursts
                     environment.rate_limiter = TokenBucketRateLimiter(
-                        rate=iteration  # iteration value is the target rate
+                        rate=iteration,  # iteration value is the target rate
                     )
                     logger.info(
                         f"🪣 Initialized Token Bucket Rate Limiter at "
                         f"{iteration} req/s"
                     )
-
-                    # For rate-limited runs, use high concurrency to ensure we
-                    # can hit the target rate (rate limiter controls actual rate)
-                    concurrency = max(int(iteration * 2), 10)
                     logger.info(
                         f"Starting benchmark with request_rate={iteration} req/s, "
                         f"concurrency={concurrency} "
                         f"(rate limiter controls actual rate)"
                     )
+                    # Use custom spawn rate if provided, otherwise use concurrency
+                    actual_spawn_rate = (
+                        spawn_rate if spawn_rate is not None else concurrency
+                    )
                 else:
                     # Remove any existing rate limiter for non-rate-limited runs
                     environment.rate_limiter = None
-
-                # Use custom spawn rate if provided, otherwise use concurrency
-                actual_spawn_rate = (
-                    spawn_rate if spawn_rate is not None else concurrency
-                )
-                if iteration_type != "request_rate":
+                    # Use custom spawn rate if provided, otherwise use concurrency
+                    actual_spawn_rate = (
+                        spawn_rate if spawn_rate is not None else concurrency
+                    )
                     logger.info(
                         f"Starting benchmark with concurrency={concurrency}, "
                         f"spawn_rate={actual_spawn_rate}"
