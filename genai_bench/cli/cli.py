@@ -257,6 +257,9 @@ def benchmark(
     # Set authentication and API configuration for the user class
     user_class.auth_provider = auth_provider
     user_class.host = api_base
+    # Record which API backend string was selected (e.g. "openai", "vllm", "sglang").
+    # This allows user instances to filter backend-specific unsupported params.
+    user_class.api_backend = api_backend
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)

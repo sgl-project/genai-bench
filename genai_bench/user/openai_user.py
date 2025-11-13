@@ -33,6 +33,14 @@ class OpenAIUser(BaseUser):
         # Future support can be added here
     }
 
+    # Map of backend_name -> set of params that must NOT be sent to that backend
+    # Keep this list up to date when supporting other backends
+    UNSUPPORTED_PARAMS_BY_BACKEND = {
+        "openai": {"ignore_eos"},
+        "vllm": set(),    # vLLM uses OpenAI-compatible API
+        "sglang": set(),  # SGLang uses OpenAI-compatible API
+    }
+
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
@@ -45,6 +53,10 @@ class OpenAIUser(BaseUser):
             **auth_headers,
             "Content-Type": "application/json",
         }
+        # Ensure instance has api_backend set (prefer instance, then class, then BACKEND_NAME)
+        self.api_backend = getattr(self, "api_backend", None) or getattr(
+            self.__class__, "api_backend", self.BACKEND_NAME
+        )
         super().on_start()
 
     @task
@@ -156,10 +168,24 @@ class OpenAIUser(BaseUser):
         response = None
 
         try:
+            # Determine which backend key was selected. The CLI stores the
+            # chosen api_backend on the user class (see cli.py). Fall back to
+            # the class's BACKEND_NAME when not present.
+            backend_key = getattr(self, "api_backend", None) or getattr(
+                self, "BACKEND_NAME", "openai"
+            )
+
+            # Lookup unsupported params for this backend and remove them
+            # from the payload. Also drop keys with None values.
+            unsupported = self.UNSUPPORTED_PARAMS_BY_BACKEND.get(backend_key, set())
+            payload_to_send = {
+                k: v for k, v in payload.items() if k not in unsupported and v is not None
+            }
+
             start_time = time.monotonic()
             response = requests.post(
                 url=f"{self.host}{endpoint}",
-                json=payload,
+                json=payload_to_send,
                 stream=stream,
                 headers=self.headers,
             )

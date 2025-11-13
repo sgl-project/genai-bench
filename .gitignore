@@ -47,3 +47,7 @@ genai_bench*.log
 # MkDocs
 site/
 .cache/
+
+openai_text-to-text_gpt2_*/
+openai_text-to-text_gpt2_*
+
