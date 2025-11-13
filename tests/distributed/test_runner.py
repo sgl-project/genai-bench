@@ -90,6 +90,24 @@ def test_batch_size_update(distributed_runner, mock_environment):
     assert mock_environment.sampler.batch_size == batch_size
 
 
+def test_rate_limiter_update(distributed_runner, mock_environment):
+    """Test rate limiter update handling"""
+    distributed_runner.setup()
+
+    rate = 2.5
+    mock_msg = MagicMock()
+    mock_msg.data = rate
+
+    distributed_runner._handle_rate_limiter_update(mock_environment, mock_msg)
+    assert mock_environment.rate_limiter is not None
+    assert mock_environment.rate_limiter.rate == rate
+
+    # Test removing rate limiter
+    mock_msg.data = None
+    distributed_runner._handle_rate_limiter_update(mock_environment, mock_msg)
+    assert mock_environment.rate_limiter is None
+
+
 def test_message_handlers_registration(mock_environment, mock_dashboard):
     """Test that all message handlers are registered in all modes"""
     # Test local mode
@@ -98,12 +116,15 @@ def test_message_handlers_registration(mock_environment, mock_dashboard):
     runner.setup()
 
     # Verify all handlers are registered
-    assert mock_environment.runner.register_message.call_count == 3
+    assert mock_environment.runner.register_message.call_count == 4
     mock_environment.runner.register_message.assert_any_call(
         "update_scenario", runner._handle_scenario_update
     )
     mock_environment.runner.register_message.assert_any_call(
         "update_batch_size", runner._handle_batch_size_update
+    )
+    mock_environment.runner.register_message.assert_any_call(
+        "update_rate_limiter", runner._handle_rate_limiter_update
     )
     mock_environment.runner.register_message.assert_any_call("request_metrics", ANY)
 
@@ -116,7 +137,7 @@ def test_message_handlers_in_distributed_mode(mock_environment, mock_dashboard):
     # Test worker mode
     mock_environment.runner = MagicMock(spec=WorkerRunner)
     runner._register_message_handlers()
-    assert mock_environment.runner.register_message.call_count == 2
+    assert mock_environment.runner.register_message.call_count == 3
 
     # Test master mode
     mock_environment.runner = MagicMock(spec=MasterRunner)

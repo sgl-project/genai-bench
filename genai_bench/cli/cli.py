@@ -429,15 +429,27 @@ def benchmark(
 
                 # For request_rate runs, initialize rate limiter
                 if iteration_type == "request_rate":
-                    # Create rate limiter for this target rate
-                    # BUCKET_SIZE=1 ensures constant rate without bursts
-                    environment.rate_limiter = TokenBucketRateLimiter(
-                        rate=iteration,  # iteration value is the target rate
-                    )
-                    logger.info(
-                        f"🪣 Initialized Token Bucket Rate Limiter at "
-                        f"{iteration} req/s"
-                    )
+                    if num_workers > 0:
+                        # Distributed mode: divide rate among workers
+                        per_worker_rate = iteration / num_workers
+                        runner.update_rate_limiter(per_worker_rate)
+                        logger.info(
+                            f"🪣 Distributed mode: Target rate {iteration:.2f} req/s "
+                            f"divided among {num_workers} workers "
+                            f"({per_worker_rate:.2f} req/s per worker)"
+                        )
+                        # Master doesn't need rate limiter in distributed mode
+                        environment.rate_limiter = None
+                    else:
+                        # Local mode: create rate limiter directly
+                        # BUCKET_SIZE=1 ensures constant rate without bursts
+                        environment.rate_limiter = TokenBucketRateLimiter(
+                            rate=iteration,  # iteration value is the target rate
+                        )
+                        logger.info(
+                            f"🪣 Initialized Token Bucket Rate Limiter at "
+                            f"{iteration} req/s"
+                        )
                     logger.info(
                         f"Starting benchmark with request_rate={iteration} req/s, "
                         f"concurrency={concurrency} "
