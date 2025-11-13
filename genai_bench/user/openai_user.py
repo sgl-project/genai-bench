@@ -33,7 +33,6 @@ class OpenAIUser(BaseUser):
         # Future support can be added here
     }
 
-    # Map of backend_name -> set of params that must NOT be sent to that backend
     # Keep this list up to date when supporting other backends
     UNSUPPORTED_PARAMS_BY_BACKEND = {
         "openai": {"ignore_eos"},
@@ -53,11 +52,7 @@ class OpenAIUser(BaseUser):
             **auth_headers,
             "Content-Type": "application/json",
         }
-        # Ensure instance has api_backend set.
-        # Prefer instance, then class, then BACKEND_NAME.
-        self.api_backend = getattr(self, "api_backend", None) or getattr(
-            self.__class__, "api_backend", self.BACKEND_NAME
-        )
+        self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
 
     @task
@@ -176,8 +171,6 @@ class OpenAIUser(BaseUser):
                 self, "BACKEND_NAME", "openai"
             )
 
-            # Lookup unsupported params for this backend and remove them
-            # from the payload. Also drop keys with None values.
             unsupported = self.UNSUPPORTED_PARAMS_BY_BACKEND.get(backend_key, set())
             payload_to_send = {k: v for k, v in payload.items() if k not in unsupported}
 
