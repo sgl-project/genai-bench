@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
@@ -220,10 +220,13 @@ def load_run_data(
 
         # Get the iteration type and value
         iteration_type = aggregated_metrics.iteration_type
-        iteration_value: Union[int, float, None]
         if iteration_type == "batch_size":
-            iteration_value = aggregated_metrics.batch_size
+            iteration_value: int | float = aggregated_metrics.batch_size
         elif iteration_type == "request_rate":
+            if aggregated_metrics.request_rate is None:
+                raise ValueError(
+                    "request_rate is None but iteration_type is 'request_rate'"
+                )
             iteration_value = aggregated_metrics.request_rate
         else:
             iteration_value = aggregated_metrics.num_concurrency
