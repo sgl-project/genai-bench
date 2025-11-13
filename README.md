@@ -80,4 +80,4 @@ For detailed instructions, advanced configuration options, and comprehensive exa
 
 ## Development
 
-If you are interested in contributing to GenAI-Bench, you can use the [Development Guide](https://docs.sglang.ai/genai-bench/development/).
+If you are interested in contributing to GenAI-Bench, you can use the [Development Guide](https://docs.sglang.ai/genai-bench/development/developer-guide/).

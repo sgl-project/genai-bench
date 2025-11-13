@@ -116,7 +116,7 @@ nav:
       - getting-started/index.md
       - Installation: getting-started/installation.md
       - Task Definition: getting-started/task-definition.md
-      - CLI Guidelines: getting-started/command-guidelines.md
+      - CLI Guidelines: getting-started/cli-guidelines.md
       - Metrics Definition: getting-started/metrics-definition.md
       - Migrating from SGLang/vLLM: getting-started/migrating-from-sglang-vllm.md
   - User Guide:
@@ -130,5 +130,5 @@ nav:
       - Visualizations: user-guide/generate-plot.md
       - Upload Results: user-guide/upload-benchmark-result.md
   - Development:
-      - development/index.md
+      - development/developer-guide.md
       - Adding New Features: development/adding-new-features.md

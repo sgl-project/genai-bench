@@ -62,8 +62,9 @@ GenAI Bench supports multiple benchmark types:
 
 - [Installation](getting-started/installation.md) - Detailed installation guide
 - [Task Definition](getting-started/task-definition.md) - Understanding different benchmark tasks
-- [CLI Guidelines](getting-started/command-guidelines.md) - CLI usage guidelines
+- [CLI Guidelines](getting-started/cli-guidelines.md) - CLI usage guidelines
 - [Metrics Definition](getting-started/metrics-definition.md) - Understanding benchmark metrics
+- [Migrating from SGLang/vLLM](getting-started/migrating-from-sglang-vllm.md) - Migration guide from SGLang and vLLM
 
 ### 📖 User Guide
 
@@ -78,7 +79,8 @@ GenAI Bench supports multiple benchmark types:
 
 ### 🔧 Development
 
-- [Development](development/index.md) - How to contribute to GenAI Bench
+- [Development](development/developer-guide.md) - How to contribute to GenAI Bench
+- [Adding New Features](development/adding-new-features.md) - Learn how to add new providers and tasks
 
 ## Support
 

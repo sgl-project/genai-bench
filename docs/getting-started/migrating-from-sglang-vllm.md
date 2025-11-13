@@ -4,7 +4,7 @@ This guide shows how to migrate from SGLang and vLLM benchmarking to GenAI Bench
 
 ## SGLang Benchmarking
 
-GenAI Bench uses [traffic scenarios](../user-guide/scenario-definition.md) to control input and output token lengths instead of SGLang's `--random-input-len` and `--random-output-len` parameters. For benchmark intensity, SGLang uses `--request-rate` parameters to control how requests are sent over time, while GenAI Bench uses concurrency levels (`--num-concurrency`) to manage benchmark intensity instead.
+GenAI Bench uses [traffic scenarios](../user-guide/scenario-definition.md) to control input and output token lengths instead of SGLang's `--random-input-len`, `--random-output-len`, and `--random-range-ratio` parameters. For benchmark intensity, SGLang uses `--request-rate` parameters to control how requests are sent over time, while GenAI Bench uses concurrency levels (`--num-concurrency`) to manage benchmark intensity instead.
 
 ### Basic Text Benchmark
 
@@ -15,6 +15,39 @@ python -m sglang.bench_serving \
     --num-prompts 500 \
     --random-input-len 512 \
     --random-output-len 512 \
+    --model meta-llama/Llama-3.1-8B-Instruct \
+    --base-url http://127.0.0.1:8080
+```
+
+**GenAI Bench Equivalent:**
+```bash
+genai-bench benchmark \
+    --api-backend sglang \
+    --api-base http://127.0.0.1:8080 \
+    --api-model-name sglang-model \
+    --model-tokenizer meta-llama/Llama-3.1-8B-Instruct \
+    --task text-to-text \
+    --max-requests-per-run 500 \
+    --max-time-per-run 30 \
+    --traffic-scenario "U(1,512)/(0,512)" \
+    --num-concurrency 1 \
+    --server-engine "SGLang"
+```
+
+**Note:** With default `--random-range-ratio 0.0`, SGLang samples from `[1, 512]` for inputs and `[0, 512]` for outputs. Use GenAI Bench's uniform distribution `U(min,max)/(min,max)` to match this behavior. The uniform distribution also can mimic any other `--random-range-ratio` value that is not `1.0`. 
+
+### Benchmark a specific number of tokens
+
+You can use a deterministic traffic scenario to mimic a `--random-range-ratio 1.0` run with a specific number of input and output tokens.
+
+**SGLang Command:**
+```bash
+python -m sglang.bench_serving \
+    --backend sglang-oai-chat \
+    --num-prompts 500 \
+    --random-input-len 512 \
+    --random-output-len 512 \
+    --random-range-ratio 1.0 \
     --model meta-llama/Llama-3.1-8B-Instruct \
     --base-url http://127.0.0.1:8080
 ```
@@ -47,7 +80,7 @@ genai-bench benchmark \
     --task text-to-text \
     --max-requests-per-run 500 \
     --max-time-per-run 30 \
-    --traffic-scenario "D(512,512)" \
+    --traffic-scenario "U(1,512)/(0,512)" \
     --num-concurrency 1 \
     --num-concurrency 4 \
     --num-concurrency 8 \
@@ -55,7 +88,7 @@ genai-bench benchmark \
     --server-engine "SGLang"
 ```
 
-**Note:** SGLang provides controls for request rate and max concurrency. GenAI Bench does not yet have request rate control, but allows explicitly setting the number of concurrent users.
+**Note:** SGLang provides controls for request rate and max concurrency. GenAI Bench does not yet have request rate control, but allows explicitly setting the number of concurrent users to test performance under different loads.
 
 ### Image Benchmarking
 
@@ -86,36 +119,11 @@ genai-bench benchmark \
     --server-engine "SGLang" \
     --dataset-config ./examples/dataset_configs/config_llava-bench-in-the-wild.json
 ```
+Setting `--traffic-scenario "(1280,720,3)"` sends 3 images of size 1280x720 (720p) in each request.
 
 **Note:** GenAI Bench does not explicitly allow control of input and output tokens for image scenarios. Use a [dataset config](../user-guide/run-benchmark.md#selecting-datasets) to choose a column of text prompts, and add a prompt lambda function to filter inputs to the desired size. Output size cannot be directly controlled for image tasks (defaults to unlimited).
 
-### Traffic Distributions
-
-SGLang's `--random-input-len` and `--random-output-len` parameters generate requests with random token lengths. GenAI Bench provides more control through [traffic distributions](../user-guide/scenario-definition.md), allowing you to specify the exact distribution type (deterministic, normal, uniform) for input and output tokens.
-
-**Example: Normal Distribution**
-
-The `N(mean,stddev)/(mean,stddev)` syntax specifies normal distributions for both input and output tokens:
-
-```bash
-genai-bench benchmark \
-    --api-backend sglang \
-    --api-base http://127.0.0.1:8080 \
-    --api-model-name sglang-model \
-    --model-tokenizer meta-llama/Llama-3.1-8B-Instruct \
-    --task text-to-text \
-    --max-requests-per-run 500 \
-    --max-time-per-run 30 \
-    --traffic-scenario "N(480,240)/(300,150)" \
-    --num-concurrency 8 \
-    --server-engine "SGLang"
-```
-
-This example uses:
-- **Input tokens**: Normal distribution with mean=480, standard deviation=240
-- **Output tokens**: Normal distribution with mean=300, standard deviation=150
-
-For other distribution types (deterministic, uniform, embeddings) and more examples, see the [Traffic Scenarios](../user-guide/scenario-definition.md) documentation.
+For more details on available distribution types, see the [Traffic Scenarios](../user-guide/scenario-definition.md) documentation.
 
 ## vLLM Benchmarking
 
@@ -253,4 +261,4 @@ For more details on available distribution types, see the [Traffic Scenarios](..
 
 ## See Also
 
-For more detailed information on using GenAI Bench, including advanced configuration options, dataset setup, and result analysis, see the [User Guide](../user-guide/index.md). For information on command-line arguments and options, see the [CLI Guidelines](command-guidelines.md).
+For more detailed information on using GenAI Bench, including advanced configuration options, dataset setup, and result analysis, see the [User Guide](../user-guide/index.md). For information on command-line arguments and options, see the [CLI Guidelines](cli-guidelines.md).
