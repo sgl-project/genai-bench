@@ -37,7 +37,7 @@ class OpenAIUser(BaseUser):
     # Keep this list up to date when supporting other backends
     UNSUPPORTED_PARAMS_BY_BACKEND = {
         "openai": {"ignore_eos"},
-        "vllm": set(),    # vLLM uses OpenAI-compatible API
+        "vllm": set(),  # vLLM uses OpenAI-compatible API
         "sglang": set(),  # SGLang uses OpenAI-compatible API
     }
 
@@ -53,7 +53,8 @@ class OpenAIUser(BaseUser):
             **auth_headers,
             "Content-Type": "application/json",
         }
-        # Ensure instance has api_backend set (prefer instance, then class, then BACKEND_NAME)
+        # Ensure instance has api_backend set.
+        # Prefer instance, then class, then BACKEND_NAME.
         self.api_backend = getattr(self, "api_backend", None) or getattr(
             self.__class__, "api_backend", self.BACKEND_NAME
         )
@@ -178,9 +179,7 @@ class OpenAIUser(BaseUser):
             # Lookup unsupported params for this backend and remove them
             # from the payload. Also drop keys with None values.
             unsupported = self.UNSUPPORTED_PARAMS_BY_BACKEND.get(backend_key, set())
-            payload_to_send = {
-                k: v for k, v in payload.items() if k not in unsupported and v is not None
-            }
+            payload_to_send = {k: v for k, v in payload.items() if k not in unsupported}
 
             start_time = time.monotonic()
             response = requests.post(
