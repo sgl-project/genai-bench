@@ -116,22 +116,19 @@ nav:
       - getting-started/index.md
       - Installation: getting-started/installation.md
       - Task Definition: getting-started/task-definition.md
-      - Command Guidelines: getting-started/command-guidelines.md
+      - CLI Guidelines: getting-started/cli-guidelines.md
       - Metrics Definition: getting-started/metrics-definition.md
+      - Migrating from SGLang/vLLM: getting-started/migrating-from-sglang-vllm.md
   - User Guide:
       - user-guide/index.md
       - Run Benchmark: user-guide/run-benchmark.md
       - Traffic Scenarios: user-guide/scenario-definition.md
       - Multi-Cloud Authentication: user-guide/multi-cloud-auth-storage.md
-      - Quick Reference: user-guide/multi-cloud-quick-reference.md
-      - Docker Deployment: user-guide/run-benchmark-using-docker.md
+      - Multi-Cloud Quick Reference: user-guide/multi-cloud-quick-reference.md
+      - Docker Usage Guide: user-guide/run-benchmark-using-docker.md
       - Excel Reports: user-guide/generate-excel-sheet.md
       - Visualizations: user-guide/generate-plot.md
       - Upload Results: user-guide/upload-benchmark-result.md
-  - Examples:
-      - examples/index.md
   - Development:
-      - development/index.md
-      - Contributing: development/contributing.md
-  - API Reference:
-      - api/index.md
+      - development/developer-guide.md
+      - Adding New Features: development/adding-new-features.md
