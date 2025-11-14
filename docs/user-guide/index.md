@@ -22,13 +22,13 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Multi-Cloud Guide](multi-cloud-auth-storage.md)
 
-- :material-docker:{ .lg .middle } **Docker Deployment**
+- :material-docker:{ .lg .middle } **Docker Usage Guide**
 
     ---
 
     Run GenAI Bench in containerized environments
 
-    [:octicons-arrow-right-24: Docker Guide](run-benchmark-using-docker.md)
+    [:octicons-arrow-right-24: Docker Usage Guide](run-benchmark-using-docker.md)
 
 - :material-file-excel:{ .lg .middle } **Excel Reports**
 
@@ -74,6 +74,4 @@ Support for text, embeddings, and vision tasks:
 
 ## Need Help?
 
-- Check the [Quick Reference](multi-cloud-quick-reference.md) for common commands
-- Review [Command Guidelines](../getting-started/command-guidelines.md) for detailed options
 - See [Troubleshooting](multi-cloud-auth-storage.md#troubleshooting) for common issues

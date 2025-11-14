@@ -1,4 +1,4 @@
-# Running Benchmark Using `genai-bench` Container
+# Docker Usage Guide
 
 ## Using Pre-built Docker Image
 
