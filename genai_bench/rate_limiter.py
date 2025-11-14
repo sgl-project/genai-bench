@@ -10,7 +10,7 @@ from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
 
-BUCKET_SIZE = 1
+BUCKET_SIZE = 1  # Fixed bucket size of 1 token for rate limiting
 
 
 class TokenBucketRateLimiter:
@@ -28,7 +28,7 @@ class TokenBucketRateLimiter:
     Attributes:
         rate: Target request rate in requests per second
         bucket_size: Maximum number of tokens that can accumulate
-        tokens: Current number of tokens in the bucket
+        tokens: Current number of tokens in the bucket (always an integer)
         last_update: Timestamp of last token refill
         lock: Lock for thread-safe token operations
     """
@@ -44,7 +44,7 @@ class TokenBucketRateLimiter:
             raise ValueError(f"Rate must be positive, got {rate}")
 
         self.rate = rate
-        self.tokens = BUCKET_SIZE  # Start with full bucket
+        self.tokens: int = BUCKET_SIZE  # Start with full bucket (always an integer)
         self.last_update = time.monotonic()
         self.lock = Semaphore(value=1)  # Gevent-compatible lock
 
@@ -62,16 +62,15 @@ class TokenBucketRateLimiter:
         time_passed = now - self.last_update
 
         # Calculate how many tokens should have been generated
-        tokens_to_add = time_passed * self.rate
+        tokens_to_add: float = time_passed * self.rate
 
         if tokens_to_add >= 1.0:
             tokens_added = int(tokens_to_add)
-            self.tokens = min(BUCKET_SIZE, self.tokens + tokens_added)
+            # Ensure tokens remains an integer (min returns int when both args are int)
+            self.tokens = int(min(BUCKET_SIZE, self.tokens + tokens_added))
 
             time_used = tokens_added / self.rate
             self.last_update = self.last_update + time_used
-        # If tokens_to_add < 1.0, don't update last_update to preserve
-        # fractional progress for the next check
 
     def acquire(self, timeout: Optional[float] = None) -> bool:
         """
@@ -92,7 +91,7 @@ class TokenBucketRateLimiter:
             with self.lock:
                 self._refill_tokens()
 
-                if self.tokens >= BUCKET_SIZE:
+                if self.tokens > 0:
                     # Token available, consume it
                     self.tokens -= 1
                     return True
@@ -127,11 +126,11 @@ class TokenBucketRateLimiter:
         Get the number of tokens currently available.
 
         Returns:
-            Number of tokens available for immediate use
+            Number of tokens available for immediate use (always an integer)
         """
         with self.lock:
             self._refill_tokens()
-            return self.tokens
+            return int(self.tokens)  # Explicitly cast to int for clarity
 
     def reset(self) -> None:
         """

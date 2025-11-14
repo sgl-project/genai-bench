@@ -115,7 +115,7 @@ def get_run_params(
     Returns appropriate header, batch_size, and num_concurrency based on
     iteration_type and iteration_value.
 
-    For request_rate, concurrency is calculated as rate * 2 to ensure
+    For request_rate, concurrency is calculated as rate * 10 to ensure
     sufficient workers (actual rate is controlled by rate limiter).
     """
     if iteration_type == "batch_size":
@@ -123,6 +123,6 @@ def get_run_params(
     elif iteration_type == "request_rate":
         # For request_rate, calculate concurrency to support the rate
         # The rate limiter will control the actual request rate
-        concurrency = max(int(iteration_value * 20), 10)
+        concurrency = max(int(iteration_value * 10), 10)
         return "Request Rate", 1, concurrency
     return "Concurrency", 1, int(iteration_value)
