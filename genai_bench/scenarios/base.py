@@ -12,6 +12,7 @@ class TextDistribution(Enum):
     NORMAL = "N"
     DETERMINISTIC = "D"
     UNIFORM = "U"
+    PREFIX_REPETITION = "P"
 
 
 class EmbeddingDistribution(Enum):

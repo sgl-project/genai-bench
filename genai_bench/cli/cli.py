@@ -382,6 +382,11 @@ def benchmark(
             sanitized_scenario_str = sanitize_string(scenario_str)
             runner.update_scenario(scenario_str)
 
+            # Reset prefix cache for new scenario to ensure fresh prefix
+            # This is critical for prefix repetition scenarios to work correctly
+            if hasattr(sampler, "reset_prefix_cache"):
+                sampler.reset_prefix_cache()
+
             # Store metrics for current scenario for interim plot
             scenario_metrics = {
                 "data": {},
