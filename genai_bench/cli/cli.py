@@ -113,6 +113,7 @@ def benchmark(
     max_requests_per_run,
     experiment_folder_name,
     experiment_base_dir,
+    log_dir,
     dataset_path,
     dataset_config,
     dataset_prompt_column,
@@ -150,7 +151,10 @@ def benchmark(
     dashboard = create_dashboard(metrics_time_unit)
 
     # Initialize logging with the layout for the log panel
-    logging_manager = LoggingManager("benchmark", dashboard.layout, dashboard.live)
+    log_dir = ctx.params.get("log_dir")
+    logging_manager = LoggingManager(
+        "benchmark", dashboard.layout, dashboard.live, log_dir=log_dir
+    )
     delayed_log_handler = logging_manager.delayed_handler
     logger = init_logger("genai_bench.benchmark")
 
@@ -354,6 +358,7 @@ def benchmark(
     config = DistributedConfig(
         num_workers=num_workers,
         master_port=master_port,
+        log_dir=log_dir,
     )
     runner = DistributedRunner(
         environment=environment,
