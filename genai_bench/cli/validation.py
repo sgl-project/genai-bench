@@ -216,7 +216,8 @@ def validate_iteration_params(ctx, param, value) -> str:
         invalid_rates = [rate for rate in request_rate if rate <= 0]
         if invalid_rates:
             raise click.BadParameter(
-                f"All request_rate values must be positive, got invalid values: {invalid_rates}"
+                f"All request_rate values must be positive, got invalid values: "
+                f"{invalid_rates}"
             )
         if value != "request_rate":
             click.echo(

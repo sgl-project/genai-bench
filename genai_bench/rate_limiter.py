@@ -3,7 +3,6 @@
 import time
 from typing import Optional
 
-import gevent
 from gevent.event import Event
 from gevent.lock import Semaphore
 
