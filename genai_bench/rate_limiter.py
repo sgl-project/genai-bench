@@ -4,6 +4,7 @@ import time
 from typing import Optional
 
 import gevent
+from gevent.event import Event
 from gevent.lock import Semaphore
 
 from genai_bench.logging import init_logger
@@ -31,6 +32,8 @@ class TokenBucketRateLimiter:
         tokens: Current number of tokens in the bucket (always an integer)
         last_update: Timestamp of last token refill
         lock: Lock for thread-safe token operations
+        stopped: Flag indicating if the rate limiter has been stopped
+        _stop_event: Event to signal waiting greenlets to stop
     """
 
     def __init__(self, rate: float):
@@ -47,6 +50,8 @@ class TokenBucketRateLimiter:
         self.tokens: int = BUCKET_SIZE  # Start with full bucket (always an integer)
         self.last_update = time.monotonic()
         self.lock = Semaphore(value=1)  # Gevent-compatible lock
+        self.stopped = False
+        self._stop_event = Event()  # Event to signal stop
 
         logger.info(
             f"🪣 Token Bucket Rate Limiter initialized: " f"rate={rate:.2f} req/s"
@@ -77,18 +82,23 @@ class TokenBucketRateLimiter:
         Acquire a token to make a request.
 
         Blocks until a token is available or timeout expires.
+        Returns False immediately if the rate limiter has been stopped.
 
         Args:
             timeout: Maximum time to wait for a token in seconds.
                     None means wait indefinitely.
 
         Returns:
-            True if token acquired, False if timeout expired
+            True if token acquired, False if timeout expired or rate limiter stopped
         """
         start_time = time.monotonic()
 
         while True:
             with self.lock:
+                # Check if rate limiter has been stopped
+                if self.stopped:
+                    return False
+
                 self._refill_tokens()
 
                 if self.tokens > 0:
@@ -108,9 +118,13 @@ class TokenBucketRateLimiter:
                 # Adjust wait time to not exceed timeout
                 wait_time = min(wait_time, timeout - elapsed)
 
-            # Sleep until next token should be available
-            # Use gevent.sleep for cooperative multitasking
-            gevent.sleep(wait_time)
+            # Wait for token or stop signal
+            # Use _stop_event.wait() to allow interruption when stopped
+            if self._stop_event.wait(timeout=wait_time):
+                # Stop event was set, return False
+                return False
+
+            # Continue loop to check for token availability
 
     def get_current_rate(self) -> float:
         """
@@ -132,11 +146,27 @@ class TokenBucketRateLimiter:
             self._refill_tokens()
             return int(self.tokens)  # Explicitly cast to int for clarity
 
+    def stop(self) -> None:
+        """
+        Stop the rate limiter and wake up any waiting greenlets.
+
+        This should be called before stopping a run to ensure all pending
+        token acquisitions are cleaned up. After calling stop(), acquire()
+        will return False immediately for any new or waiting calls.
+        """
+        with self.lock:
+            self.stopped = True
+        # Set the event to wake up any greenlets waiting in acquire()
+        self._stop_event.set()
+        logger.debug("Rate limiter stopped, waking up waiting greenlets")
+
     def reset(self) -> None:
         """
         Reset the rate limiter to initial state.
 
         Refills bucket to maximum size and resets timestamp.
+        Note: This does not reset the stopped state. Use a new instance
+        if you need to restart after stopping.
         """
         with self.lock:
             self.tokens = BUCKET_SIZE

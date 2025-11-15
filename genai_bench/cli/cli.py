@@ -427,16 +427,37 @@ def benchmark(
                 start_time = time.monotonic()
                 dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
 
-                # For request_rate runs, initialize rate limiter
+                # For request_rate runs, ensure old rate limiter is stopped and cleaned up
+                # before creating a new one for this run
                 if iteration_type == "request_rate":
+                    # Ensure old rate limiter is stopped and cleaned up
+                    if hasattr(environment, "rate_limiter") and environment.rate_limiter:
+                        environment.rate_limiter.stop()
+                        environment.rate_limiter = None
                     if num_workers > 0:
                         # Distributed mode: divide rate among workers
                         per_worker_rate = iteration / num_workers
+                        
+                        # Warn if per-worker rate is very low (could cause precision issues)
+                        if per_worker_rate < 0.1:
+                            logger.warning(
+                                f"⚠️  Per-worker rate ({per_worker_rate:.4f} req/s) is very low. "
+                                f"Consider using fewer workers or a higher target rate for better accuracy."
+                            )
+                        
+                        # Ensure minimum rate for each worker (rate limiter requires > 0)
+                        if per_worker_rate <= 0:
+                            raise ValueError(
+                                f"Cannot divide rate {iteration:.2f} req/s among {num_workers} workers. "
+                                f"Per-worker rate would be {per_worker_rate:.4f} req/s (must be > 0)."
+                            )
+                        
                         runner.update_rate_limiter(per_worker_rate)
                         logger.info(
                             f"🪣 Distributed mode: Target rate {iteration:.2f} req/s "
                             f"divided among {num_workers} workers "
-                            f"({per_worker_rate:.2f} req/s per worker)"
+                            f"({per_worker_rate:.4f} req/s per worker, "
+                            f"total: {per_worker_rate * num_workers:.2f} req/s)"
                         )
                         # Master doesn't need rate limiter in distributed mode
                         environment.rate_limiter = None
@@ -478,6 +499,19 @@ def benchmark(
                     max_requests_per_run=max_requests_per_run,
                     environment=environment,
                 )
+
+                # For request_rate runs, stop the rate limiter to clean up pending acquisitions
+                if iteration_type == "request_rate":
+                    # Stop rate limiter to wake up any waiting greenlets
+                    if hasattr(environment, "rate_limiter") and environment.rate_limiter:
+                        environment.rate_limiter.stop()
+                        logger.debug("Stopped rate limiter to clean up pending token acquisitions")
+                    
+                    # In distributed mode, also stop rate limiters on workers
+                    if num_workers > 0:
+                        # Send message to workers to stop their rate limiters
+                        runner.update_rate_limiter(None)  # None signals stop
+                        time.sleep(0.1)  # Brief wait for message processing
 
                 environment.runner.stop()
 

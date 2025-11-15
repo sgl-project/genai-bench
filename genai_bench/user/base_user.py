@@ -26,9 +26,14 @@ class BaseUser(HttpUser):
 
         This should be called before making any request to enforce rate limiting.
         Blocks until a token is available if rate limiting is enabled.
+        Returns immediately if rate limiter is stopped (run is ending).
         """
         if hasattr(self.environment, "rate_limiter") and self.environment.rate_limiter:
-            self.environment.rate_limiter.acquire()
+            acquired = self.environment.rate_limiter.acquire()
+            if not acquired:
+                # Rate limiter stopped or timeout - don't proceed with request
+                # This is expected when run is stopping
+                return
 
     @classmethod
     def is_task_supported(cls, task: str) -> bool:
