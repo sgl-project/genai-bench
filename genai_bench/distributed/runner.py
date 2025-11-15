@@ -455,7 +455,9 @@ class DistributedRunner:
             raise RuntimeError("Received empty rate limiter message")
         rate = msg.data
         if rate is None or rate <= 0:
-            # Remove rate limiter if rate is None or invalid
+            # Stop existing rate limiter if present
+            if hasattr(environment, "rate_limiter") and environment.rate_limiter:
+                environment.rate_limiter.stop()
             environment.rate_limiter = None  # type: ignore[attr-defined]
         else:
             # Create rate limiter with the per-worker rate
