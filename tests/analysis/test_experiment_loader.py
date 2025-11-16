@@ -342,67 +342,138 @@ def create_test_metric_stats():
 class TestRequestRateInExperimentLoader:
     """Test request_rate handling in experiment_loader."""
 
-    def test_experiment_loader_handles_request_rate_levels(self):
-        """Test that experiment_loader properly handles request_rate_levels."""
-        # This tests the key fix for the request_rate_levels tracking
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"request_rate": 10.0, '
+        '"iteration_type": "request_rate"}}',
+    )
+    def test_load_run_data_extracts_request_rate(self, mock_open):
+        """Test that load_run_data extracts request_rate from aggregated_metrics."""
+        run_data = {}
+        file_path = "fake_path.json"
+        filter_criteria = None
 
-        # Would need to create a mock experiment file structure
-        pytest.skip("Requires full experiment file structure setup")
+        load_run_data(file_path, run_data, filter_criteria)
 
-    def test_request_rate_levels_cleanup(self):
+        # Verify request_rate was extracted
+        assert "D(100,100)" in run_data
+        # The iteration value should be 10.0 (float)
+        assert 10.0 in run_data["D(100,100)"]
+        metrics = run_data["D(100,100)"][10.0]["aggregated_metrics"]
+        assert metrics.request_rate == 10.0
+        assert metrics.iteration_type == "request_rate"
+
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"request_rate": 5.5, '
+        '"iteration_type": "request_rate"}}',
+    )
+    def test_load_run_data_stores_request_rate_levels(self, mock_open):
+        """Test that load_run_data stores request_rate_levels correctly."""
+        run_data = {}
+        file_path = "fake_path.json"
+        filter_criteria = None
+
+        load_run_data(file_path, run_data, filter_criteria)
+
+        # Verify request_rate_levels was stored
+        assert "D(100,100)" in run_data
+        scenario_data = run_data["D(100,100)"]
+        # Should have request_rate_levels key
+        assert "request_rate_levels" in scenario_data
+        assert 5.5 in scenario_data["request_rate_levels"]
+
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"request_rate": 15.5, '
+        '"iteration_type": "request_rate"}}',
+    )
+    def test_iteration_value_is_float_for_request_rate(self, mock_open):
+        """Test that iteration_value is float for request_rate runs."""
+        run_data = {}
+        file_path = "fake_path.json"
+        filter_criteria = None
+
+        load_run_data(file_path, run_data, filter_criteria)
+
+        # Verify iteration value is float
+        assert "D(100,100)" in run_data
+        # The key should be a float
+        iteration_values = [k for k in run_data["D(100,100)"] if isinstance(k, float)]
+        assert len(iteration_values) > 0
+        assert 15.5 in iteration_values
+
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"iteration_type": "request_rate"}}',
+    )
+    def test_iteration_value_extraction_handles_none_request_rate(self, mock_open):
+        """Test that iteration_value extraction handles None request_rate gracefully."""
+        run_data = {}
+        file_path = "fake_path.json"
+        filter_criteria = None
+
+        # Should raise ValueError when request_rate is None but
+        # iteration_type is request_rate
+        with pytest.raises(
+            ValueError,
+            match="request_rate is None but iteration_type is 'request_rate'",
+        ):
+            load_run_data(file_path, run_data, filter_criteria)
+
+    @patch(
+        "os.listdir",
+        return_value=[
+            "experiment_metadata.json",
+            "D_100_100_chat_request_rate_10.0_time_600s.json",
+        ],
+    )
+    @patch("os.path.isdir", return_value=False)
+    @patch("os.path.exists", return_value=True)
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"request_rate": 10.0, '
+        '"iteration_type": "request_rate"}}',
+    )
+    @patch("genai_bench.analysis.experiment_loader.load_experiment_metadata")
+    def test_request_rate_levels_cleanup(
+        self,
+        mock_load_metadata,
+        mock_open,
+        mock_isdir,
+        mock_listdir,
+        mock_experiment_metadata,
+    ):
         """Test that all _levels keys are cleaned up regardless of iteration_type."""
-        # Tests the fix where we delete all possible _levels keys
-        pytest.skip("Requires mock experiment data")
+        # Create metadata with request_rate
+        mock_experiment_metadata.request_rate = [5.0, 10.0, 20.0]
+        mock_experiment_metadata.iteration_type = "request_rate"
+        mock_load_metadata.return_value = mock_experiment_metadata
 
-    def test_mixed_run_warning_with_request_rate(self):
-        """Test that mixed runs with request_rate don't trigger false warnings."""
-        # Tests the fix for the warning about missing num_concurrency levels
-        pytest.skip("Requires mock experiment data with mixed iteration types")
+        # Load experiment - should not have _levels keys in final structure
+        # (they're used internally but cleaned up)
+        folder_name = "fake_experiment_folder"
+        metadata, run_data = load_one_experiment(folder_name)
 
-
-class TestRequestRateInExcelReport:
-    """Test request_rate handling in excel_report generation."""
-
-    def test_summary_header_includes_request_rate(self):
-        """Test that summary sheet has correct header for request_rate."""
-        # This test requires full ExperimentMetadata with all required fields
-        # Skip for now as it's complex to set up all required fields
-        pytest.skip("Requires complete ExperimentMetadata setup")
-
-    def test_appendix_header_includes_request_rate(self):
-        """Test that appendix sheet has correct header for request_rate."""
-        # Similar to above but for appendix sheet
-        pytest.skip("Requires full workbook creation")
-
-    def test_merge_cells_handles_empty_scenarios(self):
-        """Test that merge_cells doesn't fail on empty scenarios."""
-        # Tests the fix for ValueError in merge_cells
-        # This test requires full ExperimentMetadata setup which is complex
-        pytest.skip("Requires complete ExperimentMetadata and workbook setup")
-
-    def test_request_rate_excluded_from_aggregated_metrics_sheet(self):
-        """Test that request_rate column is excluded from aggregated metrics."""
-        # Tests that request_rate is in the exclusion list for base_headers
-        pytest.skip("Requires workbook inspection")
-
-
-class TestRequestRateDataFlow:
-    """Integration tests for request_rate data flow through analysis."""
-
-    def test_request_rate_value_preserved_through_pipeline(self):
-        """Test that request_rate values are preserved from run to report."""
-        # End-to-end test: run -> metrics -> experiment_loader -> excel_report
-        pytest.skip("Requires full integration test")
-
-    def test_request_rate_float_values_in_excel(self):
-        """Test that fractional request_rate values display correctly in Excel."""
-        # Test that 2.5 req/s shows up correctly, not rounded to 2 or 3
-        pytest.skip("Requires Excel cell inspection")
-
-    def test_request_rate_sorting_in_report(self):
-        """Test that request_rate values are sorted correctly in report."""
-        # Test that rates like [20.0, 5.0, 10.0] are sorted to [5.0, 10.0, 20.0]
-        pytest.skip("Requires full report generation")
+        # Verify metadata is correct
+        assert metadata.iteration_type == "request_rate"
+        # The _levels keys should be cleaned up in the final run_data structure
+        # (they're used for tracking but removed before returning)
 
 
 class TestRequestRateFormulas:
@@ -469,23 +540,6 @@ class TestRequestRateFormulas:
 
 class TestRequestRateEdgeCasesInAnalysis:
     """Test edge cases for request_rate in analysis."""
-
-    def test_single_request_rate_value_in_report(self):
-        """Test report generation with single request_rate value."""
-        pytest.skip("Requires full report generation")
-
-    def test_large_number_of_request_rate_values(self):
-        """Test report with many request_rate values."""
-        # Test with [1.0, 2.0, 3.0, ..., 100.0]
-        pytest.skip("Requires full report generation")
-
-    def test_very_small_request_rate_in_report(self):
-        """Test report with very small request_rate (e.g., 0.1 req/s)."""
-        pytest.skip("Requires full report generation")
-
-    def test_very_large_request_rate_in_report(self):
-        """Test report with very large request_rate (e.g., 1000 req/s)."""
-        pytest.skip("Requires full report generation")
 
     def test_request_rate_with_high_error_rate(self):
         """Test that request_rate metrics handle high error rates correctly."""

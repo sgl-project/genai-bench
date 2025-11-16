@@ -163,7 +163,155 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert output_throughput == 14.0
 
 
+def test_set_run_metadata_with_float_iteration(aggregated_metrics_collector):
+    """Test that set_run_metadata accepts float for request_rate iteration."""
+    # Test with float iteration value (request_rate)
+    aggregated_metrics_collector.set_run_metadata(
+        iteration=15.5,  # Float value for request_rate
+        scenario_str="D(100,100)",
+        iteration_type="request_rate",
+    )
+
+    # Verify the request_rate field was set
+    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 15.5
+    assert (
+        aggregated_metrics_collector.aggregated_metrics.iteration_type == "request_rate"
+    )
+
+    # Test with integer iteration value (num_concurrency)
+    aggregated_metrics_collector.set_run_metadata(
+        iteration=10,  # Integer value for num_concurrency
+        scenario_str="D(100,100)",
+        iteration_type="num_concurrency",
+    )
+
+    # Verify the num_concurrency field was set
+    assert aggregated_metrics_collector.aggregated_metrics.num_concurrency == 10
+    assert (
+        aggregated_metrics_collector.aggregated_metrics.iteration_type
+        == "num_concurrency"
+    )
+
+
+def test_set_run_metadata_request_rate_field_handling(aggregated_metrics_collector):
+    """Test that set_run_metadata correctly handles request_rate field."""
+    # Test setting request_rate
+    aggregated_metrics_collector.set_run_metadata(
+        iteration=20.0,
+        scenario_str="test_scenario",
+        iteration_type="request_rate",
+    )
+
+    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 20.0
+    assert (
+        aggregated_metrics_collector.aggregated_metrics.iteration_type == "request_rate"
+    )
+
+    # Test that request_rate is None when using other iteration types
+    aggregated_metrics_collector.set_run_metadata(
+        iteration=5,
+        scenario_str="test_scenario",
+        iteration_type="num_concurrency",
+    )
+
+    # request_rate should remain None or be reset
+    # (depending on implementation, but should not be 20.0)
+    assert (
+        aggregated_metrics_collector.aggregated_metrics.iteration_type
+        == "num_concurrency"
+    )
+    assert aggregated_metrics_collector.aggregated_metrics.num_concurrency == 5
+
+
+def test_aggregate_metrics_with_error_filtering(
+    aggregated_metrics_collector, locust_environment
+):
+    """Test aggregation of metrics with error filtering via events."""
+    # Initialize events and hook aggregated_metrics_collector to env
+    locust_environment.events.request_metrics.add_listener(
+        aggregated_metrics_collector.add_single_request_metrics
+    )
+
+    metrics1 = RequestLevelMetrics(
+        ttft=0.1,
+        tpot=0.2,
+        e2e_latency=1.0,
+        output_latency=0.9,
+        input_throughput=20.0,
+        output_throughput=11.111,
+        num_input_tokens=2,
+        num_output_tokens=10,
+        output_inference_speed=5,
+        total_tokens=12,
+    )
+
+    metrics2 = RequestLevelMetrics(
+        ttft=0.2,
+        tpot=0.3,
+        e2e_latency=1.5,
+        output_latency=1.3,
+        input_throughput=15.0,
+        output_throughput=8.46,
+        num_input_tokens=3,
+        num_output_tokens=11,
+        output_inference_speed=3.3,
+        total_tokens=14,
+    )
+
+    metrics3 = RequestLevelMetrics(
+        error_code=500, error_message="Internal Server Error"
+    )
+
+    # Simulate firing the custom request_metrics event
+    locust_environment.events.request_metrics.fire(metrics=metrics1)
+    locust_environment.events.request_metrics.fire(metrics=metrics2)
+    locust_environment.events.request_metrics.fire(metrics=metrics3)
+
+    # Manually call the aggregation logic to verify results
+    start_time = 0
+    end_time = 1.5
+    aggregated_metrics_collector.aggregate_metrics_data(
+        start_time, end_time, 4.4, 0.0, 0.0
+    )
+    aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
+
+    # Check aggregate calculations
+    assert "error_message" not in aggregated_metrics.stats
+    assert aggregated_metrics.run_duration == 1.5
+    assert aggregated_metrics.stats.ttft["mean"] == pytest.approx(0.15)
+    assert aggregated_metrics.stats.tpot["mean"] == pytest.approx(0.25)
+    assert aggregated_metrics.stats.output_latency["mean"] == pytest.approx(1.1)
+    assert aggregated_metrics.stats.e2e_latency["mean"] == pytest.approx(1.25)
+    assert aggregated_metrics.stats.input_throughput["mean"] == pytest.approx(17.5)
+    assert aggregated_metrics.stats.output_throughput["mean"] == pytest.approx(9.7855)
+
+    # Check metadata calculations
+    assert aggregated_metrics.num_requests == 3
+    assert aggregated_metrics.num_completed_requests == 2
+    assert aggregated_metrics.mean_input_throughput_tokens_per_s == pytest.approx(
+        3.3333, rel=0.0001
+    )
+    assert aggregated_metrics.mean_output_throughput_tokens_per_s == 14.0
+    assert (
+        aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
+        == pytest.approx(17.33333332536, rel=0.00005)
+    )
+    assert aggregated_metrics.mean_total_chars_per_hour == pytest.approx(
+        4.4 * 17.33333332536 * 3600, rel=0.05
+    )
+    assert aggregated_metrics.requests_per_second == pytest.approx(80 / 60)
+
+    ttft, output_latency, input_throughput, output_throughput = (
+        aggregated_metrics_collector.get_ui_scatter_plot_metrics()
+    )
+    assert ttft == pytest.approx(0.15)
+    assert output_latency == pytest.approx(1.1)
+    assert input_throughput == pytest.approx(3.333333, rel=0.02)
+    assert output_throughput == 14.0
+
+
 def test_filter_metrics(aggregated_metrics_collector):
+    """Test that metrics with very small tpot are excluded from all_request_metrics."""
     metrics1 = RequestLevelMetrics(
         ttft=0.1,
         tpot=0.0000002,
@@ -718,7 +866,7 @@ class TestRequestRateMetricsIntegration:
         )
 
         # Should be able to convert to dict
-        metrics_dict = metrics.dict()
+        metrics_dict = metrics.model_dump()
         assert "request_rate" in metrics_dict
         assert metrics_dict["request_rate"] == 20.0
 
@@ -730,7 +878,7 @@ class TestRequestRateMetricsIntegration:
         )
 
         # Should be able to convert to dict
-        metadata_dict = metadata.dict()
+        metadata_dict = metadata.model_dump()
         assert "request_rate" in metadata_dict
         assert metadata_dict["request_rate"] == [5.0, 10.0, 20.0]
 

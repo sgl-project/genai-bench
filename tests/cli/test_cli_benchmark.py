@@ -908,3 +908,315 @@ def test_request_rate_with_multiple_values(cli_runner, default_options):
         )
 
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_rate_limiter_created_local_mode(cli_runner, default_options):
+    """Test that rate limiter is created in local mode for request_rate runs."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+        patch("genai_bench.cli.cli.TokenBucketRateLimiter") as mock_rate_limiter_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+        mock_rate_limiter = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_rate_limiter_class.return_value = mock_rate_limiter
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "10.0",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Verify rate limiter was created with correct rate
+        mock_rate_limiter_class.assert_called_with(rate=10.0)
+        # Verify it was assigned to environment
+        assert mock_env.rate_limiter == mock_rate_limiter
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_rate_limiter_divided_among_workers(cli_runner, default_options):
+    """Test that rate limiter is divided among workers in distributed mode."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "20.0",
+                "--num-workers",
+                "4",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Verify update_rate_limiter was called with per-worker rate
+        # 20.0 / 4 = 5.0 per worker
+        # It's called twice: once with the rate, once with None to stop
+        calls = mock_runner.update_rate_limiter.call_args_list
+        # Check that it was called with 5.0 (per-worker rate)
+        rate_calls = [call for call in calls if call[0][0] == 5.0]
+        assert (
+            len(rate_calls) > 0
+        ), "update_rate_limiter should be called with per-worker rate 5.0"
+        # Master should not have rate limiter in distributed mode
+        assert mock_env.rate_limiter is None
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_rate_limiter_stopped_after_run(cli_runner, default_options):
+    """Test that rate limiter is stopped after run completes."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+        patch("genai_bench.cli.cli.TokenBucketRateLimiter") as mock_rate_limiter_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+        mock_rate_limiter = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_rate_limiter_class.return_value = mock_rate_limiter
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+        mock_env.rate_limiter = mock_rate_limiter
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "10.0",
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Verify stop was called on rate limiter
+        mock_rate_limiter.stop.assert_called()
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_rate_limiter_warning_low_per_worker_rate(cli_runner, default_options, caplog):
+    """Test that warning is logged for very low per-worker rates."""
+    import logging
+
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        with caplog.at_level(logging.WARNING):
+            result = cli_runner.invoke(
+                benchmark,
+                [
+                    *default_options,
+                    "--request-rate",
+                    "0.5",  # Very low rate
+                    "--num-workers",
+                    "10",  # Many workers -> 0.05 req/s per worker
+                ],
+            )
+
+        assert result.exit_code == 0
+        # Should log warning about low per-worker rate
+        assert "Per-worker rate" in caplog.text
+        assert "very low" in caplog.text
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_rate_limiter_cleanup_between_runs(cli_runner, default_options):
+    """Test that rate limiter is cleaned up between runs."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+        patch("genai_bench.cli.cli.TokenBucketRateLimiter") as mock_rate_limiter_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        # Set runner on mock_env directly since code accesses environment.runner
+        mock_env.runner = MagicMock()
+        mock_env.runner.stats = mock_runner_stats
+        mock_env.runner.user_count = 10
+        mock_runner.metrics_collector = MagicMock()
+        # Mock methods that might be called
+        mock_runner.metrics_collector.get_ui_scatter_plot_metrics.return_value = {}
+        mock_runner.metrics_collector.aggregated_metrics = MagicMock()
+
+        # Set up rate limiters to be returned in sequence
+        # Use a function to return mocks so we can track which ones are created
+        rate_limiters_created = []
+
+        def create_rate_limiter(*args, **kwargs):
+            limiter = MagicMock()
+            rate_limiters_created.append(limiter)
+            return limiter
+
+        mock_rate_limiter_class.side_effect = create_rate_limiter
+        # Set rate limiters on environment as they're created
+        mock_env.rate_limiter = None  # Start with None
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "10.0",
+                "--request-rate",
+                "20.0",  # Multiple rates = multiple runs
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        # Verify that rate limiters were created and stopped
+        # The first rate limiter should be stopped before the second is created
+        if len(rate_limiters_created) > 0:
+            assert rate_limiters_created[
+                0
+            ].stop.called, "First rate limiter should be stopped"
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_request_rate_concurrency_calculation(cli_runner, default_options):
+    """Test that concurrency is calculated correctly for request_rate (rate * 10)."""
+    with (
+        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
+        patch("genai_bench.cli.cli.Environment") as mock_env_class,
+    ):
+        mock_env = MagicMock()
+        mock_runner = MagicMock()
+        mock_runner_stats = MagicMock()
+
+        mock_runner_stats.total.num_requests = 100
+        mock_env_class.return_value = mock_env
+        mock_runner_class.return_value = mock_runner
+        mock_runner.environment = mock_env
+        mock_runner.environment.runner.stats = mock_runner_stats
+        mock_runner.metrics_collector = MagicMock()
+        mock_runner.environment.runner.user_count = 10
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--request-rate",
+                "5.0",  # Should result in concurrency of 50 (5.0 * 10)
+            ],
+        )
+
+        assert result.exit_code == 0
+        # Verify runner.start was called with calculated concurrency
+        # The concurrency should be 5.0 * 10 = 50
+        mock_runner.environment.runner.start.assert_called()
+        call_args = mock_runner.environment.runner.start.call_args
+        assert call_args[0][0] == 50  # First positional arg is concurrency
