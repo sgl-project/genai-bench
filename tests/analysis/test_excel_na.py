@@ -43,6 +43,8 @@ def _agg_metrics(
     output_infer_speed_mean: float,
     ttft_mean: float = 0.5,
     e2e_latency_mean: float = 1.0,
+    request_rate: float = None,
+    iteration_type: str = "num_concurrency",
 ) -> AggregatedMetrics:
     stats = MetricStats(
         output_inference_speed=StatField(mean=output_infer_speed_mean),
@@ -52,8 +54,20 @@ def _agg_metrics(
     return AggregatedMetrics(
         scenario=scenario,
         num_concurrency=num_concurrency,
-        iteration_type="num_concurrency",
+        request_rate=request_rate,
+        iteration_type=iteration_type,
         stats=stats,
+        run_duration=60.0,
+        mean_output_throughput_tokens_per_s=100.0,
+        mean_input_throughput_tokens_per_s=100.0,
+        mean_total_tokens_throughput_tokens_per_s=200.0,
+        mean_total_chars_per_hour=1000000.0,
+        requests_per_second=10.0,
+        error_codes_frequency={},
+        error_rate=0.0,
+        num_error_requests=0,
+        num_completed_requests=600,
+        num_requests=600,
     )
 
 
@@ -191,3 +205,183 @@ def test_time_unit_conversion_milliseconds_to_seconds():
         assert (
             e2e_latency_value == 1
         ), f"Expected e2e_latency value 1s, got: {e2e_latency_value}"
+
+
+def test_summary_header_includes_request_rate():
+    """Test that summary sheet has correct header for request_rate."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario])
+    metadata.iteration_type = "request_rate"
+    metadata.request_rate = [5.0, 10.0, 20.0]
+
+    run_data = {
+        scenario: {
+            10.0: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario,
+                    10,
+                    output_infer_speed_mean=15.0,
+                    request_rate=10.0,
+                    iteration_type="request_rate",
+                ),
+                "individual_request_metrics": [{}],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "summary_request_rate.xlsx")
+        create_workbook(metadata, run_data, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+        ws = wb["Summary"]
+
+        # Check header includes "Request Rate"
+        headers = [cell.value for cell in ws[1]]
+        assert any(
+            "Request Rate" in str(h) for h in headers if h
+        ), "Summary header should include 'Request Rate'"
+
+
+def test_appendix_header_includes_request_rate():
+    """Test that appendix sheet has correct header for request_rate."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario])
+    metadata.iteration_type = "request_rate"
+    metadata.request_rate = [10.0]
+
+    run_data = {
+        scenario: {
+            10.0: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario,
+                    10,
+                    output_infer_speed_mean=15.0,
+                    request_rate=10.0,
+                    iteration_type="request_rate",
+                ),
+                "individual_request_metrics": [{}],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "appendix_request_rate.xlsx")
+        create_workbook(metadata, run_data, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+        ws = wb["Appendix"]
+
+        # Check header includes "Request Rate (req/s)"
+        headers = [cell.value for cell in ws[1]]
+        assert any(
+            "Request Rate (req/s)" in str(h) for h in headers if h
+        ), "Appendix header should include 'Request Rate (req/s)'"
+
+
+def test_merge_cells_handles_empty_scenarios():
+    """Test that merge_cells doesn't fail on empty scenarios (start_row >= end_row)."""
+    from openpyxl import Workbook
+
+    from genai_bench.analysis.excel_report import merge_cells
+
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["Header1", "Header2"])
+
+    # Test merge_cells with start_row >= end_row (should not fail)
+    # This tests the fix for ValueError in merge_cells
+    merge_cells(ws, start_row=2, end_row=2, column_index=1)  # Same row
+    merge_cells(ws, start_row=3, end_row=2, column_index=1)  # start > end
+
+    # Should not raise an exception
+    assert True
+
+
+def test_request_rate_values_displayed_correctly():
+    """Test that request_rate values are displayed correctly in appendix rows."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario])
+    metadata.iteration_type = "request_rate"
+    metadata.request_rate = [10.0]  # Use single value to avoid comparison issues
+
+    run_data = {
+        scenario: {
+            10.0: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario,
+                    100,
+                    output_infer_speed_mean=15.0,
+                    request_rate=10.0,
+                    iteration_type="request_rate",
+                ),
+                "individual_request_metrics": [{}],
+            },
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "request_rate_values.xlsx")
+        create_workbook(metadata, run_data, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+        ws = wb["Appendix"]
+
+        # Check that request_rate values appear in the correct column
+        # Find the request_rate column index
+        headers = [cell.value for cell in ws[1]]
+        request_rate_col_idx = None
+        for idx, header in enumerate(headers):
+            if header and "Request Rate" in str(header):
+                request_rate_col_idx = idx
+                break
+
+        assert request_rate_col_idx is not None, "Request Rate column not found"
+
+        # Check values in rows (skip header row)
+        values = []
+        for row in ws.iter_rows(min_row=2, max_row=2, values_only=True):
+            if row[request_rate_col_idx] is not None:
+                values.append(row[request_rate_col_idx])
+
+        # Should have request_rate value
+        assert len(values) > 0
+        # Check that the value 10.0 is preserved
+        assert 10.0 in values
+
+
+def test_request_rate_excluded_from_aggregated_metrics_sheet():
+    """Test that request_rate column is excluded from aggregated metrics sheet."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario])
+    metadata.iteration_type = "request_rate"
+    metadata.request_rate = [10.0]
+
+    run_data = {
+        scenario: {
+            10.0: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario,
+                    10,
+                    output_infer_speed_mean=15.0,
+                    request_rate=10.0,
+                    iteration_type="request_rate",
+                ),
+                "individual_request_metrics": [{}],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "aggregated_metrics.xlsx")
+        create_workbook(metadata, run_data, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+        # Check if Aggregated Metrics sheet exists
+        if "Aggregated Metrics" in wb.sheetnames:
+            ws = wb["Aggregated Metrics"]
+            headers = [cell.value for cell in ws[1]]
+            # request_rate should not be in the headers (it's excluded)
+            assert not any(
+                "request_rate" in str(h).lower() for h in headers if h
+            ), "request_rate should be excluded from Aggregated Metrics sheet"

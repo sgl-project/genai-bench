@@ -256,6 +256,53 @@ def test_message_handlers_in_distributed_mode(mock_environment, mock_dashboard):
     assert mock_environment.runner.register_message.call_count == 2
 
 
+def test_update_rate_limiter_sends_message(mock_environment, mock_dashboard):
+    """Test that update_rate_limiter() sends message to workers."""
+    config = DistributedConfig(num_workers=2)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    # Mock runner with send_message method
+    mock_environment.runner = MagicMock()
+    mock_environment.runner.send_message = MagicMock()
+
+    # Call update_rate_limiter
+    rate = 5.0
+    runner.update_rate_limiter(rate)
+
+    # Verify message was sent
+    mock_environment.runner.send_message.assert_called_once_with(
+        "update_rate_limiter", rate
+    )
+
+    # Test with None (stop signal)
+    runner.update_rate_limiter(None)
+    mock_environment.runner.send_message.assert_called_with("update_rate_limiter", None)
+
+
+def test_update_rate_limiter_local_mode(mock_environment, mock_dashboard):
+    """Test update_rate_limiter in local mode (direct assignment)."""
+    config = DistributedConfig(num_workers=0)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    # In local mode, update_rate_limiter should still work
+    # but the handler will be called directly
+    from genai_bench.rate_limiter import TokenBucketRateLimiter
+
+    rate = 10.0
+    mock_msg = MagicMock()
+    mock_msg.data = rate
+
+    # Simulate local mode handler call
+    runner._handle_rate_limiter_update(mock_environment, mock_msg)
+
+    # Should create rate limiter directly
+    assert mock_environment.rate_limiter is not None
+    assert isinstance(mock_environment.rate_limiter, TokenBucketRateLimiter)
+    assert mock_environment.rate_limiter.rate == rate
+
+
 def test_message_handling(mock_environment, mock_dashboard):
     """Test actual message handling"""
     config = DistributedConfig(num_workers=0)

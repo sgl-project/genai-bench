@@ -214,3 +214,164 @@ class TestTokenBucketRateLimiter:
         assert result is True
         # Should take at least 0.4s, at most 0.7s (with overhead)
         assert 0.4 <= elapsed <= 0.7
+
+    def test_stop_wakes_up_waiting_greenlets(self):
+        """Test that stop() method wakes up waiting greenlets."""
+        rate_limiter = TokenBucketRateLimiter(rate=1.0)
+
+        # Consume the only token
+        rate_limiter.acquire()
+
+        # Spawn a greenlet that will wait for a token
+        results = []
+
+        def acquire_token():
+            result = rate_limiter.acquire()
+            results.append(result)
+
+        greenlet = gevent.spawn(acquire_token)
+
+        # Give it a moment to start waiting
+        gevent.sleep(0.05)
+
+        # Stop the rate limiter - should wake up the waiting greenlet
+        rate_limiter.stop()
+
+        # Wait for greenlet to finish
+        greenlet.join()
+
+        # Should have returned False
+        assert len(results) == 1
+        assert results[0] is False
+
+    def test_acquire_returns_false_when_stopped(self):
+        """Test that acquire() returns False immediately when stopped."""
+        rate_limiter = TokenBucketRateLimiter(rate=10.0)
+
+        # Stop the rate limiter
+        rate_limiter.stop()
+
+        # Try to acquire - should return False immediately
+        result = rate_limiter.acquire()
+        assert result is False
+
+        # Even if tokens are available, should still return False
+        rate_limiter.reset()  # This doesn't reset stopped state
+        result = rate_limiter.acquire()
+        assert result is False
+
+    def test_concurrent_acquire_with_stop(self):
+        """Test concurrent acquire operations with stop signal."""
+        rate_limiter = TokenBucketRateLimiter(rate=1.0)
+
+        # Consume the only token
+        rate_limiter.acquire()
+
+        results = []
+
+        def acquire_token():
+            result = rate_limiter.acquire()
+            results.append(result)
+
+        # Spawn multiple greenlets that will wait
+        greenlets = [gevent.spawn(acquire_token) for _ in range(5)]
+
+        # Give them a moment to start waiting
+        gevent.sleep(0.05)
+
+        # Stop the rate limiter
+        rate_limiter.stop()
+
+        # Wait for all greenlets to finish
+        gevent.joinall(greenlets)
+
+        # All should have returned False
+        assert len(results) == 5
+        assert all(r is False for r in results)
+
+    def test_reset_doesnt_reset_stopped_state(self):
+        """Test that reset() doesn't reset the stopped state."""
+        rate_limiter = TokenBucketRateLimiter(rate=10.0)
+
+        # Consume a token
+        rate_limiter.acquire()
+        assert rate_limiter.tokens < BUCKET_SIZE
+
+        # Stop the rate limiter
+        rate_limiter.stop()
+        assert rate_limiter.stopped is True
+
+        # Reset should refill tokens but not reset stopped state
+        rate_limiter.reset()
+        assert rate_limiter.tokens == BUCKET_SIZE
+        assert rate_limiter.stopped is True  # Still stopped
+
+        # Should still return False on acquire
+        result = rate_limiter.acquire()
+        assert result is False
+
+    def test_very_low_rate_precision(self):
+        """Test rate limiter with very low rates (< 0.1 req/s) maintains precision."""
+        rate_limiter = TokenBucketRateLimiter(rate=0.05)  # 0.05 req/s = 1 req per 20s
+
+        # Consume the only token
+        result = rate_limiter.acquire()
+        assert result is True
+
+        # Next token should take approximately 20 seconds
+        # We'll test with a shorter wait to verify it's working
+        # but use a longer timeout to ensure it doesn't timeout too early
+        start_time = time.monotonic()
+        result = rate_limiter.acquire(timeout=25.0)  # Should succeed within timeout
+        elapsed = time.monotonic() - start_time
+
+        assert result is True
+        # Should take approximately 20 seconds (allow some tolerance)
+        assert 18.0 <= elapsed <= 22.0
+
+    def test_very_low_rate_multiple_workers(self):
+        """Test very low per-worker rate (simulating distributed mode)."""
+        # Simulate a scenario where total rate is 0.5 req/s divided among 10 workers
+        per_worker_rate = 0.5 / 10  # 0.05 req/s per worker
+        rate_limiter = TokenBucketRateLimiter(rate=per_worker_rate)
+
+        # Should still work, just slowly
+        result = rate_limiter.acquire()
+        assert result is True
+
+        # Verify the rate is correct
+        assert rate_limiter.get_current_rate() == per_worker_rate
+
+    def test_stop_after_acquire(self):
+        """Test that stop() works correctly after tokens have been acquired."""
+        rate_limiter = TokenBucketRateLimiter(rate=10.0)
+
+        # Acquire a token successfully
+        result = rate_limiter.acquire()
+        assert result is True
+
+        # Stop the rate limiter
+        rate_limiter.stop()
+
+        # Future acquires should return False
+        result = rate_limiter.acquire()
+        assert result is False
+
+    def test_acquire_with_timeout_after_stop(self):
+        """Test acquire with timeout when rate limiter is stopped."""
+        rate_limiter = TokenBucketRateLimiter(rate=1.0)
+
+        # Consume the only token
+        rate_limiter.acquire()
+
+        # Stop the rate limiter
+        rate_limiter.stop()
+
+        # Try to acquire with timeout - should return False immediately
+        start_time = time.monotonic()
+        result = rate_limiter.acquire(timeout=5.0)
+        elapsed = time.monotonic() - start_time
+
+        assert result is False
+        # Should return immediately, not wait for timeout
+        assert elapsed < 0.1

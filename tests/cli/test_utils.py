@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from genai_bench.cli.utils import get_experiment_path, manage_run_time
+from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
 
 
 @pytest.fixture
@@ -142,3 +142,86 @@ def test_get_experiment_path_existing_folder(mock_logger, tmp_path):
 
     assert path == folder_path
     mock_logger.warning.assert_called_once()
+
+
+class TestGetRunParams:
+    """Test get_run_params function with different iteration types."""
+
+    def test_get_run_params_with_request_rate(self):
+        """Test get_run_params() with iteration_type='request_rate'."""
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=10.0
+        )
+
+        assert header == "Request Rate"
+        assert batch_size == 1
+        # Concurrency should be rate * 10 = 100
+        assert num_concurrency == 100
+
+    def test_get_run_params_request_rate_calculates_concurrency(self):
+        """Test that concurrency is calculated as rate * 10 for request_rate."""
+        # Test with rate 5.0 -> concurrency should be 50
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=5.0
+        )
+        assert num_concurrency == 50
+
+        # Test with rate 2.5 -> concurrency should be 25
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=2.5
+        )
+        assert num_concurrency == 25
+
+    def test_get_run_params_request_rate_fractional_values(self):
+        """Test get_run_params() handles fractional request_rate values."""
+        # Test with fractional rate
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=2.5
+        )
+
+        assert header == "Request Rate"
+        assert batch_size == 1
+        # 2.5 * 10 = 25
+        assert num_concurrency == 25
+
+        # Test with very small fractional rate
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=0.1
+        )
+        # 0.1 * 10 = 1, but minimum is 10
+        assert num_concurrency == 10
+
+    def test_get_run_params_request_rate_minimum_concurrency(self):
+        """Test get_run_params() ensures minimum concurrency of 10 for request_rate."""
+        # Test with very low rate that would give < 10 concurrency
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=0.5
+        )
+        # 0.5 * 10 = 5, but should be clamped to minimum of 10
+        assert num_concurrency == 10
+
+        # Test with rate that gives exactly 10
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=1.0
+        )
+        assert num_concurrency == 10
+
+    def test_get_run_params_with_batch_size(self):
+        """Test get_run_params() with batch_size iteration type."""
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="batch_size", iteration_value=32
+        )
+
+        assert header == "Batch Size"
+        assert batch_size == 32
+        assert num_concurrency == 1
+
+    def test_get_run_params_with_num_concurrency(self):
+        """Test get_run_params() with num_concurrency iteration type."""
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="num_concurrency", iteration_value=16
+        )
+
+        assert header == "Concurrency"
+        assert batch_size == 1
+        assert num_concurrency == 16
