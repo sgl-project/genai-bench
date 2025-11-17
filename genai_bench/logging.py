@@ -118,7 +118,6 @@ class LoggingManager:
         """Initialize logging based on command type."""
         log_level = os.getenv("GENAI_BENCH_LOGGING_LEVEL", "INFO").upper()
         enable_ui_str = os.getenv("ENABLE_UI", "true").lower()
-        # Support: true, TRUE, True, 1, yes, YES, Yes, on, ON, On
         enable_ui = enable_ui_str in ("true", "1", "yes", "on")
 
         if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
