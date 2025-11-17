@@ -401,11 +401,12 @@ def test_validate_iteration_params_with_request_rate():
     ctx = click.Context(click.Command("test"))
     param = None
 
-    # Test with request_rate provided
+    # Test with request_rate provided (without explicit num_concurrency)
     with patch("click.echo") as mock_echo:
         ctx.params = {
             "task": "text-to-text",
-            "num_concurrency": [1, 2, 4],
+            # Defaults, not explicitly provided
+            "num_concurrency": DEFAULT_NUM_CONCURRENCIES,
             "batch_size": [8, 16],
             "request_rate": [5.0, 10.0, 20.0],
         }
@@ -420,9 +421,10 @@ def test_validate_iteration_params_with_request_rate():
         assert ctx.params["batch_size"] == [1]
 
     # Test with request_rate and explicit iteration_type
+    # (without explicit num_concurrency)
     ctx.params = {
         "task": "text-to-text",
-        "num_concurrency": [1, 2],
+        "num_concurrency": DEFAULT_NUM_CONCURRENCIES,  # Defaults
         "request_rate": [10.0],
     }
     result = validate_iteration_params(ctx, param, "request_rate")
@@ -463,19 +465,43 @@ def test_validate_iteration_params_request_rate_validates_positive():
     assert result == "request_rate"
 
 
-def test_validate_iteration_params_request_rate_overrides_num_concurrency():
-    """Test that request_rate overrides num_concurrency when provided."""
+def test_validate_iteration_params_mutually_exclusive():
+    """Test that request_rate and num_concurrency are mutually exclusive."""
     ctx = click.Context(click.Command("test"))
     param = None
 
+    # Test that providing both explicitly raises an error
     ctx.params = {
         "task": "text-to-text",
-        "num_concurrency": [1, 5, 10],
+        "num_concurrency": [1, 5, 10],  # Explicitly provided, not defaults
+        "request_rate": [2.5, 5.0],
+    }
+    with pytest.raises(
+        click.BadParameter,
+        match="--num-concurrency and --request-rate are mutually exclusive",
+    ):
+        validate_iteration_params(ctx, param, "num_concurrency")
+
+    # Test with different explicit num_concurrency values
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": [2, 4, 8],  # Explicitly provided
+        "request_rate": [1.0],
+    }
+    with pytest.raises(
+        click.BadParameter,
+        match="--num-concurrency and --request-rate are mutually exclusive",
+    ):
+        validate_iteration_params(ctx, param, "num_concurrency")
+
+    # Test that defaults are allowed (user didn't explicitly provide --num-concurrency)
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": DEFAULT_NUM_CONCURRENCIES,  # Defaults
         "request_rate": [2.5, 5.0],
     }
     result = validate_iteration_params(ctx, param, "num_concurrency")
     assert result == "request_rate"
-    # num_concurrency should be set to [1] for request_rate runs
     assert ctx.params["num_concurrency"] == [1]
 
 
