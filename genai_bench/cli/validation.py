@@ -202,6 +202,31 @@ def validate_iteration_params(ctx, param, value) -> str:
     batch_size = ctx.params.get("batch_size", [])
     request_rate = ctx.params.get("request_rate")
 
+    # Check for mutual exclusivity: --num-concurrency and --request-rate
+    # cannot both be provided (excluding embedding/rerank tasks which use
+    # batch_size)
+    if (
+        task != "text-to-embeddings"
+        and task != "text-to-rerank"
+        and request_rate
+        and num_concurrency
+    ):
+        # If request_rate is provided, check if num_concurrency was explicitly
+        # set (not just using defaults). We allow:
+        # - Empty list or None (not provided)
+        # - DEFAULT_NUM_CONCURRENCIES (defaults, user didn't explicitly
+        #   provide)
+        # - [1] (what we'd use for request_rate anyway)
+        # We error if num_concurrency is explicitly set to something else
+        # Convert to lists for comparison (handles tuples, etc.)
+        num_conc_list = list(num_concurrency)
+        default_list = list(DEFAULT_NUM_CONCURRENCIES)
+        if num_conc_list != [1] and num_conc_list != default_list:
+            raise click.BadParameter(
+                "--num-concurrency and --request-rate are mutually exclusive. "
+                "Please provide only one."
+            )
+
     # For text-to-embeddings tasks, always use batch_size iteration
     if task == "text-to-embeddings" or task == "text-to-rerank":
         if value != "batch_size":
@@ -225,9 +250,11 @@ def validate_iteration_params(ctx, param, value) -> str:
                 "was provided"
             )
         value = "request_rate"
-        # For request_rate, we'll use a moderate concurrency level
-        # The rate limiter controls the actual rate
-        num_concurrency = [1]  # Will be adjusted dynamically
+        # For request_rate, concurrency is calculated dynamically based on the rate
+        # We don't use the provided num_concurrency values
+        num_concurrency = [
+            1
+        ]  # Placeholder, actual concurrency calculated in get_run_params
         batch_size = [1]
 
     # For all other tasks, use num_concurrency iteration

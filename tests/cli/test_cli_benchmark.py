@@ -58,6 +58,30 @@ def default_options():
 
 
 @pytest.fixture
+def request_rate_options():
+    """Default command options for tests using --request-rate
+    (without --num-concurrency)"""
+    return [
+        "--api-backend",
+        "openai",
+        "--api-base",
+        "https://api.openai.com",
+        "--api-key",
+        "test_key",
+        "--task",
+        "text-to-text",
+        "--api-model-name",
+        "gpt-3.5-turbo",
+        "--model-tokenizer",
+        "gpt2",
+        "--max-time-per-run",
+        "1",
+        "--max-requests-per-run",
+        "5",
+    ]
+
+
+@pytest.fixture
 def mock_env_variables():
     with patch.dict("os.environ", {"HF_TOKEN": "dummy_key"}):
         yield  # Yield ensures the patch is active for the duration of the test
@@ -747,13 +771,13 @@ def test_spawn_rate_option_in_help(cli_runner):
     "mock_experiment_path",
 )
 def test_benchmark_command_with_request_rate(
-    cli_runner, default_options, mock_report_and_plot
+    cli_runner, request_rate_options, mock_report_and_plot
 ):
     """Test benchmark command with request-rate option."""
     result = cli_runner.invoke(
         benchmark,
         [
-            *default_options,
+            *request_rate_options,
             "--request-rate",
             "10.0",
             "--request-rate",
@@ -779,7 +803,7 @@ def test_benchmark_command_with_request_rate(
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_benchmark_request_rate_iteration_type(cli_runner, default_options):
+def test_benchmark_request_rate_iteration_type(cli_runner, request_rate_options):
     """Test that request_rate option sets iteration_type correctly."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -800,7 +824,7 @@ def test_benchmark_request_rate_iteration_type(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "5.0",
             ],
@@ -822,7 +846,7 @@ def test_benchmark_request_rate_iteration_type(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_benchmark_request_rate_creates_rate_limiter(cli_runner, default_options):
+def test_benchmark_request_rate_creates_rate_limiter(cli_runner, request_rate_options):
     """Test that request_rate run creates a TokenBucketRateLimiter."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -846,7 +870,7 @@ def test_benchmark_request_rate_creates_rate_limiter(cli_runner, default_options
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "15.0",
             ],
@@ -876,7 +900,7 @@ def test_request_rate_option_in_help(cli_runner):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_request_rate_with_multiple_values(cli_runner, default_options):
+def test_request_rate_with_multiple_values(cli_runner, request_rate_options):
     """Test request_rate with multiple values runs correctly."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -897,7 +921,7 @@ def test_request_rate_with_multiple_values(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "5.0",
                 "--request-rate",
@@ -921,7 +945,7 @@ def test_request_rate_with_multiple_values(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_rate_limiter_created_local_mode(cli_runner, default_options):
+def test_rate_limiter_created_local_mode(cli_runner, request_rate_options):
     """Test that rate limiter is created in local mode for request_rate runs."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -945,7 +969,7 @@ def test_rate_limiter_created_local_mode(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "10.0",
             ],
@@ -969,7 +993,7 @@ def test_rate_limiter_created_local_mode(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_rate_limiter_divided_among_workers(cli_runner, default_options):
+def test_rate_limiter_divided_among_workers(cli_runner, request_rate_options):
     """Test that rate limiter is divided among workers in distributed mode."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -990,7 +1014,7 @@ def test_rate_limiter_divided_among_workers(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "20.0",
                 "--num-workers",
@@ -1023,7 +1047,7 @@ def test_rate_limiter_divided_among_workers(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_rate_limiter_stopped_after_run(cli_runner, default_options):
+def test_rate_limiter_stopped_after_run(cli_runner, request_rate_options):
     """Test that rate limiter is stopped after run completes."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -1048,7 +1072,7 @@ def test_rate_limiter_stopped_after_run(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "10.0",
             ],
@@ -1070,7 +1094,9 @@ def test_rate_limiter_stopped_after_run(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_rate_limiter_warning_low_per_worker_rate(cli_runner, default_options, caplog):
+def test_rate_limiter_warning_low_per_worker_rate(
+    cli_runner, request_rate_options, caplog
+):
     """Test that warning is logged for very low per-worker rates."""
     import logging
 
@@ -1094,7 +1120,7 @@ def test_rate_limiter_warning_low_per_worker_rate(cli_runner, default_options, c
             result = cli_runner.invoke(
                 benchmark,
                 [
-                    *default_options,
+                    *request_rate_options,
                     "--request-rate",
                     "0.5",  # Very low rate
                     "--num-workers",
@@ -1119,7 +1145,7 @@ def test_rate_limiter_warning_low_per_worker_rate(cli_runner, default_options, c
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_rate_limiter_cleanup_between_runs(cli_runner, default_options):
+def test_rate_limiter_cleanup_between_runs(cli_runner, request_rate_options):
     """Test that rate limiter is cleaned up between runs."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -1159,7 +1185,7 @@ def test_rate_limiter_cleanup_between_runs(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "10.0",
                 "--request-rate",
@@ -1187,7 +1213,7 @@ def test_rate_limiter_cleanup_between_runs(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_request_rate_concurrency_calculation(cli_runner, default_options):
+def test_request_rate_concurrency_calculation(cli_runner, request_rate_options):
     """Test that concurrency is calculated correctly for request_rate (rate * 10)."""
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
@@ -1208,7 +1234,7 @@ def test_request_rate_concurrency_calculation(cli_runner, default_options):
         result = cli_runner.invoke(
             benchmark,
             [
-                *default_options,
+                *request_rate_options,
                 "--request-rate",
                 "5.0",  # Should result in concurrency of 50 (5.0 * 10)
             ],
@@ -1220,3 +1246,32 @@ def test_request_rate_concurrency_calculation(cli_runner, default_options):
         mock_runner.environment.runner.start.assert_called()
         call_args = mock_runner.environment.runner.start.call_args
         assert call_args[0][0] == 50  # First positional arg is concurrency
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_validate_tokenizer",
+)
+def test_benchmark_request_rate_and_num_concurrency_mutually_exclusive(
+    cli_runner, request_rate_options
+):
+    """Test that providing both --request-rate and --num-concurrency
+    (with non-default values) raises an error."""
+    result = cli_runner.invoke(
+        benchmark,
+        [
+            *request_rate_options,
+            "--num-concurrency",
+            "5",  # Non-default value
+            "--num-concurrency",
+            "10",  # Non-default value
+            "--request-rate",
+            "2.5",
+        ],
+    )
+    assert result.exit_code != 0
+    assert (
+        "mutually exclusive" in result.output.lower()
+        or "--num-concurrency and --request-rate are mutually exclusive"
+        in result.output
+    )

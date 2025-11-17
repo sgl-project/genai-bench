@@ -552,6 +552,7 @@ def experiment_options(func):
         default=DEFAULT_NUM_CONCURRENCIES,
         help="""
                 List of concurrency levels to run the experiment with.
+                Mutually exclusive with --request-rate.
 
                 \b
                 Example to input multiple values:
@@ -569,6 +570,7 @@ def experiment_options(func):
         help="""
                 List of target request rates (requests/second) to test.
                 Uses token bucket rate limiting for precise rate control.
+                Mutually exclusive with --num-concurrency.
 
                 \b
                 Example to input multiple values:
