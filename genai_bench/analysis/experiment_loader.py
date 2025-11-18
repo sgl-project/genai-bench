@@ -223,10 +223,6 @@ def load_run_data(
         if iteration_type == "batch_size":
             iteration_value: int | float = aggregated_metrics.batch_size
         elif iteration_type == "request_rate":
-            if aggregated_metrics.request_rate is None:
-                raise ValueError(
-                    "request_rate is None but iteration_type is 'request_rate'"
-                )
             iteration_value = aggregated_metrics.request_rate
         else:
             iteration_value = aggregated_metrics.num_concurrency

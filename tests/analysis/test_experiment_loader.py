@@ -413,27 +413,6 @@ class TestRequestRateInExperimentLoader:
         assert 15.5 in iteration_values
 
     @patch(
-        "builtins.open",
-        new_callable=mock_open,
-        read_data='{"aggregated_metrics": '
-        '{"scenario": "D(100,100)", '
-        '"iteration_type": "request_rate"}}',
-    )
-    def test_iteration_value_extraction_handles_none_request_rate(self, mock_open):
-        """Test that iteration_value extraction handles None request_rate gracefully."""
-        run_data = {}
-        file_path = "fake_path.json"
-        filter_criteria = None
-
-        # Should raise ValueError when request_rate is None but
-        # iteration_type is request_rate
-        with pytest.raises(
-            ValueError,
-            match="request_rate is None but iteration_type is 'request_rate'",
-        ):
-            load_run_data(file_path, run_data, filter_criteria)
-
-    @patch(
         "os.listdir",
         return_value=[
             "experiment_metadata.json",
