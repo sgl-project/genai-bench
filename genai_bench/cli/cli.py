@@ -337,6 +337,7 @@ def benchmark(
         task=task,
         num_concurrency=num_concurrency,
         batch_size=batch_size,
+        request_rate=request_rate,
         iteration_type=iteration_type,
         traffic_scenario=traffic_scenario,
         server_engine=server_engine,
@@ -450,15 +451,6 @@ def benchmark(
                                 f"higher target rate for better accuracy."
                             )
 
-                        # Ensure minimum rate for each worker
-                        # (rate limiter requires > 0)
-                        if per_worker_rate <= 0:
-                            raise ValueError(
-                                f"Cannot divide rate {iteration:.2f} req/s among "
-                                f"{num_workers} workers. Per-worker rate would be "
-                                f"{per_worker_rate:.4f} req/s (must be > 0)."
-                            )
-
                         runner.update_rate_limiter(per_worker_rate)
                         logger.info(
                             f"🪣 Distributed mode: Target rate {iteration:.2f} req/s "
@@ -470,7 +462,6 @@ def benchmark(
                         environment.rate_limiter = None
                     else:
                         # Local mode: create rate limiter directly
-                        # BUCKET_SIZE=1 ensures constant rate without bursts
                         environment.rate_limiter = TokenBucketRateLimiter(
                             rate=iteration,  # iteration value is the target rate
                         )
@@ -510,7 +501,6 @@ def benchmark(
                 # For request_rate runs, stop the rate limiter to clean up
                 # pending acquisitions
                 if iteration_type == "request_rate":
-                    # Stop rate limiter to wake up any waiting greenlets
                     if (
                         hasattr(environment, "rate_limiter")
                         and environment.rate_limiter
@@ -525,7 +515,7 @@ def benchmark(
                     if num_workers > 0:
                         # Send message to workers to stop their rate limiters
                         runner.update_rate_limiter(None)  # None signals stop
-                        time.sleep(0.1)  # Brief wait for message processing
+                        time.sleep(0.5)  # Brief wait for message processing
 
                 environment.runner.stop()
 

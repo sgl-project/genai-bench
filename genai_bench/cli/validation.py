@@ -202,6 +202,13 @@ def validate_iteration_params(ctx, param, value) -> str:
     batch_size = ctx.params.get("batch_size", [])
     request_rate = ctx.params.get("request_rate")
 
+    if value == "request_rate" and (request_rate is None or not request_rate):
+        raise click.BadParameter(
+            "--request-rate is required when --iteration-type "
+            "is set to 'request_rate'. "
+            "Please provide --request-rate values."
+        )
+
     # Check for mutual exclusivity: --num-concurrency and --request-rate
     # cannot both be provided (excluding embedding/rerank tasks which use
     # batch_size)

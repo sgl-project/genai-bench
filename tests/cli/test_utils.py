@@ -149,62 +149,30 @@ class TestGetRunParams:
 
     def test_get_run_params_with_request_rate(self):
         """Test get_run_params() with iteration_type='request_rate'."""
+        # Test with integer rate
         header, batch_size, num_concurrency = get_run_params(
             iteration_type="request_rate", iteration_value=10.0
         )
-
         assert header == "Request Rate"
         assert batch_size == 1
-        # Concurrency should be rate * 10 = 100
-        assert num_concurrency == 100
+        # Concurrency should be rate * 100 = 1000
+        assert num_concurrency == 1000
 
-    def test_get_run_params_request_rate_calculates_concurrency(self):
-        """Test that concurrency is calculated as rate * 10 for request_rate."""
-        # Test with rate 5.0 -> concurrency should be 50
-        header, batch_size, num_concurrency = get_run_params(
-            iteration_type="request_rate", iteration_value=5.0
-        )
-        assert num_concurrency == 50
-
-        # Test with rate 2.5 -> concurrency should be 25
-        header, batch_size, num_concurrency = get_run_params(
-            iteration_type="request_rate", iteration_value=2.5
-        )
-        assert num_concurrency == 25
-
-    def test_get_run_params_request_rate_fractional_values(self):
-        """Test get_run_params() handles fractional request_rate values."""
         # Test with fractional rate
         header, batch_size, num_concurrency = get_run_params(
             iteration_type="request_rate", iteration_value=2.5
         )
-
         assert header == "Request Rate"
         assert batch_size == 1
-        # 2.5 * 10 = 25
-        assert num_concurrency == 25
+        # 2.5 * 100 = 250
+        assert num_concurrency == 250
 
-        # Test with very small fractional rate
-        header, batch_size, num_concurrency = get_run_params(
-            iteration_type="request_rate", iteration_value=0.1
-        )
-        # 0.1 * 10 = 1, but minimum is 10
-        assert num_concurrency == 10
-
-    def test_get_run_params_request_rate_minimum_concurrency(self):
-        """Test get_run_params() ensures minimum concurrency of 10 for request_rate."""
-        # Test with very low rate that would give < 10 concurrency
+        # Test with small rate
         header, batch_size, num_concurrency = get_run_params(
             iteration_type="request_rate", iteration_value=0.5
         )
-        # 0.5 * 10 = 5, but should be clamped to minimum of 10
-        assert num_concurrency == 10
-
-        # Test with rate that gives exactly 10
-        header, batch_size, num_concurrency = get_run_params(
-            iteration_type="request_rate", iteration_value=1.0
-        )
-        assert num_concurrency == 10
+        # 0.5 * 100 = 50
+        assert num_concurrency == 50
 
     def test_get_run_params_with_batch_size(self):
         """Test get_run_params() with batch_size iteration type."""
