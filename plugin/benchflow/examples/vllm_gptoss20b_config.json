@@ -1,0 +1,60 @@
+{
+  "execution_mode": "sequential",
+  "max_parallel": 2,
+  "workflows": [
+    {
+      "name": "gpt-oss-20b-vllm",
+      "service": {
+        "container_name": "vllm-0.10.2-gpt-oss-20b",
+        "image": "vllm/vllm-openai",
+        "version": "v0.10.2",
+        "shm_size": "32g",
+        "num_gpu_devices": 1,
+        "port": 8080,
+        "volumes": ["/mnt/data/models:/models:ro"],
+        "env_vars": {
+          "HUGGING_FACE_HUB_TOKEN": "YOUR_HF_TOKEN"
+        },
+        "start_mode": "flags",
+        "extra_args": [
+          "--model=/models/openai/gpt-oss-20b",
+          "--served-model-name=vllm-model",
+          "--port=8080",
+          "--host=0.0.0.0",
+          "--tensor-parallel-size=1",
+          "--max-num-seqs=32",
+          "--max-model-len=131072",
+          "--gpu-memory-utilization=0.95"
+        ]
+      },
+      "bench": {
+        "container_name": "genai-bench-gpt-oss-20b",
+        "image": "ghcr.io/moirai-internal/genai-bench",
+        "version": "v0.0.2",
+        "volumes": [
+          "/mnt/data/models:/models:ro",
+          "/home/genhuang/benchmark_results:/results:rw"
+        ],
+        "env_vars": {
+          "GENAI_BENCH_LOGGING_LEVEL": "INFO"
+        },
+        "extra_args": [
+          "--api-backend", "openai",
+          "--api-base", "http://vllm-0.10.2-gpt-oss-20b:8080",
+          "--api-key", "dummy",
+          "--api-model-name", "vllm-model",
+          "--model-tokenizer", "/models/openai/gpt-oss-20b",
+          "--task", "text-to-text",
+          "--max-time-per-run", "15",
+          "--max-requests-per-run", "300",
+          "--server-engine", "vLLM",
+          "--server-gpu-type", "A100-40G",
+          "--server-version", "v0.10.2",
+          "--server-gpu-count", "1",
+          "--traffic-scenario", "D(100,1000)",
+          "--num-concurrency", "32"
+        ]
+      }
+    }
+  ]
+}

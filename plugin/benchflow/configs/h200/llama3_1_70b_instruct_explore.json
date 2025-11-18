@@ -1,0 +1,155 @@
+{
+  "execution_mode": "parallel",
+  "max_parallel": 2,
+  "workflows": [
+    {
+      "name": "llama-3.1-70b-tp4",
+      "service": {
+        "image": "vllm/vllm-openai",
+        "version": "v0.6.3.post1",
+        "shm_size": "15g",
+        "num_gpu_devices": 4,
+        "port": 8080,
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "HUGGING_FACE_HUB_TOKEN": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--model=/models/Llama-3.1-70B-Instruct",
+          "--served-model-name=vllm-model",
+          "--tensor-parallel-size=4",
+          "--max-model-len=131072",
+          "--gpu-memory-utilization=0.9",
+          "--enable-chunked-prefill",
+          "--num-scheduler-steps=8",
+          "--multi-step-stream-outputs"
+        ]
+      },
+      "bench": {
+        "image": "phx.ocir.io/idqj093njucb/genai-bench",
+        "version": "0.1.85",
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "GENAI_BENCH_LOGGING_LEVEL": "INFO",
+          "HUGGINGFACE_API_KEY": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--api-key=your_api_key",
+          "--api-model-name=vllm-model",
+          "--model-tokenizer=/models/Llama-3.1-70B-Instruct",
+          "--task=text-to-text",
+          "--max-time-per-run=15",
+          "--max-requests-per-run=300",
+          "--server-engine=vLLM",
+          "--server-gpu-type=H200",
+          "--server-version=v0.6.3.post1",
+          "--server-gpu-count=4"
+        ]
+      }
+    },
+    {
+      "name": "llama-3.1-70b-tp4-quantization",
+      "service": {
+        "image": "vllm/vllm-openai",
+        "version": "v0.6.3.post1",
+        "shm_size": "15g",
+        "num_gpu_devices": 4,
+        "port": 8080,
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "HUGGING_FACE_HUB_TOKEN": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--model=/models/Llama-3.1-70B-Instruct",
+          "--served-model-name=vllm-model",
+          "--tensor-parallel-size=4",
+          "--max-model-len=131072",
+          "--gpu-memory-utilization=0.9",
+          "--enable-chunked-prefill",
+          "--num-scheduler-steps=8",
+          "--multi-step-stream-outputs",
+          "--quantization=fp8"
+        ]
+      },
+      "bench": {
+        "image": "phx.ocir.io/idqj093njucb/genai-bench",
+        "version": "0.1.85",
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "GENAI_BENCH_LOGGING_LEVEL": "INFO",
+          "HUGGINGFACE_API_KEY": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--api-key=your_api_key",
+          "--api-model-name=vllm-model",
+          "--model-tokenizer=/models/Llama-3.1-70B-Instruct",
+          "--model=Llama-3.1-70B-Instruct-FP8-on-the-fly",
+          "--task=text-to-text",
+          "--max-time-per-run=15",
+          "--max-requests-per-run=300",
+          "--server-engine=vLLM",
+          "--server-gpu-type=H200",
+          "--server-version=v0.6.3.post1",
+          "--server-gpu-count=4"
+        ]
+      }
+    },
+    {
+      "name": "llama-3.1-70b-tp2",
+      "service": {
+        "image": "vllm/vllm-openai",
+        "version": "v0.6.3.post1",
+        "shm_size": "15g",
+        "num_gpu_devices": 2,
+        "port": 8080,
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "HUGGING_FACE_HUB_TOKEN": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--model=/models/Llama-3.1-70B-Instruct",
+          "--served-model-name=vllm-model",
+          "--tensor-parallel-size=2",
+          "--max-model-len=131072",
+          "--gpu-memory-utilization=0.9",
+          "--enable-chunked-prefill",
+          "--num-scheduler-steps=8",
+          "--multi-step-stream-outputs"
+        ]
+      },
+      "bench": {
+        "image": "phx.ocir.io/idqj093njucb/genai-bench",
+        "version": "0.1.85",
+        "volumes": [
+          "/raid/models/meta-llama:/models:ro"
+        ],
+        "env_vars": {
+          "GENAI_BENCH_LOGGING_LEVEL": "INFO",
+          "HUGGINGFACE_API_KEY": "<your-huggingface-token>"
+        },
+        "extra_args": [
+          "--api-key=your_api_key",
+          "--api-model-name=vllm-model",
+          "--model-tokenizer=/models/Llama-3.1-70B-Instruct",
+          "--task=text-to-text",
+          "--max-time-per-run=15",
+          "--max-requests-per-run=300",
+          "--server-engine=vLLM",
+          "--server-gpu-type=H200",
+          "--server-version=v0.6.3.post1",
+          "--server-gpu-count=2"
+        ]
+      }
+    }
+  ]
+}

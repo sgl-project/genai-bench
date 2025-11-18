@@ -1,0 +1,67 @@
+{
+  "execution_mode": "sequential",
+  "max_parallel": 1,
+  "workflows": [
+    {
+      "name": "gpt-oss-20b-sglang",
+      "service": {
+        "container_name": "sgl-gpt-oss-20b-genhuang",
+        "image": "ord.ocir.io/idqj093njucb/official-sgl",
+        "version": "v0.5.3.post1.8c4b18c-cu129",
+        "shm_size": "32g",
+        "num_gpu_devices": 1,
+        "port": 8080,
+        "volumes": [
+          "/mnt/data/models:/models"
+        ],
+        "env_vars": {},
+        "start_mode": "command",
+        "extra_args": [
+          "python3",
+          "-m",
+          "sglang.launch_server",
+          "--host=0.0.0.0",
+          "--model-path=/models/openai/gpt-oss-20b",
+          "--port=8080",
+          "--enable-metrics",
+          "--log-requests",
+          "--mem-fraction-static=0.9",
+          "--tensor-parallel-size=1",
+          "--tool-call-parser=gpt-oss",
+          "--reasoning-parser=gpt-oss",
+          "--context-length=131072",
+          "--log-requests-level=1"
+        ]
+      },
+      "bench": {
+        "container_name": "genai-bench-gpt-oss-20b-sglang",
+        "image": "ghcr.io/moirai-internal/genai-bench",
+        "version": "v0.0.2",
+        "volumes": [
+          "/mnt/data/models:/models",
+          "/home/genhuang/benchmark_results:/results"
+        ],
+        "env_vars": {
+          "GENAI_BENCH_LOGGING_LEVEL": "INFO"
+        },
+        "extra_args": [
+          "--api-backend", "openai",
+          "--api-base", "http://sgl-gpt-oss-20b-genhuang:8080",
+          "--api-key", "dummy",
+          "--api-model-name", "gpt-oss-20b",
+          "--model-tokenizer", "/models/openai/gpt-oss-20b",
+          "--task", "text-to-text",
+          "--max-time-per-run", "15",
+          "--max-requests-per-run", "300",
+          "--server-engine", "SGLang",
+          "--server-gpu-type", "A100-40G",
+          "--server-version", "v0.5.3.post1.8c4b18c",
+          "--server-gpu-count", "1",
+          "--traffic-scenario", "D(100,1000)",
+          "--num-concurrency", "32",
+          "--experiment-base-dir", "/results/gpt-oss-20b-sglang"
+        ]
+      }
+    }
+  ]
+}

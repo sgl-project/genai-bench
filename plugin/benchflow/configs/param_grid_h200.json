@@ -1,0 +1,15 @@
+{
+   "workflows.service.volumes":[
+      [
+         "/raid/models/meta-llama:/models:ro"
+      ]
+   ],
+   "workflows.bench.volumes":[
+      [
+         "/raid/models/meta-llama:/models:ro",
+         "/home/ubuntu/images:/genai-bench/images:rw"
+      ]
+   ],
+   "workflow.bench.extra_args.server-gpu-type": ["H100"],
+   "workflows.service.extra_args.tensor-parallel-size": [2]
+}

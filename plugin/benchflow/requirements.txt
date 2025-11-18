@@ -1,0 +1,12 @@
+# Core dependencies
+click>=8.0.0
+docker>=6.1.0
+requests>=2.31.0
+pydantic>=2.0.0
+
+# Async support
+aiohttp>=3.8.0
+asyncio>=3.4.3
+
+# GPU
+nvidia-ml-py3>=7.352.0

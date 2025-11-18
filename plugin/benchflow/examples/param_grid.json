@@ -1,0 +1,4 @@
+{
+    "workflows.service.version": ["v0.6.3.post1", "v0.5.3.post1"],
+    "workflows.service.extra_args.tensor-parallel-size": [1, 2, 4]
+} 
