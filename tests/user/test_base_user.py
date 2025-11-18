@@ -123,8 +123,9 @@ class TestBaseUser:
         mock_environment.rate_limiter = rate_limiter
 
         user = ConcreteUser(environment=mock_environment)
-        # Should succeed and return None (no exception)
-        user.acquire_rate_limit_token()
+        # Should succeed and return True
+        result = user.acquire_rate_limit_token()
+        assert result is True
 
         # Token should have been consumed
         assert rate_limiter.get_available_tokens() < BUCKET_SIZE
@@ -136,8 +137,9 @@ class TestBaseUser:
         mock_environment.rate_limiter = rate_limiter
 
         user = ConcreteUser(environment=mock_environment)
-        # Should return None without raising exception (graceful handling)
-        user.acquire_rate_limit_token()
+        # Should return False when rate limiter is stopped
+        result = user.acquire_rate_limit_token()
+        assert result is False
 
         # Should not have consumed a token since limiter is stopped
         # (acquire returns False when stopped)
@@ -147,8 +149,9 @@ class TestBaseUser:
         mock_environment.rate_limiter = None
 
         user = ConcreteUser(environment=mock_environment)
-        # Should return None without doing anything
-        user.acquire_rate_limit_token()
+        # Should return True when no rate limiter exists
+        result = user.acquire_rate_limit_token()
+        assert result is True
 
     def test_acquire_rate_limit_token_no_rate_limiter_attribute(self, mock_environment):
         """Test acquire_rate_limit_token() when environment has no rate_limiter attr."""
@@ -157,8 +160,9 @@ class TestBaseUser:
             delattr(mock_environment, "rate_limiter")
 
         user = ConcreteUser(environment=mock_environment)
-        # Should return None without raising AttributeError
-        user.acquire_rate_limit_token()
+        # Should return True without raising AttributeError
+        result = user.acquire_rate_limit_token()
+        assert result is True
 
     def test_acquire_rate_limit_token_blocks_until_token_available(
         self, mock_environment
@@ -176,11 +180,12 @@ class TestBaseUser:
         import time
 
         start_time = time.monotonic()
-        user.acquire_rate_limit_token()
+        result = user.acquire_rate_limit_token()
         elapsed = time.monotonic() - start_time
 
-        # Should have waited approximately 1 second
+        # Should have waited approximately 1 second and returned True
         assert 0.8 <= elapsed <= 1.5
+        assert result is True
 
     def test_acquire_rate_limit_token_called_before_request(self):
         """Test that acquire_rate_limit_token() is called before making requests."""
@@ -220,3 +225,37 @@ class TestBaseUser:
 
             # Verify rate limiter acquire was called
             assert rate_limiter.acquire.called
+
+    def test_acquire_rate_limit_token_skips_request_when_false(self):
+        """Test that callers skip requests when token acquisition fails."""
+        from genai_bench.user.openai_user import OpenAIUser
+
+        mock_environment = MagicMock()
+        mock_environment.scenario = MagicMock()
+        mock_environment.sampler = MagicMock()
+        mock_environment.sampler.sample = lambda x: UserChatRequest(
+            model="gpt-3",
+            prompt="Hello",
+            num_prefill_tokens=1,
+            max_tokens=5,
+        )
+        mock_environment.runner = MagicMock()
+        mock_environment.runner.stats = MagicMock()
+
+        rate_limiter = MagicMock(spec=TokenBucketRateLimiter)
+        rate_limiter.acquire.return_value = False  # Token acquisition fails
+        mock_environment.rate_limiter = rate_limiter
+
+        # Set host as class attribute before instantiation (required by Locust)
+        OpenAIUser.host = "http://test.example.com"
+        user = OpenAIUser(environment=mock_environment)
+
+        # Mock the HTTP client to verify it's not called
+        with patch.object(user, "send_request") as mock_send_request:
+            # Call chat task
+            user.chat()
+
+            # Verify rate limiter acquire was called
+            assert rate_limiter.acquire.called
+            # Verify send_request was NOT called (request was skipped)
+            mock_send_request.assert_not_called()
