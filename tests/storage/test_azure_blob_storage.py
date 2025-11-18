@@ -423,7 +423,7 @@ class TestAzureBlobStorage:
                         # Should upload with no prefix
                         assert mock_blob_client.upload_blob.call_count == 1
 
-    def test_download_file_not_found(self, mock_auth):
+    def test_download_file_not_found(self, mock_auth, tmp_path):
         """Test downloading non-existent file."""
         with patch("azure.storage.blob.BlobServiceClient") as mock_client_class:
             mock_client_instance = MagicMock()
@@ -443,17 +443,11 @@ class TestAzureBlobStorage:
 
             storage = AzureBlobStorage(mock_auth)
 
-        local_file = Path("local.txt")
-        try:
-            with patch("pathlib.Path.mkdir"):
-                with pytest.raises(FileNotFoundError, match="Blob not found"):
-                    storage.download_file("missing.txt", "local.txt", "container")
-        finally:
-            # Clean up the created file
-            if local_file.exists():
-                local_file.unlink()
+        local_file = tmp_path / "local.txt"
+        with pytest.raises(FileNotFoundError, match="Blob not found"):
+            storage.download_file("missing.txt", str(local_file), "container")
 
-    def test_download_file_general_error(self, mock_auth):
+    def test_download_file_general_error(self, mock_auth, tmp_path):
         """Test download file with general error."""
         with patch("azure.storage.blob.BlobServiceClient") as mock_client_class:
             mock_client_instance = MagicMock()
@@ -469,15 +463,9 @@ class TestAzureBlobStorage:
 
             storage = AzureBlobStorage(mock_auth)
 
-        local_file = Path("local.txt")
-        try:
-            with patch("pathlib.Path.mkdir"):
-                with pytest.raises(Exception, match="Download failed"):
-                    storage.download_file("file.txt", "local.txt", "container")
-        finally:
-            # Clean up the created file
-            if local_file.exists():
-                local_file.unlink()
+        local_file = tmp_path / "local.txt"
+        with pytest.raises(Exception, match="Download failed"):
+            storage.download_file("file.txt", str(local_file), "container")
 
     def test_list_objects_error(self, mock_auth):
         """Test list objects with error."""
