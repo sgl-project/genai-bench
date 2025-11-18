@@ -51,7 +51,8 @@ class OpenAIUser(BaseUser):
     @task
     def chat(self):
         # Acquire rate limit token before making request
-        self.acquire_rate_limit_token()
+        if not self.acquire_rate_limit_token():
+            return
 
         endpoint = "/v1/chat/completions"
         user_request = self.sample()
@@ -116,7 +117,8 @@ class OpenAIUser(BaseUser):
     @task
     def embeddings(self):
         # Acquire rate limit token before making request
-        self.acquire_rate_limit_token()
+        if not self.acquire_rate_limit_token():
+            return
 
         endpoint = "/v1/embeddings"
 
