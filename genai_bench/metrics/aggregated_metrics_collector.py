@@ -69,13 +69,22 @@ class AggregatedMetricsCollector:
             self._update_live_metrics()
 
     @staticmethod
-    def _should_filter_metrics(metrics: RequestLevelMetrics) -> None:
+    def _should_filter_metrics(metrics: RequestLevelMetrics) -> bool:
         """
-        Logs detailed information when abnormal inference speed is detected.
-        Note: This does not filter the entire metric - selective filtering for
-        TPOT and inference_speed happens during aggregation.
+        Detects and handles unreliable TPOT/inference_speed values by setting them to None.
+
+        When output generation is very short (output_latency < 0.01s), TPOT becomes
+        sensitive to timing jitter and network latency. Observed problematic cases had
+        output_latency of ~0.0001s to 0.0002s, resulting in impossibly high inference
+        speeds (>1000 tokens/s). The 0.01s threshold provides a safety margin while only
+        affecting edge cases, as normal LLM generation (10-200 tokens/s) takes >0.01s
+        for most requests.
+        
+        Returns True if filtering was applied, False otherwise
         """
         inference_speed = metrics.output_inference_speed
+
+        # Check for abnormally high inference speed (> 1000 tokens/s)
         if inference_speed is not None and inference_speed > 1000:
             logger.warning(
                 f"Metric has abnormal inference speed: {inference_speed} tokens/s. "
@@ -83,6 +92,19 @@ class AggregatedMetricsCollector:
                 f"num_output_tokens={metrics.num_output_tokens}, "
                 f"output_latency={metrics.output_latency})"
             )
+            # Set only problematic fields to None so aggregation skips them while preserving others
+            metrics.tpot = None
+            metrics.output_inference_speed = None
+            return True
+
+        # filter silently for short output latency
+        if metrics.output_latency is not None and metrics.output_latency < 0.01:
+            # Set only problematic fields to None so aggregation skips them while preserving others
+            metrics.tpot = None
+            metrics.output_inference_speed = None
+            return True
+
+        return False
 
     def _update_live_metrics(self):
         """Calculates live metrics like avg, max, min, and percentiles."""
@@ -172,21 +194,6 @@ class AggregatedMetricsCollector:
                 if value is None:
                     logger.info(f"{i}th request has NoneType value in metric {key}.")
                     continue
-
-                # Special filtering for TPOT and inference_speed: exclude abnormal values
-                if key in ["tpot", "output_inference_speed"]:
-                    # Filter requests where output_latency < 0.1s
-                    # When output generation is very short, TPOT becomes sensitive to timing jitter, network latency, etc.
-                    # Observed problematic cases had output_latency of ~0.0001s to 0.0002s,
-                    # resulting in impossibly high inference speeds (>1000 tokens/s).
-                    # The 0.1s threshold provides a safety margin while only affecting edge
-                    # cases, as normal LLM generation (10-200 tokens/s) takes >0.1s for most requests.
-                    if metrics.output_latency is not None and metrics.output_latency < 0.1:
-                        continue
-                    # Also filter extreme inference speeds as a safety check
-                    if metrics.output_inference_speed is not None and metrics.output_inference_speed > 1000:
-                        continue
-
                 if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
                     values.append(value)
 
