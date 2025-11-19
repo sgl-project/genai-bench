@@ -535,3 +535,280 @@ def test_metrics_handler_validation_error_handling(
     mock_logger.warning.assert_called_once()
     warning_call = mock_logger.warning.call_args[0][0]
     assert "Dropping invalid metrics record due to validation error" in warning_call
+
+
+def test_handle_rate_limiter_stopped_handler(mock_environment, mock_dashboard):
+    """Test _handle_rate_limiter_stopped handler behavior."""
+    config = DistributedConfig(num_workers=3)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    # Initially no confirmations
+    assert len(runner._rate_limiter_stop_confirmations) == 0
+
+    # Receive confirmation from first worker
+    mock_msg1 = MagicMock()
+    mock_msg1.data = True
+    runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+    assert len(runner._rate_limiter_stop_confirmations) == 1
+    assert id(mock_msg1) in runner._rate_limiter_stop_confirmations
+
+    # Receive confirmation from second worker
+    mock_msg2 = MagicMock()
+    mock_msg2.data = True
+    runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
+    assert len(runner._rate_limiter_stop_confirmations) == 2
+    assert id(mock_msg2) in runner._rate_limiter_stop_confirmations
+
+    # Test with None message object (should be ignored)
+    runner._handle_rate_limiter_stopped(mock_environment, None)
+    # Should still be 2 (None message object is ignored)
+    assert len(runner._rate_limiter_stop_confirmations) == 2
+
+    # Test with empty/falsy message object
+    runner._handle_rate_limiter_stopped(mock_environment, False)
+    # Should still be 2 (falsy message object is ignored)
+    assert len(runner._rate_limiter_stop_confirmations) == 2
+
+    # Test that message with data=None is still added (handler checks msg, not msg.data)
+    mock_msg3 = MagicMock()
+    mock_msg3.data = None
+    runner._handle_rate_limiter_stopped(mock_environment, mock_msg3)
+    # Should be 3 (MagicMock is truthy even if data is None)
+    assert len(runner._rate_limiter_stop_confirmations) == 3
+
+    # Test duplicate confirmation (same message ID) - should not add duplicate
+    runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+    assert (
+        len(runner._rate_limiter_stop_confirmations) == 3
+    )  # Still 3, not 4 (duplicate not added)
+
+
+@pytest.mark.usefixtures("mock_logging_env")
+def test_wait_for_rate_limiter_stop_local_mode(mock_environment, mock_dashboard):
+    """Test wait_for_rate_limiter_stop() in local mode (should return immediately)."""
+    config = DistributedConfig(num_workers=0)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    # In local mode, should return True immediately
+    result = runner.wait_for_rate_limiter_stop(timeout=1.0)
+    assert result is True
+
+
+@pytest.mark.usefixtures("mock_logging_env")
+@patch("gevent.sleep")
+@patch("time.monotonic")
+def test_wait_for_rate_limiter_stop_success(
+    mock_monotonic, mock_sleep, mock_environment, mock_dashboard
+):
+    """Test wait_for_rate_limiter_stop() successfully waits for all confirmations."""
+    config = DistributedConfig(num_workers=3)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    try:
+        # Mock time to return fixed values
+        mock_monotonic.return_value = 0.0
+
+        # Simulate receiving confirmations from workers AFTER wait starts
+        # (wait_for_rate_limiter_stop clears confirmations at start)
+        call_count = [0]
+
+        def side_effect_sleep(duration):
+            call_count[0] += 1
+            # After first check, add all confirmations
+            if call_count[0] == 1:
+                mock_msg1 = MagicMock()
+                mock_msg1.data = True
+                mock_msg2 = MagicMock()
+                mock_msg2.data = True
+                mock_msg3 = MagicMock()
+                mock_msg3.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg3)
+
+        mock_sleep.side_effect = side_effect_sleep
+
+        # Wait - confirmations will arrive during the wait loop
+        result = runner.wait_for_rate_limiter_stop(timeout=2.0, expected_workers=3)
+        assert result is True
+        # Should have slept at least once to check for confirmations
+        assert mock_sleep.call_count >= 1
+    finally:
+        # Clean up the background greenlet to prevent crashes
+        with patch("genai_bench.distributed.runner.logger"):
+            runner.cleanup()
+
+
+@pytest.mark.usefixtures("mock_logging_env")
+@patch("gevent.sleep")
+@patch("time.monotonic")
+def test_wait_for_rate_limiter_stop_timeout(
+    mock_monotonic, mock_sleep, mock_environment, mock_dashboard
+):
+    """Test wait_for_rate_limiter_stop() times out when not all workers confirm."""
+    config = DistributedConfig(num_workers=3)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    try:
+        # Simulate time passing - need enough values for multiple loop iterations
+        time_counter = [0.0]
+
+        def time_side_effect():
+            time_counter[0] += 0.1
+            return time_counter[0]
+
+        mock_monotonic.side_effect = time_side_effect
+
+        # Set up mock_sleep to add only 2 confirmations (missing 1)
+        call_count = [0]
+
+        def side_effect_sleep(duration):
+            call_count[0] += 1
+            # After first sleep, add first confirmation
+            if call_count[0] == 1:
+                mock_msg1 = MagicMock()
+                mock_msg1.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+            # After second sleep, add second confirmation (but not third)
+            elif call_count[0] == 2:
+                mock_msg2 = MagicMock()
+                mock_msg2.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
+            # No third confirmation - should timeout
+
+        mock_sleep.side_effect = side_effect_sleep
+
+        # Wait with timeout - should return False after timeout
+        # Since time keeps increasing, it will eventually exceed timeout
+        result = runner.wait_for_rate_limiter_stop(timeout=2.0, expected_workers=3)
+        assert result is False
+        # Should have slept multiple times waiting for the last confirmation
+        assert mock_sleep.call_count > 0
+    finally:
+        # Clean up the background greenlet to prevent crashes
+        with patch("genai_bench.distributed.runner.logger"):
+            runner.cleanup()
+
+
+@pytest.mark.usefixtures("mock_logging_env")
+@patch("gevent.sleep")
+@patch("time.monotonic")
+def test_wait_for_rate_limiter_stop_partial_confirmations(
+    mock_monotonic, mock_sleep, mock_environment, mock_dashboard
+):
+    """Test wait_for_rate_limiter_stop() with
+    partial confirmations that arrive during wait."""
+
+    config = DistributedConfig(num_workers=3)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    try:
+        # Simulate time passing with confirmations arriving
+        # Need enough values for the loop iterations
+        time_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        mock_monotonic.side_effect = time_values
+
+        # Set up mock_sleep to simulate receiving confirmations during wait
+        call_count = [0]
+
+        def side_effect_sleep(duration):
+            call_count[0] += 1
+            # After first sleep, add first confirmation
+            if call_count[0] == 1:
+                mock_msg1 = MagicMock()
+                mock_msg1.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+            # After second sleep, add second confirmation
+            elif call_count[0] == 2:
+                mock_msg2 = MagicMock()
+                mock_msg2.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
+            # After third sleep, add the last confirmation
+            elif call_count[0] == 3:
+                mock_msg3 = MagicMock()
+                mock_msg3.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg3)
+
+        mock_sleep.side_effect = side_effect_sleep
+
+        # Wait - should eventually return True when all confirmations arrive
+        result = runner.wait_for_rate_limiter_stop(timeout=2.0, expected_workers=3)
+        assert result is True
+        # Should have slept multiple times before all confirmations arrived
+        assert mock_sleep.call_count >= 3
+    finally:
+        # Clean up the background greenlet to prevent crashes
+        with patch("genai_bench.distributed.runner.logger"):
+            runner.cleanup()
+
+
+@pytest.mark.usefixtures("mock_logging_env")
+@patch("gevent.sleep")
+@patch("time.monotonic")
+def test_wait_for_rate_limiter_stop_integration(
+    mock_monotonic, mock_sleep, mock_environment, mock_dashboard
+):
+    """Test full integration flow:
+    master sends stop signal → workers confirm → master waits."""
+
+    config = DistributedConfig(num_workers=4)
+    runner = DistributedRunner(mock_environment, config, dashboard=mock_dashboard)
+    runner.setup()
+
+    # Mock master runner
+    mock_environment.runner = MagicMock(spec=MasterRunner)
+    mock_environment.runner.send_message = MagicMock()
+
+    try:
+        # Step 1: Master sends stop signal to workers
+        runner.update_rate_limiter(None)  # None signals stop
+        mock_environment.runner.send_message.assert_called_with(
+            "update_rate_limiter", None
+        )
+
+        # Step 2: Simulate workers receiving stop signal and sending confirmations
+        # Mock time progression
+        time_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        mock_monotonic.side_effect = time_values
+
+        call_count = [0]
+
+        def side_effect_sleep(duration):
+            call_count[0] += 1
+            # Simulate workers sending confirmations at different times
+            if call_count[0] == 1:
+                # Worker 1 confirms
+                mock_msg1 = MagicMock()
+                mock_msg1.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
+            elif call_count[0] == 2:
+                # Worker 2 confirms
+                mock_msg2 = MagicMock()
+                mock_msg2.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
+            elif call_count[0] == 3:
+                # Worker 3 confirms
+                mock_msg3 = MagicMock()
+                mock_msg3.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg3)
+            elif call_count[0] == 4:
+                # Worker 4 confirms
+                mock_msg4 = MagicMock()
+                mock_msg4.data = True
+                runner._handle_rate_limiter_stopped(mock_environment, mock_msg4)
+
+        mock_sleep.side_effect = side_effect_sleep
+
+        # Step 3: Master waits for all confirmations
+        result = runner.wait_for_rate_limiter_stop(timeout=2.0, expected_workers=4)
+        assert result is True
+        assert len(runner._rate_limiter_stop_confirmations) == 4
+    finally:
+        # Clean up the background greenlet to prevent crashes
+        with patch("genai_bench.distributed.runner.logger"):
+            runner.cleanup()
