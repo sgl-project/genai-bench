@@ -7,6 +7,7 @@ import pytest
 
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.metrics.metrics import RequestLevelMetrics
+from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.scenarios.base import Scenario
 
 
@@ -110,8 +111,6 @@ def test_rate_limiter_update(distributed_runner, mock_environment):
 
 def test_rate_limiter_update_multiple_workers(mock_environment, mock_dashboard):
     """Test rate limiter update with multiple workers"""
-    from genai_bench.rate_limiter import TokenBucketRateLimiter
-
     # Simulate master sending rate updates to workers
     config = DistributedConfig(num_workers=4)
     runner = DistributedRunner(
@@ -196,8 +195,6 @@ def test_rate_limiter_update_invalid_rate(mock_environment, mock_dashboard):
 
 def test_rate_limiter_master_none_in_distributed(mock_environment, mock_dashboard):
     """Test that master process has rate_limiter set to None in distributed mode"""
-    from locust.runners import MasterRunner
-
     config = DistributedConfig(num_workers=2)
     runner = DistributedRunner(
         environment=mock_environment,
@@ -288,8 +285,6 @@ def test_update_rate_limiter_local_mode(mock_environment, mock_dashboard):
 
     # In local mode, update_rate_limiter should still work
     # but the handler will be called directly
-    from genai_bench.rate_limiter import TokenBucketRateLimiter
-
     rate = 10.0
     mock_msg = MagicMock()
     mock_msg.data = rate
