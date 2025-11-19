@@ -52,9 +52,7 @@ class TokenBucketRateLimiter:
         self.stopped = False
         self._stop_event = Event()  # Event to signal stop
 
-        logger.info(
-            f"🪣 Token Bucket Rate Limiter initialized: " f"rate={rate:.2f} req/s"
-        )
+        logger.info(f"Token Bucket Rate Limiter initialized: " f"rate={rate:.2f} req/s")
 
     def _refill_tokens(self) -> None:
         """
