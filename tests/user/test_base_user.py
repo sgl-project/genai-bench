@@ -1,5 +1,6 @@
 from locust.env import Environment
 
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -177,8 +178,6 @@ class TestBaseUser:
         user = ConcreteUser(environment=mock_environment)
 
         # This should block for approximately 1 second until token refills
-        import time
-
         start_time = time.monotonic()
         result = user.acquire_rate_limit_token()
         elapsed = time.monotonic() - start_time

@@ -8,6 +8,7 @@ import os
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import (
@@ -812,8 +813,6 @@ class TestRequestRateInExperimentMetadata:
 
     def test_experiment_metadata_invalid_iteration_type(self):
         """Test that invalid iteration_type is rejected."""
-        from pydantic import ValidationError
-
         with pytest.raises(ValidationError):
             create_test_metadata(
                 iteration_type="invalid_type",

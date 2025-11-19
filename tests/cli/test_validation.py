@@ -26,6 +26,7 @@ from genai_bench.cli.validation import (
     validate_traffic_scenario_callback,
     validate_warmup_cooldown_ratio_options,
 )
+from genai_bench.protocol import ExperimentMetadata
 
 
 def test_validate_scenario_callback():
@@ -709,7 +710,6 @@ class TestRequestRateExperimentMetadata:
     def test_request_rate_iteration_type_in_metadata(self):
         """Test that iteration_type is set to 'request_rate'."""
         # Would need to verify ExperimentMetadata model
-        from genai_bench.protocol import ExperimentMetadata
 
         # Verify request_rate is a valid literal with all required fields
         metadata = ExperimentMetadata(

@@ -18,6 +18,7 @@ from locust.runners import WorkerRunner
 
 import logging
 import tempfile
+import traceback
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -219,7 +220,6 @@ def test_benchmark_command(cli_runner, default_options, mock_report_and_plot):
         print(f"Output: {result.output}")
         if result.exception:
             print(f"Exception: {result.exception}")
-            import traceback
 
             traceback.print_exception(
                 type(result.exception), result.exception, result.exception.__traceback__
