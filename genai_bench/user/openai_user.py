@@ -33,13 +33,6 @@ class OpenAIUser(BaseUser):
         # Future support can be added here
     }
 
-    # Keep this list up to date when supporting other backends
-    UNSUPPORTED_PARAMS_BY_BACKEND = {
-        "openai": {"ignore_eos"},
-        "vllm": set(),  # vLLM uses OpenAI-compatible API
-        "sglang": set(),  # SGLang uses OpenAI-compatible API
-    }
-
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
@@ -95,16 +88,25 @@ class OpenAIUser(BaseUser):
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
-            "ignore_eos": user_request.additional_request_params.get(
-                "ignore_eos",
-                bool(user_request.max_tokens),
-            ),
             "stream": True,
             "stream_options": {
                 "include_usage": True,
             },
             **user_request.additional_request_params,
         }
+
+        # Conditionally add ignore_eos for vLLM and SGLang backends
+        backend_key = getattr(self, "api_backend", self.BACKEND_NAME)
+        if backend_key in ["vllm", "sglang"]:
+            if "ignore_eos" not in payload:
+                payload["ignore_eos"] = user_request.additional_request_params.get(
+                    "ignore_eos",
+                    bool(user_request.max_tokens),
+                )
+        else:
+            # Remove ignore_eos for OpenAI backend, as it is not supported
+            payload.pop("ignore_eos", None)
+
         self.send_request(
             True,
             endpoint,
@@ -164,15 +166,10 @@ class OpenAIUser(BaseUser):
         response = None
 
         try:
-            backend_key = getattr(self, "api_backend", self.BACKEND_NAME)
-
-            unsupported = self.UNSUPPORTED_PARAMS_BY_BACKEND.get(backend_key, set())
-            payload_to_send = {k: v for k, v in payload.items() if k not in unsupported}
-
             start_time = time.monotonic()
             response = requests.post(
                 url=f"{self.host}{endpoint}",
-                json=payload_to_send,
+                json=payload,
                 stream=stream,
                 headers=self.headers,
             )
