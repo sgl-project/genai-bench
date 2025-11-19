@@ -19,6 +19,7 @@ from locust.runners import WorkerRunner
 import logging
 import tempfile
 import traceback
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -122,13 +123,8 @@ def mock_makedirs():
 def mock_file_system():
     with (
         patch("genai_bench.cli.cli.Path.write_text") as mock_write_text,
-        patch("genai_bench.cli.utils.Path.mkdir") as mock_utils_mkdir,
     ):
-        # Mock both write_text and mkdir to prevent any file operations
-        yield {
-            "write_text": mock_write_text,
-            "utils_mkdir": mock_utils_mkdir,
-        }
+        yield mock_write_text
 
 
 # Mock HTTP requests
@@ -173,15 +169,8 @@ def mock_report_and_plot():
 
 @pytest.fixture
 def mock_experiment_path():
-    """Mock experiment path to return a mock path string."""
     with patch("genai_bench.cli.cli.get_experiment_path") as mock_path:
-        # Return a mock Path-like object that won't create real directories
-        mock_path_obj = MagicMock()
-        mock_path_obj.absolute.return_value = MagicMock()
-        mock_path_obj.absolute.return_value.__str__ = (
-            lambda self: "/mock/experiment/path"
-        )
-        mock_path.return_value = mock_path_obj
+        mock_path.return_value = Path("/mock/experiment/path")
         yield mock_path
 
 
@@ -1098,7 +1087,6 @@ def test_rate_limiter_warning_low_per_worker_rate(
     cli_runner, request_rate_options, caplog
 ):
     """Test that warning is logged for very low per-worker rates."""
-    import logging
 
     with (
         patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,

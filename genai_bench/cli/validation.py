@@ -200,12 +200,24 @@ def validate_iteration_params(ctx, param, value) -> str:
     batch_size = ctx.params.get("batch_size", [])
     request_rate = ctx.params.get("request_rate")
 
-    if value == "request_rate" and (request_rate is None or not request_rate):
+    if value == "request_rate" and not request_rate:
         raise click.BadParameter(
             "--request-rate is required when --iteration-type "
             "is set to 'request_rate'. "
             "Please provide --request-rate values."
         )
+
+    # If request_rate is provided, ignore default num_concurrency values
+    if request_rate and task != "text-to-embeddings" and task != "text-to-rerank":
+        num_conc_list = list(num_concurrency)
+        default_list = list(DEFAULT_NUM_CONCURRENCIES)
+        # If num_concurrency is the default, treat it as not provided
+        logger.warning(
+            "Request rate provided, ignoring default " "num_concurrency values."
+        )
+        if num_conc_list == default_list:
+            num_concurrency = [1]
+            ctx.params["num_concurrency"] = [1]
 
     # Check for mutual exclusivity: --num-concurrency and --request-rate
     # cannot both be provided (excluding embedding/rerank tasks which use
@@ -216,17 +228,8 @@ def validate_iteration_params(ctx, param, value) -> str:
         and request_rate
         and num_concurrency
     ):
-        # If request_rate is provided, check if num_concurrency was explicitly
-        # set (not just using defaults). We allow:
-        # - Empty list or None (not provided)
-        # - DEFAULT_NUM_CONCURRENCIES (defaults, user didn't explicitly
-        #   provide)
-        # - [1] (what we'd use for request_rate anyway)
-        # We error if num_concurrency is explicitly set to something else
-        # Convert to lists for comparison (handles tuples, etc.)
         num_conc_list = list(num_concurrency)
-        default_list = list(DEFAULT_NUM_CONCURRENCIES)
-        if num_conc_list != [1] and num_conc_list != default_list:
+        if num_conc_list != [1]:
             raise click.BadParameter(
                 "--num-concurrency and --request-rate are mutually exclusive. "
                 "Please provide only one."

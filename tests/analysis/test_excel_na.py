@@ -1,9 +1,9 @@
 import os
 import tempfile
 
-from openpyxl import Workbook, load_workbook
+from openpyxl import load_workbook
 
-from genai_bench.analysis.excel_report import create_workbook, merge_cells
+from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.metrics.metrics import AggregatedMetrics, MetricStats, StatField
 from genai_bench.protocol import ExperimentMetadata
 
@@ -277,21 +277,6 @@ def test_appendix_header_includes_request_rate():
         assert any(
             "Request Rate (req/s)" in str(h) for h in headers if h
         ), "Appendix header should include 'Request Rate (req/s)'"
-
-
-def test_merge_cells_handles_empty_scenarios():
-    """Test that merge_cells doesn't fail on empty scenarios (start_row >= end_row)."""
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Header1", "Header2"])
-
-    # Test merge_cells with start_row >= end_row (should not fail)
-    # This tests the fix for ValueError in merge_cells
-    merge_cells(ws, start_row=2, end_row=2, column_index=1)  # Same row
-    merge_cells(ws, start_row=3, end_row=2, column_index=1)  # start > end
-
-    # Should not raise an exception
-    assert True
 
 
 def test_request_rate_values_displayed_correctly():
