@@ -531,10 +531,6 @@ def create_single_request_metrics_sheet(
 
 
 def merge_cells(worksheet: Worksheet, start_row: int, end_row: int, column_index: int):
-    # Only merge if there are multiple rows to merge
-    if start_row >= end_row:
-        return
-
     start_cell = f"{get_column_letter(column_index)}{start_row}"
     end_cell = f"{get_column_letter(column_index)}{end_row}"
     value_to_keep = worksheet[start_cell].value
