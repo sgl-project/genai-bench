@@ -1,4 +1,4 @@
-# Development
+# Developer Guide
 
 Welcome and thank you for your interest in contributing to genai-bench! This section is a development guide that covers everything you need to contribute to the project.
 
@@ -30,24 +30,6 @@ For code formatting, linting, and other development tasks, see the [Makefile](ht
 - Write docstrings for public APIs
 - Keep functions focused and small
 - Add tests for new features
-
-## Pull Requests
-
-Please follow the PR template, which will be automatically populated when you open a new [Pull Request on GitHub](https://github.com/sgl-project/genai-bench/compare).
-
-### Code Reviews
-
-All submissions, including submissions by project members, require a code review.
-To make the review process as smooth as possible, please:
-
-1. Keep your changes as concise as possible.
-   If your pull request involves multiple unrelated changes, consider splitting it into separate pull requests.
-2. Respond to all comments within a reasonable time frame.
-   If a comment isn't clear,
-   or you disagree with a suggestion, feel free to ask for clarification or discuss the suggestion.
-3. Provide constructive feedback and meaningful comments. Focus on specific improvements
-   and suggestions that can enhance the code quality or functionality. Remember to
-   acknowledge and respect the work the author has already put into the submission.
 
 ## Development Setup
 

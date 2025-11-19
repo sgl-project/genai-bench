@@ -77,10 +77,10 @@ GenAI Bench supports multiple benchmark types:
 - [Visualizations](user-guide/generate-plot.md) - Creating visualizations
 - [Upload Results](user-guide/upload-benchmark-result.md) - Uploading results
 
-### 🔧 Development
+### 🔧 Developer Guide
 
-- [Development](development/developer-guide.md) - How to contribute to GenAI Bench
-- [Adding New Features](development/adding-new-features.md) - Learn how to add new providers and tasks
+- [Developer Guide](developer-guide/index.md) - How to contribute to GenAI Bench
+- [Adding New Features](developer-guide/adding-new-features.md) - Learn how to add new providers and tasks
 
 ## Support
 
