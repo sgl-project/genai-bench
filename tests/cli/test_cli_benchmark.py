@@ -1192,52 +1192,6 @@ def test_rate_limiter_cleanup_between_runs(cli_runner, request_rate_options):
 
 @pytest.mark.usefixtures(
     "mock_env_variables",
-    "mock_dashboard",
-    "mock_validate_tokenizer",
-    "mock_time_sleep",
-    "mock_makedirs",
-    "mock_file_system",
-    "mock_report_and_plot",
-    "mock_http_requests",
-    "mock_experiment_path",
-)
-def test_request_rate_concurrency_calculation(cli_runner, request_rate_options):
-    """Test that concurrency is calculated correctly for request_rate (rate * 100)."""
-    with (
-        patch("genai_bench.cli.cli.DistributedRunner") as mock_runner_class,
-        patch("genai_bench.cli.cli.Environment") as mock_env_class,
-    ):
-        mock_env = MagicMock()
-        mock_runner = MagicMock()
-        mock_runner_stats = MagicMock()
-
-        mock_runner_stats.total.num_requests = 100
-        mock_env_class.return_value = mock_env
-        mock_runner_class.return_value = mock_runner
-        mock_runner.environment = mock_env
-        mock_runner.environment.runner.stats = mock_runner_stats
-        mock_runner.metrics_collector = MagicMock()
-        mock_runner.environment.runner.user_count = 10
-
-        result = cli_runner.invoke(
-            benchmark,
-            [
-                *request_rate_options,
-                "--request-rate",
-                "5.0",  # Should result in concurrency of 500 (5.0 * 100)
-            ],
-        )
-
-        assert result.exit_code == 0
-        # Verify runner.start was called with calculated concurrency
-        # The concurrency should be 5.0 * 100 = 500
-        mock_runner.environment.runner.start.assert_called()
-        call_args = mock_runner.environment.runner.start.call_args
-        assert call_args[0][0] == 500  # First positional arg is concurrency
-
-
-@pytest.mark.usefixtures(
-    "mock_env_variables",
     "mock_validate_tokenizer",
 )
 def test_benchmark_request_rate_and_num_concurrency_mutually_exclusive(

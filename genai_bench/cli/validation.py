@@ -213,7 +213,7 @@ def validate_iteration_params(ctx, param, value) -> str:
         default_list = list(DEFAULT_NUM_CONCURRENCIES)
         # If num_concurrency is the default, treat it as not provided
         logger.warning(
-            "Request rate provided, ignoring default " "num_concurrency values."
+            "Request rate provided, ignoring default num_concurrency values."
         )
         if num_conc_list == default_list:
             num_concurrency = [1]

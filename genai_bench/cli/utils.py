@@ -9,6 +9,8 @@ from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
 
+MAX_CONCURRENCY_FOR_RATE = 5000
+
 
 def manage_run_time(
     max_time_per_run: int,
@@ -122,6 +124,6 @@ def get_run_params(
     elif iteration_type == "request_rate":
         # For request_rate, use a sufficiently high concurrency (capped at 5000)
         # The rate limiter will control the actual request rate
-        concurrency = min(int(iteration_value * 100), 5000)
+        concurrency = MAX_CONCURRENCY_FOR_RATE
         return "Request Rate", 1, concurrency
     return "Concurrency", 1, int(iteration_value)
