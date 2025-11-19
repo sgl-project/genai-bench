@@ -95,7 +95,6 @@ def test_chat(mock_post, mock_openai_user):
             "messages": [{"role": "user", "content": ANY}],
             "max_tokens": 10,
             "temperature": 0.0,
-            "ignore_eos": False,
             "stream": True,
             "stream_options": {
                 "include_usage": True,
@@ -158,7 +157,6 @@ def test_vision(mock_post, mock_openai_user):
             "messages": [{"role": "user", "content": text_content + image_content}],
             "max_tokens": None,
             "temperature": 0.0,
-            "ignore_eos": False,
             "stream": True,
             "stream_options": {
                 "include_usage": True,
