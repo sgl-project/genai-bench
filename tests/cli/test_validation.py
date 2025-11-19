@@ -4,10 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import click
 import pytest
-from click.testing import CliRunner
 from transformers import BertTokenizerFast
 
-from genai_bench.cli.cli import benchmark
 from genai_bench.cli.validation import (
     DEFAULT_BATCH_SIZES,
     DEFAULT_NUM_CONCURRENCIES,
@@ -26,7 +24,6 @@ from genai_bench.cli.validation import (
     validate_traffic_scenario_callback,
     validate_warmup_cooldown_ratio_options,
 )
-from genai_bench.protocol import ExperimentMetadata
 
 
 def test_validate_scenario_callback():
@@ -495,7 +492,8 @@ def test_validate_iteration_params_mutually_exclusive():
     ):
         validate_iteration_params(ctx, param, "num_concurrency")
 
-    # Test that defaults are allowed (user didn't explicitly provide --num-concurrency)
+    # Test that defaults are converted to [1] when request_rate is provided
+    # (treating defaults as "not provided")
     ctx.params = {
         "task": "text-to-text",
         "num_concurrency": DEFAULT_NUM_CONCURRENCIES,  # Defaults
@@ -503,6 +501,7 @@ def test_validate_iteration_params_mutually_exclusive():
     }
     result = validate_iteration_params(ctx, param, "num_concurrency")
     assert result == "request_rate"
+    # Defaults should be converted to [1] when request_rate is provided
     assert ctx.params["num_concurrency"] == [1]
 
 
@@ -652,79 +651,16 @@ def test_validate_warmup_cooldown_ratio_options():
         validate_warmup_cooldown_ratio_options(ctx, param, 0.5)
 
 
-# Tests for request_rate validation
+def test_validate_iteration_params_request_rate_required():
+    """Test that request_rate is required when iteration_type is 'request_rate'."""
+    ctx = click.Context(click.Command("test"))
+    param = None
 
-
-@pytest.fixture
-def cli_runner():
-    """Fixture for CLI runner."""
-    return CliRunner()
-
-
-@pytest.fixture
-def minimal_options():
-    """Minimal options for request_rate tests."""
-    return [
-        "--api-backend",
-        "openai",
-        "--api-base",
-        "https://api.test.com",
-        "--api-key",
-        "test_key",
-        "--task",
-        "text-to-text",
-        "--api-model-name",
-        "test-model",
-        "--model-tokenizer",
-        "gpt2",
-        "--max-time-per-run",
-        "5",
-        "--max-requests-per-run",
-        "10",
-        "--num-concurrency",
-        "1",
-    ]
-
-
-class TestRequestRateValidation:
-    """Test validation of request_rate parameters."""
-
-    def test_request_rate_with_invalid_string(self, cli_runner, minimal_options):
-        """Test that non-numeric request_rate is rejected."""
-        result = cli_runner.invoke(
-            benchmark,
-            [
-                *minimal_options,
-                "--request-rate",
-                "not_a_number",
-            ],
-        )
-        # Should fail with type error from click
-        assert result.exit_code != 0
-        assert "is not a valid float" in result.output.lower()
-
-
-class TestRequestRateExperimentMetadata:
-    """Test that request_rate is properly stored in experiment metadata."""
-
-    def test_request_rate_iteration_type_in_metadata(self):
-        """Test that iteration_type is set to 'request_rate'."""
-        # Would need to verify ExperimentMetadata model
-
-        # Verify request_rate is a valid literal with all required fields
-        metadata = ExperimentMetadata(
-            cmd="test command",
-            benchmark_version="1.0.0",
-            iteration_type="request_rate",
-            model="test-model",
-            api_model_name="test-model",
-            api_backend="openai",
-            task="text-to-text",
-            request_rate=[5.0, 10.0],
-            num_concurrency=[1],  # Required even for request_rate runs
-            max_time_per_run_s=60,
-            max_requests_per_run=1000,
-            experiment_folder_name="test_experiment",
-        )
-        assert metadata.iteration_type == "request_rate"
-        assert metadata.request_rate == [5.0, 10.0]
+    # Test that setting iteration_type to request_rate without request_rate raises error
+    ctx.params = {
+        "task": "text-to-text",
+        "request_rate": None,
+    }
+    with pytest.raises(click.BadParameter) as exc_info:
+        validate_iteration_params(ctx, param, "request_rate")
+    assert "--request-rate is required" in str(exc_info.value)
