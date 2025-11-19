@@ -129,6 +129,6 @@ nav:
       - Excel Reports: user-guide/generate-excel-sheet.md
       - Visualizations: user-guide/generate-plot.md
       - Upload Results: user-guide/upload-benchmark-result.md
-  - Development:
-      - development/developer-guide.md
-      - Adding New Features: development/adding-new-features.md
+  - Developer Guide:
+      - developer-guide/index.md
+      - Adding New Features: developer-guide/adding-new-features.md
