@@ -4,7 +4,12 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from genai_bench.cli.utils import get_experiment_path, manage_run_time
+from genai_bench.cli.utils import (
+    MAX_CONCURRENCY_FOR_RATE,
+    get_experiment_path,
+    get_run_params,
+    manage_run_time,
+)
 
 
 @pytest.fixture
@@ -142,3 +147,37 @@ def test_get_experiment_path_existing_folder(mock_logger, tmp_path):
 
     assert path == folder_path
     mock_logger.warning.assert_called_once()
+
+
+class TestGetRunParams:
+    """Test get_run_params function with different iteration types."""
+
+    def test_get_run_params_with_request_rate(self):
+        """Test get_run_params() with iteration_type='request_rate'."""
+        # Test with integer rate
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=10.0
+        )
+        assert header == "Request Rate"
+        assert batch_size == 1
+        assert num_concurrency == MAX_CONCURRENCY_FOR_RATE
+
+    def test_get_run_params_with_batch_size(self):
+        """Test get_run_params() with batch_size iteration type."""
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="batch_size", iteration_value=32
+        )
+
+        assert header == "Batch Size"
+        assert batch_size == 32
+        assert num_concurrency == 1
+
+    def test_get_run_params_with_num_concurrency(self):
+        """Test get_run_params() with num_concurrency iteration type."""
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="num_concurrency", iteration_value=16
+        )
+
+        assert header == "Concurrency"
+        assert batch_size == 1
+        assert num_concurrency == 16
