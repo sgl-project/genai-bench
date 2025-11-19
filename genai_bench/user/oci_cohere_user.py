@@ -101,6 +101,10 @@ class OCICohereUser(BaseUser):
     @task
     def chat(self):
         """Send a chat completion request using Cohere format."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
+
         user_request = self.sample()
 
         if not isinstance(user_request, UserChatRequest):
@@ -159,6 +163,10 @@ class OCICohereUser(BaseUser):
     @task
     def embeddings(self):
         """Send an embedding request using Cohere format."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
+
         user_request = self.sample()
 
         if not isinstance(user_request, UserEmbeddingRequest):
@@ -199,6 +207,9 @@ class OCICohereUser(BaseUser):
     @task
     def rerank(self):
         """Send an rerank request using Cohere format."""
+        # Acquire rate limit token before making request
+        if not self.acquire_rate_limit_token():
+            return
         user_request = self.sample()
 
         if not isinstance(user_request, UserReRankRequest):

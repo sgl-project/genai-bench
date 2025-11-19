@@ -250,7 +250,7 @@ def test_message_handlers_in_distributed_mode(mock_environment, mock_dashboard):
     # Test master mode
     mock_environment.runner = MagicMock(spec=MasterRunner)
     runner._register_message_handlers()
-    assert mock_environment.runner.register_message.call_count == 2
+    assert mock_environment.runner.register_message.call_count == 3
 
 
 def test_update_rate_limiter_sends_message(mock_environment, mock_dashboard):
