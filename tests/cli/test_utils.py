@@ -174,6 +174,29 @@ class TestGetRunParams:
         # 0.5 * 100 = 50
         assert num_concurrency == 50
 
+        # Test with rate that would exceed 5000 cap
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=100.0
+        )
+        assert header == "Request Rate"
+        assert batch_size == 1
+        # 100.0 * 100 = 10000, but should be capped at 5000
+        assert num_concurrency == 5000
+
+        # Test with rate exactly at cap boundary
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=50.0
+        )
+        # 50.0 * 100 = 5000, should be exactly at cap
+        assert num_concurrency == 5000
+
+        # Test with rate just below cap
+        header, batch_size, num_concurrency = get_run_params(
+            iteration_type="request_rate", iteration_value=49.9
+        )
+        # 49.9 * 100 = 4990, should be below cap
+        assert num_concurrency == 4990
+
     def test_get_run_params_with_batch_size(self):
         """Test get_run_params() with batch_size iteration type."""
         header, batch_size, num_concurrency = get_run_params(

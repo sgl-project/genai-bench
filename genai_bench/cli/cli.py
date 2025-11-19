@@ -509,7 +509,8 @@ def benchmark(
                     if num_workers > 0:
                         # Send message to workers to stop their rate limiters
                         runner.update_rate_limiter(None)  # None signals stop
-                        time.sleep(0.5)  # Brief wait for message processing
+                        # Wait for workers to confirm rate limiter stop
+                        runner.wait_for_rate_limiter_stop(timeout=2.0)
 
                 environment.runner.stop()
 
