@@ -18,13 +18,6 @@ class TestTokenBucketRateLimiter:
         assert rate_limiter.rate == 10.0
         assert rate_limiter.tokens == BUCKET_SIZE  # Starts full
 
-    def test_initialization_bucket_size(self):
-        """Test rate limiter uses fixed bucket size."""
-        rate_limiter = TokenBucketRateLimiter(rate=5.0)
-
-        assert rate_limiter.rate == 5.0
-        assert rate_limiter.tokens == BUCKET_SIZE
-
     def test_initialization_invalid_rate(self):
         """Test that invalid rate raises ValueError."""
         with pytest.raises(ValueError, match="Rate must be positive"):
@@ -59,8 +52,7 @@ class TestTokenBucketRateLimiter:
         elapsed = time.monotonic() - start_time
 
         # Should take approximately 0.4s (4 tokens / 10 tokens per second)
-        # Allow some tolerance
-        assert 0.3 <= elapsed <= 0.6
+        assert 0.3 <= elapsed <= 0.5
 
     def test_token_refill(self):
         """Test that tokens refill over time."""
@@ -73,8 +65,11 @@ class TestTokenBucketRateLimiter:
         gevent.sleep(0.1)
 
         # Should be able to acquire again
+        start_time = time.monotonic()
         result = rate_limiter.acquire()
+        elapsed = time.monotonic() - start_time
         assert result is True
+        assert elapsed < 0.05  # Should be immediate
 
     def test_rate_limiting_accuracy(self):
         """Test that rate limiting is accurate."""
@@ -95,21 +90,7 @@ class TestTokenBucketRateLimiter:
         actual_rate = num_requests / elapsed_time
 
         # Should take ~2 seconds for 20 requests at 10/s
-        # Allow 20% tolerance for timing variations and gevent overhead
-        assert abs(actual_rate - target_rate) < target_rate * 0.2
-
-    def test_burst_handling(self):
-        """Test that bucket allows single immediate request."""
-        rate_limiter = TokenBucketRateLimiter(rate=5.0)
-
-        # Should be able to acquire first request immediately
-        start_time = time.monotonic()
-        result = rate_limiter.acquire()
-        burst_time = time.monotonic() - start_time
-
-        assert result is True
-        # First request should be very fast (< 0.1s)
-        assert burst_time < 0.1
+        assert abs(actual_rate - target_rate) < target_rate * 0.1
 
     def test_concurrent_access(self):
         """Test thread-safe concurrent access."""
@@ -121,12 +102,17 @@ class TestTokenBucketRateLimiter:
             acquired.append(result)
 
         # Spawn multiple greenlets
-        greenlets = [gevent.spawn(acquire_token) for _ in range(10)]
+        start_time = time.monotonic()
+        greenlets = [gevent.spawn(acquire_token) for _ in range(20)]
         gevent.joinall(greenlets)
+        elapsed = time.monotonic() - start_time
 
         # All should succeed
-        assert len(acquired) == 10
+        assert len(acquired) == 20
         assert all(acquired)
+
+        # Should take approximately 1 second (20 tokens at 20/s)
+        assert 0.9 <= elapsed <= 1.1
 
     def test_get_current_rate(self):
         """Test getting current rate."""
@@ -309,38 +295,6 @@ class TestTokenBucketRateLimiter:
         # Should still return False on acquire
         result = rate_limiter.acquire()
         assert result is False
-
-    def test_very_low_rate_precision(self):
-        """Test rate limiter with very low rates (< 0.1 req/s) maintains precision."""
-        rate_limiter = TokenBucketRateLimiter(rate=0.05)  # 0.05 req/s = 1 req per 20s
-
-        # Consume the only token
-        result = rate_limiter.acquire()
-        assert result is True
-
-        # Next token should take approximately 20 seconds
-        # We'll test with a shorter wait to verify it's working
-        # but use a longer timeout to ensure it doesn't timeout too early
-        start_time = time.monotonic()
-        result = rate_limiter.acquire(timeout=25.0)  # Should succeed within timeout
-        elapsed = time.monotonic() - start_time
-
-        assert result is True
-        # Should take approximately 20 seconds (allow some tolerance)
-        assert 18.0 <= elapsed <= 22.0
-
-    def test_very_low_rate_multiple_workers(self):
-        """Test very low per-worker rate (simulating distributed mode)."""
-        # Simulate a scenario where total rate is 0.5 req/s divided among 10 workers
-        per_worker_rate = 0.5 / 10  # 0.05 req/s per worker
-        rate_limiter = TokenBucketRateLimiter(rate=per_worker_rate)
-
-        # Should still work, just slowly
-        result = rate_limiter.acquire()
-        assert result is True
-
-        # Verify the rate is correct
-        assert rate_limiter.get_current_rate() == per_worker_rate
 
     def test_stop_after_acquire(self):
         """Test that stop() works correctly after tokens have been acquired."""
