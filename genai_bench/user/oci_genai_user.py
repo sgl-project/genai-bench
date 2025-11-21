@@ -296,7 +296,7 @@ class OCIGenAIUser(BaseUser):
 
         try:
             completion_tokens = usage_data["completionTokens"]
-            reasoning_tokens = usage_data.get("completionTokensDetails", {}).get(
+            reasoning_tokens = (usage_data.get("completionTokensDetails") or {}).get(
                 "reasoningTokens", 0
             )
             tokens_received = completion_tokens + reasoning_tokens
