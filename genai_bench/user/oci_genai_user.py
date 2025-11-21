@@ -296,8 +296,9 @@ class OCIGenAIUser(BaseUser):
 
         try:
             completion_tokens = usage_data["completionTokens"]
-            completion_tokens_details = usage_data["completionTokensDetails"]
-            reasoning_tokens = completion_tokens_details["reasoningTokens"]
+            reasoning_tokens = usage_data.get("completionTokensDetails", {}).get(
+                "reasoningTokens", 0
+            )
             tokens_received = completion_tokens + reasoning_tokens
 
         except (KeyError, TypeError):
