@@ -120,6 +120,7 @@ class OCIGenAIUser(BaseUser):
             messages=messages,
             max_tokens=user_request.max_tokens,
             is_stream=True,
+            stream_options={"isIncludeUsage": True},
             temperature=user_request.additional_request_params.get("temperature", 0.75),
             top_p=user_request.additional_request_params.get("top_p", 0.7),
             top_k=user_request.additional_request_params.get("top_k", 1),
@@ -232,10 +233,13 @@ class OCIGenAIUser(BaseUser):
             UserResponse: Parsed response in the UserResponse format.
         """
         generated_text = ""
-        tokens_received = 0
+        streaming_events_count = 0
+        completion_tokens = None
+        reasoning_tokens = None
         time_at_first_token: Optional[float] = None
         finish_reason = None
         previous_data = None
+        usage_data = None
 
         # Iterate over each event in the streaming response
         for event in response.data.events():
@@ -244,6 +248,13 @@ class OCIGenAIUser(BaseUser):
             # Parse the event data as JSON
             try:
                 parsed_data = json.loads(event_data)
+
+                # Check for usage information
+                if "usage" in parsed_data:
+                    usage_data = parsed_data["usage"]
+                    logger.debug(f"Usage data received: {usage_data}")
+                    break
+
                 finish_reason = parsed_data.get("finishReason", None)
                 if not finish_reason:
                     # Extract text content from OCI GenAI format
@@ -259,10 +270,10 @@ class OCIGenAIUser(BaseUser):
                                     f"First token received at: {time_at_first_token}"
                                 )
                             generated_text += text_segment
-                            tokens_received += 1  # each event contains one token
+                            streaming_events_count += 1  # each event contains one token
                             logger.debug(
                                 f"Text: '{text_segment}', "
-                                f"tokens received: {tokens_received}"
+                                f"streaming events count: {streaming_events_count}"
                             )
                     # Track the previous data for debugging purposes
                     previous_data = parsed_data
@@ -272,7 +283,6 @@ class OCIGenAIUser(BaseUser):
                         f"We have reached the end of the response "
                         f"with finish reason: {finish_reason}"
                     )
-                    break
             except json.JSONDecodeError:
                 logger.warning(
                     f"Error decoding JSON from event data: {event_data}, "
@@ -283,17 +293,37 @@ class OCIGenAIUser(BaseUser):
 
         # End timing for response
         end_time = time.monotonic()
+
+        try:
+            completion_tokens = usage_data["completionTokens"]
+            completion_tokens_details = usage_data["completionTokensDetails"]
+            reasoning_tokens = completion_tokens_details["reasoningTokens"]
+            tokens_received = completion_tokens + reasoning_tokens
+
+        except (KeyError, TypeError):
+            # Fallback: use streaming events count if usage data is unavailable
+            tokens_received = streaming_events_count
+
+            logger.warning(
+                f"🚨 Usage data unavailable or incomplete. "
+                f"Falling back to streaming_events_count: {tokens_received}"
+            )
+
+            # Final fallback: estimate from word count if still no tokens
+            if not tokens_received:
+                tokens_received = len(generated_text.split())
+
         logger.debug(
             f"Generated text: {generated_text} \n"
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
-            f"Completion Tokens: {tokens_received}\n"
+            f"Streaming Events Count: {streaming_events_count}\n"
+            f"Completion Tokens (from usage): {completion_tokens}\n"
+            f"Reasoning Tokens (from usage): {reasoning_tokens}\n"
+            f"tokens_received: {tokens_received}\n"
             f"Start Time: {start_time}\n"
-            f"End Time: {end_time}"
+            f"End Time: {end_time}\n"
         )
-        # Log if token count was not captured accurately
-        if not tokens_received:
-            tokens_received = len(generated_text.split())
 
         # Ensure time_at_first_token is never None (fallback to end_time)
         if time_at_first_token is None:
