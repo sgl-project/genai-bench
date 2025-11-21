@@ -68,6 +68,15 @@ class UnifiedAuthFactory:
                 profile=kwargs.get("profile"),
             )
 
+        elif provider == "aws-sagemaker":
+            return AWSBedrockAuth(
+                access_key_id=kwargs.get("access_key_id"),
+                secret_access_key=kwargs.get("secret_access_key"),
+                session_token=kwargs.get("session_token"),
+                region=kwargs.get("region"),
+                profile=kwargs.get("profile"),
+            )
+
         elif provider == "azure-openai":
             return AzureOpenAIAuth(
                 api_key=kwargs.get("api_key"),

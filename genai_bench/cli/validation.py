@@ -10,6 +10,7 @@ from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.scenarios.base import Scenario
 from genai_bench.user.aws_bedrock_user import AWSBedrockUser
+from genai_bench.user.aws_sagemaker_user import AWSSagemakerUser
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
@@ -26,6 +27,7 @@ API_BACKEND_USER_MAP = {
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
     AWSBedrockUser.BACKEND_NAME: AWSBedrockUser,
+    AWSSagemakerUser.BACKEND_NAME: AWSSagemakerUser,
     AzureOpenAIUser.BACKEND_NAME: AzureOpenAIUser,
     GCPVertexUser.BACKEND_NAME: GCPVertexUser,
     TogetherUser.BACKEND_NAME: TogetherUser,

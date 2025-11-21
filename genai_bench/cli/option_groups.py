@@ -81,6 +81,7 @@ def api_options(func):
                 "oci-genai",
                 "cohere",
                 "aws-bedrock",
+                "aws-sagemaker",
                 "azure-openai",
                 "gcp-vertex",
                 "together",
