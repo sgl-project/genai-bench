@@ -73,6 +73,7 @@ def cli(ctx):
 def benchmark(
     ctx,
     api_backend,
+    custom_backend,
     api_base,
     api_key,
     api_model_name,
@@ -238,6 +239,11 @@ def benchmark(
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
 
+    elif api_backend == "custom":
+        # Custom backends handle their own authentication
+        # No auth_kwargs needed - will be None from factory
+        pass
+
     # Map backend names for auth factory
     auth_backend_map = {
         "oci-cohere": "oci",
@@ -250,7 +256,10 @@ def benchmark(
 
     # Create authentication provider
     auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
-    logger.info(f"Using {api_backend} authentication")
+    if api_backend != "custom":
+        logger.info(f"Using {api_backend} authentication")
+    else:
+        logger.info("Using custom backend with self-managed authentication")
 
     # Rebuild the cmd_line from ctx.params
     cmd_line_parts = [sys.argv[0]]
@@ -329,7 +338,7 @@ def benchmark(
         cmd=cmd_line,
         benchmark_version=GENAI_BENCH_VERSION,
         api_backend=api_backend,
-        auth_config=auth_provider.get_config(),
+        auth_config=auth_provider.get_config() if auth_provider else {},
         api_model_name=api_model_name,
         server_model_tokenizer=model_tokenizer,
         model=model,

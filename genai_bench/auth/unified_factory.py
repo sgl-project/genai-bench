@@ -34,7 +34,7 @@ class UnifiedAuthFactory:
 
         Args:
             provider: Provider type ('openai', 'oci', 'aws-bedrock',
-                'azure-openai', 'gcp-vertex', 'together')
+                'azure-openai', 'gcp-vertex', 'together', 'custom')
             **kwargs: Provider-specific arguments
 
         Returns:
@@ -68,15 +68,6 @@ class UnifiedAuthFactory:
                 profile=kwargs.get("profile"),
             )
 
-        elif provider == "aws-sagemaker":
-            return AWSBedrockAuth(
-                access_key_id=kwargs.get("access_key_id"),
-                secret_access_key=kwargs.get("secret_access_key"),
-                session_token=kwargs.get("session_token"),
-                region=kwargs.get("region"),
-                profile=kwargs.get("profile"),
-            )
-
         elif provider == "azure-openai":
             return AzureOpenAIAuth(
                 api_key=kwargs.get("api_key"),
@@ -99,12 +90,15 @@ class UnifiedAuthFactory:
             api_key = kwargs.get("api_key")
             together_auth = TogetherAuth(api_key=api_key)
             return TogetherModelAuthAdapter(together_auth)
+        elif provider == "custom":
+            # For custom backends, return None (auth is handled by the custom implementation)
+            # Custom backends can implement their own auth in the on_start() method
+            return None  # type: ignore
 
         else:
             raise ValueError(
                 f"Unsupported model provider: {provider}. "
-                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, "
-                "together"
+                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, together, custom"
             )
 
     @staticmethod
