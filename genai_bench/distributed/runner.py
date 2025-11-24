@@ -165,7 +165,9 @@ class DistributedRunner:
         # Create collector only for master in distributed mode
         self.metrics_collector = AggregatedMetricsCollector()
 
-        time.sleep(self.config.wait_time)
+        # Use gevent.sleep() instead of time.sleep() to avoid blocking the event loop
+        # This allows other greenlets (like heartbeat handlers) to run during the wait
+        gevent.sleep(self.config.wait_time)
         self._register_message_handlers()
 
         # Start log consumer greenlet
