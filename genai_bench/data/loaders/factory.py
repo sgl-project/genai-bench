@@ -40,12 +40,6 @@ class DataLoaderFactory:
         dataset_config: DatasetConfig, output_modality: str
     ) -> List[str]:
         """Load text data."""
-        # Synthetic-only path: skip file/HF loading entirely
-        if bool(getattr(dataset_config, "synthetic", False)):
-            logger.info(
-                "Synthetic mode enabled: skipping dataset file loading and returning a minimal placeholder."
-            )
-            return ["synthetic"]
 
         loader = TextDatasetLoader(dataset_config)
         data = loader.load_request()

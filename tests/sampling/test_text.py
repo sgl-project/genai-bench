@@ -9,7 +9,6 @@ from genai_bench.protocol import (
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
 from genai_bench.scenarios.text import ReRankScenario
-from genai_bench.data.config import DatasetConfig, DatasetSourceConfig
 
 
 class TestTextSampler(unittest.TestCase):
@@ -183,124 +182,6 @@ class TestTextSampler(unittest.TestCase):
         invalid_scenario.scenario_type = "invalid"
         with self.assertRaises(ValueError):
             self.sampler._validate_scenario(invalid_scenario)
-
-    def test_synthetic_cached_prefix_and_exact_length(self):
-        """
-        Ensure synthetic prompt generation matches tore-speed semantics:
-        - Exact input token length equals requested.
-        - Cached prefix occupies the first synthetic_cached_input_length tokens.
-        - Unique marker and tail are present after the prefix.
-        """
-
-        # Fake tokenizer that understands the synthetic builder pieces
-        class FakeTokenizer:
-            pad_token_id = 0
-            eos_token_id = 100
-
-            def __init__(self):
-                self.base_phrase = "hi,"
-                self.base_tokens = [1, 2]
-                self.marker_tokens = [8, 9, 10]
-                self.tail_text = " Write a very long essay about San Francisco"
-                self.tail_tokens = [3, 4, 5]
-
-            def encode(self, text, add_special_tokens=False):
-                # Exact matches used by the builder
-                if text == self.base_phrase:
-                    return list(self.base_tokens)
-                if text == self.tail_text:
-                    return list(self.tail_tokens)
-                # Marker text during build contains '-' and digits
-                if any(ch.isdigit() or ch == '-' for ch in text):
-                    return list(self.marker_tokens)
-
-                # When re-encoding the final prompt for counting, parse known segments
-                tokens = []
-                i = 0
-                while i < len(text):
-                    if text.startswith(self.base_phrase, i):
-                        tokens.extend(self.base_tokens)
-                        i += len(self.base_phrase)
-                    elif text.startswith("MARK", i):
-                        tokens.extend(self.marker_tokens)
-                        i += len("MARK")
-                    elif text.startswith(self.tail_text, i):
-                        tokens.extend(self.tail_tokens)
-                        i += len(self.tail_text)
-                    else:
-                        # Skip any other chars (spaces/pads) as 0-cost
-                        i += 1
-                return tokens
-
-            def decode(self, tokens, skip_special_tokens=True):
-                # Reconstruct the text from token ids by chunking known patterns
-                out = []
-                i = 0
-                while i < len(tokens):
-                    if tokens[i : i + 2] == self.base_tokens:
-                        out.append(self.base_phrase)
-                        i += 2
-                    elif tokens[i : i + 3] == self.marker_tokens:
-                        out.append("MARK")
-                        i += 3
-                    elif tokens[i : i + 3] == self.tail_tokens:
-                        out.append(self.tail_text)
-                        i += 3
-                    elif tokens[i] == self.pad_token_id:
-                        i += 1
-                    else:
-                        # Fallback for any stray token
-                        i += 1
-                return "".join(out)
-
-        tokenizer = FakeTokenizer()
-
-        # Synthetic config
-        cached_len = 3000
-        target_in = 10000
-        target_out = 825
-
-        ds_cfg = DatasetConfig(
-            source=DatasetSourceConfig(type="file", path=None, file_format="txt"),
-            prompt_column=None,
-            image_column=None,
-            synthetic=True,
-            synthetic_input_length=target_in,
-            synthetic_output_length=target_out,
-            synthetic_cached_input_length=cached_len,
-        )
-
-        sampler = TextSampler(
-            tokenizer=tokenizer,
-            model="mock_model",
-            output_modality="text",
-            data=["irrelevant"],
-            dataset_config=ds_cfg,
-        )
-
-        # Deterministic scenario D(10000,825)
-        class Deterministic:
-            scenario_type = NormalDistribution.scenario_type  # irrelevant for validation in this path
-            def sample(self):
-                return target_in, target_out
-
-        req = sampler.sample(Deterministic())
-
-        # Exact token length via tokenizer re-encode of final prompt
-        self.assertEqual(req.num_prefill_tokens, target_in)
-
-        # Cached prefix check: leading repeats of base phrase
-        base_repeat = cached_len // len(tokenizer.base_tokens)
-        expected_prefix = tokenizer.base_phrase * base_repeat
-        self.assertTrue(
-            req.prompt.startswith(expected_prefix),
-            "Prompt does not start with expected cached prefix",
-        )
-
-        # Ensure marker and tail exist after the prefix
-        remaining = req.prompt[len(expected_prefix) :]
-        self.assertIn("MARK", remaining)
-        self.assertIn(tokenizer.tail_text, remaining)
 
     def test_sample_text_exact_token_count(self):
         """

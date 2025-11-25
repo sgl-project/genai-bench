@@ -235,12 +235,7 @@ class AggregatedMetricsCollector:
                 f"check logs from genai-bench and server!"
             )
 
-        # Total responses (success + error)
-        self.aggregated_metrics.num_requests = (
-            self.aggregated_metrics.num_completed_requests
-            + self.aggregated_metrics.num_error_requests
-        )
-        # Requests/sec (completed only)
+        # Calculate requests per minute
         self.aggregated_metrics.requests_per_second = (
             (
                 self.aggregated_metrics.num_completed_requests
@@ -249,14 +244,9 @@ class AggregatedMetricsCollector:
             if self.aggregated_metrics.run_duration > 0
             else 0
         )
-        # Tore-speed style: responses returned per second (success + error)
-        self.aggregated_metrics.summary_actual_qps = (
-            (
-                self.aggregated_metrics.num_requests
-                / self.aggregated_metrics.run_duration
-            )
-            if self.aggregated_metrics.run_duration > 0
-            else 0
+        self.aggregated_metrics.num_requests = (
+            self.aggregated_metrics.num_completed_requests
+            + self.aggregated_metrics.num_error_requests
         )
 
     def set_run_metadata(

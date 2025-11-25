@@ -70,27 +70,6 @@ class DatasetConfig(BaseModel):
         description="Overrides pillows internal DDOS protection",
     )
 
-    # Synthetic Tore-style options (optional)
-    synthetic: bool = Field(
-        False,
-        description="Enable Tore-style synthetic prompt generation.",
-    )
-    synthetic_input_length: Optional[int] = Field(
-        None, description="Target number of input tokens for synthetic prompts"
-    )
-    synthetic_input_length_stdev: Optional[int] = Field(
-        None, description="Stddev for input tokens (optional)"
-    )
-    synthetic_output_length: Optional[int] = Field(
-        None, description="Target number of output tokens for synthetic prompts"
-    )
-    synthetic_output_length_stdev: Optional[int] = Field(
-        None, description="Stddev for output tokens (optional)"
-    )
-    synthetic_cached_input_length: Optional[int] = Field(
-        None, description="Number of input tokens to allocate to cached prefix"
-    )
-
     @classmethod
     def from_file(cls, config_path: str) -> "DatasetConfig":
         """Load configuration from a JSON file."""
@@ -145,10 +124,4 @@ class DatasetConfig(BaseModel):
             image_column=image_column,
             prompt_lambda=None,
             unsafe_allow_large_images=False,
-            synthetic=bool(kwargs.get("synthetic", False)),
-            synthetic_input_length=kwargs.get("synthetic_input_length"),
-            synthetic_input_length_stdev=kwargs.get("synthetic_input_length_stdev"),
-            synthetic_output_length=kwargs.get("synthetic_output_length"),
-            synthetic_output_length_stdev=kwargs.get("synthetic_output_length_stdev"),
-            synthetic_cached_input_length=kwargs.get("synthetic_cached_input_length"),
         )

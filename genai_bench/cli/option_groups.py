@@ -96,35 +96,6 @@ def api_options(func):
         "open-source servers.",
     )(func)
     return func
-def open_loop_options(func):
-    func = click.option(
-        "--non-locust",
-        is_flag=True,
-        default=False,
-        help="Use open-loop QPS generator (tore-speed style) instead of Locust.",
-    )(func)
-    func = click.option(
-        "--qps-level",
-        type=click.FLOAT,
-        multiple=True,
-        default=None,
-        help="Open-loop QPS levels (can be specified multiple times).",
-    )(func)
-    func = click.option(
-        "--qps-distribution",
-        type=click.Choice(["uniform", "exponential", "constant"], case_sensitive=False),
-        default="uniform",
-        help="Interarrival distribution for open-loop mode (default: uniform).",
-    )(func)
-    func = click.option(
-        "--random-seed",
-        type=int,
-        default=42,
-        help="Random seed for interarrival generation (default: 42).",
-    )(func)
-    return func
-
-
 
 
 # Model endpoint authentication options
@@ -325,43 +296,6 @@ def sampling_options(func):
         help="Path to JSON configuration file for advanced dataset options. "
         "This allows full control over dataset loading parameters.",
     )(func)
-    # Synthetic Tore-style generation options (optional)
-    func = click.option(
-        "--synthetic",
-        is_flag=True,
-        default=False,
-        help="Enable Tore-style synthetic prompt generation.",
-    )(func)
-    func = click.option(
-        "--synthetic-input-length",
-        type=int,
-        default=None,
-        help="Synthetic input length (tokens).",
-    )(func)
-    func = click.option(
-        "--synthetic-input-length-stdev",
-        type=int,
-        default=None,
-        help="Stddev for synthetic input length (tokens).",
-    )(func)
-    func = click.option(
-        "--synthetic-output-length",
-        type=int,
-        default=None,
-        help="Synthetic output length (tokens).",
-    )(func)
-    func = click.option(
-        "--synthetic-output-length-stdev",
-        type=int,
-        default=None,
-        help="Stddev for synthetic output length (tokens).",
-    )(func)
-    func = click.option(
-        "--synthetic-cached-input-length",
-        type=int,
-        default=None,
-        help="Number of input tokens to allocate to cached prefix.",
-    )(func)
     func = click.option(
         "--dataset-image-column",
         type=str,
@@ -474,11 +408,12 @@ def experiment_options(func):
     )(func)
     func = click.option(
         "--max-time-per-run",
-        type=float,
+        type=int,
         required=True,
         prompt=True,
-        help="The max duration per experiment run in minutes (floats allowed). "
-        "Each run exits when this wall-clock limit or max-requests is reached.",
+        help="The max duration per experiment run. Unit: minute. "
+        "One experiment run will exit if max_time_per_run is "
+        "reached. ",
     )(func)
     func = click.option(
         "--warmup-ratio",
