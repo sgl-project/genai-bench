@@ -3,11 +3,13 @@ from locust.env import Environment
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
+
+MAX_CONCURRENCY_FOR_RATE = 5000
 
 
 def manage_run_time(
@@ -107,11 +109,21 @@ def get_experiment_path(
     return experiment_path
 
 
-def get_run_params(iteration_type: str, iteration_value: int) -> Tuple[str, int, int]:
+def get_run_params(
+    iteration_type: str, iteration_value: Union[int, float]
+) -> Tuple[str, int, int]:
     """
-    Returns appropriate header, batch_size, and num_concurrency based on iteration_type
-    and iteration_value.
+    Returns appropriate header, batch_size, and num_concurrency based on
+    iteration_type and iteration_value.
+
+    For request_rate, concurrency is calculated as min(rate * 100, 5000) to ensure
+    sufficient workers (actual rate is controlled by rate limiter).
     """
     if iteration_type == "batch_size":
-        return "Batch Size", iteration_value, 1
-    return "Concurrency", 1, iteration_value
+        return "Batch Size", int(iteration_value), 1
+    elif iteration_type == "request_rate":
+        # For request_rate, use a sufficiently high concurrency (capped at 5000)
+        # The rate limiter will control the actual request rate
+        concurrency = MAX_CONCURRENCY_FOR_RATE
+        return "Request Rate", 1, concurrency
+    return "Concurrency", 1, int(iteration_value)
