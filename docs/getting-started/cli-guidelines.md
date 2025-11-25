@@ -18,7 +18,7 @@ The `benchmark` command runs performance tests against AI models. It's the core 
 ### Example Usage
 ```bash
 # Start a chat benchmark
-genai-bench benchmark --api-backend openai \
+genai-bench benchmark --api-backend sglang \
             --api-base "http://localhost:8082" \
             --api-key "your-openai-api-key" \
             --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
