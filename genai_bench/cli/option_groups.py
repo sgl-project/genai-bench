@@ -803,3 +803,50 @@ def object_storage_options(func):
         help="Whether to upload benchmark results to storage",
     )(func)
     return func
+
+
+# SGLang profiling options
+def sglang_profile_options(func):
+    """SGLang server-side profiling options.
+
+    These options enable Perfetto trace profiling on SGLang servers,
+    capturing GPU kernel-level performance data for detailed analysis.
+    Only applicable when --api-backend is 'sglang'.
+    """
+    func = click.option(
+        "--sglang-profile",
+        is_flag=True,
+        default=False,
+        help="Enable SGLang server-side profiling. Generates Perfetto traces "
+        "for GPU kernel-level performance analysis. Only works with "
+        "--api-backend sglang.",
+    )(func)
+    func = click.option(
+        "--sglang-profile-output-dir",
+        type=str,
+        default=None,
+        help="Directory to save SGLang profile traces. "
+        "Defaults to '<experiment-folder>/profiles'.",
+    )(func)
+    func = click.option(
+        "--sglang-profile-steps",
+        type=int,
+        default=10,
+        help="Number of forward steps to profile. More steps = more data "
+        "but larger trace files. Default: 10.",
+    )(func)
+    func = click.option(
+        "--sglang-profile-by-stage",
+        is_flag=True,
+        default=True,
+        help="Profile prefill and decode stages separately. "
+        "Enables detailed analysis of each inference phase. Default: True.",
+    )(func)
+    func = click.option(
+        "--sglang-profile-activities",
+        type=str,
+        default="CPU,GPU",
+        help="Comma-separated list of activities to profile. "
+        "Options: CPU, GPU, MEM. Default: 'CPU,GPU'.",
+    )(func)
+    return func
