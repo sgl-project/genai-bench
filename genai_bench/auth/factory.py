@@ -8,6 +8,7 @@ from genai_bench.auth.oci.obo_token import OCIOBOTokenAuth
 from genai_bench.auth.oci.session import OCISessionAuth
 from genai_bench.auth.oci.user_principal import OCIUserPrincipalAuth
 from genai_bench.auth.openai.auth import OpenAIAuth
+from genai_bench.auth.together.auth import TogetherAuth
 
 
 class AuthFactory:
@@ -24,6 +25,18 @@ class AuthFactory:
             OpenAIAuth: OpenAI auth provider
         """
         return OpenAIAuth(api_key=api_key)
+
+    @staticmethod
+    def create_together_auth(api_key: str) -> TogetherAuth:
+        """Create Together authentication provider.
+
+        Args:
+            api_key (str): Together API key
+
+        Returns:
+            TogetherAuth: OpenAI auth provider
+        """
+        return TogetherAuth(api_key=api_key)
 
     @staticmethod
     def create_oci_auth(
