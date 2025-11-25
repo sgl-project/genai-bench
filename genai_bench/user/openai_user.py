@@ -45,6 +45,7 @@ class OpenAIUser(BaseUser):
             **auth_headers,
             "Content-Type": "application/json",
         }
+        self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
 
     @task
@@ -87,16 +88,20 @@ class OpenAIUser(BaseUser):
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
-            "ignore_eos": user_request.additional_request_params.get(
-                "ignore_eos",
-                bool(user_request.max_tokens),
-            ),
             "stream": True,
             "stream_options": {
                 "include_usage": True,
             },
             **user_request.additional_request_params,
         }
+
+        # Conditionally add ignore_eos for vLLM and SGLang backends
+        if self.api_backend in ["vllm", "sglang"]:
+            payload.setdefault("ignore_eos", bool(user_request.max_tokens))
+        else:
+            # Remove ignore_eos for OpenAI backend, as it is not supported
+            payload.pop("ignore_eos", None)
+
         self.send_request(
             True,
             endpoint,
