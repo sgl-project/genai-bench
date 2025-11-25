@@ -47,12 +47,12 @@ class TogetherModelAuthAdapter(ModelAuthProvider):
         """
         return "api_key"
 
-    def get_credentials(self) -> str:
+    def get_credentials(self) -> Dict[str, str]:
         """Get Together credentials.
 
         Returns:
-            API key string
+            Dict with API key
         """
         if self.together_auth.api_key:
-            return self.together_auth.api_key
-        return ""
+            return {"api_key": self.together_auth.api_key}
+        return {}
