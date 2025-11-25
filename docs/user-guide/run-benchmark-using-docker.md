@@ -87,7 +87,7 @@ docker run \
     --name llama-4-scout-benchmark \
     genai-bench:dev \
     benchmark \
-    --api-backend openai \
+    --api-backend sglang \
     --api-base http://localhost:8080 \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
@@ -136,7 +136,7 @@ docker run \
     --name llama-3.2-11b-benchmark \
     genai-bench:dev \
     benchmark \
-    --api-backend openai \
+    --api-backend sglang \
     --api-base http://localhost:8080 \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \

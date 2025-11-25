@@ -51,7 +51,7 @@ Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/get
 
 1. **Run a benchmark** against your model:
    ```bash
-   genai-bench benchmark --api-backend openai \
+   genai-bench benchmark --api-backend "your-backend" \
      --api-base "http://localhost:8080" \
      --api-key "your-api-key" \
      --api-model-name "your-model" \
