@@ -1,6 +1,7 @@
 from locust.env import Environment
 from locust.runners import WorkerRunner
 
+import gevent
 import os
 import sys
 import time
@@ -494,7 +495,8 @@ def benchmark(
                 dashboard.update_total_progress_bars(total_runs)
 
                 # Sleep for 1 sec for server to clear aborted requests
-                time.sleep(1)
+                # Use gevent.sleep() to allow greenlets to continue processing
+                gevent.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
             plot_single_scenario_inference_speed_vs_throughput(
@@ -506,7 +508,8 @@ def benchmark(
             )
 
         # Sleep for 2 secs before the UI disappears
-        time.sleep(2)
+        # Use gevent.sleep() to allow greenlets to continue processing
+        gevent.sleep(2)
 
     # Final cleanup
     runner.cleanup()
