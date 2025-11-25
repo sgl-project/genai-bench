@@ -831,9 +831,9 @@ def sglang_profile_options(func):
     func = click.option(
         "--sglang-profile-steps",
         type=int,
-        default=10,
+        default=5,
         help="Number of forward steps to profile. More steps = more data "
-        "but larger trace files. Default: 10.",
+        "but larger trace files. Default: 5 (matches SGLang nightly tests).",
     )(func)
     func = click.option(
         "--sglang-profile-by-stage",

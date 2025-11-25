@@ -55,7 +55,7 @@ genai-bench benchmark \
 |--------|---------|-------------|
 | `--sglang-profile` | `False` | Enable SGLang server-side profiling |
 | `--sglang-profile-output-dir` | `<experiment>/profiles` | Directory to save trace files |
-| `--sglang-profile-steps` | `10` | Number of forward steps to profile |
+| `--sglang-profile-steps` | `5` | Number of forward steps to profile (matches SGLang nightly) |
 | `--sglang-profile-by-stage` | `True` | Profile prefill and decode separately |
 | `--sglang-profile-activities` | `CPU,GPU` | Activities to profile (CPU, GPU, MEM) |
 
@@ -110,7 +110,7 @@ profiler = SGLangProfiler(
 
 # Start profiling (captures next N forward steps)
 trace_path = profiler.start_profile(
-    num_steps=10,
+    num_steps=5,
     activities=["CPU", "GPU"],
     profile_name="my_benchmark",
 )

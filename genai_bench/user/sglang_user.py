@@ -55,7 +55,7 @@ class SGLangUser(OpenAIUser):
             opts: Parsed command line options containing profile settings.
         """
         profile_output_dir = getattr(opts, 'sglang_profile_output_dir', '/tmp/genai_bench_profiles')
-        profile_steps = getattr(opts, 'sglang_profile_steps', 10)
+        profile_steps = getattr(opts, 'sglang_profile_steps', 5)
         profile_by_stage = getattr(opts, 'sglang_profile_by_stage', True)
 
         # Create output directory
@@ -125,7 +125,7 @@ class SGLangProfiler:
 
     def start_profile(
         self,
-        num_steps: int = 10,
+        num_steps: int = 5,
         activities: list = None,
         profile_name: str = None,
     ) -> str:
