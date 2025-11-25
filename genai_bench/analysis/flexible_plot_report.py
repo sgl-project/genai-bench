@@ -902,7 +902,7 @@ def validate_plot_config_with_data(
             plot_spec.x_field,
             sample_agg_metrics,  # type: ignore[arg-type]
         ):
-            errors.append(f"Plot {i + 1}: Invalid x_field '{plot_spec.x_field}'")
+            errors.append(f"Plot {i+1}: Invalid x_field '{plot_spec.x_field}'")
 
         # Validate Y field paths (single or multiple)
         try:
@@ -914,22 +914,22 @@ def validate_plot_config_with_data(
                 ):
                     if len(y_field_specs) == 1:
                         errors.append(
-                            f"Plot {i + 1}: Invalid y_field '{y_field_spec.field}'"
+                            f"Plot {i+1}: Invalid y_field '{y_field_spec.field}'"
                         )
                     else:
                         errors.append(
-                            f"Plot {i + 1}: Invalid y_fields[{j}] '{y_field_spec.field}'"
+                            f"Plot {i+1}: Invalid y_fields[{j}] '{y_field_spec.field}'"
                         )
         except Exception as e:
-            errors.append(f"Plot {i + 1}: Error validating Y-fields: {e}")
+            errors.append(f"Plot {i+1}: Error validating Y-fields: {e}")
 
         # Validate position bounds
         layout = config.layout
         row, col = plot_spec.position
         if row >= layout.rows or col >= layout.cols:
             errors.append(
-                f"Plot {i + 1}: Position ({row}, {col}) exceeds layout bounds "
-                f"({layout.rows - 1}, {layout.cols - 1})"
+                f"Plot {i+1}: Position ({row}, {col}) exceeds layout bounds "
+                f"({layout.rows-1}, {layout.cols-1})"
             )
 
     return errors
