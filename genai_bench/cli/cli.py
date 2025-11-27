@@ -119,6 +119,8 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
+    random_prompt,
+    prefix_lens,
     num_workers,
     master_port,
     spawn_rate,
@@ -297,6 +299,8 @@ def benchmark(
         data=data,
         additional_request_params=additional_request_params,
         dataset_config=dataset_config_obj,
+        random_prompt=random_prompt,
+        prefix_lens=prefix_lens,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode
