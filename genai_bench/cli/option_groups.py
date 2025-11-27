@@ -12,6 +12,7 @@ from genai_bench.cli.validation import (
     validate_dataset_path_callback,
     validate_iteration_params,
     validate_object_storage_options,
+    validate_prefix_lengths_options,
     validate_task,
     validate_traffic_scenario_callback,
     validate_warmup_cooldown_ratio_options,
@@ -320,6 +321,22 @@ def sampling_options(func):
         "- Local file: /path/to/data.csv or /path/to/prompts.txt\n"
         "- HuggingFace: squad or meta-llama/Llama-2-7b-hf\n"
         "- Default: Leave empty to use built-in sonnet.txt",
+    )(func)
+    func = click.option(
+        "--random-prompt",
+        is_flag=True,
+        default=False,
+        help="Enable random prompt generation. If provided, it becomes True, and the "
+        "dataset will be sampled with prompts generated from the model's tokenizer.",
+    )(func)
+    func = click.option(
+        "--prefix-lens",
+        callback=validate_prefix_lengths_options,
+        type=str,
+        default=None,
+        help="List of prefix lengths to sample from. "
+        "If specified, the sampling prompts will be attached with a prefix "
+        "If not specified, the default is no prefix.",
     )(func)
     return func
 
