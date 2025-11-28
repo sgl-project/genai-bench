@@ -1,4 +1,5 @@
 import random
+import re
 from typing import Any, Dict, List, Optional
 
 from genai_bench.data.config import DatasetConfig
@@ -33,6 +34,8 @@ class TextSampler(Sampler):
         data: List[str],
         additional_request_params: Optional[Dict[str, Any]] = None,
         dataset_config: Optional[DatasetConfig] = None,
+        prefix_lens: Optional[list[int]] = None,
+        random_prompt: bool = False,
         **kwargs,
     ):
         super().__init__(
@@ -41,6 +44,20 @@ class TextSampler(Sampler):
 
         self.data = data
         self.batch_size = 1  # Default batch size
+        self.tokens = [
+            v for k, v in tokenizer.get_vocab().items() if not re.match(r"^<.*>$", k)
+        ]  # filter out special tokens
+        self.random_prompt = random_prompt
+        self.prefix = (
+            [
+                self.tokenizer.decode(
+                    [random.choice(self.tokens) for _ in range(length)]
+                )
+                for length in prefix_lens
+            ]
+            if prefix_lens
+            else []
+        )
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -177,8 +194,16 @@ class TextSampler(Sampler):
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
+        prefix = random.choice(self.prefix) + "\n" if self.prefix else ""
+
         if not num_input_tokens:
-            return random.choice(self.data)
+            return f"{prefix}{random.choice(self.data)}"
+
+        if self.random_prompt:
+            prompt = self.tokenizer.decode(
+                [random.choice(self.tokens) for _ in range(num_input_tokens)]
+            )
+            return f"{prefix}{prompt}"
 
         data_copy = self.data.copy()
         prompt = ""
@@ -195,10 +220,10 @@ class TextSampler(Sampler):
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
                     prompt += (" " if prompt else "") + truncated_text
-                    return prompt
+                    return f"{prefix}{prompt}"
                 prompt += line
                 left_tokens_to_sample -= num_line_tokens
-        return prompt
+        return f"{prefix}{prompt}"
 
     def _check_discrepancy(
         self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1
