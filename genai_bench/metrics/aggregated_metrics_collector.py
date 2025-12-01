@@ -73,33 +73,26 @@ class AggregatedMetricsCollector:
         """
         Detects and handles unreliable TPOT/inference_speed values by setting them to None.
 
-        When output generation is very short (output_latency < 0.01s), TPOT becomes
+        When output generation is very short (output_latency < 0.001s), TPOT becomes
         sensitive to timing jitter and network latency. Observed problematic cases had
         output_latency of ~0.0001s to 0.0002s, resulting in impossibly high inference
-        speeds (>1000 tokens/s). The 0.01s threshold provides a safety margin while only
-        affecting edge cases, as normal LLM generation (10-200 tokens/s) takes >0.01s
+        speeds (>1000 tokens/s). The 0.001s threshold provides a safety margin while only
+        affecting edge cases, as normal LLM generation (10-200 tokens/s) takes >0.001s
         for most requests.
         
         Returns True if filtering was applied, False otherwise
         """
         inference_speed = metrics.output_inference_speed
 
-        # Check for abnormally high inference speed (> 1000 tokens/s)
-        if inference_speed is not None and inference_speed > 1000:
+        # filter silently for short output latency
+        if metrics.output_latency is not None and metrics.output_latency < 0.001:
             logger.warning(
-                f"Metric has abnormal inference speed: {inference_speed} tokens/s. "
-                f"Filtering it out. (tpot={metrics.tpot}, "
+                f"Metric may have abnormal inference speed: {inference_speed} tokens/s. "
+                f"Filtering it out due to very short output latency. (tpot={metrics.tpot}, "
                 f"num_output_tokens={metrics.num_output_tokens}, "
                 f"output_latency={metrics.output_latency})"
             )
-            # Set only problematic fields to None so aggregation skips them while preserving others
-            metrics.tpot = None
-            metrics.output_inference_speed = None
-            return True
-
-        # filter silently for short output latency
-        if metrics.output_latency is not None and metrics.output_latency < 0.01:
-            # Set only problematic fields to None so aggregation skips them while preserving others
+            # Set following fields to None so aggregation skips them while preserving other useful metrics
             metrics.tpot = None
             metrics.output_inference_speed = None
             return True
