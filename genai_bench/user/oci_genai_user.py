@@ -234,8 +234,8 @@ class OCIGenAIUser(BaseUser):
         """
         generated_text = ""
         streaming_events_count = 0
-        completion_tokens = None
-        reasoning_tokens = None
+        total_tokens = None
+        prompt_tokens = None
         time_at_first_token: Optional[float] = None
         finish_reason = None
         previous_data = None
@@ -295,11 +295,9 @@ class OCIGenAIUser(BaseUser):
         end_time = time.monotonic()
 
         try:
-            completion_tokens = usage_data["completionTokens"]
-            reasoning_tokens = (usage_data.get("completionTokensDetails") or {}).get(
-                "reasoningTokens", 0
-            )
-            tokens_received = completion_tokens + reasoning_tokens
+            total_tokens = usage_data["totalTokens"]
+            prompt_tokens = usage_data["promptTokens"]
+            tokens_received = total_tokens - prompt_tokens
 
         except (KeyError, TypeError):
             # Fallback: use streaming events count if usage data is unavailable
@@ -319,8 +317,9 @@ class OCIGenAIUser(BaseUser):
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
             f"Streaming Events Count: {streaming_events_count}\n"
-            f"Completion Tokens (from usage): {completion_tokens}\n"
-            f"Reasoning Tokens (from usage): {reasoning_tokens}\n"
+            f"Total Tokens (from usage): {total_tokens}\n"
+            f"Prompt Tokens (from usage): {prompt_tokens}\n"
+            f"Usage data: {usage_data}\n"
             f"tokens_received: {tokens_received}\n"
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}\n"
