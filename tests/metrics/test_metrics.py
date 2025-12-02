@@ -163,7 +163,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         ttft=0.1,
         tpot=0.0000002,
         e2e_latency=1.0,
-        output_latency=0.9,
+        output_latency=0.002,
         input_throughput=20.0,
         output_throughput=11.111,
         num_input_tokens=2,
