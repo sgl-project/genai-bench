@@ -225,7 +225,9 @@ class TestTextSampler(unittest.TestCase):
             result = self.sampler._sample_text(num_tokens)
 
             # Verify that _sample_text returns non-empty text
-            self.assertTrue(len(result) > 0, f"Expected non-empty result for {num_tokens} tokens")
+            self.assertTrue(
+                len(result) > 0, f"Expected non-empty result for {num_tokens} tokens"
+            )
             # Verify that encoding was called during sampling
             self.assertTrue(len(tokens_counted) > 0, "Expected encode to be called")
 
