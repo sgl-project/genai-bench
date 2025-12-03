@@ -347,7 +347,9 @@ def set_model_from_tokenizer(ctx, param, value):
     tokenizer_from_model = ctx.params.get("tokenizer_from_model")
     api_model_name = ctx.params.get("api_model_name")
     if tokenizer_from_model and api_model_name:
-        first_model = api_model_name[0] if isinstance(api_model_name, tuple) else api_model_name
+        first_model = (
+            api_model_name[0] if isinstance(api_model_name, tuple) else api_model_name
+        )
         return first_model.split("/")[-1]
 
     return None

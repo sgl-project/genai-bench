@@ -322,7 +322,9 @@ def benchmark(
         )
 
     # Load the tokenizer (use first model if tokenizer_from_model is set)
-    initial_tokenizer_name = api_model_names[0] if tokenizer_from_model else model_tokenizer
+    initial_tokenizer_name = (
+        api_model_names[0] if tokenizer_from_model else model_tokenizer
+    )
     tokenizer = validate_tokenizer(initial_tokenizer_name)
 
     sonnet_character_token_ratio = calculate_sonnet_char_token_ratio(tokenizer)
@@ -383,7 +385,9 @@ def benchmark(
         benchmark_version=GENAI_BENCH_VERSION,
         api_backend=api_backend,
         auth_config=auth_provider.get_config(),
-        api_model_name=", ".join(api_model_names),  # Store all models as comma-separated
+        api_model_name=", ".join(
+            api_model_names
+        ),  # Store all models as comma-separated
         server_model_tokenizer=model_tokenizer,
         model=model,
         task=task,
@@ -504,7 +508,9 @@ def benchmark(
                 target_concurrency=None,
             )
 
-        total_runs = len(api_model_names) * len(traffic_scenario) * len(iteration_values)
+        total_runs = (
+            len(api_model_names) * len(traffic_scenario) * len(iteration_values)
+        )
         dashboard.initialize_total_progress_bars(total_runs)
 
         with dashboard.live:
@@ -542,17 +548,13 @@ def benchmark(
                             iteration_header = "QPS"
                             batch_size = 1
                             concurrency = None
-                            progress_label = (
-                                f"Model: {current_model}, Scenario: {scenario_str}, {iteration_header}: {iteration}"
-                            )
+                            progress_label = f"Model: {current_model}, Scenario: {scenario_str}, {iteration_header}: {iteration}"
                         else:
                             # Closed-loop mode or batch_size: use normal logic
                             iteration_header, batch_size, concurrency = get_run_params(
                                 iteration_type, iteration
                             )
-                            progress_label = (
-                                f"Model: {current_model}, Scenario: {scenario_str}, {iteration_header}: {iteration}"
-                            )
+                            progress_label = f"Model: {current_model}, Scenario: {scenario_str}, {iteration_header}: {iteration}"
 
                         dashboard.create_benchmark_progress_task(progress_label)
 
@@ -615,11 +617,11 @@ def benchmark(
                                 cooldown_ratio,
                             )
                         except ValueError as e:
-                            debug_file_name = (
-                                f"debug_for_run_{sanitized_model}_{sanitized_scenario_str}_{iteration}.json"
-                            )
+                            debug_file_name = f"debug_for_run_{sanitized_model}_{sanitized_scenario_str}_{iteration}.json"
                             aggregated_metrics_collector.save(
-                                os.path.join(experiment_folder_abs_path, debug_file_name),
+                                os.path.join(
+                                    experiment_folder_abs_path, debug_file_name
+                                ),
                                 metrics_time_unit,
                             )
                             raise ValueError(
@@ -873,7 +875,9 @@ def benchmark(
 
                     # Start the run
                     start_time = time.monotonic()
-                    dashboard.start_run(max_time_per_run, start_time, max_requests_per_run)
+                    dashboard.start_run(
+                        max_time_per_run, start_time, max_requests_per_run
+                    )
 
                     # Use custom spawn rate if provided, otherwise use concurrency
                     actual_spawn_rate = (
@@ -904,9 +908,7 @@ def benchmark(
                             cooldown_ratio,
                         )
                     except ValueError as e:
-                        debug_file_name = (
-                            f"debug_for_run_{sanitized_model}_{sanitized_scenario_str}_{concurrency}.json"
-                        )
+                        debug_file_name = f"debug_for_run_{sanitized_model}_{sanitized_scenario_str}_{concurrency}.json"
                         aggregated_metrics_collector.save(
                             os.path.join(experiment_folder_abs_path, debug_file_name),
                             metrics_time_unit,

@@ -195,28 +195,43 @@ class AggregatedMetricsCollector:
         # Calculate additional metadata based on aggregated data
         self.aggregated_metrics.run_duration = end_time - start_time
 
-        # Handle None values safely
-        num_output_tokens_sum = self.aggregated_metrics.stats.num_output_tokens.sum or 0
-        num_input_tokens_sum = self.aggregated_metrics.stats.num_input_tokens.sum or 0
-        total_tokens_sum = self.aggregated_metrics.stats.total_tokens.sum or 0
+        # Guard against zero or negative run_duration
+        if self.aggregated_metrics.run_duration <= 0:
+            logger.warning(
+                f"‼️ Invalid run_duration: {self.aggregated_metrics.run_duration}s. "
+                f"Cannot calculate throughput metrics. Setting throughputs to 0."
+            )
+            self.aggregated_metrics.mean_output_throughput_tokens_per_s = 0.0
+            self.aggregated_metrics.mean_input_throughput_tokens_per_s = 0.0
+            self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s = 0.0
+            self.aggregated_metrics.mean_total_chars_per_hour = 0.0
+        else:
+            # Handle None values safely
+            num_output_tokens_sum = (
+                self.aggregated_metrics.stats.num_output_tokens.sum or 0
+            )
+            num_input_tokens_sum = (
+                self.aggregated_metrics.stats.num_input_tokens.sum or 0
+            )
+            total_tokens_sum = self.aggregated_metrics.stats.total_tokens.sum or 0
 
-        self.aggregated_metrics.mean_output_throughput_tokens_per_s = (
-            num_output_tokens_sum / self.aggregated_metrics.run_duration
-        )
+            self.aggregated_metrics.mean_output_throughput_tokens_per_s = (
+                num_output_tokens_sum / self.aggregated_metrics.run_duration
+            )
 
-        self.aggregated_metrics.mean_input_throughput_tokens_per_s = (
-            num_input_tokens_sum / self.aggregated_metrics.run_duration
-        )
+            self.aggregated_metrics.mean_input_throughput_tokens_per_s = (
+                num_input_tokens_sum / self.aggregated_metrics.run_duration
+            )
 
-        self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s = (
-            total_tokens_sum / self.aggregated_metrics.run_duration
-        )
+            self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s = (
+                total_tokens_sum / self.aggregated_metrics.run_duration
+            )
 
-        self.aggregated_metrics.mean_total_chars_per_hour = (
-            self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
-            * dataset_character_to_token_ratio
-            * 3600
-        )
+            self.aggregated_metrics.mean_total_chars_per_hour = (
+                self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
+                * dataset_character_to_token_ratio
+                * 3600
+            )
 
         # Calculate error rate
         self.aggregated_metrics.num_error_requests = sum(

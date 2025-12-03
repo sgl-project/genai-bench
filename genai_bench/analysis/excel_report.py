@@ -429,9 +429,9 @@ def create_aggregated_metrics_sheet(
             metrics: AggregatedMetrics = run_data[scenario][iteration][  # type: ignore[call-overload, assignment]
                 "aggregated_metrics"
             ]
-            assert isinstance(metrics, AggregatedMetrics), (
-                f"Expected AggregatedMetrics, got {type(metrics)}"
-            )
+            assert isinstance(
+                metrics, AggregatedMetrics
+            ), f"Expected AggregatedMetrics, got {type(metrics)}"
             metrics_dict = metrics.model_dump()
             row = []
             for field in metadata_headers:

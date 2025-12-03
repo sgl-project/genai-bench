@@ -172,7 +172,9 @@ class OpenLoopRunner(BaseAsyncRunner):
                     self._handle_error(e, "open-loop task execution")
 
             # Record total arrivals for open-loop mode (use actual count if timeout occurred)
-            self.aggregated.aggregated_metrics.total_arrivals = actual_arrivals if actual_arrivals < n else n
+            self.aggregated.aggregated_metrics.total_arrivals = (
+                actual_arrivals if actual_arrivals < n else n
+            )
 
             if tick_task is not None:
                 done_flag["done"] = True
