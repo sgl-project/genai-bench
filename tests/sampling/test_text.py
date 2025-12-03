@@ -191,6 +191,8 @@ class TestTextSampler(unittest.TestCase):
 
         # Set up consistent tokenization behavior
         # Each line in test_data has a predictable token count
+        # Note: _sample_text adds space prefix when concatenating lines,
+        # so we need to handle both " Test line X" and "Test line X"
         def mock_encode(text, add_special_tokens=False):
             # Map our test lines to token counts
             token_map = {
@@ -198,9 +200,10 @@ class TestTextSampler(unittest.TestCase):
                 "Test line 2": [0, 1],  # 2 tokens
                 "Test line 3": [0, 1, 2, 3],  # 4 tokens
             }
-            # For decoded text (when truncated)
-            if text in token_map:
-                return token_map[text]
+            # Strip leading space and check token map
+            stripped = text.lstrip()
+            if stripped in token_map:
+                return token_map[stripped]
             else:
                 # For decoded truncated text, return tokens based on length
                 words = text.split()

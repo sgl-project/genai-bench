@@ -232,14 +232,18 @@ class TestBasetenUser:
 
     @patch("genai_bench.user.baseten_user.requests.post")
     def test_chat_image_request(self, mock_post, baseten_user):
-        """Test chat with image request."""
+        """Test chat with image request.
+
+        Note: image_content should contain full data URLs (e.g., data:image/jpeg;base64,...)
+        as the code passes them through directly without modification.
+        """
         baseten_user.on_start()
         baseten_user.sample = lambda: UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",
             num_prefill_tokens=10,
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             additional_request_params={
                 "temperature": 0.7,
@@ -520,13 +524,17 @@ class TestBasetenUser:
         assert payload == expected_payload
 
     def test_prepare_chat_request_image(self, baseten_user):
-        """Test _prepare_chat_request method with image."""
+        """Test _prepare_chat_request method with image.
+
+        Note: image_content should contain full data URLs (e.g., data:image/jpeg;base64,...)
+        as the code passes them through directly without modification.
+        """
         user_request = UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",
             num_prefill_tokens=10,
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             additional_request_params={
                 "temperature": 0.7,
