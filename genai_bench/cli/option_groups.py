@@ -40,9 +40,11 @@ def api_options(func):
     func = click.option(
         "--api-model-name",
         type=str,
+        multiple=True,
         required=True,
-        prompt=True,
-        help="The model to use for the backend server request body.",
+        help="The model(s) to use for the backend server request body. "
+        "Can be specified multiple times to benchmark multiple models.\n\n"
+        "Example: --api-model-name model-a --api-model-name model-b",
     )(func)
     func = click.option(
         "--task",
@@ -584,11 +586,20 @@ def experiment_options(func):
     func = click.option(
         "--model-tokenizer",
         type=str,
-        required=True,
-        prompt=True,
+        required=False,
+        default=None,
         help="The tokenizer to use. Should be a Huggingface loadable tokenizer "
         "or a local path. IMPORTANT: it should match the tokenizer the model "
-        "server uses.",
+        "server uses. If not specified and --tokenizer-from-model is set, "
+        "uses the model name as tokenizer.",
+    )(func)
+    func = click.option(
+        "--tokenizer-from-model",
+        is_flag=True,
+        default=False,
+        help="When set, uses each --api-model-name as its tokenizer. "
+        "Useful for multi-model benchmarking where each model has its own tokenizer. "
+        "Overrides --model-tokenizer.",
     )(func)
     func = click.option(
         "--metrics-time-unit",
