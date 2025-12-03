@@ -1,0 +1,67 @@
+# Automatic labeler configuration for genai-bench
+# This file defines which labels should be applied to PRs based on changed files
+
+core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/logging.py'
+      - 'genai_bench/protocol.py'
+      - 'genai_bench/utils.py'
+      - 'genai_bench/version.py'
+      - 'genai_bench/py.typed'
+      - 'genai_bench/__init__.py'
+      - 'genai_bench/cli/**'
+      - 'tests/cli/**'
+      - 'genai_bench/distributed/**'
+      - 'tests/distributed/**'
+      - 'genai_bench/user/**'
+      - 'tests/user/**'
+      - 'genai_bench/auth/**'
+      - 'tests/auth/**'
+      - 'genai_bench/storage/**'
+      - 'tests/storage/**'
+      - 'tests/oci_object_storage/**'
+
+sampling:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/data/**'
+      - 'tests/data/**'
+      - 'genai_bench/sampling/**'
+      - 'tests/sampling/**'
+      - 'genai_bench/scenarios/**'
+      - 'tests/scenarios/**'
+      - 'examples/dataset_configs/**'
+
+metrics:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/metrics/**'
+      - 'tests/metrics/**'
+      - 'genai_bench/analysis/**'
+      - 'tests/analysis/**'
+
+ui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/ui/**'
+      - 'tests/ui/**'
+
+infrastructure:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - '.coveragerc'
+      - 'pyproject.toml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'mypy.ini'
+      - '.pre-commit-config.yaml'
+      - 'Makefile'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - '*.md'
+      - 'examples/**'

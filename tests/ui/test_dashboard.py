@@ -153,14 +153,28 @@ def test_update_histogram_panel(mock_dashboard: create_dashboard):
     "enable_ui,expected_type",
     [
         ("true", RichLiveDashboard),
+        ("TRUE", RichLiveDashboard),  # Test uppercase
+        ("True", RichLiveDashboard),  # Test mixed case
+        ("1", RichLiveDashboard),  # Test numeric
+        ("yes", RichLiveDashboard),  # Test yes
+        ("YES", RichLiveDashboard),  # Test uppercase yes
+        ("Yes", RichLiveDashboard),  # Test mixed case yes
+        ("on", RichLiveDashboard),  # Test on
+        ("ON", RichLiveDashboard),  # Test uppercase on
+        ("On", RichLiveDashboard),  # Test mixed case on
         ("false", MinimalDashboard),
+        ("FALSE", MinimalDashboard),  # Test uppercase false
+        ("0", MinimalDashboard),  # Test numeric false
+        ("no", MinimalDashboard),  # Test no
+        ("off", MinimalDashboard),  # Test off
         ("", MinimalDashboard),  # Test default case when env var is not set
     ],
 )
 def test_dashboard_factory_with_env_var(monkeypatch, enable_ui, expected_type):
     """
     Test that create_dashboard returns the correct dashboard type based on ENABLE_UI
-    env var.
+    env var. Supports multiple truthy values: true, TRUE, 1, yes, YES, on, ON
+    (case-insensitive).
     """
     monkeypatch.setenv("ENABLE_UI", enable_ui)
 

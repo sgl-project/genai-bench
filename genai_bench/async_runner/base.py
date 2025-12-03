@@ -179,10 +179,9 @@ class BaseAsyncRunner:
                 # Build payload - prioritize max_tokens from additional_request_params if present
                 # min_tokens and max_tokens are now automatically set by the sampler from the scenario
                 # This matches BasetenUser's _prepare_chat_request logic
-                max_tokens = (
-                    req.additional_request_params.get("max_tokens", None)
-                    or getattr(req, "max_tokens", None)
-                )
+                max_tokens = req.additional_request_params.get(
+                    "max_tokens", None
+                ) or getattr(req, "max_tokens", None)
 
                 payload = {
                     "model": req.model,
@@ -285,7 +284,9 @@ class BaseAsyncRunner:
                                 continue
 
                             if data.get("error") is not None:
-                                error_msg = data["error"].get("message", "Unknown error")
+                                error_msg = data["error"].get(
+                                    "message", "Unknown error"
+                                )
                                 error_code = data["error"].get("code", -1)
                                 logger.error(
                                     f"❌ Error in streaming response: code={error_code}, message={error_msg}"
@@ -340,7 +341,7 @@ class BaseAsyncRunner:
                                     finish_reason = data["choices"][0].get(
                                         "finish_reason", None
                                     )
-                                
+
                                 if finish_reason and data.get("usage"):
                                     usage = data["usage"]
                                     num_prompt_tokens = usage.get("prompt_tokens")
@@ -457,7 +458,9 @@ class BaseAsyncRunner:
                 status_code=408, error_message=f"Request timed out: {e}"
             )
         except Exception as e:
-            logger.error(f"❌ Unexpected error in _send_request: {type(e).__name__}: {e}", exc_info=True)
+            logger.exception(
+                f"❌ Unexpected error in _send_request: {type(e).__name__}: {e}"
+            )
             return UserResponse(status_code=500, error_message=str(e))
 
     async def cleanup(self) -> None:

@@ -1,4 +1,4 @@
-"""Customized user for OpenAI backends."""
+"""Customized user for Together backends."""
 
 from locust import task
 
@@ -24,8 +24,8 @@ from genai_bench.user.base_user import BaseUser
 logger = init_logger(__name__)
 
 
-class OpenAIUser(BaseUser):
-    BACKEND_NAME = "openai"
+class TogetherUser(BaseUser):
+    BACKEND_NAME = "together"
     supported_tasks = {
         "text-to-text": "chat",
         "image-text-to-text": "chat",
@@ -36,17 +36,14 @@ class OpenAIUser(BaseUser):
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
-    disable_streaming: bool = False
 
     def on_start(self):
         if not self.host or not self.auth_provider:
-            raise ValueError("API key and base must be set for OpenAIUser.")
-        auth_headers = self.auth_provider.get_headers()
+            raise ValueError("API key and base must be set for TogetherUser.")
         self.headers = {
-            **auth_headers,
+            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
             "Content-Type": "application/json",
         }
-        self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
 
     @task
@@ -57,7 +54,7 @@ class OpenAIUser(BaseUser):
         if not isinstance(user_request, UserChatRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserChatRequest for OpenAIUser.chat, got "
+                f"UserChatRequest for TogetherUser.chat, got "
                 f"{type(user_request)}"
             )
 
@@ -89,39 +86,23 @@ class OpenAIUser(BaseUser):
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
-            "stream": not self.disable_streaming,
+            "ignore_eos": user_request.additional_request_params.get(
+                "ignore_eos",
+                bool(user_request.max_tokens),
+            ),
+            "stream": True,
+            "stream_options": {
+                "include_usage": True,
+            },
             **user_request.additional_request_params,
         }
-
-        # Only add stream_options if streaming is enabled
-        if not self.disable_streaming:
-            payload["stream_options"] = {
-                "include_usage": True,
-            }
-
-        # Conditionally add ignore_eos for vLLM and SGLang backends
-        if self.api_backend in ["vllm", "sglang"]:
-            payload.setdefault("ignore_eos", bool(user_request.max_tokens))
-        else:
-            # Remove ignore_eos for OpenAI/Baseten backends, as it is not supported
-            payload.pop("ignore_eos", None)
-
-        if self.disable_streaming:
-            self.send_request(
-                False,
-                endpoint,
-                payload,
-                self.parse_non_streaming_chat_response,
-                user_request.num_prefill_tokens,
-            )
-        else:
-            self.send_request(
-                True,
-                endpoint,
-                payload,
-                self.parse_chat_response,
-                user_request.num_prefill_tokens,
-            )
+        self.send_request(
+            True,
+            endpoint,
+            payload,
+            self.parse_chat_response,
+            user_request.num_prefill_tokens,
+        )
 
     @task
     def embeddings(self):
@@ -132,7 +113,7 @@ class OpenAIUser(BaseUser):
         if not isinstance(user_request, UserEmbeddingRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserEmbeddingRequest for OpenAIUser."
+                f"UserEmbeddingRequest for TogetherUser."
                 f"embeddings, got {type(user_request)}"
             )
 
@@ -256,8 +237,6 @@ class OpenAIUser(BaseUser):
                 break
             data = json.loads(chunk)
 
-            # Don't set time_at_first_token here - we'll set it after processing usage
-
             # Handle streaming error response as OpenAI API server handles it
             # differently. Some might return 200 first and generate error response
             # later in the chunk
@@ -294,49 +273,25 @@ class OpenAIUser(BaseUser):
                         )
                         time_at_first_token = time.monotonic()
                     else:
-                        # Use end_time as fallback instead of raising exception
-                        # This handles edge cases where response format is unexpected
-                        time_at_first_token = time.monotonic()
-                        logger.warning(
-                            f"⚠️ Response had ≤1 tokens ({tokens_received}) in usage chunk. "
-                            f"Using current time as time_at_first_token fallback."
-                        )
+                        raise Exception("Invalid Response")
                 break
 
             try:
-                # Skip chunks with empty choices
-                if not data["choices"]:
-                    # Even if choices are empty, set time_at_first_token on first chunk
-                    # to ensure we have a timestamp even if response format is unexpected
-                    if not time_at_first_token:
-                        time_at_first_token = time.monotonic()
-                        logger.warning(
-                            f"⚠️ Setting time_at_first_token on chunk with empty choices. "
-                            f"This may indicate unusual response format. Chunk data: {data}"
-                        )
-                    continue
-
                 delta = data["choices"][0]["delta"]
-                content = (
-                    delta.get("content")
-                    or delta.get("reasoning_content")
-                    or delta.get("reasoning")
-                )
+                content = delta.get("content") or delta.get("reasoning_content")
                 usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
-
-                if not time_at_first_token:
-                    if tokens_received > 1:
-                        logger.warning(
-                            f"🚨🚨🚨 The first chunk the server returned "
-                            f"has >1 tokens: {tokens_received}. It will "
-                            f"affect the accuracy of time_at_first_token!"
-                        )
-                    time_at_first_token = time.monotonic()
-
                 if content:
+                    if not time_at_first_token:
+                        if tokens_received > 1:
+                            logger.warning(
+                                f"🚨🚨🚨 The first chunk the server returned "
+                                f"has >1 tokens: {tokens_received}. It will "
+                                f"affect the accuracy of time_at_first_token!"
+                            )
+                        time_at_first_token = time.monotonic()
                     generated_text += content
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
@@ -350,13 +305,6 @@ class OpenAIUser(BaseUser):
                     break
 
             except (IndexError, KeyError) as e:
-                # Even when exceptions occur, try to set time_at_first_token on first chunk
-                if not time_at_first_token:
-                    time_at_first_token = time.monotonic()
-                    logger.warning(
-                        f"⚠️ Setting time_at_first_token after exception on first chunk. "
-                        f"Exception: {e}, data: {data}"
-                    )
                 logger.warning(
                     f"Error processing chunk: {e}, data: {data}, "
                     f"previous_data: {previous_data}, "
@@ -385,16 +333,6 @@ class OpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
-
-        # Ensure time_at_first_token is never None (fallback to end_time)
-        # This can happen if no content chunks were received or all chunks were skipped
-        if time_at_first_token is None:
-            time_at_first_token = end_time
-            logger.warning(
-                f"⚠️ time_at_first_token was None, using end_time ({end_time}) as fallback. "
-                f"This may indicate an issue with the streaming response format or that no content chunks were received."
-            )
-
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -451,92 +389,4 @@ class OpenAIUser(BaseUser):
             end_time=end_time,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
-        )
-
-    def parse_non_streaming_chat_response(
-        self,
-        response: Response,
-        start_time: float,
-        num_prefill_tokens: int,
-        _: float,
-    ) -> UserResponse:
-        """
-        Parses a non-streaming chat response.
-
-        Args:
-            response (Response): The response object.
-            start_time (float): The time when the request was started.
-            num_prefill_tokens (int): The num of tokens in the prefill/prompt.
-            _ (float): Placeholder for an unused var, to keep parse_*_response
-                have the same interface.
-
-        Returns:
-            UserChatResponse: A response object with metrics and generated text.
-        """
-        data = response.json()
-
-        # Handle error response
-        if data.get("error") is not None:
-            return UserResponse(
-                status_code=data["error"].get("code", -1),
-                error_message=data["error"].get(
-                    "message", "Unknown error, please check server logs"
-                ),
-            )
-
-        # Extract response content
-        generated_text = data["choices"][0]["message"]["content"]
-        finish_reason = data["choices"][0].get("finish_reason", None)
-
-        # Get usage information
-        num_prefill_tokens, num_prompt_tokens, tokens_received = self._get_usage_info(
-            data, num_prefill_tokens
-        )
-
-        end_time = time.monotonic()
-
-        # For non-streaming, we can't measure TTFT, so we use a small offset
-        # This prevents division by zero in metrics calculation
-        time_at_first_token = start_time + 0.001  # 1ms offset
-
-        logger.debug(
-            f"Generated text: {generated_text} \n"
-            f"Finish reason: {finish_reason}\n"
-            f"Prompt Tokens: {num_prompt_tokens} \n"
-            f"Completion Tokens: {tokens_received}\n"
-            f"Start Time: {start_time}\n"
-            f"End Time: {end_time}"
-        )
-
-        if not tokens_received:
-            tokens_received = self.environment.sampler.get_token_length(
-                generated_text, add_special_tokens=False
-            )
-            logger.warning(
-                "🚨🚨🚨 There is no usage info returned from the model "
-                "server. Estimated tokens_received based on the model "
-                "tokenizer."
-            )
-
-        # Ensure time_at_first_token is never None (fallback to end_time)
-        # This can happen if:
-        # 1. No content chunks were received (e.g., only reasoning tokens in unexpected format)
-        # 2. All chunks were skipped due to empty choices
-        # 3. Response format is unexpected
-        if time_at_first_token is None:
-            time_at_first_token = end_time
-            logger.warning(
-                f"⚠️ time_at_first_token was None, using end_time ({end_time}) as fallback. "
-                f"tokens_received: {tokens_received}, generated_text length: {len(generated_text)}. "
-                f"This may indicate reasoning-only tokens or an unusual response format."
-            )
-
-        return UserChatResponse(
-            status_code=200,
-            generated_text=generated_text,
-            tokens_received=tokens_received,
-            time_at_first_token=time_at_first_token,
-            num_prefill_tokens=num_prefill_tokens,
-            start_time=start_time,
-            end_time=end_time,
         )

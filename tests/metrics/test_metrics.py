@@ -159,6 +159,9 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
 
 
 def test_filter_metrics(aggregated_metrics_collector):
+    # Note: Metrics filtering is intentionally disabled in this fork
+    # (see _should_filter_metrics method which always returns False)
+    # This test verifies that all metrics are collected regardless of inference speed
     metrics1 = RequestLevelMetrics(
         ttft=0.1,
         tpot=0.0000002,
@@ -173,7 +176,8 @@ def test_filter_metrics(aggregated_metrics_collector):
     )
 
     aggregated_metrics_collector.add_single_request_metrics(metrics1)
-    assert metrics1 not in aggregated_metrics_collector.all_request_metrics
+    # In this fork, metrics are NOT filtered, so all metrics are collected
+    assert metrics1 in aggregated_metrics_collector.all_request_metrics
 
     embedding_metrics = RequestLevelMetrics(
         ttft=0.1,
