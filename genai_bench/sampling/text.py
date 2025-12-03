@@ -14,6 +14,7 @@ from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDist
 
 logger = init_logger(__name__)
 
+
 class TextSampler(Sampler):
     """
     Unified sampler for text-based tasks, supporting multiple task types:
@@ -337,7 +338,7 @@ class TextSampler(Sampler):
 
         # Set ignore_eos to ensure we get the expected output length
         self.additional_request_params["ignore_eos"] = True
-        
+
         # Set min_tokens and max_tokens from scenario's desired output
         # This ensures the model generates the expected number of tokens
         # Scenario values take precedence over user-provided values to ensure benchmark consistency

@@ -240,9 +240,9 @@ def test_async_with_multiple_qps_levels(cli_runner, async_options):
         )
 
         # Verify that set_run_metadata was called with decimal QPS values (not scaled)
-        assert len(stored_values) >= 3, (
-            "Should have called set_run_metadata for each QPS level"
-        )
+        assert (
+            len(stored_values) >= 3
+        ), "Should have called set_run_metadata for each QPS level"
 
         # Check that QPS values are stored as decimals (not scaled to integers)
         qps_values = [val[0] for val in stored_values]
