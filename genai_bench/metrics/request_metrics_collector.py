@@ -73,6 +73,16 @@ class RequestMetricsCollector:
             # Error in AggregatedMetricsCollector
             self._reset_output_metrics()
 
+        # Transfer network timing metrics if available
+        # These are optional and may be None if not using async runner with tracing
+        # Use getattr with default None for backwards compatibility with mocks and
+        # non-async responses that don't have these attributes
+        self.metrics.network_connect_time = getattr(
+            response, "network_connect_time", None
+        )
+        self.metrics.network_dns_time = getattr(response, "network_dns_time", None)
+        self.metrics.network_tls_time = getattr(response, "network_tls_time", None)
+
     def _calculate_output_metrics(self, response: UserChatResponse):
         """
         Helper function to calculate output metrics from a UserChatResponse.

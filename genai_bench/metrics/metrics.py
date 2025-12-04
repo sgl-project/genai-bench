@@ -31,6 +31,17 @@ class RequestLevelMetrics(BaseModel):
     error_code: Optional[int] = Field(None, description="Error code")
     error_message: Optional[str] = Field(None, description="Error message")
 
+    # Network timing metrics (optional, for detecting network congestion)
+    network_connect_time: Optional[float] = Field(
+        None, description="TCP + TLS connection time in seconds"
+    )
+    network_dns_time: Optional[float] = Field(
+        None, description="DNS lookup time in seconds"
+    )
+    network_tls_time: Optional[float] = Field(
+        None, description="TLS handshake time in seconds"
+    )
+
     # Class-level dictionaries to map output metrics to output fields
     OUTPUT_METRICS_FIELDS: ClassVar[set[str]] = {
         "tpot",
@@ -40,22 +51,36 @@ class RequestLevelMetrics(BaseModel):
         "output_throughput",
     }
 
+    # Network metrics are optional and not required for validation
+    OPTIONAL_METRICS_FIELDS: ClassVar[set[str]] = {
+        "network_connect_time",
+        "network_dns_time",
+        "network_tls_time",
+    }
+
     @model_validator(mode="before")
     def validate_metrics(cls, values):
         """
         Ensure that metrics are validated only if error_code is None.
+        Network timing metrics are always optional.
         """
         if not isinstance(values, dict):
             return values
 
+        # Fields that are always optional (not required even for successful requests)
+        skip_fields = {
+            "error_code",
+            "error_message",
+            "network_connect_time",
+            "network_dns_time",
+            "network_tls_time",
+        }
+
         error_code = values.get("error_code")
         if error_code is None:
-            # Validate all metric fields
+            # Validate all metric fields except optional ones
             for field_name, field_value in values.items():
-                if (
-                    field_name not in {"error_code", "error_message"}
-                    and field_value is None
-                ):
+                if field_name not in skip_fields and field_value is None:
                     raise ValueError(
                         f"{field_name} must not be None if error_code is None."
                     )
@@ -99,6 +124,11 @@ class MetricStats(BaseModel):
     total_tokens: StatField = Field(default_factory=StatField)
     input_throughput: StatField = Field(default_factory=StatField)
     output_throughput: StatField = Field(default_factory=StatField)
+
+    # Network timing statistics
+    network_connect_time: StatField = Field(default_factory=StatField)
+    network_dns_time: StatField = Field(default_factory=StatField)
+    network_tls_time: StatField = Field(default_factory=StatField)
 
     def to_dict(self) -> Dict[str, Dict[str, float]]:
         """Convert to dictionary format for serialization."""
