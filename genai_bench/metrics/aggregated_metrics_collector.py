@@ -38,7 +38,7 @@ class AggregatedMetricsCollector:
     def add_single_request_metrics(self, metrics: RequestLevelMetrics):
         """Adds metrics from a single request to the aggregated metrics."""
         # Log abnormal metrics with detailed information for diagnostics
-        self._should_filter_metrics(metrics)
+        self.filter_metrics(metrics)
 
         # Store individual request metrics
         self.all_request_metrics.append(metrics)
@@ -69,7 +69,7 @@ class AggregatedMetricsCollector:
             self._update_live_metrics()
 
     @staticmethod
-    def _should_filter_metrics(metrics: RequestLevelMetrics) -> bool:
+    def filter_metrics(metrics: RequestLevelMetrics) -> bool:
         """
         Detects and handles unreliable TPOT/inference_speed values by setting them
         to None.

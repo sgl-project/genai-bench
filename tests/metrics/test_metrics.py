@@ -163,7 +163,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         ttft=0.1,
         tpot=0.0000002,
         e2e_latency=1.0,
-        output_latency=0.002,
+        output_latency=0.0002,
         input_throughput=20.0,
         output_throughput=11.111,
         num_input_tokens=2,
@@ -183,7 +183,7 @@ def test_filter_metrics(aggregated_metrics_collector):
 
     # Verify other fields preserved
     assert stored_metrics.ttft == 0.1
-    assert stored_metrics.output_latency == 0.9
+    assert stored_metrics.output_latency == 0.0002
     assert stored_metrics.num_output_tokens == 10
 
     embedding_metrics = RequestLevelMetrics(
