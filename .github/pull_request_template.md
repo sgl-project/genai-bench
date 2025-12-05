@@ -1,17 +1,6 @@
 ## Description
 <!--Please provide a brief description of the changes in this PR.-->
 
-## PR Type / Label
-<!-- 
-Add one of the following:
-/kind bug
-/kind feature
-/kind enhancement
-/kind documentation
-/kind ci
-/kind misc
--->
-
 ## Related Issue
 <!-- 
 Automatically closes linked issue when PR is merged.

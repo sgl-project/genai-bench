@@ -1,6 +1,6 @@
 # Multi-Cloud Authentication and Storage Guide
 
-genai-bench now supports comprehensive multi-cloud authentication for both model endpoints and storage services. This guide covers how to configure and use authentication for various cloud providers.
+Genai-bench now supports comprehensive multi-cloud authentication for both model endpoints and storage services. This guide covers how to configure and use authentication for various cloud providers.
 
 ## Table of Contents
 

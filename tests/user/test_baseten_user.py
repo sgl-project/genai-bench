@@ -234,12 +234,13 @@ class TestBasetenUser:
     def test_chat_image_request(self, mock_post, baseten_user):
         """Test chat with image request."""
         baseten_user.on_start()
+        # Note: image_content should contain full data URLs as per implementation
         baseten_user.sample = lambda: UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",
             num_prefill_tokens=10,
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             additional_request_params={
                 "temperature": 0.7,
@@ -521,12 +522,13 @@ class TestBasetenUser:
 
     def test_prepare_chat_request_image(self, baseten_user):
         """Test _prepare_chat_request method with image."""
+        # Note: image_content should contain full data URLs as per implementation
         user_request = UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",
             num_prefill_tokens=10,
             max_tokens=100,
-            image_content=["base64_image_data"],
+            image_content=["data:image/jpeg;base64,base64_image_data"],
             num_images=1,
             additional_request_params={
                 "temperature": 0.7,

@@ -153,14 +153,28 @@ def test_update_histogram_panel(mock_dashboard: create_dashboard):
     "enable_ui,expected_type",
     [
         ("true", RichLiveDashboard),
+        ("TRUE", RichLiveDashboard),  # Test uppercase
+        ("True", RichLiveDashboard),  # Test mixed case
+        ("1", RichLiveDashboard),  # Test numeric
+        ("yes", RichLiveDashboard),  # Test yes
+        ("YES", RichLiveDashboard),  # Test uppercase yes
+        ("Yes", RichLiveDashboard),  # Test mixed case yes
+        ("on", RichLiveDashboard),  # Test on
+        ("ON", RichLiveDashboard),  # Test uppercase on
+        ("On", RichLiveDashboard),  # Test mixed case on
         ("false", MinimalDashboard),
+        ("FALSE", MinimalDashboard),  # Test uppercase false
+        ("0", MinimalDashboard),  # Test numeric false
+        ("no", MinimalDashboard),  # Test no
+        ("off", MinimalDashboard),  # Test off
         ("", MinimalDashboard),  # Test default case when env var is not set
     ],
 )
 def test_dashboard_factory_with_env_var(monkeypatch, enable_ui, expected_type):
     """
     Test that create_dashboard returns the correct dashboard type based on ENABLE_UI
-    env var.
+    env var. Supports multiple truthy values: true, TRUE, 1, yes, YES, on, ON
+    (case-insensitive).
     """
     monkeypatch.setenv("ENABLE_UI", enable_ui)
 
@@ -203,12 +217,12 @@ def test_scatter_plot_spacing_for_different_time_units():
     assert label_line_ms is not None, "Could not find label line with milliseconds"
 
     # Verify the label spacing
-    assert label_line_s.index("|") == 7, (
-        f"Expected 7 spaces for seconds, got: {label_line_s.index('|')}"
-    )
-    assert label_line_ms.index("|") == 9, (
-        f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
-    )
+    assert (
+        label_line_s.index("|") == 7
+    ), f"Expected 7 spaces for seconds, got: {label_line_s.index('|')}"
+    assert (
+        label_line_ms.index("|") == 9
+    ), f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
 
 
 def test_minimal_dashboard_update_scatter_plot_does_not_crash():

@@ -19,6 +19,7 @@ def mock_openai_user():
     # Set up mock auth provider
     mock_auth = MagicMock()
     mock_auth.get_credentials.return_value = "fake_api_key"
+    mock_auth.get_headers.return_value = {"Authorization": "Bearer fake_api_key"}
     mock_auth.get_config.return_value = {
         "api_base": "http://example.com",
         "api_key": "fake_api_key",
@@ -27,10 +28,6 @@ def mock_openai_user():
     OpenAIUser.host = "http://example.com"
 
     user = OpenAIUser(environment=MagicMock())
-    user.headers = {
-        "Authorization": "Bearer fake_api_key",
-        "Content-Type": "application/json",
-    }
     user.user_requests = [
         UserChatRequest(
             model="gpt-3",
@@ -98,7 +95,6 @@ def test_chat(mock_post, mock_openai_user):
             "messages": [{"role": "user", "content": ANY}],
             "max_tokens": 10,
             "temperature": 0.0,
-            "ignore_eos": False,
             "stream": True,
             "stream_options": {
                 "include_usage": True,
@@ -161,7 +157,6 @@ def test_vision(mock_post, mock_openai_user):
             "messages": [{"role": "user", "content": text_content + image_content}],
             "max_tokens": None,
             "temperature": 0.0,
-            "ignore_eos": False,
             "stream": True,
             "stream_options": {
                 "include_usage": True,
@@ -749,3 +744,101 @@ def test_chat_with_reasoning_content_and_token_estimation(
     mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
         combined_text, add_special_tokens=False
     )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_ignore_eos_vllm_backend_default(mock_post, mock_openai_user):
+    """Test that ignore_eos is added with default value for vLLM backend."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "vllm"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',  # noqa: E501
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',  # noqa: E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    # Verify that ignore_eos was added to the payload
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+    assert "ignore_eos" in payload
+    assert payload["ignore_eos"] is True  # bool(max_tokens=10) is True
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_ignore_eos_sglang_backend_explicit_false(mock_post, mock_openai_user):
+    """Test that explicit ignore_eos=False is preserved for SGLang backend."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "sglang"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={"ignore_eos": False},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',  # noqa: E501
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',  # noqa: E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    # Verify that user's explicit ignore_eos=False is preserved
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+    assert "ignore_eos" in payload
+    assert payload["ignore_eos"] is False
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
+    """Test that ignore_eos is removed for OpenAI backend."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "openai"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={"ignore_eos": True},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',  # noqa: E501
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',  # noqa: E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    # Verify that ignore_eos was removed from the payload
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+    assert "ignore_eos" not in payload

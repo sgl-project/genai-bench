@@ -116,6 +116,7 @@ def benchmark(
     max_requests_per_run,
     experiment_folder_name,
     experiment_base_dir,
+    log_dir,
     dataset_path,
     dataset_config,
     dataset_prompt_column,
@@ -156,7 +157,10 @@ def benchmark(
     dashboard = create_dashboard(metrics_time_unit)
 
     # Initialize logging with the layout for the log panel
-    logging_manager = LoggingManager("benchmark", dashboard.layout, dashboard.live)
+    log_dir = ctx.params.get("log_dir")
+    logging_manager = LoggingManager(
+        "benchmark", dashboard.layout, dashboard.live, log_dir=log_dir
+    )
     delayed_log_handler = logging_manager.delayed_handler
     logger = init_logger("genai_bench.benchmark")
 
@@ -241,6 +245,10 @@ def benchmark(
             }
         )
 
+    elif api_backend == "together":
+        # Together uses API key for authentication
+        auth_kwargs["api_key"] = model_api_key or api_key
+
     elif api_backend in ["vllm", "sglang"]:
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
@@ -308,6 +316,7 @@ def benchmark(
     user_class.auth_provider = auth_provider
     user_class.host = api_base
     user_class.disable_streaming = disable_streaming
+    user_class.api_backend = api_backend
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
@@ -776,6 +785,7 @@ def benchmark(
     config = DistributedConfig(
         num_workers=num_workers,
         master_port=master_port,
+        log_dir=log_dir,
     )
     runner = DistributedRunner(
         environment=environment,
