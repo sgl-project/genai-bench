@@ -127,6 +127,7 @@ def benchmark(
     execution_engine,
     qps_level,
     distribution,
+    track_network_timing,
     upload_results,
     namespace,
     # Storage auth options
@@ -490,6 +491,7 @@ def benchmark(
                 target_concurrency=num_concurrency[0]
                 if num_concurrency
                 else None,  # Just for validation, actual value set in run()
+                track_network_timing=track_network_timing,
             )
         else:
             # Open-loop mode: pass first QPS value just to determine runner type
@@ -506,6 +508,7 @@ def benchmark(
                 if qps_level_list
                 else None,  # Just for validation, actual value set in run()
                 target_concurrency=None,
+                track_network_timing=track_network_timing,
             )
 
         total_runs = (

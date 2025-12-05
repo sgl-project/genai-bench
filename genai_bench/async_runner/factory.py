@@ -20,6 +20,7 @@ def create_runner(
     dashboard=None,
     qps_level: Optional[float] = None,
     target_concurrency: Optional[int] = None,
+    track_network_timing: bool = False,
 ):
     """
     Factory function to create the appropriate runner based on parameters.
@@ -34,6 +35,7 @@ def create_runner(
         dashboard: Optional dashboard for live updates
         qps_level: If provided, creates OpenLoopRunner (open-loop mode)
         target_concurrency: If provided, creates ClosedLoopRunner (closed-loop mode)
+        track_network_timing: If True, track network timing metrics (DNS, connection time)
 
     Returns:
         Either OpenLoopRunner or ClosedLoopRunner instance
@@ -78,6 +80,7 @@ def create_runner(
             auth_provider=auth_provider,
             aggregated_metrics_collector=aggregated_metrics_collector,
             dashboard=dashboard,
+            track_network_timing=track_network_timing,
         )
     else:
         logger.info(
@@ -91,4 +94,5 @@ def create_runner(
             auth_provider=auth_provider,
             aggregated_metrics_collector=aggregated_metrics_collector,
             dashboard=dashboard,
+            track_network_timing=track_network_timing,
         )

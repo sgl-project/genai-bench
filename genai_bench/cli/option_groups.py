@@ -671,6 +671,14 @@ def execution_engine_options(func):
         help="Inter-arrival distribution for async runner: "
         "'exponential' (default), 'uniform', or 'constant'",
     )(func)
+    func = click.option(
+        "--track-network-timing",
+        is_flag=True,
+        default=False,
+        help="Track network timing metrics (DNS lookup, TCP+TLS connection time) "
+        "for each request. Useful for detecting network congestion. "
+        "Only available with --execution-engine=async.",
+    )(func)
     return func
 
 

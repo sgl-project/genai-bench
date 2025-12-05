@@ -136,11 +136,17 @@ class AggregatedMetricsCollector:
             return
 
         # Calculate statistical aggregates for each metric
+        # Skip error fields and optional network timing fields (which may all be None)
+        skip_fields = {
+            "error_code",
+            "error_message",
+        } | RequestLevelMetrics.OPTIONAL_METRICS_FIELDS
         filtered_keys: List[str] = [
-            key
-            for key in RequestLevelMetrics.model_fields
-            if key not in {"error_code", "error_message"}
+            key for key in RequestLevelMetrics.model_fields if key not in skip_fields
         ]
+
+        # Process optional network timing fields separately (they may all be None)
+        optional_keys: List[str] = list(RequestLevelMetrics.OPTIONAL_METRICS_FIELDS)
 
         warmup_number = 0
         if warmup_ratio:
@@ -191,6 +197,39 @@ class AggregatedMetricsCollector:
             stat_field.p90 = percentiles[3].item()
             stat_field.p95 = percentiles[4].item()
             stat_field.p99 = percentiles[5].item()
+
+        # Process optional network timing fields (may all be None if not using async runner)
+        for key in optional_keys:
+            values: List[float] = []
+            for i, metrics in enumerate(self.all_request_metrics):
+                if metrics.error_code:
+                    continue
+                value = getattr(metrics, key)
+                if value is None:
+                    continue
+                if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
+                    values.append(value)
+
+            # Only calculate stats if we have values (optional fields may all be None)
+            if values:
+                percentiles = np.percentile(values, [25, 50, 75, 90, 95, 99])
+                stat_field = getattr(self.aggregated_metrics.stats, key)
+                stat_field.min = np.min(values).item()
+                stat_field.max = np.max(values).item()
+                stat_field.mean = np.mean(values).item()
+                stat_field.stddev = np.std(values).item()
+                stat_field.sum = np.sum(values).item()
+                stat_field.p25 = percentiles[0].item()
+                stat_field.p50 = percentiles[1].item()
+                stat_field.p75 = percentiles[2].item()
+                stat_field.p90 = percentiles[3].item()
+                stat_field.p95 = percentiles[4].item()
+                stat_field.p99 = percentiles[5].item()
+            else:
+                logger.debug(
+                    f"No values found for optional metric '{key}'. "
+                    "This is expected if not using async runner with network tracing."
+                )
 
         # Calculate additional metadata based on aggregated data
         self.aggregated_metrics.run_duration = end_time - start_time
