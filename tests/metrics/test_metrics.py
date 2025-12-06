@@ -159,12 +159,9 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
 
 
 def test_filter_metrics(aggregated_metrics_collector):
-    """Test that metrics are added to collector.
-
-    Note: The _should_filter_metrics method in AggregatedMetricsCollector
-    has filtering disabled (commented out), so all metrics are accepted.
-    This is intentional - extreme values are allowed through for analysis.
-    """
+    # Note: Metrics filtering is intentionally disabled in this fork
+    # (see _should_filter_metrics method which always returns False)
+    # This test verifies that all metrics are collected regardless of inference speed
     metrics1 = RequestLevelMetrics(
         ttft=0.1,
         tpot=0.0000002,
@@ -179,7 +176,7 @@ def test_filter_metrics(aggregated_metrics_collector):
     )
 
     aggregated_metrics_collector.add_single_request_metrics(metrics1)
-    # Filter is disabled, so extreme metrics are NOT filtered out
+    # In this fork, metrics are NOT filtered, so all metrics are collected
     assert metrics1 in aggregated_metrics_collector.all_request_metrics
 
     embedding_metrics = RequestLevelMetrics(

@@ -238,6 +238,7 @@ class TestBasetenUser:
         as the code passes them through directly without modification.
         """
         baseten_user.on_start()
+        # Note: image_content should contain full data URLs as per implementation
         baseten_user.sample = lambda: UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",
@@ -524,11 +525,8 @@ class TestBasetenUser:
         assert payload == expected_payload
 
     def test_prepare_chat_request_image(self, baseten_user):
-        """Test _prepare_chat_request method with image.
-
-        Note: image_content should contain full data URLs (e.g., data:image/jpeg;base64,...)
-        as the code passes them through directly without modification.
-        """
+        """Test _prepare_chat_request method with image."""
+        # Note: image_content should contain full data URLs as per implementation
         user_request = UserImageChatRequest(
             model="test-model",
             prompt="Describe this image",

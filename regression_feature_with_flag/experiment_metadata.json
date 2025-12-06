@@ -1,0 +1,31 @@
+{
+    "cmd": "/Users/hbd/b10/ws-bench/genai-bench/.venv/bin/genai-bench --num-concurrency 1 --batch-size 1 --api-backend baseten --api-base https://inference.baseten.co/v1/chat/completions --task text-to-text --api-model-name zai-org/GLM-4.6 --model-tokenizer zai-org/GLM-4.6 --traffic-scenario D(100,100) --max-requests-per-run 10 --max-time-per-run 2 --execution-engine async --track-network-timing True --experiment-folder-name regression_feature_with_flag --gcp-location us-central1 --azure-api-version 2024-02-01 --profile DEFAULT --config-file ~/.oci/config --auth user_principal --metrics-time-unit s --model GLM-4.6 --iteration-type num_concurrency --master-port 5557 --distribution exponential --storage-provider oci",
+    "benchmark_version": "0.0.2",
+    "api_backend": "baseten",
+    "auth_config": {},
+    "api_model_name": "zai-org/GLM-4.6",
+    "server_model_tokenizer": "zai-org/GLM-4.6",
+    "model": "GLM-4.6",
+    "task": "text-to-text",
+    "num_concurrency": [
+        1
+    ],
+    "batch_size": [
+        1
+    ],
+    "iteration_type": "num_concurrency",
+    "traffic_scenario": [
+        "D(100,100)"
+    ],
+    "additional_request_params": {},
+    "server_engine": null,
+    "server_version": null,
+    "server_gpu_type": null,
+    "server_gpu_count": null,
+    "max_time_per_run_s": 120,
+    "max_requests_per_run": 10,
+    "experiment_folder_name": "/Users/hbd/b10/ws-bench/genai-bench/regression_feature_with_flag",
+    "metrics_time_unit": "s",
+    "dataset_path": "None",
+    "character_token_ratio": 4.0602006688963215
+}

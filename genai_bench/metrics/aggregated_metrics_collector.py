@@ -200,7 +200,7 @@ class AggregatedMetricsCollector:
 
         # Process optional network timing fields (may all be None if not using async runner)
         for key in optional_keys:
-            values: List[float] = []
+            values = []
             for i, metrics in enumerate(self.all_request_metrics):
                 if metrics.error_code:
                     continue

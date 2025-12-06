@@ -92,6 +92,7 @@ def api_options(func):
                 "azure-openai",
                 "gcp-vertex",
                 "baseten",
+                "together",
                 "vllm",
                 "sglang",
             ],
@@ -366,7 +367,7 @@ def server_options(func):
     func = click.option(
         "--server-engine",
         type=click.Choice(
-            ["vLLM", "SGLang", "TGI", "cohere-TensorRT", "cohere-vLLM"],
+            ["vLLM", "SGLang", "TGI", "cohere-TensorRT", "cohere-vLLM", "LlamaCPP"],
             case_sensitive=True,
         ),
         required=False,
@@ -394,6 +395,16 @@ def experiment_options(func):
         default=None,
         help="Base local directory for storing experiment results. "
         "It can be either absolute or relative.",
+    )(func)
+    func = click.option(
+        "--log-dir",
+        type=str,
+        default=None,
+        help=(
+            "Directory for storing log files "
+            "(genai_bench.log and genai_bench_worker_*.log). "
+            "If not specified, logs will be written to the current working directory."
+        ),
     )(func)
     func = click.option(
         "--max-requests-per-run",

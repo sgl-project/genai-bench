@@ -41,10 +41,12 @@ class OpenAIUser(BaseUser):
     def on_start(self):
         if not self.host or not self.auth_provider:
             raise ValueError("API key and base must be set for OpenAIUser.")
+        auth_headers = self.auth_provider.get_headers()
         self.headers = {
-            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
+            **auth_headers,
             "Content-Type": "application/json",
         }
+        self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
 
     @task
@@ -87,10 +89,6 @@ class OpenAIUser(BaseUser):
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
-            "ignore_eos": user_request.additional_request_params.get(
-                "ignore_eos",
-                bool(user_request.max_tokens),
-            ),
             "stream": not self.disable_streaming,
             **user_request.additional_request_params,
         }
@@ -100,6 +98,14 @@ class OpenAIUser(BaseUser):
             payload["stream_options"] = {
                 "include_usage": True,
             }
+
+        # Conditionally add ignore_eos for vLLM and SGLang backends
+        if self.api_backend in ["vllm", "sglang"]:
+            payload.setdefault("ignore_eos", bool(user_request.max_tokens))
+        else:
+            # Remove ignore_eos for OpenAI/Baseten backends, as it is not supported
+            payload.pop("ignore_eos", None)
+
         if self.disable_streaming:
             self.send_request(
                 False,
