@@ -316,13 +316,28 @@ class OpenAIUser(BaseUser):
                         )
                     continue
 
-                delta = data["choices"][0]["delta"]
-                content = (
-                    delta.get("content")
-                    or delta.get("reasoning_content")
-                    or delta.get("reasoning")
+                # Detect response format: text completion vs chat completion
+                # Text completion format has 'text' directly in choices[0]
+                # Chat completion format has 'delta' with nested 'content'
+                choice = data["choices"][0]
+                is_text_completion = (
+                    data.get("object") == "text_completion"
+                    or "text" in choice
                 )
-                usage = delta.get("usage")
+
+                if is_text_completion:
+                    # Text completion format: content is in choices[0]["text"]
+                    content = choice.get("text")
+                    usage = data.get("usage")  # Usage is at top level for text completions
+                else:
+                    # Chat completion format: content is in choices[0]["delta"]["content"]
+                    delta = choice["delta"]
+                    content = (
+                        delta.get("content")
+                        or delta.get("reasoning_content")
+                        or delta.get("reasoning")
+                    )
+                    usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
