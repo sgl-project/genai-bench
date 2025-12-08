@@ -71,13 +71,14 @@ class AggregatedMetricsCollector:
     @staticmethod
     def _should_filter_metrics(metrics: RequestLevelMetrics) -> bool:
         """Filters metrics based on out of range TPOT/inference speed."""
-        inference_speed = metrics.output_inference_speed
+        """inference_speed = metrics.output_inference_speed
         if inference_speed is not None and inference_speed > 1000:
             logger.warning(
                 f"Metric has abnormal inference speed: {inference_speed} tokens/s."
                 " Filtering it out."
             )
             return True
+        """
         return False
 
     def _update_live_metrics(self):
@@ -250,7 +251,10 @@ class AggregatedMetricsCollector:
         )
 
     def set_run_metadata(
-        self, iteration: int, scenario_str: str, iteration_type: str = "num_concurrency"
+        self,
+        iteration: float,
+        scenario_str: str,
+        iteration_type: str = "num_concurrency",
     ):
         """Set metadata for the current run"""
         setattr(self.aggregated_metrics, iteration_type, iteration)

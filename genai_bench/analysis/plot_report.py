@@ -132,6 +132,48 @@ def plot_metrics(
     for i, concurrency_data in enumerate(concurrency_data_list):
         concurrency_levels = label_to_concurrency_map[labels[i]]
 
+        # Check if we have any data
+        if not concurrency_levels:
+            logger.warning(
+                f"No concurrency/QPS levels found for {labels[i]}, skipping plot"
+            )
+            continue
+
+        # Verify data exists for all concurrency levels
+        missing_keys = [c for c in concurrency_levels if c not in concurrency_data]
+        if missing_keys:
+            logger.warning(
+                f"Missing data for {labels[i]} at levels: {missing_keys}. "
+                f"Available keys: {list(concurrency_data.keys())}"
+            )
+
+        # Filter concurrency_levels to only include keys that exist in concurrency_data
+        valid_concurrency_levels = [
+            c for c in concurrency_levels if c in concurrency_data
+        ]
+        if not valid_concurrency_levels:
+            logger.warning(
+                f"No valid data keys found for {labels[i]}. Available keys: {list(concurrency_data.keys())}"
+            )
+            continue
+
+        # Debug: Log what we're about to plot
+        logger.debug(
+            f"Plotting {labels[i]} with {len(valid_concurrency_levels)} data points: {valid_concurrency_levels}"
+        )
+
+        # Verify we can actually access the data
+        for c in valid_concurrency_levels:
+            if c not in concurrency_data:
+                logger.warning(f"Key {c} not found in concurrency_data for {labels[i]}")
+                continue
+            if "aggregated_metrics" not in concurrency_data[c]:
+                logger.warning(f"No aggregated_metrics for key {c} in {labels[i]}")
+                continue
+            logger.debug(
+                f"Data for key {c}: {type(concurrency_data[c]['aggregated_metrics'])}"
+            )
+
         # Define all plot specifications in a single list
         plot_specs = [  # type: ignore[union-attr,index]
             # First row
@@ -140,13 +182,13 @@ def plot_metrics(
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].stats.output_inference_speed.mean
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].mean_output_throughput_tokens_per_s
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "Output Throughput of Server (tokens/s)",
                 "y_label": "Output Inference Speed per Request (tokens/s)",
@@ -158,13 +200,13 @@ def plot_metrics(
             {
                 "y_data": [
                     concurrency_data[c]["aggregated_metrics"].stats.ttft.mean
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].mean_output_throughput_tokens_per_s
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "Output Throughput of Server (tokens/s)",
                 "y_label": "TTFT",
@@ -175,11 +217,11 @@ def plot_metrics(
             {
                 "y_data": [
                     concurrency_data[c]["aggregated_metrics"].stats.e2e_latency.mean
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c]["aggregated_metrics"].requests_per_second
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "RPS (req/s)",
                 "y_label": "Mean E2E Latency per Request (s)",
@@ -193,13 +235,13 @@ def plot_metrics(
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].stats.output_inference_speed.mean
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].mean_total_tokens_throughput_tokens_per_s
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
                 "y_label": "Output Inference Speed per Request (tokens/s)",
@@ -211,13 +253,13 @@ def plot_metrics(
             {
                 "y_data": [
                     concurrency_data[c]["aggregated_metrics"].stats.ttft.mean
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c][
                         "aggregated_metrics"
                     ].mean_total_tokens_throughput_tokens_per_s
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "Total Throughput (Input + Output) of Server (tokens/s)",
                 "y_label": "TTFT",
@@ -228,11 +270,11 @@ def plot_metrics(
             {
                 "y_data": [
                     concurrency_data[c]["aggregated_metrics"].stats.e2e_latency.p90
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c]["aggregated_metrics"].requests_per_second
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "RPS (req/s)",
                 "y_label": "P90 E2E Latency per Request (s)",
@@ -243,11 +285,11 @@ def plot_metrics(
             {
                 "y_data": [
                     concurrency_data[c]["aggregated_metrics"].stats.e2e_latency.p99
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_data": [
                     concurrency_data[c]["aggregated_metrics"].requests_per_second
-                    for c in concurrency_levels
+                    for c in valid_concurrency_levels
                 ],
                 "x_label": "RPS (req/s)",
                 "y_label": "P99 E2E Latency per Request (s)",
@@ -259,6 +301,21 @@ def plot_metrics(
 
         # Generate all plots
         for spec in plot_specs:
+            # Validate that we have data before plotting
+            if not spec["x_data"] or not spec["y_data"]:
+                logger.warning(
+                    f"Skipping plot '{spec['title']}' for {labels[i]}: "
+                    f"x_data has {len(spec['x_data'])} points, y_data has {len(spec['y_data'])} points"
+                )
+                continue
+
+            if len(spec["x_data"]) != len(spec["y_data"]):
+                logger.warning(
+                    f"Skipping plot '{spec['title']}' for {labels[i]}: "
+                    f"x_data and y_data have different lengths ({len(spec['x_data'])} vs {len(spec['y_data'])})"
+                )
+                continue
+
             plot_graph(
                 ax=spec["ax"],
                 x_data=spec["x_data"],
@@ -266,7 +323,7 @@ def plot_metrics(
                 x_label=spec["x_label"],
                 y_label=spec["y_label"],
                 title=spec["title"],
-                concurrency_levels=concurrency_levels,
+                concurrency_levels=valid_concurrency_levels,
                 label=labels[i],
                 plot_type=spec["plot_type"],
                 metrics_time_unit=metrics_time_unit,
@@ -276,7 +333,7 @@ def plot_metrics(
         plot_error_rates(
             ax=axs[0, 3],
             concurrency_data=concurrency_data,
-            concurrency_levels=concurrency_levels,
+            concurrency_levels=valid_concurrency_levels,
             label=labels[i],
         )
 
@@ -605,7 +662,20 @@ def plot_single_scenario_inference_speed_vs_throughput(
         return
 
     concurrency_data = scenario_metrics["data"]
-    concurrency_levels = sorted(scenario_metrics[f"{iteration_type}"])
+    # Find the iteration type key in scenario_metrics (could be "num_concurrency", "batch_size", or "qps")
+    iteration_key = None
+    for key in ["qps", "num_concurrency", "batch_size"]:
+        if key in scenario_metrics:
+            iteration_key = key
+            break
+
+    if iteration_key is None:
+        logger.warning(
+            f"No iteration type key found in scenario_metrics for {scenario_label}"
+        )
+        return
+
+    concurrency_levels = sorted(scenario_metrics[iteration_key])
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Filter out concurrency levels with missing data and collect valid data points

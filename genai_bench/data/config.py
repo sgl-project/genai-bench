@@ -94,18 +94,25 @@ class DatasetConfig(BaseModel):
         else:
             # Determine source type from path
             path = Path(dataset_path)
-            if path.exists():
+            # If path has a file extension, treat it as a file (even if it doesn't exist yet)
+            # This prevents local files from being incorrectly treated as HuggingFace datasets
+            supported_extensions = {".csv", ".txt", ".json"}
+            if path.suffix.lower() in supported_extensions:
                 source_type = "file"
-                if path.suffix == ".csv":
+                if path.suffix.lower() == ".csv":
                     file_format = "csv"
-                elif path.suffix == ".txt":
+                elif path.suffix.lower() == ".txt":
                     file_format = "txt"
-                elif path.suffix == ".json":
+                elif path.suffix.lower() == ".json":
                     file_format = "json"
-                else:
-                    raise ValueError(f"Unsupported file format: {path.suffix}")
+            elif path.exists():
+                # Path exists but doesn't have a recognized extension
+                raise ValueError(
+                    f"Unsupported file format: {path.suffix}. "
+                    f"Supported formats: {', '.join(supported_extensions)}"
+                )
             else:
-                # Assume it's a HuggingFace ID
+                # No file extension and doesn't exist - assume it's a HuggingFace ID
                 source_type = "huggingface"
                 file_format = None
 

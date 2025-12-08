@@ -11,6 +11,8 @@ from genai_bench.auth.azure.blob_auth import AzureBlobAuth
 from genai_bench.auth.azure.openai_auth import AzureOpenAIAuth
 
 # Import existing auth providers
+from genai_bench.auth.baseten.auth import BasetenAuth
+from genai_bench.auth.baseten.model_auth_adapter import BasetenModelAuthAdapter
 from genai_bench.auth.factory import AuthFactory
 from genai_bench.auth.gcp.gcs_auth import GCPStorageAuth
 from genai_bench.auth.gcp.vertex_auth import GCPVertexAuth
@@ -86,6 +88,11 @@ class UnifiedAuthFactory:
                 api_key=kwargs.get("api_key"),
             )
 
+        elif provider == "baseten":
+            api_key = kwargs.get("api_key")
+            baseten_auth = BasetenAuth(api_key=api_key)
+            return BasetenModelAuthAdapter(baseten_auth)
+
         elif provider == "together":
             api_key = kwargs.get("api_key")
             together_auth = TogetherAuth(api_key=api_key)
@@ -95,7 +102,7 @@ class UnifiedAuthFactory:
             raise ValueError(
                 f"Unsupported model provider: {provider}. "
                 f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, "
-                "together"
+                "baseten, together"
             )
 
     @staticmethod

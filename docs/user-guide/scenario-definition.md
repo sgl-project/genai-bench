@@ -23,6 +23,11 @@ Scenarios are optional. If you don’t provide any and you supply a dataset, gen
         - Example: `N(480,240)/(300,150)`
     - Uniform: `U(min_input_tokens,max_input_tokens)/(min_output_tokens,max_output_tokens)` or `U(max_input_tokens,max_output_tokens)`
         - Examples: `U(50,100)/(200,250)` or `U(100,200)`
+    - **Prefix Repetition (for KV cache benchmarking)**: `P(prefix_len,suffix_len)/output_len`
+        - Example: `P(2000,500)/200`
+        - All requests share the same prefix (first request caches it, subsequent requests reuse cached KV)
+        - Each request has a unique suffix to ensure different completions
+        - Useful for benchmarking automatic prefix caching (APC), chunked prefill, and TTFT improvements
 
 - Embeddings
     - Embedding: `E(tokens_per_document)`

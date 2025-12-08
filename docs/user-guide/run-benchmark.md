@@ -232,6 +232,179 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 - `--spawn-rate 100`: Spawn 100 users per second (takes 5 seconds to reach 500 users)
 - `--spawn-rate 500`: Spawn all users immediately (default behavior)
 
+## Execution Engine Options
+
+GenAI Bench supports two execution engine options: **Locust** (default) and **async runner**. The async runner is a native async execution engine that provides better streaming performance and precise timing measurements than Locust.
+
+### When to Use the Async Runner
+
+Use the async runner (specify `--execution-engine=async`) when:
+- ✅ You need precise timing measurements for streaming responses
+- ✅ You're running single-machine benchmarks (async runner is single-process)
+- ✅ You're using OpenAI-compatible backends (OpenAI, Baseten)
+- ✅ You need better streaming metrics than Locust (even in closed-loop mode)
+
+Use Locust when:
+- ✅ You need distributed/multi-machine testing
+- ✅ You're using non-OpenAI backends (AWS, Azure, GCP, OCI, etc.)
+- ✅ You need worker process isolation
+
+### Async Runner Usage
+
+The async runner supports two execution modes:
+
+1. **Open-loop mode** (QPS-based): Specify `--qps-level` to control the fixed arrival rate of requests
+2. **Closed-loop mode** (concurrency-based): Specify `--num-concurrency` (without `--qps-level`) to maintain a fixed number of concurrent requests
+
+**Understanding the difference:**
+- **Open-loop (QPS-based)**: You specify `--qps-level` (e.g., 5.0), and concurrency emerges naturally based on request latency. QPS is the input.
+- **Closed-loop (concurrency-based)**: You specify `--num-concurrency` (e.g., 10), and QPS emerges naturally based on request latency. Concurrency is the input.
+
+**Note**: The async runner's closed-loop mode provides better streaming metrics than Locust, making it ideal when you want concurrency-based testing with improved streaming performance.
+
+**Choosing QPS for Open-Loop Mode:**
+
+If you're using open-loop mode (`--qps-level`), you need to calculate QPS based on your target concurrency and expected latency using Little's Law:
+
+```
+QPS = Target Concurrency / Expected Average Latency
+```
+
+For example:
+- Target: ~10 concurrent requests
+- Expected latency: ~2 seconds
+- QPS: `10 / 2 = 5.0`
+
+```shell
+genai-bench benchmark \
+    --api-backend openai \
+    --api-key "your-api-key" \
+    --api-base "http://localhost:8082" \
+    --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
+    --model-tokenizer "/path/to/tokenizer" \
+    --task text-to-text \
+    --execution-engine async \
+    --qps-level 5.0 \
+    --distribution exponential \
+    --max-time-per-run 60 \
+    --max-requests-per-run 600
+```
+
+**Example: Closed-Loop Mode (Concurrency-Based)**
+
+The async runner also supports closed-loop mode when you specify `--num-concurrency` without `--qps-level`. This provides better streaming metrics than Locust while maintaining a fixed concurrency level:
+
+```shell
+genai-bench benchmark \
+    --api-backend openai \
+    --api-key "your-api-key" \
+    --api-base "http://localhost:8082" \
+    --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
+    --model-tokenizer "/path/to/tokenizer" \
+    --task text-to-text \
+    --execution-engine async \
+    --num-concurrency 10 \
+    --max-time-per-run 60 \
+    --max-requests-per-run 600
+```
+
+In this mode, the async runner maintains exactly 10 concurrent requests (similar to Locust), but with improved streaming metrics collection.
+
+### Async Runner Parameters
+
+- **`--execution-engine`**: Choose `"locust"` (default) or `"async"`
+- **`--qps-level`**: Specifies queries per second (e.g., `5.0` for 5 QPS). Required for open-loop mode. Use Little's Law to choose: `QPS = Target Concurrency / Expected Average Latency`. Must be between 0 and 10000.
+- **`--num-concurrency`**:
+  - **In closed-loop mode**: Required. Specifies the target number of concurrent requests (e.g., `10` for 10 concurrent requests).
+  - **In open-loop mode**: Ignored (QPS determines concurrency).
+- **`--distribution`**: Inter-arrival distribution for requests (open-loop mode only):
+  - `"exponential"` (default): Realistic arrival pattern
+  - `"uniform"`: Uniform distribution between 0 and 2×mean
+  - `"constant"`: Fixed inter-arrival time
+
+**Execution Modes Comparison:**
+
+| Aspect | Locust | Async Runner (Open-Loop) | Async Runner (Closed-Loop) |
+|--------|--------|-------------------------|---------------------------|
+| **Input** | Concurrency (e.g., `--num-concurrency 10`) | QPS (e.g., `--qps-level 5.0`) | Concurrency (e.g., `--num-concurrency 10`) |
+| **Output** | QPS emerges from latency | Concurrency emerges from latency | QPS emerges from latency |
+| **Model** | N concurrent users continuously sending requests | Fixed rate of request arrivals | N concurrent requests continuously maintained |
+| **Relationship** | `QPS ≈ Concurrency / Avg Latency` | `Concurrency ≈ QPS × Avg Latency` | `QPS ≈ Concurrency / Avg Latency` |
+| **Streaming Metrics** | Good | Excellent | Excellent (better than Locust) |
+
+**Choosing Between Open-Loop and Closed-Loop Mode:**
+
+- **Use open-loop mode** (`--qps-level`) when:
+  - You want to test a fixed arrival rate (e.g., simulating production traffic patterns)
+  - You're doing capacity planning based on expected request rates
+  - You want to measure how concurrency scales with fixed QPS
+
+- **Use closed-loop mode** (`--num-concurrency` without `--qps-level`) when:
+  - You want to test a fixed concurrency level (similar to Locust)
+  - You need better streaming metrics than Locust provides
+  - You're comparing against Locust results with the same concurrency
+
+**How to Determine QPS for Open-Loop Mode:**
+
+Since you don't know latency until you run requests, use one of these approaches:
+
+1. **Run a quick closed-loop test first**: Use the async runner in closed-loop mode with `--num-concurrency` to measure latency, then calculate QPS manually: `QPS = Concurrency / Measured Latency`.
+
+2. **Use an educated guess**: If you have experience with similar models/deployments, estimate latency and calculate QPS.
+
+**Example Workflow for New Deployment:**
+```shell
+# Step 1: Measure latency using closed-loop mode
+genai-bench benchmark \
+    --execution-engine async \
+    --num-concurrency 10 \
+    # ... other options ...
+# Note the average latency from the results
+
+# Step 2: Calculate QPS and use in open-loop mode
+# If average latency was ~2 seconds: QPS = 10 / 2 = 5.0
+genai-bench benchmark \
+    --execution-engine async \
+    --qps-level 5.0 \
+    # ... other options ...
+```
+
+### Example: Streaming Performance Benchmark
+
+```shell
+genai-bench benchmark \
+    --api-backend openai \
+    --api-key "your-api-key" \
+    --api-base "http://localhost:8082" \
+    --api-model-name "gpt-4" \
+    --model-tokenizer "/path/to/tokenizer" \
+    --task text-to-text \
+    --execution-engine async \
+    --qps-level 5.0 \
+    --distribution exponential \
+    --max-time-per-run 120 \
+    --traffic-scenario "N(1000,200)/(500,100)"
+```
+
+**Note**: In this example, `--qps-level 5.0` would result in ~5-10 concurrent requests if average latency is 1-2 seconds (per Little's Law: Concurrency = QPS × Latency).
+
+### Async Runner Performance Optimizations
+
+The async runner includes several performance optimizations:
+
+- **Session Reuse**: HTTP connections are reused across requests for better performance
+- **Memory Efficiency**: Requests are generated on-demand rather than pre-allocated, reducing memory footprint for long-running benchmarks
+- **Precise Timing**: Better streaming metrics collection with accurate time-to-first-token measurements
+- **Resource Cleanup**: Automatic cleanup of HTTP sessions and connections after benchmark completion
+
+### Backend Compatibility
+
+The async runner currently supports:
+- ✅ OpenAI
+- ✅ Baseten (if OpenAI-compatible)
+
+For other backends (AWS Bedrock, Azure OpenAI, GCP Vertex, OCI), use Locust with `--execution-engine locust` (default).
+
 ## Selecting datasets
 
 By default, genai-bench samples tokens to benchmark from [sonnet.txt](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/data/sonnet.txt) for `text-to-text` or `text-to-embeddings` tasks. Image tasks do not have a default dataset. To select a dataset to benchmark from, genai-bench supports flexible dataset configurations through two approaches:

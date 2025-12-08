@@ -18,7 +18,7 @@ LD_FLAGS += -X 'main.GitCommit=$(shell git rev-parse HEAD)'
 DOCKER_BUILD_CMD := $(shell command -v nerdctl >/dev/null 2>&1 && nerdctl info >/dev/null 2>&1 && echo nerdctl || echo docker)
 
 # Python command configurations
-PYTHON_CMD ?= python3.11
+PYTHON_CMD ?= python3
 PIP_CMD ?= pip3
 
 # Local binary installation path

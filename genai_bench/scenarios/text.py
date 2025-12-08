@@ -222,3 +222,68 @@ class ReRankScenario(Scenario):
         return cls(
             tokens_per_document=tokens_per_document, tokens_per_query=tokens_per_query
         )
+
+
+class PrefixRepetitionScenario(Scenario):
+    """
+    Prefix repetition scenario for KV cache benchmarking.
+
+    All concurrent requests share the same prefix but have unique suffixes.
+    This enables benchmarking of KV cache performance, chunked prefill efficiency,
+    and automatic prefix caching (APC) features in LLM serving engines.
+
+    Format: P(prefix_len,suffix_len)/output_len
+    Example: P(2000,500)/200
+
+    In this example:
+    - All requests share a 2000-token prefix (cached after first request)
+    - Each request has a unique 500-token suffix
+    - Expected output is 200 tokens
+
+    This scenario is particularly useful for:
+    - Testing KV cache hit rates and speedups
+    - Benchmarking prefill performance with cached prefixes
+    - Measuring Time To First Token (TTFT) improvements
+    - Evaluating automatic prefix caching implementations
+    """
+
+    scenario_type = TextDistribution.PREFIX_REPETITION
+    validation_pattern = r"^P\(\d+,\d+\)/\d+$"
+
+    def __init__(self, prefix_len: int, suffix_len: int, output_len: int):
+        self.prefix_len = prefix_len
+        self.suffix_len = suffix_len
+        self.output_len = output_len
+
+    def sample(self) -> Tuple[int, int, int]:
+        """Returns (prefix_len, suffix_len, output_len)"""
+        return self.prefix_len, self.suffix_len, self.output_len
+
+    def to_string(self) -> str:
+        """
+        Returns the prefix repetition scenario back in its string representation.
+        For example P(2000,500)/200.
+        """
+        return f"P({self.prefix_len},{self.suffix_len})/{self.output_len}"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "PrefixRepetitionScenario":
+        """
+        Parse the prefix repetition scenario from a string.
+
+        Example: "(2000,500)/200" -> PrefixRepetitionScenario(2000, 500, 200)
+        """
+        # Parse P(prefix_len,suffix_len)/output_len
+        # params_str will be "(2000,500)/200"
+        import re
+
+        match = re.match(r"\((\d+),(\d+)\)/(\d+)", params_str)
+        if not match:
+            raise ValueError(
+                f"Invalid prefix repetition format: {params_str}. "
+                f"Expected format: (prefix_len,suffix_len)/output_len"
+            )
+        prefix_len = int(match.group(1))
+        suffix_len = int(match.group(2))
+        output_len = int(match.group(3))
+        return cls(prefix_len, suffix_len, output_len)

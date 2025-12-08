@@ -64,7 +64,12 @@ class MinimalDashboard:
     def create_benchmark_progress_task(self, run_name: str):
         pass
 
+    def initialize_total_progress_bars(self, total_runs: int):
+        """Initialize the total progress bar with the total number of runs."""
+        pass
+
     def update_total_progress_bars(self, total_runs: int):
+        """Advance the total progress bar by one run."""
         pass
 
     def start_run(self, run_time: int, start_time: float, max_requests_per_run: int):
@@ -275,8 +280,26 @@ class RichLiveDashboard:
         )
 
     def update_benchmark_progress_bars(self, progress_increment: float):
+        # Only update if the task exists (may not exist if called before task creation)
+        if self.benchmark_progress_task_id is not None:
+            try:
+                # Get current progress to prevent flashing backwards
+                # Rich Progress tasks are accessed by task ID, but need to handle if task was removed
+                task = self.benchmark_progress.tasks.get(
+                    self.benchmark_progress_task_id
+                )
+                if task is not None:
+                    current_progress = task.completed
+                    # Only update if new progress is greater than current (prevents flashing)
+                    new_progress = max(current_progress, progress_increment)
+                else:
+                    # Task was removed or doesn't exist, just use the new progress
+                    new_progress = progress_increment
+            except (KeyError, AttributeError, IndexError, TypeError):
+                # If task doesn't exist, was removed, or can't access, just use the new progress
+                new_progress = progress_increment
         self.benchmark_progress.update(
-            self.benchmark_progress_task_id, completed=progress_increment
+            self.benchmark_progress_task_id, completed=new_progress
         )
         update_progress(self.layout, self.total_progress, self.benchmark_progress)
 
@@ -286,8 +309,21 @@ class RichLiveDashboard:
         )
         update_progress(self.layout, self.total_progress, self.benchmark_progress)
 
+    def initialize_total_progress_bars(self, total_runs: int):
+        """Initialize the total progress bar with the total number of runs."""
+        # Only remove the benchmark task if it exists (may not exist if called before first run)
+        if self.benchmark_progress_task_id is not None:
+            self.benchmark_progress.remove_task(self.benchmark_progress_task_id)
+        # Reset total progress to 0
+        self.total_progress.update(self.total_progress_task_id, completed=0)
+        update_progress(self.layout, self.total_progress, self.benchmark_progress)
+
     def update_total_progress_bars(self, total_runs: int):
-        self.benchmark_progress.remove_task(self.benchmark_progress_task_id)
+        """Advance the total progress bar by one run."""
+        # Only remove the benchmark task if it exists (may not exist if called before first run)
+        if self.benchmark_progress_task_id is not None:
+            self.benchmark_progress.remove_task(self.benchmark_progress_task_id)
+        # Advance by one run's worth of progress
         self.total_progress.update(
             self.total_progress_task_id, advance=(1 / total_runs) * 100
         )
@@ -314,9 +350,13 @@ class RichLiveDashboard:
 
         # Calculate request-based progress
         assert self.max_requests_per_run is not None
-        request_based_progress = (
-            min(total_requests / self.max_requests_per_run, 1) * 100
-        )
+        if self.max_requests_per_run > 0:
+            request_based_progress = (
+                min(total_requests / self.max_requests_per_run, 1) * 100
+            )
+        else:
+            # If max_requests_per_run is 0, use only time-based progress
+            request_based_progress = 0
 
         # Use the larger of the two progress metrics to be more accurate
         progress_increment = max(time_based_progress, request_based_progress)
