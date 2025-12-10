@@ -6,7 +6,6 @@ import pytest
 
 from genai_bench.cli.utils import (
     MAX_CONCURRENCY_FOR_RATE,
-    format_iteration_value,
     get_experiment_path,
     get_run_params,
     manage_run_time,
@@ -182,48 +181,3 @@ class TestGetRunParams:
         assert header == "Concurrency"
         assert batch_size == 1
         assert num_concurrency == 16
-
-
-class TestFormatIterationValue:
-    """Test format_iteration_value function with various inputs."""
-
-    def test_format_integer(self):
-        """Test format_iteration_value() with integer values."""
-        assert format_iteration_value(1) == "1"
-        assert format_iteration_value(10) == "10"
-        assert format_iteration_value(100) == "100"
-
-    def test_format_float_normal(self):
-        """Test format_iteration_value() with normal float values."""
-        assert format_iteration_value(1.0) == "1"
-        assert format_iteration_value(10.5) == "10.5"
-        # Note: 10.55 has floating point precision issues, so we test a value that works
-        assert format_iteration_value(10.25) == "10.25"
-        assert format_iteration_value(0.5) == "0.5"
-
-    def test_format_float_very_small(self):
-        """Test format_iteration_value() with very small float values."""
-        # These would normally be formatted as scientific notation
-        assert format_iteration_value(0.0001) == "0.0001"
-        assert format_iteration_value(0.00001) == "0.00001"
-        assert format_iteration_value(0.000001) == "0.000001"
-        assert format_iteration_value(1e-05) == "0.00001"
-        assert format_iteration_value(1e-06) == "0.000001"
-
-    def test_format_float_large(self):
-        """Test format_iteration_value() with large float values."""
-        assert format_iteration_value(1000.0) == "1000"
-        assert format_iteration_value(1000000.0) == "1000000"
-        assert format_iteration_value(1000.5) == "1000.5"
-
-    def test_format_float_strips_trailing_zeros(self):
-        """Test format_iteration_value() strips trailing zeros."""
-        assert format_iteration_value(10.0) == "10"
-        assert format_iteration_value(10.10) == "10.1"
-        assert format_iteration_value(10.100) == "10.1"
-        assert format_iteration_value(0.1000) == "0.1"
-
-    def test_format_float_preserves_precision(self):
-        """Test format_iteration_value() preserves necessary precision."""
-        assert format_iteration_value(10.123456789) == "10.123456789"
-        assert format_iteration_value(0.123456789) == "0.123456789"

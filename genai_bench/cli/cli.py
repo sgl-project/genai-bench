@@ -28,12 +28,7 @@ from genai_bench.cli.option_groups import (
     storage_auth_options,
 )
 from genai_bench.cli.report import excel, plot
-from genai_bench.cli.utils import (
-    format_iteration_value,
-    get_experiment_path,
-    get_run_params,
-    manage_run_time,
-)
+from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
 from genai_bench.cli.validation import validate_tokenizer
 from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.factory import DataLoaderFactory
@@ -565,7 +560,7 @@ def benchmark(
                 # Save and clear metrics after each run
                 run_name = (
                     f"{sanitized_scenario_str}_{task}_{iteration_type}_"
-                    f"{format_iteration_value(iteration)}_time_{total_run_time}s.json"
+                    f"{iteration}_time_{total_run_time}s.json"
                 )
                 aggregated_metrics_collector.save(
                     os.path.join(experiment_folder_abs_path, run_name),
