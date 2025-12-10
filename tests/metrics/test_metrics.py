@@ -163,7 +163,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         ttft=0.1,
         tpot=0.0000002,
         e2e_latency=1.0,
-        output_latency=0.9,
+        output_latency=0.0002,
         input_throughput=20.0,
         output_throughput=11.111,
         num_input_tokens=2,
@@ -173,7 +173,18 @@ def test_filter_metrics(aggregated_metrics_collector):
     )
 
     aggregated_metrics_collector.add_single_request_metrics(metrics1)
-    assert metrics1 not in aggregated_metrics_collector.all_request_metrics
+
+    # metrics are added to list, but tpot and inference speed fields are filtered
+    assert len(aggregated_metrics_collector.all_request_metrics) == 1
+    stored_metrics = aggregated_metrics_collector.all_request_metrics[0]
+
+    assert stored_metrics.tpot is None
+    assert stored_metrics.output_inference_speed is None
+
+    # Verify other fields preserved
+    assert stored_metrics.ttft == 0.1
+    assert stored_metrics.output_latency == 0.0002
+    assert stored_metrics.num_output_tokens == 10
 
     embedding_metrics = RequestLevelMetrics(
         ttft=0.1,
