@@ -5,7 +5,7 @@
 Pull the latest docker image:
 
 ```shell
-docker pull ghcr.io/moirai-internal/genai-bench:v0.0.2
+docker pull ghcr.io/moirai-internal/genai-bench:v0.0.3
 ```
 
 ## Building from Source
