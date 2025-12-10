@@ -5,7 +5,6 @@ import atexit
 import logging
 import multiprocessing
 import os
-import time
 from dataclasses import dataclass
 from multiprocessing.queues import Queue
 from typing import Any, Dict, List, Optional, Protocol
@@ -165,7 +164,7 @@ class DistributedRunner:
         # Create collector only for master in distributed mode
         self.metrics_collector = AggregatedMetricsCollector()
 
-        time.sleep(self.config.wait_time)
+        gevent.sleep(self.config.wait_time)
         self._register_message_handlers()
 
         # Start log consumer greenlet
@@ -293,12 +292,16 @@ class DistributedRunner:
 
             self.metrics_collector.add_single_request_metrics(metrics)
 
-            # Update dashboard if needed
+            # Update dashboard if needed - spawn as greenlet to avoid blocking
             if self.dashboard and environment.runner and environment.runner.stats:
-                self.dashboard.handle_single_request(
-                    self.metrics_collector.get_live_metrics(),
-                    environment.runner.stats.total.num_requests,
-                    metrics.error_code,
+                live_metrics = self.metrics_collector.get_live_metrics()
+                total_requests = environment.runner.stats.total.num_requests
+                error_code = metrics.error_code
+                gevent.spawn(
+                    self.dashboard.handle_single_request,
+                    live_metrics,
+                    total_requests,
+                    error_code,
                 )
 
         return handler

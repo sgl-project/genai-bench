@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import click
+import gevent
 
 from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.analysis.experiment_loader import load_one_experiment
@@ -499,7 +500,7 @@ def benchmark(
                 dashboard.update_total_progress_bars(total_runs)
 
                 # Sleep for 1 sec for server to clear aborted requests
-                time.sleep(1)
+                gevent.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
             plot_single_scenario_inference_speed_vs_throughput(
@@ -511,7 +512,7 @@ def benchmark(
             )
 
         # Sleep for 2 secs before the UI disappears
-        time.sleep(2)
+        gevent.sleep(2)
 
     # Final cleanup
     runner.cleanup()
