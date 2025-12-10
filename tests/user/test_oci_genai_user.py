@@ -50,12 +50,18 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         '"content": [{"type": "TEXT", "text": "!"}]}}'
     )
 
+    usage_msg = (
+        '{"usage": {"totalTokens": 8, "promptTokens": 5, '
+        '"completionTokens": 3, "completionTokensDetails": {"reasoningTokens": 0}}}'
+    )
+
     mock_client_instance.chat.return_value.data.events.return_value = iter(
         [
             MagicMock(data=hello_msg),
             MagicMock(data=world_msg),
             MagicMock(data=exclamation_msg),
             MagicMock(data='{"finishReason": "stop"}'),
+            MagicMock(data=usage_msg),
         ]
     )
 
@@ -88,6 +94,7 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
                 ],
                 max_tokens=10,
                 is_stream=True,
+                stream_options={"isIncludeUsage": True},
                 temperature=0.75,
                 top_p=0.7,
                 top_k=1,
@@ -105,6 +112,7 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
     assert user_response.status_code == 200
     assert user_response.num_prefill_tokens == 5
     assert user_response.generated_text == "Hello world!"
+    assert user_response.tokens_received == 3  # totalTokens (8) - promptTokens (5)
 
 
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
