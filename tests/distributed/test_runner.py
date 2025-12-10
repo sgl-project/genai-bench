@@ -164,7 +164,7 @@ def test_message_handling(mock_environment, mock_dashboard):
     handler(mock_environment, mock_msg)
 
 
-@patch("time.sleep")
+@patch("gevent.sleep")
 def test_cleanup(mock_environment, mock_dashboard):
     """Test cleanup in all modes"""
     # Test local mode cleanup

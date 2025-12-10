@@ -79,10 +79,10 @@ def mock_validate_tokenizer():
         yield mock_tokenizer
 
 
-# Mock time.sleep
+# Mock gevent.sleep (used instead of time.sleep for cooperative multitasking)
 @pytest.fixture
 def mock_time_sleep():
-    with patch("time.sleep", return_value=None):
+    with patch("gevent.sleep", return_value=None):
         yield
 
 
