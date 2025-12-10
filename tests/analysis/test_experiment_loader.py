@@ -618,3 +618,173 @@ class TestRequestRateIterationValueExtraction:
 
         assert iteration_value == 10
         assert isinstance(iteration_value, int)
+
+
+class TestFilenameMatching:
+    """Test that various filename formats match the regex pattern."""
+
+    def test_filename_regex_matches_concurrency(self):
+        """Test that concurrency filenames match the regex pattern."""
+        import re
+
+        pattern = (
+            r"^.+_.+_"
+            r"(?:concurrency|batch_size|request_rate)"
+            r"_\d+(?:\.\d+)?"
+            r"_time_\d+s\.json$"
+        )
+
+        # Test various concurrency filenames
+        filenames = [
+            "N480_240_300_150_chat_concurrency_1_time_600s.json",
+            "D_100_100_chat_concurrency_4_time_600s.json",
+            "test_scenario_text-to-text_concurrency_16_time_300s.json",
+        ]
+
+        for filename in filenames:
+            assert (
+                re.match(pattern, filename) is not None
+            ), f"Filename {filename} should match the regex pattern"
+
+    def test_filename_regex_matches_batch_size(self):
+        """Test that batch_size filenames match the regex pattern."""
+        import re
+
+        pattern = (
+            r"^.+_.+_"
+            r"(?:concurrency|batch_size|request_rate)"
+            r"_\d+(?:\.\d+)?"
+            r"_time_\d+s\.json$"
+        )
+
+        # Test various batch_size filenames
+        filenames = [
+            "D_100_100_embeddings_batch_size_8_time_600s.json",
+            "test_scenario_text-to-embeddings_batch_size_32_time_300s.json",
+        ]
+
+        for filename in filenames:
+            assert (
+                re.match(pattern, filename) is not None
+            ), f"Filename {filename} should match the regex pattern"
+
+    def test_filename_regex_matches_request_rate_decimal(self):
+        """Test that request_rate filenames with decimal values match the regex."""
+        import re
+
+        from genai_bench.cli.utils import format_iteration_value
+
+        pattern = (
+            r"^.+_.+_"
+            r"(?:concurrency|batch_size|request_rate)"
+            r"_\d+(?:\.\d+)?"
+            r"_time_\d+s\.json$"
+        )
+
+        # Test various request_rate values that would be formatted
+        test_values = [1.0, 10.5, 0.5, 0.0001, 0.00001, 0.000001, 1000.0]
+
+        for value in test_values:
+            formatted = format_iteration_value(value)
+            filename = f"D_100_100_chat_request_rate_{formatted}_time_600s.json"
+            assert re.match(pattern, filename) is not None, (
+                f"Filename {filename} (from value {value}) "
+                "should match the regex pattern"
+            )
+
+    def test_filename_regex_matches_request_rate_integer(self):
+        """Test that request_rate filenames with integer values match the regex."""
+        import re
+
+        from genai_bench.cli.utils import format_iteration_value
+
+        pattern = (
+            r"^.+_.+_"
+            r"(?:concurrency|batch_size|request_rate)"
+            r"_\d+(?:\.\d+)?"
+            r"_time_\d+s\.json$"
+        )
+
+        # Test integer request_rate values
+        test_values = [1, 10, 100]
+
+        for value in test_values:
+            formatted = format_iteration_value(value)
+            filename = f"D_100_100_chat_request_rate_{formatted}_time_600s.json"
+            assert re.match(pattern, filename) is not None, (
+                f"Filename {filename} (from value {value}) "
+                "should match the regex pattern"
+            )
+
+    def test_filename_regex_rejects_scientific_notation(self):
+        """Test that filenames with scientific notation do NOT match the regex."""
+        import re
+
+        pattern = (
+            r"^.+_.+_"
+            r"(?:concurrency|batch_size|request_rate)"
+            r"_\d+(?:\.\d+)?"
+            r"_time_\d+s\.json$"
+        )
+
+        # These should NOT match (scientific notation)
+        invalid_filenames = [
+            "D_100_100_chat_request_rate_1e-05_time_600s.json",
+            "D_100_100_chat_request_rate_1e+06_time_600s.json",
+            "test_scenario_chat_request_rate_1.5e-05_time_600s.json",
+        ]
+
+        for filename in invalid_filenames:
+            assert re.match(pattern, filename) is None, (
+                f"Filename {filename} should NOT match the regex pattern "
+                "(contains scientific notation)"
+            )
+
+    @patch(
+        "os.listdir",
+        return_value=[
+            "experiment_metadata.json",
+            "D_100_100_chat_request_rate_0.00001_time_600s.json",
+            "D_100_100_chat_request_rate_10.5_time_600s.json",
+            "D_100_100_chat_request_rate_1_time_600s.json",
+        ],
+    )
+    @patch("os.path.isdir", return_value=False)
+    @patch("os.path.exists", return_value=True)
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data='{"aggregated_metrics": '
+        '{"scenario": "D(100,100)", '
+        '"request_rate": 0.00001, '
+        '"iteration_type": "request_rate"}}',
+    )
+    @patch("genai_bench.analysis.experiment_loader.load_experiment_metadata")
+    @patch("genai_bench.analysis.experiment_loader.load_run_data")
+    def test_load_one_experiment_with_various_request_rate_filenames(
+        self,
+        mock_load_run_data,
+        mock_load_metadata,
+        mock_open,
+        mock_isdir,
+        mock_listdir,
+        mock_experiment_metadata,
+    ):
+        """Test that load_one_experiment correctly loads files with various
+        request_rate filename formats."""
+        mock_load_metadata.return_value = mock_experiment_metadata
+        mock_experiment_metadata.iteration_type = "request_rate"
+        mock_experiment_metadata.request_rate = [0.00001, 1.0, 10.5]
+
+        folder_name = "fake_experiment_folder"
+        metadata, run_data = load_one_experiment(folder_name)
+
+        # Verify that load_run_data was called for each matching filename
+        assert mock_load_run_data.call_count == 3
+        assert metadata == mock_experiment_metadata
+
+        # Verify the filenames that were processed
+        called_filenames = [call[0][0] for call in mock_load_run_data.call_args_list]
+        assert any("0.00001" in fname for fname in called_filenames)
+        assert any("10.5" in fname for fname in called_filenames)
+        assert any("1" in fname for fname in called_filenames)

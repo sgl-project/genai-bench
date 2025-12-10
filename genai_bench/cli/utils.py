@@ -110,6 +110,30 @@ def get_experiment_path(
     return experiment_path
 
 
+def format_iteration_value(value: Union[int, float]) -> str:
+    """
+    Format an iteration value (int or float) for use in filenames.
+
+    Ensures floats are always formatted in decimal notation (never scientific
+    notation) to match the regex pattern used for loading experiment files.
+
+    Args:
+        value: The iteration value to format (int or float)
+
+    Returns:
+        str: Formatted string representation in decimal notation
+    """
+    if isinstance(value, int):
+        return str(value)
+
+    # For floats, use fixed-point notation to avoid scientific notation
+    # Use high precision (15 decimal places) to capture all significant digits
+    formatted = f"{value:.15f}"
+    # Strip trailing zeros and decimal point if not needed
+    formatted = formatted.rstrip("0").rstrip(".")
+    return formatted
+
+
 def get_run_params(
     iteration_type: str, iteration_value: Union[int, float]
 ) -> Tuple[str, int, int]:
