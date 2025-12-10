@@ -1,13 +1,13 @@
 from locust.env import Environment
 from locust.runners import WorkerRunner
 
-import gevent
 import os
 import sys
 import time
 from pathlib import Path
 
 import click
+import gevent
 
 from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.analysis.experiment_loader import load_one_experiment
@@ -495,7 +495,6 @@ def benchmark(
                 dashboard.update_total_progress_bars(total_runs)
 
                 # Sleep for 1 sec for server to clear aborted requests
-                # Use gevent.sleep() to allow greenlets to continue processing
                 gevent.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
@@ -508,7 +507,6 @@ def benchmark(
             )
 
         # Sleep for 2 secs before the UI disappears
-        # Use gevent.sleep() to allow greenlets to continue processing
         gevent.sleep(2)
 
     # Final cleanup

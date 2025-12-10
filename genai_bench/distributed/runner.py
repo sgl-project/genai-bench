@@ -5,7 +5,6 @@ import atexit
 import logging
 import multiprocessing
 import os
-import time
 from dataclasses import dataclass
 from multiprocessing.queues import Queue
 from typing import Any, Dict, List, Optional, Protocol
@@ -165,8 +164,6 @@ class DistributedRunner:
         # Create collector only for master in distributed mode
         self.metrics_collector = AggregatedMetricsCollector()
 
-        # Use gevent.sleep() instead of time.sleep() to avoid blocking the event loop
-        # This allows other greenlets (like heartbeat handlers) to run during the wait
         gevent.sleep(self.config.wait_time)
         self._register_message_handlers()
 
@@ -295,9 +292,7 @@ class DistributedRunner:
 
             self.metrics_collector.add_single_request_metrics(metrics)
 
-            # Update dashboard asynchronously to avoid blocking the message handler
-            # Dashboard updates (Rich panel updates) can be slow, so we spawn them
-            # in a separate greenlet to keep the message processing loop responsive
+            # Update dashboard if needed - spawn as greenlet to avoid blocking
             if self.dashboard and environment.runner and environment.runner.stats:
                 live_metrics = self.metrics_collector.get_live_metrics()
                 total_requests = environment.runner.stats.total.num_requests

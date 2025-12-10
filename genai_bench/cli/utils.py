@@ -1,10 +1,10 @@
 from locust.env import Environment
 
-import gevent
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
+
+import gevent
 
 from genai_bench.logging import init_logger
 
@@ -37,8 +37,6 @@ def manage_run_time(
     total_run_time = 0
 
     while total_run_time < max_time_per_run:
-        # Use gevent.sleep() to allow other greenlets (message handlers, dashboard
-        # updates, heartbeat responses) to run while waiting
         gevent.sleep(1)
         total_run_time += 1
 
