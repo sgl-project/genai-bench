@@ -19,7 +19,7 @@ def mock_runner():
     return runner
 
 
-@patch("time.sleep", return_value=None)
+@patch("gevent.sleep", return_value=None)
 def test_exit_based_on_max_run_time(mock_sleep, mock_environment):
     mock_requests = PropertyMock(side_effect=[10, 20, 30, 40, 50])
     type(mock_environment.runner.stats.total).num_requests = mock_requests
@@ -33,7 +33,7 @@ def test_exit_based_on_max_run_time(mock_sleep, mock_environment):
     assert total_run_time == 5  # Should run for 5 secs since max run time is reached
 
 
-@patch("time.sleep", return_value=None)
+@patch("gevent.sleep", return_value=None)
 def test_exit_based_on_max_requests(mock_sleep, mock_environment):
     mock_requests = PropertyMock(side_effect=[50, 100, 150])
     type(mock_environment.runner.stats.total).num_requests = mock_requests
