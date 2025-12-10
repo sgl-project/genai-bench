@@ -563,7 +563,7 @@ def experiment_options(func):
     )(func)
     func = click.option(
         "--request-rate",
-        type=click.FLOAT,
+        type=click.INT,
         multiple=True,
         is_eager=True,
         default=None,
@@ -574,8 +574,8 @@ def experiment_options(func):
 
                 \b
                 Example to input multiple values:
-                --request-rate 1.0 --request-rate 5.0 \\
-                --request-rate 10.0 --request-rate 20.0
+                --request-rate 1 --request-rate 5 \\
+                --request-rate 10 --request-rate 20
 
                 If provided, this will use request_rate iteration instead of
                 num_concurrency.

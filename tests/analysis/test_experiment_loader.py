@@ -347,7 +347,7 @@ class TestRequestRateInExperimentLoader:
         new_callable=mock_open,
         read_data='{"aggregated_metrics": '
         '{"scenario": "D(100,100)", '
-        '"request_rate": 10.0, '
+        '"request_rate": 10, '
         '"iteration_type": "request_rate"}}',
     )
     def test_load_run_data_extracts_request_rate(self, mock_open):
@@ -360,10 +360,10 @@ class TestRequestRateInExperimentLoader:
 
         # Verify request_rate was extracted
         assert "D(100,100)" in run_data
-        # The iteration value should be 10.0 (float)
-        assert 10.0 in run_data["D(100,100)"]
-        metrics = run_data["D(100,100)"][10.0]["aggregated_metrics"]
-        assert metrics.request_rate == 10.0
+        # The iteration value should be 10 (int)
+        assert 10 in run_data["D(100,100)"]
+        metrics = run_data["D(100,100)"][10]["aggregated_metrics"]
+        assert metrics.request_rate == 10
         assert metrics.iteration_type == "request_rate"
 
     @patch(
@@ -371,7 +371,7 @@ class TestRequestRateInExperimentLoader:
         new_callable=mock_open,
         read_data='{"aggregated_metrics": '
         '{"scenario": "D(100,100)", '
-        '"request_rate": 5.5, '
+        '"request_rate": 5, '
         '"iteration_type": "request_rate"}}',
     )
     def test_load_run_data_stores_request_rate_levels(self, mock_open):
@@ -387,36 +387,36 @@ class TestRequestRateInExperimentLoader:
         scenario_data = run_data["D(100,100)"]
         # Should have request_rate_levels key
         assert "request_rate_levels" in scenario_data
-        assert 5.5 in scenario_data["request_rate_levels"]
+        assert 5 in scenario_data["request_rate_levels"]
 
     @patch(
         "builtins.open",
         new_callable=mock_open,
         read_data='{"aggregated_metrics": '
         '{"scenario": "D(100,100)", '
-        '"request_rate": 15.5, '
+        '"request_rate": 15, '
         '"iteration_type": "request_rate"}}',
     )
-    def test_iteration_value_is_float_for_request_rate(self, mock_open):
-        """Test that iteration_value is float for request_rate runs."""
+    def test_iteration_value_is_int_for_request_rate(self, mock_open):
+        """Test that iteration_value is int for request_rate runs."""
         run_data = {}
         file_path = "fake_path.json"
         filter_criteria = None
 
         load_run_data(file_path, run_data, filter_criteria)
 
-        # Verify iteration value is float
+        # Verify iteration value is int
         assert "D(100,100)" in run_data
-        # The key should be a float
-        iteration_values = [k for k in run_data["D(100,100)"] if isinstance(k, float)]
+        # The key should be an int
+        iteration_values = [k for k in run_data["D(100,100)"] if isinstance(k, int)]
         assert len(iteration_values) > 0
-        assert 15.5 in iteration_values
+        assert 15 in iteration_values
 
     @patch(
         "os.listdir",
         return_value=[
             "experiment_metadata.json",
-            "D_100_100_chat_request_rate_10.0_time_600s.json",
+            "D_100_100_chat_request_rate_10_time_600s.json",
         ],
     )
     @patch("os.path.isdir", return_value=False)
@@ -426,7 +426,7 @@ class TestRequestRateInExperimentLoader:
         new_callable=mock_open,
         read_data='{"aggregated_metrics": '
         '{"scenario": "D(100,100)", '
-        '"request_rate": 10.0, '
+        '"request_rate": 10, '
         '"iteration_type": "request_rate"}}',
     )
     @patch("genai_bench.analysis.experiment_loader.load_experiment_metadata")
@@ -440,7 +440,7 @@ class TestRequestRateInExperimentLoader:
     ):
         """Test that all _levels keys are cleaned up regardless of iteration_type."""
         # Create metadata with request_rate
-        mock_experiment_metadata.request_rate = [5.0, 10.0, 20.0]
+        mock_experiment_metadata.request_rate = [5, 10, 20]
         mock_experiment_metadata.iteration_type = "request_rate"
         mock_load_metadata.return_value = mock_experiment_metadata
 
@@ -464,7 +464,7 @@ class TestRequestRateFormulas:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=20.0,
+            request_rate=20,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
@@ -492,7 +492,7 @@ class TestRequestRateFormulas:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=15.0,
+            request_rate=15,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1500.0,
@@ -526,7 +526,7 @@ class TestRequestRateEdgeCasesInAnalysis:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=20.0,
+            request_rate=20,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=500.0,
@@ -545,27 +545,26 @@ class TestRequestRateEdgeCasesInAnalysis:
         # Metrics should still be valid
         assert metrics.error_rate == 50.0
         assert metrics.num_error_requests == 600
-        assert metrics.request_rate == 20.0
+        assert metrics.request_rate == 20
 
 
 class TestRequestRateIterationValueExtraction:
     """Test extraction of iteration_value for request_rate runs."""
 
-    def test_iteration_value_is_float_for_request_rate(self):
-        """Test that iteration_value is correctly typed as float for request_rate."""
-        # Tests the fix for type annotation Union[int, float, None]
+    def test_iteration_value_is_int_for_request_rate(self):
+        """Test that iteration_value is correctly typed as int for request_rate."""
         metrics = AggregatedMetrics(
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=15.5,
+            request_rate=15,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
             mean_input_throughput_tokens_per_s=1000.0,
             mean_total_tokens_throughput_tokens_per_s=2000.0,
             mean_total_chars_per_hour=10000000.0,
-            requests_per_second=15.5,
+            requests_per_second=15.0,
             error_codes_frequency={},
             error_rate=0.0,
             num_error_requests=0,
@@ -583,8 +582,8 @@ class TestRequestRateIterationValueExtraction:
         else:  # num_concurrency
             iteration_value = metrics.num_concurrency
 
-        assert iteration_value == 15.5
-        assert isinstance(iteration_value, float)
+        assert iteration_value == 15
+        assert isinstance(iteration_value, int)
 
     def test_iteration_value_is_int_for_num_concurrency(self):
         """Test that iteration_value is int for num_concurrency runs."""

@@ -43,7 +43,7 @@ def _agg_metrics(
     output_infer_speed_mean: float,
     ttft_mean: float = 0.5,
     e2e_latency_mean: float = 1.0,
-    request_rate: float = None,
+    request_rate: int = None,
     iteration_type: str = "num_concurrency",
 ) -> AggregatedMetrics:
     stats = MetricStats(
@@ -212,16 +212,16 @@ def test_summary_header_includes_request_rate():
     scenario = "D(100,100)"
     metadata = _make_metadata([scenario])
     metadata.iteration_type = "request_rate"
-    metadata.request_rate = [5.0, 10.0, 20.0]
+    metadata.request_rate = [5, 10, 20]
 
     run_data = {
         scenario: {
-            10.0: {
+            10: {
                 "aggregated_metrics": _agg_metrics(
                     scenario,
                     10,
                     output_infer_speed_mean=15.0,
-                    request_rate=10.0,
+                    request_rate=10,
                     iteration_type="request_rate",
                 ),
                 "individual_request_metrics": [{}],
@@ -248,16 +248,16 @@ def test_appendix_header_includes_request_rate():
     scenario = "D(100,100)"
     metadata = _make_metadata([scenario])
     metadata.iteration_type = "request_rate"
-    metadata.request_rate = [10.0]
+    metadata.request_rate = [10]
 
     run_data = {
         scenario: {
-            10.0: {
+            10: {
                 "aggregated_metrics": _agg_metrics(
                     scenario,
                     10,
                     output_infer_speed_mean=15.0,
-                    request_rate=10.0,
+                    request_rate=10,
                     iteration_type="request_rate",
                 ),
                 "individual_request_metrics": [{}],
@@ -284,16 +284,16 @@ def test_request_rate_values_displayed_correctly():
     scenario = "D(100,100)"
     metadata = _make_metadata([scenario])
     metadata.iteration_type = "request_rate"
-    metadata.request_rate = [10.0]  # Use single value to avoid comparison issues
+    metadata.request_rate = [10]  # Use single value to avoid comparison issues
 
     run_data = {
         scenario: {
-            10.0: {
+            10: {
                 "aggregated_metrics": _agg_metrics(
                     scenario,
                     100,
                     output_infer_speed_mean=15.0,
-                    request_rate=10.0,
+                    request_rate=10,
                     iteration_type="request_rate",
                 ),
                 "individual_request_metrics": [{}],
@@ -327,8 +327,8 @@ def test_request_rate_values_displayed_correctly():
 
         # Should have request_rate value
         assert len(values) > 0
-        # Check that the value 10.0 is preserved
-        assert 10.0 in values
+        # Check that the value 10 is preserved
+        assert 10 in values
 
 
 def test_request_rate_excluded_from_aggregated_metrics_sheet():
@@ -336,16 +336,16 @@ def test_request_rate_excluded_from_aggregated_metrics_sheet():
     scenario = "D(100,100)"
     metadata = _make_metadata([scenario])
     metadata.iteration_type = "request_rate"
-    metadata.request_rate = [10.0]
+    metadata.request_rate = [10]
 
     run_data = {
         scenario: {
-            10.0: {
+            10: {
                 "aggregated_metrics": _agg_metrics(
                     scenario,
                     10,
                     output_infer_speed_mean=15.0,
-                    request_rate=10.0,
+                    request_rate=10,
                     iteration_type="request_rate",
                 ),
                 "individual_request_metrics": [{}],

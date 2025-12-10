@@ -129,7 +129,7 @@ class AggregatedMetrics(BaseModel):
     scenario: Optional[str] = Field(None, description="The sample scenario")
     num_concurrency: int = Field(1, description="Number of concurrency")
     batch_size: int = Field(1, description="Batch size for embedding tasks")
-    request_rate: Optional[float] = Field(
+    request_rate: Optional[int] = Field(
         None, description="Target request rate in requests per second"
     )
     iteration_type: str = Field(

@@ -223,7 +223,7 @@ def mock_user_class():
 
 def run_benchmark_with_rate(
     cli_runner,
-    target_rate: float,
+    target_rate: int,
     max_requests: int,
     max_time: int = 60,
 ) -> List[float]:
@@ -268,7 +268,7 @@ def run_benchmark_with_rate(
 
 
 def run_distributed_benchmark(
-    target_rate: float,
+    target_rate: int,
     num_workers: int,
     num_requests: int,
     master_port: int = 5557,
@@ -387,7 +387,7 @@ class TestRequestRateAccuracy:
     )
     def test_local_mode_rate_1_req_per_sec(self, cli_runner):
         """Test ~1 req/s with rate limiter."""
-        target_rate = 1.0
+        target_rate = 1
         expected_spacing = 1.0 / target_rate
         num_requests = 10
         tolerance = 0.03
@@ -415,7 +415,7 @@ class TestRequestRateAccuracy:
     )
     def test_local_mode_rate_10_req_per_sec(self, cli_runner):
         """Test ~10 req/s with rate limiter."""
-        target_rate = 10.0
+        target_rate = 10
         expected_spacing = 1.0 / target_rate
         num_requests = 100
         tolerance = 0.03
@@ -448,7 +448,7 @@ class TestRequestRateAccuracy:
     )
     def test_rate_accuracy_over_time(self, cli_runner):
         """Test rate remains accurate over a longer run."""
-        target_rate = 10.0
+        target_rate = 10
         expected_spacing = 1.0 / target_rate
         num_requests = 200
         tolerance = 0.03
@@ -482,7 +482,7 @@ class TestDistributedModeRateAccuracy:
     """Test distributed mode rate accuracy using direct setup."""
 
     @pytest.mark.parametrize(
-        "num_workers,target_rate,port_offset", [(2, 10.0, 0), (4, 20.0, 1)]
+        "num_workers,target_rate,port_offset", [(2, 10, 0), (4, 20, 1)]
     )
     def test_distributed_mode_rate_accuracy(
         self, num_workers, target_rate, port_offset

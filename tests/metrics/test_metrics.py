@@ -164,17 +164,17 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert output_throughput == 14.0
 
 
-def test_set_run_metadata_with_float_iteration(aggregated_metrics_collector):
-    """Test that set_run_metadata accepts float for request_rate iteration."""
-    # Test with float iteration value (request_rate)
+def test_set_run_metadata_with_int_iteration(aggregated_metrics_collector):
+    """Test that set_run_metadata accepts int for request_rate iteration."""
+    # Test with integer iteration value (request_rate)
     aggregated_metrics_collector.set_run_metadata(
-        iteration=15.5,  # Float value for request_rate
+        iteration=15,  # Integer value for request_rate
         scenario_str="D(100,100)",
         iteration_type="request_rate",
     )
 
     # Verify the request_rate field was set
-    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 15.5
+    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 15
     assert (
         aggregated_metrics_collector.aggregated_metrics.iteration_type == "request_rate"
     )
@@ -198,12 +198,12 @@ def test_set_run_metadata_request_rate_field_handling(aggregated_metrics_collect
     """Test that set_run_metadata correctly handles request_rate field."""
     # Test setting request_rate
     aggregated_metrics_collector.set_run_metadata(
-        iteration=20.0,
+        iteration=20,
         scenario_str="test_scenario",
         iteration_type="request_rate",
     )
 
-    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 20.0
+    assert aggregated_metrics_collector.aggregated_metrics.request_rate == 20
     assert (
         aggregated_metrics_collector.aggregated_metrics.iteration_type == "request_rate"
     )
@@ -704,14 +704,14 @@ class TestRequestRateInAggregatedMetrics:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=15.5,
+            request_rate=15,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
             mean_input_throughput_tokens_per_s=1000.0,
             mean_total_tokens_throughput_tokens_per_s=2000.0,
             mean_total_chars_per_hour=10000000.0,
-            requests_per_second=15.5,
+            requests_per_second=15.0,
             error_codes_frequency={},
             error_rate=0.0,
             num_error_requests=0,
@@ -720,7 +720,7 @@ class TestRequestRateInAggregatedMetrics:
             stats=create_test_metric_stats(),
         )
 
-        assert metrics.request_rate == 15.5
+        assert metrics.request_rate == 15
         assert metrics.iteration_type == "request_rate"
         assert metrics.num_concurrency == 10
         assert metrics.batch_size == 1
@@ -750,20 +750,20 @@ class TestRequestRateInAggregatedMetrics:
         assert metrics.request_rate is None
         assert metrics.iteration_type == "num_concurrency"
 
-    def test_aggregated_metrics_request_rate_float_precision(self):
-        """Test request_rate handles float precision correctly."""
+    def test_aggregated_metrics_request_rate_integer(self):
+        """Test request_rate handles integer values correctly."""
         metrics = AggregatedMetrics(
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=2.5,  # Fractional rate
+            request_rate=25,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
             mean_input_throughput_tokens_per_s=1000.0,
             mean_total_tokens_throughput_tokens_per_s=2000.0,
             mean_total_chars_per_hour=10000000.0,
-            requests_per_second=2.5,
+            requests_per_second=25.0,
             error_codes_frequency={},
             error_rate=0.0,
             num_error_requests=0,
@@ -772,8 +772,8 @@ class TestRequestRateInAggregatedMetrics:
             stats=create_test_metric_stats(),
         )
 
-        assert metrics.request_rate == 2.5
-        assert isinstance(metrics.request_rate, float)
+        assert metrics.request_rate == 25
+        assert isinstance(metrics.request_rate, int)
 
 
 class TestRequestRateInExperimentMetadata:
@@ -783,11 +783,11 @@ class TestRequestRateInExperimentMetadata:
         """Test creating ExperimentMetadata with request_rate."""
         metadata = create_test_metadata(
             iteration_type="request_rate",
-            request_rate=[5.0, 10.0, 20.0],
+            request_rate=[5, 10, 20],
         )
 
         assert metadata.iteration_type == "request_rate"
-        assert metadata.request_rate == [5.0, 10.0, 20.0]
+        assert metadata.request_rate == [5, 10, 20]
         assert metadata.batch_size is None
 
     def test_experiment_metadata_request_rate_optional(self):
@@ -806,7 +806,7 @@ class TestRequestRateInExperimentMetadata:
         # Should not raise validation error
         metadata = create_test_metadata(
             iteration_type="request_rate",
-            request_rate=[10.0],
+            request_rate=[10],
         )
 
         assert metadata.iteration_type == "request_rate"
@@ -818,25 +818,25 @@ class TestRequestRateInExperimentMetadata:
                 iteration_type="invalid_type",
             )
 
-    def test_experiment_metadata_request_rate_with_floats(self):
-        """Test request_rate list accepts float values."""
+    def test_experiment_metadata_request_rate_with_integers(self):
+        """Test request_rate list accepts integer values."""
         metadata = create_test_metadata(
             iteration_type="request_rate",
-            request_rate=[0.5, 2.5, 10.5, 100.0],
+            request_rate=[1, 5, 10, 100],
         )
 
-        assert metadata.request_rate == [0.5, 2.5, 10.5, 100.0]
-        assert all(isinstance(r, float) for r in metadata.request_rate)
+        assert metadata.request_rate == [1, 5, 10, 100]
+        assert all(isinstance(r, int) for r in metadata.request_rate)
 
     def test_experiment_metadata_request_rate_single_value(self):
         """Test request_rate with single value in list."""
         metadata = create_test_metadata(
             iteration_type="request_rate",
-            request_rate=[15.0],
+            request_rate=[15],
         )
 
         assert len(metadata.request_rate) == 1
-        assert metadata.request_rate[0] == 15.0
+        assert metadata.request_rate[0] == 15
 
 
 class TestRequestRateMetricsIntegration:
@@ -848,7 +848,7 @@ class TestRequestRateMetricsIntegration:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=20.0,
+            request_rate=20,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
@@ -867,19 +867,19 @@ class TestRequestRateMetricsIntegration:
         # Should be able to convert to dict
         metrics_dict = metrics.model_dump()
         assert "request_rate" in metrics_dict
-        assert metrics_dict["request_rate"] == 20.0
+        assert metrics_dict["request_rate"] == 20
 
     def test_metadata_serialization_with_request_rate(self):
         """Test that metadata with request_rate can be serialized."""
         metadata = create_test_metadata(
             iteration_type="request_rate",
-            request_rate=[5.0, 10.0, 20.0],
+            request_rate=[5, 10, 20],
         )
 
         # Should be able to convert to dict
         metadata_dict = metadata.model_dump()
         assert "request_rate" in metadata_dict
-        assert metadata_dict["request_rate"] == [5.0, 10.0, 20.0]
+        assert metadata_dict["request_rate"] == [5, 10, 20]
 
     def test_metrics_comparison_request_rate_vs_concurrency(self):
         """Test that metrics can distinguish request_rate from num_concurrency runs."""
@@ -887,7 +887,7 @@ class TestRequestRateMetricsIntegration:
             scenario="test_scenario",
             num_concurrency=10,
             batch_size=1,
-            request_rate=20.0,
+            request_rate=20,
             iteration_type="request_rate",
             run_duration=60.0,
             mean_output_throughput_tokens_per_s=1000.0,
@@ -927,5 +927,5 @@ class TestRequestRateMetricsIntegration:
         assert metrics_concurrency.iteration_type == "num_concurrency"
 
         # request_rate should be set only for rate run
-        assert metrics_rate.request_rate == 20.0
+        assert metrics_rate.request_rate == 20
         assert metrics_concurrency.request_rate is None

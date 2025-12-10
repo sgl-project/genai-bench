@@ -156,7 +156,7 @@ class TestGetRunParams:
         """Test get_run_params() with iteration_type='request_rate'."""
         # Test with integer rate
         header, batch_size, num_concurrency = get_run_params(
-            iteration_type="request_rate", iteration_value=10.0
+            iteration_type="request_rate", iteration_value=10
         )
         assert header == "Request Rate"
         assert batch_size == 1

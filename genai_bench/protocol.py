@@ -188,7 +188,7 @@ class ExperimentMetadata(BaseModel):
     batch_size: Optional[List[int]] = Field(
         None, description="The batch sizes for embedding tasks."
     )
-    request_rate: Optional[List[float]] = Field(
+    request_rate: Optional[List[int]] = Field(
         None, description="The request rates (req/s) used in the experiment."
     )
     iteration_type: Literal["num_concurrency", "batch_size", "request_rate"] = Field(

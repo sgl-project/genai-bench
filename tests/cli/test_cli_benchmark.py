@@ -768,9 +768,9 @@ def test_benchmark_command_with_request_rate(
         [
             *request_rate_options,
             "--request-rate",
-            "10.0",
+            "10",
             "--request-rate",
-            "20.0",
+            "20",
         ],
     )
     assert result.exit_code == 0, f"Command failed with output: {result.output}"
@@ -815,7 +815,7 @@ def test_benchmark_request_rate_iteration_type(cli_runner, request_rate_options)
             [
                 *request_rate_options,
                 "--request-rate",
-                "5.0",
+                "5",
             ],
         )
 
@@ -861,13 +861,13 @@ def test_benchmark_request_rate_creates_rate_limiter(cli_runner, request_rate_op
             [
                 *request_rate_options,
                 "--request-rate",
-                "15.0",
+                "15",
             ],
         )
 
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
         # Verify rate limiter was created
-        mock_rate_limiter_class.assert_called_with(rate=15.0)
+        mock_rate_limiter_class.assert_called_with(rate=15)
 
 
 def test_request_rate_option_in_help(cli_runner):
@@ -912,11 +912,11 @@ def test_request_rate_with_multiple_values(cli_runner, request_rate_options):
             [
                 *request_rate_options,
                 "--request-rate",
-                "5.0",
+                "5",
                 "--request-rate",
-                "10.0",
+                "10",
                 "--request-rate",
-                "20.0",
+                "20",
             ],
         )
 
@@ -960,13 +960,13 @@ def test_rate_limiter_created_local_mode(cli_runner, request_rate_options):
             [
                 *request_rate_options,
                 "--request-rate",
-                "10.0",
+                "10",
             ],
         )
 
         assert result.exit_code == 0
         # Verify rate limiter was created with correct rate
-        mock_rate_limiter_class.assert_called_with(rate=10.0)
+        mock_rate_limiter_class.assert_called_with(rate=10)
         # Verify it was assigned to environment
         assert mock_env.rate_limiter == mock_rate_limiter
 
@@ -1005,7 +1005,7 @@ def test_rate_limiter_divided_among_workers(cli_runner, request_rate_options):
             [
                 *request_rate_options,
                 "--request-rate",
-                "20.0",
+                "20",
                 "--num-workers",
                 "4",
             ],
@@ -1013,7 +1013,7 @@ def test_rate_limiter_divided_among_workers(cli_runner, request_rate_options):
 
         assert result.exit_code == 0
         # Verify update_rate_limiter was called with per-worker rate
-        # 20.0 / 4 = 5.0 per worker
+        # 20 / 4 = 5 per worker
         # It's called twice: once with the rate, once with None to stop
         calls = mock_runner.update_rate_limiter.call_args_list
         # Check that it was called with 5.0 (per-worker rate)
@@ -1063,7 +1063,7 @@ def test_rate_limiter_stopped_after_run(cli_runner, request_rate_options):
             [
                 *request_rate_options,
                 "--request-rate",
-                "10.0",
+                "10",
             ],
         )
 
@@ -1110,9 +1110,9 @@ def test_rate_limiter_warning_low_per_worker_rate(
                 [
                     *request_rate_options,
                     "--request-rate",
-                    "0.5",  # Very low rate
+                    "1",  # Low rate
                     "--num-workers",
-                    "10",  # Many workers -> 0.05 req/s per worker
+                    "20",  # Many workers -> 0.05 req/s per worker
                 ],
             )
 
@@ -1175,9 +1175,9 @@ def test_rate_limiter_cleanup_between_runs(cli_runner, request_rate_options):
             [
                 *request_rate_options,
                 "--request-rate",
-                "10.0",
+                "10",
                 "--request-rate",
-                "20.0",  # Multiple rates = multiple runs
+                "20",  # Multiple rates = multiple runs
             ],
         )
 
@@ -1208,7 +1208,7 @@ def test_benchmark_request_rate_and_num_concurrency_mutually_exclusive(
             "--num-concurrency",
             "10",  # Non-default value
             "--request-rate",
-            "2.5",
+            "2",
         ],
     )
     assert result.exit_code != 0

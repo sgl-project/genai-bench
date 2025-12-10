@@ -82,7 +82,7 @@ def load_one_experiment(
     for file_name in sorted(os.listdir(folder_name)):
         file_path = os.path.join(folder_name, file_name)
         if re.match(
-            r"^.+_.+_(?:concurrency|batch_size|request_rate)_\d+(?:\.\d+)?_time_\d+s\.json$",
+            r"^.+_.+_(?:concurrency|batch_size|request_rate)_\d+_time_\d+s\.json$",
             file_name,
         ):
             load_run_data(file_path, run_data, filter_criteria)
@@ -222,7 +222,7 @@ def load_run_data(
         # Get the iteration type and value
         iteration_type = aggregated_metrics.iteration_type
         if iteration_type == "batch_size":
-            iteration_value: int | float = aggregated_metrics.batch_size
+            iteration_value: int = aggregated_metrics.batch_size
         elif iteration_type == "request_rate":
             iteration_value = aggregated_metrics.request_rate
         else:
