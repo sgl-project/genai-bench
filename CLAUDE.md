@@ -1,5 +1,13 @@
 # Claude Code Notes for genai-bench
 
+> **PUBLIC REPOSITORY**: This is an open-source project. Do NOT commit:
+> - API keys, secrets, or credentials
+> - Internal Baseten URLs, model IDs, or infrastructure details
+> - Proprietary business logic or customer data
+> - Internal documentation or runbooks
+>
+> When in doubt, ask before committing.
+
 ## Running Tests
 
 This project uses **pytest** with a 93% coverage threshold enforced in CI.
