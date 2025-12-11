@@ -544,44 +544,43 @@ def test_handle_rate_limiter_stopped_handler(mock_environment, mock_dashboard):
     runner.setup()
 
     # Initially no confirmations
-    assert len(runner._rate_limiter_stop_confirmations) == 0
+    assert runner._rate_limiter_stop_confirmations == 0
 
     # Receive confirmation from first worker
     mock_msg1 = MagicMock()
     mock_msg1.data = True
     runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
-    assert len(runner._rate_limiter_stop_confirmations) == 1
-    assert id(mock_msg1) in runner._rate_limiter_stop_confirmations
+    assert runner._rate_limiter_stop_confirmations == 1
 
     # Receive confirmation from second worker
     mock_msg2 = MagicMock()
     mock_msg2.data = True
     runner._handle_rate_limiter_stopped(mock_environment, mock_msg2)
-    assert len(runner._rate_limiter_stop_confirmations) == 2
-    assert id(mock_msg2) in runner._rate_limiter_stop_confirmations
+    assert runner._rate_limiter_stop_confirmations == 2
 
     # Test with None message object (should be ignored)
     runner._handle_rate_limiter_stopped(mock_environment, None)
     # Should still be 2 (None message object is ignored)
-    assert len(runner._rate_limiter_stop_confirmations) == 2
+    assert runner._rate_limiter_stop_confirmations == 2
 
     # Test with empty/falsy message object
     runner._handle_rate_limiter_stopped(mock_environment, False)
     # Should still be 2 (falsy message object is ignored)
-    assert len(runner._rate_limiter_stop_confirmations) == 2
+    assert runner._rate_limiter_stop_confirmations == 2
 
-    # Test that message with data=None is still added (handler checks msg, not msg.data)
+    # Test that message with data=None is
+    # still counted (handler checks msg, not msg.data)
     mock_msg3 = MagicMock()
     mock_msg3.data = None
     runner._handle_rate_limiter_stopped(mock_environment, mock_msg3)
     # Should be 3 (MagicMock is truthy even if data is None)
-    assert len(runner._rate_limiter_stop_confirmations) == 3
+    assert runner._rate_limiter_stop_confirmations == 3
 
-    # Test duplicate confirmation (same message ID) - should not add duplicate
-    runner._handle_rate_limiter_stopped(mock_environment, mock_msg1)
-    assert (
-        len(runner._rate_limiter_stop_confirmations) == 3
-    )  # Still 3, not 4 (duplicate not added)
+    # Each handler call increments the counter (each worker sends one confirmation)
+    mock_msg4 = MagicMock()
+    mock_msg4.data = True
+    runner._handle_rate_limiter_stopped(mock_environment, mock_msg4)
+    assert runner._rate_limiter_stop_confirmations == 4
 
 
 @pytest.mark.usefixtures("mock_logging_env")
@@ -831,7 +830,7 @@ def test_wait_for_rate_limiter_stop_integration(
             # Step 3: Master waits for all confirmations
             result = runner.wait_for_rate_limiter_stop(timeout=2.0, expected_workers=4)
             assert result is True
-            assert len(runner._rate_limiter_stop_confirmations) == 4
+            assert runner._rate_limiter_stop_confirmations == 4
     finally:
         # Clean up the background greenlet to prevent crashes
         with patch("genai_bench.distributed.runner.logger"):

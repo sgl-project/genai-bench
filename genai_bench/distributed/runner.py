@@ -132,7 +132,7 @@ class DistributedRunner:
         self._worker_processes: List[multiprocessing.Process] = []
         self.metrics_collector: Optional[AggregatedMetricsCollector] = None
         self.worker_log_queue: Queue = multiprocessing.Queue()
-        self._rate_limiter_stop_confirmations: set = set()
+        self._rate_limiter_stop_confirmations: int = 0
 
     def setup(self) -> None:
         """Set up distributed or local test environment"""
@@ -484,7 +484,7 @@ class DistributedRunner:
         if not msg:
             return
         # Count confirmations (each worker sends one confirmation)
-        self._rate_limiter_stop_confirmations.add(id(msg))
+        self._rate_limiter_stop_confirmations += 1
         logger.debug("Received rate limiter stop confirmation from worker")
 
     def wait_for_rate_limiter_stop(
@@ -507,16 +507,16 @@ class DistributedRunner:
 
         expected = expected_workers or self.config.num_workers
         start_time = time.monotonic()
-        self._rate_limiter_stop_confirmations.clear()
+        self._rate_limiter_stop_confirmations = 0
 
         while time.monotonic() - start_time < timeout:
-            if len(self._rate_limiter_stop_confirmations) >= expected:
+            if self._rate_limiter_stop_confirmations >= expected:
                 logger.debug(f"All {expected} workers confirmed rate limiter stop")
                 return True
             # Poll every 0.1 seconds
             gevent.sleep(0.1)
 
-        confirmed = len(self._rate_limiter_stop_confirmations)
+        confirmed = self._rate_limiter_stop_confirmations
         if confirmed < expected:
             logger.warning(
                 f"Timeout waiting for rate limiter stop confirmations: "
