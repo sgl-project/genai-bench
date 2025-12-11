@@ -166,47 +166,84 @@ class BaseAsyncRunner:
         try:
             if isinstance(req, (UserChatRequest, UserImageChatRequest)):
                 endpoint = "/v1/chat/completions"
-                if isinstance(req, UserImageChatRequest):
-                    text_content = [{"type": "text", "text": req.prompt}]  # type: ignore[attr-defined]
-                    image_content = [
-                        {"type": "image_url", "image_url": {"url": image}}  # type: ignore[attr-defined]
-                        for image in req.image_content  # type: ignore[attr-defined]
-                    ]
-                    content = text_content + image_content  # type: ignore[assignment]
-                else:
-                    content = req.prompt  # type: ignore[assignment]
-
+                
+                # Check if we should use prompt format (for non-instruct models)
+                # This matches BasetenUser's behavior in the sync runner
+                use_prompt_format = req.additional_request_params.get(
+                    "use_prompt_format", False
+                )
+                
+                # Debug log to verify additional_request_params are being received
+                if not hasattr(self, "_logged_additional_params"):
+                    logger.info(
+                        f"🔧 [DEBUG!!] Additional request params: {list(req.additional_request_params.keys())}"
+                    )
+                    logger.info(f"📋 [DEBUG!!] use_prompt_format: {use_prompt_format}")
+                    self._logged_additional_params = True
+                
                 # Build payload - prioritize max_tokens from additional_request_params if present
                 # min_tokens and max_tokens are now automatically set by the sampler from the scenario
                 # This matches BasetenUser's _prepare_chat_request logic
                 max_tokens = req.additional_request_params.get(
                     "max_tokens", None
                 ) or getattr(req, "max_tokens", None)
+                
+                # Keys to filter out from additional_request_params
+                filtered_keys = {"stream", "use_prompt_format", "custom_messages"}
+                
+                if use_prompt_format:
+                    # Use simple prompt format for non-instruct models
+                    # This matches BasetenUser._prepare_prompt_request
+                    logger.info("📋 Using prompt format (non-instruct model) in async runner")
+                    payload = {
+                        "prompt": req.prompt,
+                        "max_tokens": max_tokens,
+                        "temperature": req.additional_request_params.get(
+                            "temperature", 0.0
+                        ),
+                        "stream": True,
+                        **{
+                            k: v
+                            for k, v in req.additional_request_params.items()
+                            if k not in filtered_keys
+                        },
+                    }
+                else:
+                    # Use OpenAI-compatible chat format (default)
+                    if isinstance(req, UserImageChatRequest):
+                        text_content = [{"type": "text", "text": req.prompt}]  # type: ignore[attr-defined]
+                        image_content = [
+                            {"type": "image_url", "image_url": {"url": image}}  # type: ignore[attr-defined]
+                            for image in req.image_content  # type: ignore[attr-defined]
+                        ]
+                        content = text_content + image_content  # type: ignore[assignment]
+                    else:
+                        content = req.prompt  # type: ignore[assignment]
 
-                payload = {
-                    "model": req.model,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": content,
-                        }
-                    ],
-                    "max_tokens": max_tokens,
-                    "temperature": req.additional_request_params.get(
-                        "temperature", 0.0
-                    ),
-                    "ignore_eos": req.additional_request_params.get(
-                        "ignore_eos", bool(max_tokens)
-                    ),
-                    # Force streaming to compute TTFT/TPOT properly
-                    "stream": True,
-                    "stream_options": {"include_usage": True},
-                    **{
-                        k: v
-                        for k, v in req.additional_request_params.items()
-                        if k not in {"stream"}
-                    },
-                }
+                    payload = {
+                        "model": req.model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": content,
+                            }
+                        ],
+                        "max_tokens": max_tokens,
+                        "temperature": req.additional_request_params.get(
+                            "temperature", 0.0
+                        ),
+                        "ignore_eos": req.additional_request_params.get(
+                            "ignore_eos", bool(max_tokens)
+                        ),
+                        # Force streaming to compute TTFT/TPOT properly
+                        "stream": True,
+                        "stream_options": {"include_usage": True},
+                        **{
+                            k: v
+                            for k, v in req.additional_request_params.items()
+                            if k not in filtered_keys
+                        },
+                    }
 
                 # For Baseten, api_base already includes the full endpoint path
                 # For other backends, append the endpoint to the base URL
@@ -316,11 +353,26 @@ class BaseAsyncRunner:
                                 break
 
                             try:
-                                delta = data["choices"][0]["delta"]
-                                content_piece = delta.get("content") or delta.get(
-                                    "reasoning_content"
+                                # Detect response format: text completion vs chat completion
+                                # Text completion format has 'text' directly in choices[0]
+                                # Chat completion format has 'delta' with nested 'content'
+                                choice = data["choices"][0]
+                                is_text_completion = (
+                                    data.get("object") == "text_completion"
+                                    or "text" in choice
                                 )
-                                usage = delta.get("usage")
+
+                                if is_text_completion:
+                                    # Text completion format: content is in choices[0]["text"]
+                                    content_piece = choice.get("text")
+                                    usage = data.get("usage")
+                                else:
+                                    # Chat completion format: content is in choices[0]["delta"]["content"]
+                                    delta = choice["delta"]
+                                    content_piece = delta.get("content") or delta.get(
+                                        "reasoning_content"
+                                    )
+                                    usage = delta.get("usage")
 
                                 if usage:
                                     tokens_received = usage.get(
