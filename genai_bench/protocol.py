@@ -127,6 +127,20 @@ class UserResponse(BaseModel):
         ),
     )
 
+    # Network timing metrics (optional, for detecting network congestion)
+    network_connect_time: Optional[float] = Field(
+        default=None,
+        description="TCP + TLS connection time in seconds. May be 0 if connection reused.",
+    )
+    network_dns_time: Optional[float] = Field(
+        default=None,
+        description="DNS lookup time in seconds. May be 0 if cached.",
+    )
+    network_tls_time: Optional[float] = Field(
+        default=None,
+        description="TLS handshake time in seconds.",
+    )
+
 
 class UserChatResponse(UserResponse):
     """
