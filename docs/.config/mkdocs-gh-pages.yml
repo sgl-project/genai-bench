@@ -1,8 +1,8 @@
 site_name: GenAI Bench
 site_description: Unified, accurate, and beautiful LLM Benchmarking
-site_url: https://docs.sglang.ai/genai-bench
-repo_url: https://github.com/sgl-project/genai-bench
-repo_name: sgl-project/genai-bench
+site_url: https://basetenlabs.github.io/genai-bench
+repo_url: https://github.com/basetenlabs/genai-bench
+repo_name: basetenlabs/genai-bench
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2024 GenAI Bench Contributors
 docs_dir: ../../docs
@@ -106,7 +106,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/sgl-project/genai-bench
+      link: https://github.com/basetenlabs/genai-bench
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/genai-bench/
 
