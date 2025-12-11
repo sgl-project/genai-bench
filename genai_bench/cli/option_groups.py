@@ -582,6 +582,13 @@ def experiment_options(func):
              """,
     )(func)
     func = click.option(
+        "--max-concurrency",
+        type=click.INT,
+        default=None,
+        help="Maximum concurrency for request rate runs. Only used when "
+        "--request-rate is specified. Defaults to 5000 if not provided.",
+    )(func)
+    func = click.option(
         "--iteration-type",
         type=click.Choice(
             ["num_concurrency", "batch_size", "request_rate"], case_sensitive=False

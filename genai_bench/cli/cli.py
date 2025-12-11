@@ -81,6 +81,7 @@ def benchmark(
     iteration_type,
     num_concurrency,
     request_rate,
+    max_concurrency,
     warmup_ratio,
     cooldown_ratio,
     batch_size,
@@ -411,7 +412,7 @@ def benchmark(
                 dashboard.reset_panels()
                 # Create a new progress bar on dashboard
                 iteration_header, batch_size, concurrency = get_run_params(
-                    iteration_type, iteration
+                    iteration_type, iteration, max_concurrency
                 )
                 dashboard.create_benchmark_progress_task(
                     f"Scenario: {scenario_str}, {iteration_header}: {iteration}"

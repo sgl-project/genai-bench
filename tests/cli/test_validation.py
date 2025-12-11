@@ -533,6 +533,45 @@ def test_validate_iteration_params_request_rate_with_batch_size_task():
     assert result == "batch_size"
 
 
+def test_validate_iteration_params_max_concurrency_requires_request_rate():
+    """Test that max_concurrency can only be used with request_rate."""
+    ctx = click.Context(click.Command("test"))
+    param = None
+
+    # Test that providing max_concurrency without request_rate raises an error
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": [1, 2, 4],
+        "max_concurrency": 1000,
+        "request_rate": None,
+    }
+    with pytest.raises(
+        click.BadParameter,
+        match="--max-concurrency can only be used with --request-rate",
+    ):
+        validate_iteration_params(ctx, param, "num_concurrency")
+
+    # Test that providing max_concurrency with request_rate is allowed
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": DEFAULT_NUM_CONCURRENCIES,
+        "max_concurrency": 1000,
+        "request_rate": [5, 10],
+    }
+    result = validate_iteration_params(ctx, param, "num_concurrency")
+    assert result == "request_rate"
+
+    # Test that not providing max_concurrency (None) with num_concurrency is allowed
+    ctx.params = {
+        "task": "text-to-text",
+        "num_concurrency": [1, 2, 4],
+        "max_concurrency": None,
+        "request_rate": None,
+    }
+    result = validate_iteration_params(ctx, param, "num_concurrency")
+    assert result == "num_concurrency"
+
+
 def test_validate_object_storage_options():
     """Test validation of object storage options."""
     # Mock Click context and param

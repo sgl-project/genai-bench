@@ -201,6 +201,14 @@ def validate_iteration_params(ctx, param, value) -> str:
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
     request_rate = ctx.params.get("request_rate")
+    max_concurrency = ctx.params.get("max_concurrency")
+
+    # Validate --max-concurrency is only used with --request-rate
+    if max_concurrency is not None and not request_rate:
+        raise click.BadParameter(
+            "--max-concurrency can only be used with --request-rate. "
+            "Please remove --max-concurrency or add --request-rate."
+        )
 
     if value == "request_rate" and not request_rate:
         raise click.BadParameter(

@@ -166,7 +166,7 @@ genai-bench benchmark \
 
 ### Using Request Rate
 
-Alternatively, you can use `--request-rate` to specify target request rates (requests/second) instead of concurrency levels. For request rate runs, maximum concurrency is always set to 5000 to ensure sufficient workers are available. 
+Alternatively, you can use `--request-rate` to specify target request rates (requests/second) instead of concurrency levels. For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. 
 ```shell
 genai-bench benchmark \
             --api-backend openai \
@@ -179,7 +179,7 @@ genai-bench benchmark \
 
 When using `--request-rate`, the benchmark automatically uses request rate iteration instead of concurrency-based iteration. The rate limiter ensures requests are sent at the specified target rate with precise timing control.
 
-**Concurrency and Spawn Rate**: For request rate runs, maximum concurrency is always set to 5000 to ensure sufficient workers are available. The spawn rate defaults to the maximum concurrency value (5000) unless otherwise specified with `--spawn-rate`. You can override the spawn rate using `--spawn-rate` if needed, but this is generally not recommended as it may affect rate limiting accuracy.
+**Concurrency and Spawn Rate**: For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. The spawn rate defaults to the maximum concurrency value unless otherwise specified with `--spawn-rate`. You can override the spawn rate using `--spawn-rate` if needed, but this is generally not recommended as it may affect rate limiting accuracy.
 
 **Note**: In distributed mode (when using `--num-workers`), the target request rate is automatically divided among all workers. For example, with `--request-rate 20.0` and `--num-workers 4`, each worker will target 5.0 requests/second. If the per-worker rate is very low (< 0.1 req/s), a warning will be displayed suggesting fewer workers or a higher target rate for better accuracy.
 
@@ -216,7 +216,7 @@ GenAI Bench supports two approaches to control benchmark intensity:
 
 - **`--num-concurrency`**: Sets the number of concurrent users/requests. This is useful for testing how the system performs under different levels of concurrent load. The actual request rate will depend on how quickly requests complete.
 
-- **`--request-rate`**: Sets a target request rate (requests/second). This is useful when you need to test specific throughput targets or want precise control over request timing. For request rate runs, maximum concurrency is always set to 5000 to ensure sufficient workers are available. The spawn rate defaults to the maximum concurrency value (5000) unless otherwise specified with `--spawn-rate`.
+- **`--request-rate`**: Sets a target request rate (requests/second). This is useful when you need to test specific throughput targets or want precise control over request timing. For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. The spawn rate defaults to the maximum concurrency value unless otherwise specified with `--spawn-rate`.
 
 Choose the approach that best matches your testing needs:
 - Use `--num-concurrency` when you want to test system behavior under specific concurrent load levels

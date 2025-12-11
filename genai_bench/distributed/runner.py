@@ -5,6 +5,7 @@ import atexit
 import logging
 import multiprocessing
 import os
+import time
 from dataclasses import dataclass
 from multiprocessing.queues import Queue
 from typing import Any, Dict, List, Optional, Protocol

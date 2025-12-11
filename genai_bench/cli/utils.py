@@ -111,20 +111,35 @@ def get_experiment_path(
 
 
 def get_run_params(
-    iteration_type: str, iteration_value: Union[int, float]
+    iteration_type: str,
+    iteration_value: Union[int, float],
+    max_concurrency: Optional[int] = None,
 ) -> Tuple[str, int, int]:
     """
     Returns appropriate header, batch_size, and num_concurrency based on
     iteration_type and iteration_value.
 
-    For request_rate, concurrency is calculated as min(rate * 100, 5000) to ensure
-    sufficient workers (actual rate is controlled by rate limiter).
+    For request_rate, uses max_concurrency (defaulting to MAX_CONCURRENCY_FOR_RATE)
+    to ensure sufficient workers (actual rate is controlled by rate limiter).
+
+    Args:
+        iteration_type: Type of iteration ('batch_size', 'request_rate', or
+            'num_concurrency')
+        iteration_value: The value for the iteration type
+        max_concurrency: Maximum concurrency for request rate runs. Only used
+            when iteration_type is 'request_rate'. Defaults to
+            MAX_CONCURRENCY_FOR_RATE (5000).
+
+    Returns:
+        Tuple of (header, batch_size, num_concurrency)
     """
     if iteration_type == "batch_size":
         return "Batch Size", int(iteration_value), 1
     elif iteration_type == "request_rate":
-        # For request_rate, use a sufficiently high concurrency (capped at 5000)
+        # For request_rate, use max_concurrency or default
         # The rate limiter will control the actual request rate
-        concurrency = MAX_CONCURRENCY_FOR_RATE
+        concurrency = (
+            max_concurrency if max_concurrency is not None else MAX_CONCURRENCY_FOR_RATE
+        )
         return "Request Rate", 1, concurrency
     return "Concurrency", 1, int(iteration_value)
