@@ -147,6 +147,10 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert aggregated_metrics.mean_total_chars_per_hour == pytest.approx(
         4.4 * 17.33333332536 * 3600, rel=0.05
     )
+    assert (
+        aggregated_metrics.mean_total_tokens_throughput_tokens_per_min
+        == pytest.approx(17.33333332536 * 60, rel=0.00005)
+    )
     assert aggregated_metrics.requests_per_second == pytest.approx(80 / 60)
 
     ttft, output_latency, input_throughput, output_throughput = (

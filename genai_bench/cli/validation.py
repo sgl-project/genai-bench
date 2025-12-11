@@ -333,8 +333,8 @@ def validate_additional_request_params(ctx, param, value):
         if "temperature" in value and value["temperature"] > 1.5:
             warning_msg = (
                 f"You have set temperature {value['temperature']} too high. "
-                f"This may cause higher chars_to_token ratio in the metrics "
-                f"and result in higher total_chars_per_hour."
+                f"This may cause higher variability in output length and affect "
+                f"throughput metrics."
             )
             logger.warning(warning_msg)
             click.secho(warning_msg, fg="yellow", bold=True)
