@@ -200,6 +200,50 @@ def validate_iteration_params(ctx, param, value) -> str:
     task = ctx.params.get("task")
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
+    request_rate = ctx.params.get("request_rate")
+    max_concurrency = ctx.params.get("max_concurrency")
+
+    # Validate --max-concurrency is only used with --request-rate
+    if max_concurrency is not None and not request_rate:
+        raise click.BadParameter(
+            "--max-concurrency can only be used with --request-rate. "
+            "Please remove --max-concurrency or add --request-rate."
+        )
+
+    if value == "request_rate" and not request_rate:
+        raise click.BadParameter(
+            "--request-rate is required when --iteration-type "
+            "is set to 'request_rate'. "
+            "Please provide --request-rate values."
+        )
+
+    # If request_rate is provided, ignore default num_concurrency values
+    if request_rate and task != "text-to-embeddings" and task != "text-to-rerank":
+        num_conc_list = list(num_concurrency)
+        default_list = list(DEFAULT_NUM_CONCURRENCIES)
+        # If num_concurrency is the default, treat it as not provided
+        logger.warning(
+            "Request rate provided, ignoring default num_concurrency values."
+        )
+        if num_conc_list == default_list:
+            num_concurrency = [1]
+            ctx.params["num_concurrency"] = [1]
+
+    # Check for mutual exclusivity: --num-concurrency and --request-rate
+    # cannot both be provided (excluding embedding/rerank tasks which use
+    # batch_size)
+    if (
+        task != "text-to-embeddings"
+        and task != "text-to-rerank"
+        and request_rate
+        and num_concurrency
+    ):
+        num_conc_list = list(num_concurrency)
+        if num_conc_list != [1]:
+            raise click.BadParameter(
+                "--num-concurrency and --request-rate are mutually exclusive. "
+                "Please provide only one."
+            )
 
     # For text-to-embeddings tasks, always use batch_size iteration
     if task == "text-to-embeddings" or task == "text-to-rerank":
@@ -208,6 +252,28 @@ def validate_iteration_params(ctx, param, value) -> str:
         batch_size = batch_size or DEFAULT_BATCH_SIZES
         value = "batch_size"
         num_concurrency = [1]
+
+    # If request_rate is provided, use request_rate iteration
+    elif request_rate:
+        # Validate that all request_rate values are positive
+        invalid_rates = [rate for rate in request_rate if rate <= 0]
+        if invalid_rates:
+            raise click.BadParameter(
+                f"All request_rate values must be positive, got invalid values: "
+                f"{invalid_rates}"
+            )
+        if value != "request_rate":
+            click.echo(
+                "Note: Using request_rate iteration since --request-rate "
+                "was provided"
+            )
+        value = "request_rate"
+        # For request_rate, concurrency is calculated dynamically based on the rate
+        # We don't use the provided num_concurrency values
+        num_concurrency = [
+            1
+        ]  # Placeholder, actual concurrency calculated in get_run_params
+        batch_size = [1]
 
     # For all other tasks, use num_concurrency iteration
     else:

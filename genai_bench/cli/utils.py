@@ -2,13 +2,15 @@ from locust.env import Environment
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import gevent
 
 from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
+
+MAX_CONCURRENCY_FOR_RATE = 5000
 
 
 def manage_run_time(
@@ -108,11 +110,36 @@ def get_experiment_path(
     return experiment_path
 
 
-def get_run_params(iteration_type: str, iteration_value: int) -> Tuple[str, int, int]:
+def get_run_params(
+    iteration_type: str,
+    iteration_value: Union[int, float],
+    max_concurrency: Optional[int] = None,
+) -> Tuple[str, int, int]:
     """
-    Returns appropriate header, batch_size, and num_concurrency based on iteration_type
-    and iteration_value.
+    Returns appropriate header, batch_size, and num_concurrency based on
+    iteration_type and iteration_value.
+
+    For request_rate, uses max_concurrency (defaulting to MAX_CONCURRENCY_FOR_RATE)
+    to ensure sufficient workers (actual rate is controlled by rate limiter).
+
+    Args:
+        iteration_type: Type of iteration ('batch_size', 'request_rate', or
+            'num_concurrency')
+        iteration_value: The value for the iteration type
+        max_concurrency: Maximum concurrency for request rate runs. Only used
+            when iteration_type is 'request_rate'. Defaults to
+            MAX_CONCURRENCY_FOR_RATE (5000).
+
+    Returns:
+        Tuple of (header, batch_size, num_concurrency)
     """
     if iteration_type == "batch_size":
-        return "Batch Size", iteration_value, 1
-    return "Concurrency", 1, iteration_value
+        return "Batch Size", int(iteration_value), 1
+    elif iteration_type == "request_rate":
+        # For request_rate, use max_concurrency or default
+        # The rate limiter will control the actual request rate
+        concurrency = (
+            max_concurrency if max_concurrency is not None else MAX_CONCURRENCY_FOR_RATE
+        )
+        return "Request Rate", 1, concurrency
+    return "Concurrency", 1, int(iteration_value)
