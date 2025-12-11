@@ -222,8 +222,7 @@ def test_validate_additional_request_params(caplog):
         assert result == {"temperature": 2.0}
     assert (
         "You have set temperature 2.0 too high. This may cause higher "
-        "chars_to_token ratio in the metrics and result in higher "
-        "total_chars_per_hour."
+        "variability in output length and affect throughput metrics."
     ) in caplog.text
 
     # Test ignore_eos warning

@@ -182,3 +182,8 @@ class AggregatedMetrics(BaseModel):
         if isinstance(obj.get("stats"), dict):
             obj["stats"] = MetricStats.from_dict(obj["stats"])
         return super().model_validate(obj)
+
+    @property
+    def mean_total_tokens_throughput_tokens_per_min(self) -> float:
+        """The mean of total tokens throughput across all requests in tokens/min."""
+        return self.mean_total_tokens_throughput_tokens_per_s * 60
