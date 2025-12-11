@@ -172,15 +172,7 @@ class BaseAsyncRunner:
                 use_prompt_format = req.additional_request_params.get(
                     "use_prompt_format", False
                 )
-                
-                # Debug log to verify additional_request_params are being received
-                if not hasattr(self, "_logged_additional_params"):
-                    logger.info(
-                        f"🔧 [DEBUG!!] Additional request params: {list(req.additional_request_params.keys())}"
-                    )
-                    logger.info(f"📋 [DEBUG!!] use_prompt_format: {use_prompt_format}")
-                    self._logged_additional_params = True
-                
+                                
                 # Build payload - prioritize max_tokens from additional_request_params if present
                 # min_tokens and max_tokens are now automatically set by the sampler from the scenario
                 # This matches BasetenUser's _prepare_chat_request logic
