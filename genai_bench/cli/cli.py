@@ -339,6 +339,7 @@ def benchmark(
         num_concurrency=num_concurrency,
         batch_size=batch_size,
         request_rate=request_rate,
+        max_concurrency=max_concurrency,
         iteration_type=iteration_type,
         traffic_scenario=traffic_scenario,
         server_engine=server_engine,
