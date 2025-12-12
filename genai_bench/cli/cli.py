@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import click
+import gevent
 
 from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.analysis.experiment_loader import load_one_experiment
@@ -233,6 +234,10 @@ def benchmark(
             }
         )
 
+    elif api_backend == "together":
+        # Together uses API key for authentication
+        auth_kwargs["api_key"] = model_api_key or api_key
+
     elif api_backend in ["vllm", "sglang"]:
         # vLLM and SGLang use OpenAI-compatible API
         auth_kwargs["api_key"] = model_api_key or api_key
@@ -269,6 +274,7 @@ def benchmark(
     # Set authentication and API configuration for the user class
     user_class.auth_provider = auth_provider
     user_class.host = api_base
+    user_class.api_backend = api_backend
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
@@ -556,7 +562,7 @@ def benchmark(
                 dashboard.update_total_progress_bars(total_runs)
 
                 # Sleep for 1 sec for server to clear aborted requests
-                time.sleep(1)
+                gevent.sleep(1)
 
             # Plot using in-memory data after all concurrency levels are done
             plot_single_scenario_inference_speed_vs_throughput(
@@ -568,7 +574,7 @@ def benchmark(
             )
 
         # Sleep for 2 secs before the UI disappears
-        time.sleep(2)
+        gevent.sleep(2)
 
     # Final cleanup
     runner.cleanup()

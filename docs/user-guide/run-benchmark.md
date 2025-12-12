@@ -20,7 +20,7 @@ export HF_TOKEN="<your-token>"
 # and cuda, we use this env to disable the warning
 export TRANSFORMERS_VERBOSITY=error
 
-genai-bench benchmark --api-backend openai \
+genai-bench benchmark --api-backend sglang \
             --api-base "http://localhost:8082" \
             --api-key "your-openai-api-key" \
             --api-model-name "meta-llama/Meta-Llama-3-70B-Instruct" \
@@ -44,7 +44,7 @@ Below is a sample command to trigger a vision benchmark task.
 
 ```shell
 genai-bench benchmark \
-            --api-backend openai \
+            --api-backend sglang \
             --api-key "your-openai-api-key" \
             --api-base "http://localhost:8180" \
             --api-model-name "/models/Phi-3-vision-128k-instruct" \
@@ -70,7 +70,7 @@ For complex setups, we recommend use of [dataset configs](#selecting-datasets).
 Below is a sample command to trigger an embedding benchmark task. Note: when running an embedding benchmark, it is recommended to set `--num-concurrency` to 1.
 
 ```shell
-genai-bench benchmark --api-backend openai \
+genai-bench benchmark --api-backend sglang \
             --api-base "http://172.18.0.3:8000" \
             --api-key "xxx" \
             --api-model-name "/models/e5-mistral-7b-instruct" \
@@ -153,7 +153,7 @@ For example, the below benchmark command runs a scenario with a normal distribut
 
 ```shell
 genai-bench benchmark \
-            --api-backend openai \
+            --api-backend sglang \
             --task text-to-text \
             --max-time-per-run 10 \
             --max-requests-per-run 300 \

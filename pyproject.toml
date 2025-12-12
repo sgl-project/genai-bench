@@ -1,6 +1,6 @@
 [project]
 name = "genai-bench"
-version = "0.0.2"
+version = "0.0.3"
 description = "A powerful benchmark tool designed for comprehensive token-level performance evaluation of large language model (LLM) serving systems."
 authors = [{ name = "Chang Su", email = "chang.s.su@oracle.com" }]
 requires-python = ">=3.10,<3.13"

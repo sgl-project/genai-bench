@@ -1,9 +1,10 @@
 from locust.env import Environment
 
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
+
+import gevent
 
 from genai_bench.logging import init_logger
 
@@ -36,7 +37,7 @@ def manage_run_time(
     total_run_time = 0
 
     while total_run_time < max_time_per_run:
-        time.sleep(1)
+        gevent.sleep(1)
         total_run_time += 1
 
         assert environment.runner is not None, "environment.runner should not be None"

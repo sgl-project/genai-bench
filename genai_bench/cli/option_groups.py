@@ -83,6 +83,7 @@ def api_options(func):
                 "aws-bedrock",
                 "azure-openai",
                 "gcp-vertex",
+                "together",
                 "vllm",
                 "sglang",
             ],

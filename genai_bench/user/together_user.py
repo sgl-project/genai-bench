@@ -1,4 +1,4 @@
-"""Customized user for OpenAI backends."""
+"""Customized user for Together backends."""
 
 from locust import task
 
@@ -24,8 +24,8 @@ from genai_bench.user.base_user import BaseUser
 logger = init_logger(__name__)
 
 
-class OpenAIUser(BaseUser):
-    BACKEND_NAME = "openai"
+class TogetherUser(BaseUser):
+    BACKEND_NAME = "together"
     supported_tasks = {
         "text-to-text": "chat",
         "image-text-to-text": "chat",
@@ -39,13 +39,11 @@ class OpenAIUser(BaseUser):
 
     def on_start(self):
         if not self.host or not self.auth_provider:
-            raise ValueError("API key and base must be set for OpenAIUser.")
-        auth_headers = self.auth_provider.get_headers()
+            raise ValueError("API key and base must be set for TogetherUser.")
         self.headers = {
-            **auth_headers,
+            "Authorization": f"Bearer {self.auth_provider.get_credentials()}",
             "Content-Type": "application/json",
         }
-        self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
 
     @task
@@ -56,7 +54,7 @@ class OpenAIUser(BaseUser):
         if not isinstance(user_request, UserChatRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserChatRequest for OpenAIUser.chat, got "
+                f"UserChatRequest for TogetherUser.chat, got "
                 f"{type(user_request)}"
             )
 
@@ -88,20 +86,16 @@ class OpenAIUser(BaseUser):
             "temperature": user_request.additional_request_params.get(
                 "temperature", 0.0
             ),
+            "ignore_eos": user_request.additional_request_params.get(
+                "ignore_eos",
+                bool(user_request.max_tokens),
+            ),
             "stream": True,
             "stream_options": {
                 "include_usage": True,
             },
             **user_request.additional_request_params,
         }
-
-        # Conditionally add ignore_eos for vLLM and SGLang backends
-        if self.api_backend in ["vllm", "sglang"]:
-            payload.setdefault("ignore_eos", bool(user_request.max_tokens))
-        else:
-            # Remove ignore_eos for OpenAI backend, as it is not supported
-            payload.pop("ignore_eos", None)
-
         self.send_request(
             True,
             endpoint,
@@ -119,7 +113,7 @@ class OpenAIUser(BaseUser):
         if not isinstance(user_request, UserEmbeddingRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserEmbeddingRequest for OpenAIUser."
+                f"UserEmbeddingRequest for TogetherUser."
                 f"embeddings, got {type(user_request)}"
             )
 

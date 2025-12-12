@@ -42,12 +42,12 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest tests --cov --cov-report=term-missing -v
+          python -m pytest tests --cov --cov-report=term-missing -v
         timeout-minutes: 10
 
       - name: Check coverage threshold
         run: |
-          uv run coverage report --fail-under=93
+          python -m coverage report --fail-under=93
 
       # 1) version from GitHub Release tag
       - name: Extract version
