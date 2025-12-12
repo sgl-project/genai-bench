@@ -838,9 +838,9 @@ def sglang_profile_options(func):
     func = click.option(
         "--sglang-profile-by-stage",
         is_flag=True,
-        default=True,
+        default=False,
         help="Profile prefill and decode stages separately. "
-        "Enables detailed analysis of each inference phase. Default: True.",
+        "Enables detailed analysis of each inference phase. Default: False.",
     )(func)
     func = click.option(
         "--sglang-profile-activities",

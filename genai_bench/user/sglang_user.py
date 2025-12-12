@@ -5,7 +5,6 @@ import time
 from typing import Any, Dict, Optional
 
 import requests
-from locust import task
 
 from genai_bench.logging import init_logger
 from genai_bench.user.openai_user import OpenAIUser
@@ -15,94 +14,14 @@ logger = init_logger(__name__)
 
 class SGLangUser(OpenAIUser):
     """
-    SGLang-specific user that extends OpenAIUser with profiling capabilities.
+    SGLang-specific user that extends OpenAIUser.
 
-    SGLang servers expose a /start_profile endpoint that captures Perfetto traces
-    for GPU kernel-level performance analysis. This user class integrates that
-    profiling capability into genai-bench.
+    This class is used to identify the SGLang backend, while the core
+    profiling logic is handled by the SGLangProfiler and orchestrated
+    by the CLI.
     """
 
     BACKEND_NAME = "sglang"
-
-    # Class-level flag to ensure only one worker starts profiling
-    _profile_started = False
-
-    def on_start(self):
-        """Initialize the user and optionally start profiling."""
-        super().on_start()
-
-        # Check if profiling is enabled via environment options
-        if not hasattr(self.environment, 'parsed_options'):
-            return
-
-        opts = self.environment.parsed_options
-        if not getattr(opts, 'sglang_profile', False):
-            return
-
-        # Only the first worker should start profiling
-        if SGLangUser._profile_started:
-            logger.debug("Profiling already started by another worker, skipping.")
-            return
-
-        SGLangUser._profile_started = True
-        self._start_profiling(opts)
-
-    def _start_profiling(self, opts):
-        """
-        Start SGLang server-side profiling.
-
-        Args:
-            opts: Parsed command line options containing profile settings.
-        """
-        profile_output_dir = getattr(opts, 'sglang_profile_output_dir', '/tmp/genai_bench_profiles')
-        profile_steps = getattr(opts, 'sglang_profile_steps', 5)
-        profile_by_stage = getattr(opts, 'sglang_profile_by_stage', True)
-
-        # Create output directory
-        os.makedirs(profile_output_dir, exist_ok=True)
-
-        # Build profile request
-        profile_config = {
-            "output_dir": profile_output_dir,
-            "num_steps": str(profile_steps),
-            "activities": ["CPU", "GPU"],
-            "profile_by_stage": profile_by_stage,
-            "merge_profiles": False,
-        }
-
-        logger.info(f"Starting SGLang profiling: {profile_config}")
-
-        try:
-            # First, get server info for metadata
-            server_info_response = requests.get(
-                f"{self.host}/get_server_info",
-                timeout=10
-            )
-            if server_info_response.status_code == 200:
-                server_info = server_info_response.json()
-                logger.info(f"SGLang server info: model={server_info.get('model_path', 'unknown')}")
-
-            # Start profiling (this is async - server profiles next N steps)
-            # Note: We don't wait for completion here as profiling happens
-            # during the benchmark run
-            response = requests.post(
-                f"{self.host}/start_profile",
-                json=profile_config,
-                timeout=300  # Profiling can take a while
-            )
-
-            if response.status_code == 200:
-                logger.info(f"SGLang profiling started successfully. Traces will be saved to: {profile_output_dir}")
-            else:
-                logger.warning(f"Failed to start profiling: {response.status_code} - {response.text}")
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error starting SGLang profiling: {e}")
-
-    @classmethod
-    def reset_profile_state(cls):
-        """Reset the profile started flag. Useful for testing."""
-        cls._profile_started = False
 
 
 class SGLangProfiler:
@@ -116,12 +35,17 @@ class SGLangProfiler:
         self,
         base_url: str,
         output_dir: str = "/tmp/genai_bench_profiles",
-        profile_by_stage: bool = True,
+        profile_by_stage: bool = False,
+        api_key: Optional[str] = None,
     ):
         self.base_url = base_url.rstrip('/')
         self.output_dir = output_dir
         self.profile_by_stage = profile_by_stage
+        self.api_key = api_key
         self._profile_link = None
+        self._headers = {}
+        if api_key:
+            self._headers["Authorization"] = f"Bearer {api_key}"
 
     def start_profile(
         self,
@@ -154,7 +78,11 @@ class SGLangProfiler:
 
         # Save server info
         try:
-            response = requests.get(f"{self.base_url}/get_server_info", timeout=10)
+            response = requests.get(
+                f"{self.base_url}/get_server_info",
+                headers=self._headers,
+                timeout=10,
+            )
             if response.status_code == 200:
                 import json
                 with open(os.path.join(output_path, "server_args.json"), "w") as f:
@@ -176,7 +104,8 @@ class SGLangProfiler:
         response = requests.post(
             f"{self.base_url}/start_profile",
             json=profile_config,
-            timeout=600  # 10 minutes max
+            headers=self._headers,
+            timeout=600,  # 10 minutes max
         )
 
         if response.status_code != 200:

@@ -56,7 +56,7 @@ genai-bench benchmark \
 | `--sglang-profile` | `False` | Enable SGLang server-side profiling |
 | `--sglang-profile-output-dir` | `<experiment>/profiles` | Directory to save trace files |
 | `--sglang-profile-steps` | `5` | Number of forward steps to profile (matches SGLang nightly) |
-| `--sglang-profile-by-stage` | `True` | Profile prefill and decode separately |
+| `--sglang-profile-by-stage` | `False` | Profile prefill and decode separately |
 | `--sglang-profile-activities` | `CPU,GPU` | Activities to profile (CPU, GPU, MEM) |
 
 ## Viewing Traces
@@ -64,7 +64,7 @@ genai-bench benchmark \
 After the benchmark completes, trace files are saved in the specified output directory. To view them:
 
 1. Open [Perfetto UI](https://ui.perfetto.dev) in Google Chrome
-2. Click "Open trace file" or drag-and-drop the `.json` trace file
+2. Click "Open trace file" or drag-and-drop the `.json.gz` trace file
 3. Explore the timeline view for detailed kernel analysis
 
 ### Understanding the Traces
@@ -105,7 +105,8 @@ from genai_bench.user.sglang_user import SGLangProfiler
 profiler = SGLangProfiler(
     base_url="http://localhost:30000",
     output_dir="/tmp/profiles",
-    profile_by_stage=True,
+    profile_by_stage=False,
+    api_key="your-api-key",  # Optional: for authenticated SGLang servers
 )
 
 # Start profiling (captures next N forward steps)

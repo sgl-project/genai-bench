@@ -365,10 +365,13 @@ def benchmark(
         profile_dir = sglang_profile_output_dir or os.path.join(
             experiment_folder_abs_path, "profiles"
         )
+        # Get the API key for profiling requests
+        profile_api_key = model_api_key or api_key
         sglang_profiler = SGLangProfiler(
             base_url=api_base,
             output_dir=profile_dir,
             profile_by_stage=sglang_profile_by_stage,
+            api_key=profile_api_key,
         )
         logger.info(
             f"SGLang profiling enabled. Traces will be saved to: {profile_dir}"
@@ -583,7 +586,7 @@ def benchmark(
         )
         for trace_info in all_profile_traces:
             scenario = trace_info.get("scenario", "unknown")
-            iteration_val = trace_info.get("num_concurrency") or trace_info.get("batch_size", "?")
+            iteration_val = trace_info.get(iteration_type, "?")
             path = trace_info.get("profile_path", "")
             logger.info(f"   - {scenario} @ {iteration_type}={iteration_val}: {path}")
 
