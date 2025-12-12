@@ -16,6 +16,7 @@ from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 from genai_bench.user.openai_user import OpenAIUser
+from genai_bench.user.sglang_user import SGLangUser
 from genai_bench.user.together_user import TogetherUser
 
 logger = init_logger(__name__)
@@ -30,7 +31,7 @@ API_BACKEND_USER_MAP = {
     GCPVertexUser.BACKEND_NAME: GCPVertexUser,
     TogetherUser.BACKEND_NAME: TogetherUser,
     "vllm": OpenAIUser,  # vLLM uses OpenAI-compatible API
-    "sglang": OpenAIUser,  # SGLang uses OpenAI-compatible API
+    SGLangUser.BACKEND_NAME: SGLangUser,  # SGLang with profiling support
 }
 
 DEFAULT_NUM_CONCURRENCIES = [1, 2, 4, 8, 16, 32, 64, 128, 256]
