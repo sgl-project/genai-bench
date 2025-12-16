@@ -67,9 +67,16 @@ DEFAULT_SCENARIOS_FOR_RERANK = [
     "R(4096,100)",
 ]
 
+DEFAULT_SCENARIOS_FOR_IMAGE_GEN = [
+    "IG(512,512)",
+    "IG(1024,1024)",
+    "IG(1024,1792)",
+]
+
 DEFAULT_SCENARIOS_BY_TASK = {
     "text-to-text": DEFAULT_SCENARIOS_FOR_CHAT,
     "text-to-rerank": DEFAULT_SCENARIOS_FOR_RERANK,
+    "text-to-image": DEFAULT_SCENARIOS_FOR_IMAGE_GEN,
     "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
     "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,

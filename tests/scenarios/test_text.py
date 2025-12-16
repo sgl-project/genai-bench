@@ -3,6 +3,7 @@
 from genai_bench.scenarios.text import (
     DeterministicDistribution,
     EmbeddingScenario,
+    ImageGenerationScenario,
     NormalDistribution,
     ReRankScenario,
     UniformDistribution,
@@ -109,3 +110,35 @@ def test_rerank_scenario_to_string():
     """Test ReRankScenario string representation."""
     scenario = ReRankScenario(tokens_per_document=1024, tokens_per_query=100)
     assert scenario.to_string() == "R(1024,100)"
+
+
+def test_image_generation_scenario():
+    """Test ImageGenerationScenario."""
+    scenario = ImageGenerationScenario(width=1024, height=1024)
+
+    width, height = scenario.sample()
+    assert width == 1024
+    assert height == 1024
+
+
+def test_image_generation_scenario_to_string():
+    """Test ImageGenerationScenario string representation."""
+    scenario = ImageGenerationScenario(width=1024, height=1024)
+    assert scenario.to_string() == "IG(1024,1024)"
+
+    scenario = ImageGenerationScenario(width=512, height=512)
+    assert scenario.to_string() == "IG(512,512)"
+
+    scenario = ImageGenerationScenario(width=1024, height=1792)
+    assert scenario.to_string() == "IG(1024,1792)"
+
+
+def test_image_generation_scenario_parse():
+    """Test ImageGenerationScenario parsing."""
+    scenario = ImageGenerationScenario.parse("(1024,1024)")
+    assert scenario.width == 1024
+    assert scenario.height == 1024
+
+    scenario = ImageGenerationScenario.parse("(512,512)")
+    assert scenario.width == 512
+    assert scenario.height == 512

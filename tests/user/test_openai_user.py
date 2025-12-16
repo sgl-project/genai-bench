@@ -9,6 +9,8 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
+    UserImageGenerationResponse,
     UserResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
@@ -741,3 +743,151 @@ def test_chat_with_reasoning_content_and_token_estimation(
     mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
         combined_text, add_special_tokens=False
     )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_image_generation(mock_post, mock_openai_user):
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageGenerationRequest(
+        model="dall-e-3",
+        prompt="A beautiful sunset over mountains",
+        size="1024x1024",
+        quality="standard",
+        num_images=1,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "created": 1702234567,
+        "data": [
+            {
+                "url": "https://example.com/generated-image.png",
+                "revised_prompt": (
+                    "A stunning sunset over mountain peaks with vibrant colors"
+                ),
+            }
+        ],
+    }
+    mock_post.return_value = response_mock
+
+    mock_openai_user.image_generation()
+
+    mock_post.assert_called_once_with(
+        url="http://example.com/v1/images/generations",
+        json={
+            "model": "dall-e-3",
+            "prompt": "A beautiful sunset over mountains",
+            "n": 1,
+            "size": "1024x1024",
+            "quality": "standard",
+            "response_format": "url",
+        },
+        stream=False,
+        headers={
+            "Authorization": "Bearer fake_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_image_generation_with_b64_json(mock_post, mock_openai_user):
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageGenerationRequest(
+        model="dall-e-3",
+        prompt="A cat",
+        size="1024x1024",
+        quality="hd",
+        num_images=1,
+        additional_request_params={"response_format": "b64_json"},
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "created": 1702234567,
+        "data": [
+            {
+                "b64_json": (
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD"
+                    "UlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                ),
+            }
+        ],
+    }
+    mock_post.return_value = response_mock
+
+    response = mock_openai_user.send_request(
+        stream=False,
+        endpoint="/v1/images/generations",
+        payload={
+            "model": "dall-e-3",
+            "prompt": "A cat",
+            "n": 1,
+            "size": "1024x1024",
+            "quality": "hd",
+            "response_format": "b64_json",
+        },
+        parse_strategy=mock_openai_user.parse_image_generation_response,
+    )
+
+    assert isinstance(response, UserImageGenerationResponse)
+    assert response.status_code == 200
+    assert len(response.generated_images) == 1
+    assert response.generated_images[0].startswith("iVBORw0")
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_image_generation_multiple_images(mock_post, mock_openai_user):
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageGenerationRequest(
+        model="dall-e-2",
+        prompt="A dog",
+        size="512x512",
+        quality="standard",
+        num_images=3,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "created": 1702234567,
+        "data": [
+            {"url": "https://example.com/image1.png"},
+            {"url": "https://example.com/image2.png"},
+            {"url": "https://example.com/image3.png"},
+        ],
+    }
+    mock_post.return_value = response_mock
+
+    response = mock_openai_user.send_request(
+        stream=False,
+        endpoint="/v1/images/generations",
+        payload={
+            "model": "dall-e-2",
+            "prompt": "A dog",
+            "n": 3,
+            "size": "512x512",
+            "quality": "standard",
+            "response_format": "url",
+        },
+        parse_strategy=mock_openai_user.parse_image_generation_response,
+    )
+
+    assert isinstance(response, UserImageGenerationResponse)
+    assert response.status_code == 200
+    assert len(response.generated_images) == 3
+    assert response.time_at_first_token == response.end_time
+
+
+def test_image_generation_with_wrong_request_type(mock_openai_user):
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: "InvalidRequestType"
+
+    with pytest.raises(
+        AttributeError,
+        match="user_request should be of type UserImageGenerationRequest for "
+        "OpenAIUser.image_generation",
+    ):
+        mock_openai_user.image_generation()

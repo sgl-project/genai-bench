@@ -4,6 +4,7 @@ import numpy as np
 
 from genai_bench.scenarios.base import (
     EmbeddingDistribution,
+    ImageGenerationDistribution,
     ReRankDistribution,
     Scenario,
     TextDistribution,
@@ -222,3 +223,44 @@ class ReRankScenario(Scenario):
         return cls(
             tokens_per_document=tokens_per_document, tokens_per_query=tokens_per_query
         )
+
+
+class ImageGenerationScenario(Scenario):
+    """
+    Defines the dimensions (width x height) of images to generate.
+    
+    Example formats:
+        IG(512,512)      # 512x512 square image
+        IG(1024,1024)    # 1024x1024 square image (DALL-E 3 default)
+        IG(1024,1792)    # 1024x1792 portrait image
+        IG(1792,1024)    # 1792x1024 landscape image
+    """
+
+    scenario_type = ImageGenerationDistribution.IMAGE_GENERATION
+    validation_pattern = r"^IG\(\d+,\d+\)$"
+
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+
+    def sample(self) -> Tuple[int, int]:
+        """Returns (width, height) for image generation"""
+        return self.width, self.height
+
+    def to_string(self) -> str:
+        """Returns the scenario in string format, e.g., IG(1024,1024)"""
+        return f"IG({self.width},{self.height})"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "ImageGenerationScenario":
+        """
+        Parse image generation scenario from string, e.g., IG(1024,1024)
+
+        Args:
+            params_str: String in format "IG(width,height)"
+
+        Returns:
+            ImageGenerationScenario instance
+        """
+        width, height = parse_params_str(params_str)[0]
+        return cls(width=width, height=height)

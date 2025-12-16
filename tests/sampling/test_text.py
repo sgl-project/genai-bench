@@ -4,11 +4,12 @@ from unittest.mock import MagicMock
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
+    UserImageGenerationRequest,
     UserReRankRequest,
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
-from genai_bench.scenarios.text import ReRankScenario
+from genai_bench.scenarios.text import ImageGenerationScenario, ReRankScenario
 
 
 class TestTextSampler(unittest.TestCase):
@@ -258,3 +259,88 @@ class TestTextSampler(unittest.TestCase):
         self.tokenizer.decode.assert_called_with(
             line_tokens[:requested_tokens], skip_special_tokens=True
         )
+
+    def test_sample_image_generation_request(self):
+        image_gen_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model="dall-e-3",
+            output_modality="image",
+            data=["A beautiful sunset", "A mountain landscape", "City skyline"],
+        )
+
+        scenario = ImageGenerationScenario(width=1024, height=1024)
+
+        request = image_gen_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.model, "dall-e-3")
+        self.assertEqual(request.size, "1024x1024")
+        self.assertIn(request.prompt, image_gen_sampler.data)
+        self.assertEqual(request.quality, "standard")
+        self.assertEqual(request.num_images, 1)
+
+    def test_sample_image_generation_request_different_sizes(self):
+        image_gen_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model="dall-e-3",
+            output_modality="image",
+            data=["Test prompt"],
+        )
+
+        scenario_512 = ImageGenerationScenario(width=512, height=512)
+        request_512 = image_gen_sampler.sample(scenario_512)
+        self.assertEqual(request_512.size, "512x512")
+
+        scenario_1792 = ImageGenerationScenario(width=1024, height=1792)
+        request_1792 = image_gen_sampler.sample(scenario_1792)
+        self.assertEqual(request_1792.size, "1024x1792")
+
+    def test_sample_image_generation_request_with_params(self):
+        image_gen_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model="dall-e-3",
+            output_modality="image",
+            data=["A test image"],
+            additional_request_params={"quality": "hd", "n": 2},
+        )
+
+        scenario = ImageGenerationScenario(width=1024, height=1024)
+        request = image_gen_sampler.sample(scenario)
+
+        self.assertEqual(request.quality, "hd")
+        self.assertEqual(request.num_images, 2)
+
+    def test_sample_image_generation_request_no_scenario(self):
+        image_gen_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model="dall-e-3",
+            output_modality="image",
+            data=["Test prompt"],
+        )
+
+        request = image_gen_sampler.sample(None)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.size, "1024x1024")
+
+    def test_sample_image_generation_with_wrong_scenario_type(self):
+        """Test that using a text scenario for image generation raises ValueError."""
+        image_gen_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model="dall-e-3",
+            output_modality="image",
+            data=["Test prompt"],
+        )
+
+        # Using a text scenario (NormalDistribution) for image generation should fail
+        text_scenario = NormalDistribution(
+            mean_input_tokens=100,
+            stddev_input_tokens=10,
+            mean_output_tokens=200,
+            stddev_output_tokens=20,
+        )
+
+        with self.assertRaises(ValueError) as context:
+            image_gen_sampler._validate_scenario(text_scenario)
+
+        self.assertIn("Expected ImageGenerationDistribution", str(context.exception))

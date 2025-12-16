@@ -30,6 +30,14 @@ class ReRankDistribution(Enum):
     RE_RANK = "R"
 
 
+class ImageGenerationDistribution(Enum):
+    """
+    Distribution type for image generation tasks.
+    """
+
+    IMAGE_GENERATION = "IG"
+
+
 class MultiModality(Enum):
     """
     Enumeration for multi modality scenario sampling
@@ -58,6 +66,7 @@ class Scenario(ABC):
         | MultiModality
         | EmbeddingDistribution
         | ReRankDistribution
+        | ImageGenerationDistribution
         | SpecialScenario
     )
     validation_pattern: str
