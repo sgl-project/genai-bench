@@ -131,7 +131,6 @@ class AggregatedMetricsCollector:
         self,
         start_time: float,
         end_time: float,
-        dataset_character_to_token_ratio: float,
         warmup_ratio: Optional[float],
         cooldown_ratio: Optional[float],
     ):
@@ -141,9 +140,6 @@ class AggregatedMetricsCollector:
         Args:
             start_time (float): The start time of the aggregated metrics data.
             end_time (float): The end time of the aggregated metrics data.
-            dataset_character_to_token_ratio (float): The ratio of characters
-                to tokens. It is required to calculate character-level metric:
-                mean_total_chars_per_hour.
             warmup_ratio (Optional[float]): The portion of initial requests
                 to exclude from the aggregation as warmup.
             cooldown_ratio (Optional[float]): The portion of final requests
@@ -233,12 +229,6 @@ class AggregatedMetricsCollector:
 
         self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s = (
             total_tokens_sum / self.aggregated_metrics.run_duration
-        )
-
-        self.aggregated_metrics.mean_total_chars_per_hour = (
-            self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
-            * dataset_character_to_token_ratio
-            * 3600
         )
 
         # Calculate error rate

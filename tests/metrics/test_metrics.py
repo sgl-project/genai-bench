@@ -118,9 +118,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     # Manually call the aggregation logic to verify results
     start_time = 0
     end_time = 1.5
-    aggregated_metrics_collector.aggregate_metrics_data(
-        start_time, end_time, 4.4, 0.0, 0.0
-    )
+    aggregated_metrics_collector.aggregate_metrics_data(start_time, end_time, 0.0, 0.0)
     aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
 
     # Check aggregate calculations
@@ -143,9 +141,6 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert (
         aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
         == pytest.approx(17.33333332536, rel=0.00005)
-    )
-    assert aggregated_metrics.mean_total_chars_per_hour == pytest.approx(
-        4.4 * 17.33333332536 * 3600, rel=0.05
     )
     assert (
         aggregated_metrics.mean_total_tokens_throughput_tokens_per_min
@@ -275,7 +270,7 @@ def test_filter_warmup_and_cooldown_metrics(aggregated_metrics_collector):
     for metric in metrics:
         aggregated_metrics_collector.add_single_request_metrics(metric)
 
-    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 4, 0.1, 0.1)
+    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.1, 0.1)
     aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
 
     # Check aggregate calculations#
@@ -304,7 +299,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
         total_tokens=12,
     )
     aggregated_metrics_collector.add_single_request_metrics(metrics)
-    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 4, 0.0, 0.0)
+    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.0, 0.0)
 
     # Save the metrics to a file
     save_path = tmp_path / "metrics.json"
@@ -322,7 +317,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
 
 def test_aggregate_empty_metrics(aggregated_metrics_collector, tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
-        aggregated_metrics_collector.aggregate_metrics_data(0, 1, 3, 0.0, 0.0)
+        aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.0, 0.0)
 
     assert (
         "‼️ No request metrics collected, one possible cause "

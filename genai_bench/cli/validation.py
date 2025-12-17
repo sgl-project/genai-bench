@@ -330,19 +330,6 @@ def validate_additional_request_params(ctx, param, value):
         return {}  # Return an empty dictionary to be parsed in Sampler
     try:
         value = json.loads(value)
-        if "temperature" in value and value["temperature"] > 1.5:
-            warning_msg = (
-                f"You have set temperature {value['temperature']} too high. "
-                f"This may cause higher variability in output length and affect "
-                f"throughput metrics."
-            )
-            logger.warning(warning_msg)
-            click.secho(warning_msg, fg="yellow", bold=True)
-            if click.confirm("Do you want to re-enter a temperature?", default=False):
-                value["temperature"] = click.prompt(
-                    "Please enter a new temperature,",
-                    default=0,
-                )
         if "ignore_eos" in value and not value["ignore_eos"]:
             warning_msg = (
                 "You have set ignore_eos to False. This will cause inaccurate "

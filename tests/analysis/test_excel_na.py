@@ -32,7 +32,6 @@ def _make_metadata(
         max_requests_per_run=10,
         experiment_folder_name="/tmp",
         dataset_path=None,
-        character_token_ratio=1.0,
         metrics_time_unit=metrics_time_unit,
     )
 
