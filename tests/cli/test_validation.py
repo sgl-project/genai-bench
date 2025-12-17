@@ -213,19 +213,6 @@ def test_validate_additional_request_params(caplog):
     with pytest.raises(click.BadParameter):
         validate_additional_request_params(ctx, param, "invalid_json")
 
-    # Test high temperature warning
-    with (
-        caplog.at_level(logging.WARNING),
-        patch("click.confirm", return_value=False),
-    ):
-        result = validate_additional_request_params(ctx, param, '{"temperature": 2.0}')
-        assert result == {"temperature": 2.0}
-    assert (
-        "You have set temperature 2.0 too high. This may cause higher "
-        "chars_to_token ratio in the metrics and result in higher "
-        "total_chars_per_hour."
-    ) in caplog.text
-
     # Test ignore_eos warning
     with (
         caplog.at_level(logging.WARNING),
@@ -451,12 +438,6 @@ def test_validate_additional_request_params_warnings(mock_prompt, mock_confirm):
     """Test warnings in additional request params validation."""
     ctx = MagicMock()
     param = MagicMock()
-
-    # Test temperature warning with user choosing to change
-    mock_confirm.return_value = True
-    mock_prompt.return_value = 0.5
-    result = validate_additional_request_params(ctx, param, '{"temperature": 2.5}')
-    assert result["temperature"] == 0.5
 
     # Test ignore_eos warning with user choosing to change
     mock_confirm.return_value = True

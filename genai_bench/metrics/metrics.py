@@ -150,10 +150,6 @@ class AggregatedMetrics(BaseModel):
         description="The mean of total tokens throughput across all requests "
         "in tokens/s",
     )
-    mean_total_chars_per_hour: float = Field(
-        0.0,
-        description="The mean of total chars throughput per hour",
-    )
     requests_per_second: float = Field(
         0.0, description="The average number of completed requests per second"
     )
@@ -182,3 +178,8 @@ class AggregatedMetrics(BaseModel):
         if isinstance(obj.get("stats"), dict):
             obj["stats"] = MetricStats.from_dict(obj["stats"])
         return super().model_validate(obj)
+
+    @property
+    def mean_total_tokens_throughput_tokens_per_min(self) -> float:
+        """The mean of total tokens throughput across all requests in tokens/min."""
+        return self.mean_total_tokens_throughput_tokens_per_s * 60
