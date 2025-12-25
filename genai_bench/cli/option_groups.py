@@ -804,3 +804,16 @@ def object_storage_options(func):
         help="Whether to upload benchmark results to storage",
     )(func)
     return func
+
+
+# Metrics options
+def metrics_options(func):
+    """Metrics related options for live updates during benchmarking."""
+    func = click.option(
+        "--metrics-update-interval",
+        type=float,
+        default=None,
+        help="Interval in seconds to update live metrics. "
+        "If not set, it uses the default interval.",
+    )(func)
+    return func
