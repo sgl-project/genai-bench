@@ -77,6 +77,7 @@ def api_options(func):
         type=click.Choice(
             [
                 "openai",
+                "fast-openai",
                 "oci-cohere",
                 "oci-genai",
                 "cohere",
