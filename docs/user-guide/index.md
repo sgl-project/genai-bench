@@ -46,6 +46,14 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Excel Reports](generate-excel-sheet.md)
 
+- :material-bug:{ .lg .middle } **Performance Troubleshooting**
+
+    ---
+
+    Debug unexpected benchmark results and common pitfalls
+
+    [:octicons-arrow-right-24: Troubleshooting Guide](performance-troubleshooting.md)
+
 </div>
 
 ## Common Workflows
