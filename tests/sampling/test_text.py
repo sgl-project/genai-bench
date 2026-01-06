@@ -191,20 +191,29 @@ class TestTextSampler(unittest.TestCase):
 
         # Set up consistent tokenization behavior
         # Each line in test_data has a predictable token count
+        token_map = {
+            "Test line 1": [0, 1, 2],  # 3 tokens
+            "Test line 2": [0, 1],  # 2 tokens
+            "Test line 3": [0, 1, 2, 3],  # 4 tokens
+        }
+        # Space-prefixed versions (space doesn't add a token in this mock)
+        space_prefixed_map = {
+            " Test line 1": [0, 1, 2],  # 3 tokens
+            " Test line 2": [0, 1],  # 2 tokens
+            " Test line 3": [0, 1, 2, 3],  # 4 tokens
+        }
+
         def mock_encode(text, add_special_tokens=False):
-            # Map our test lines to token counts
-            token_map = {
-                "Test line 1": [0, 1, 2],  # 3 tokens
-                "Test line 2": [0, 1],  # 2 tokens
-                "Test line 3": [0, 1, 2, 3],  # 4 tokens
-            }
-            # For decoded text (when truncated)
+            # Handle exact matches
             if text in token_map:
                 return token_map[text]
-            else:
-                # For decoded truncated text, return tokens based on length
-                words = text.split()
-                return list(range(len(words)))
+            if text in space_prefixed_map:
+                return space_prefixed_map[text]
+            
+            # For concatenated strings or decoded text, count by words
+            # This simulates simple word-based tokenization
+            words = text.split()
+            return list(range(len(words)))
 
         self.tokenizer.encode.side_effect = mock_encode
         # Decode returns a string with same number of words as tokens
@@ -218,19 +227,9 @@ class TestTextSampler(unittest.TestCase):
         for num_tokens in test_cases:
             result = self.sampler._sample_text(num_tokens)
 
-            # Count actual tokens in result
-            # Need to handle mixed content (original lines + decoded text)
-            total_tokens = 0
-            # Split by our test lines to count tokens properly
-            remaining = result
-            for line in self.test_data:
-                if line in remaining:
-                    total_tokens += len(mock_encode(line))
-                    remaining = remaining.replace(line, "", 1)
-
-            # Any remaining text is decoded text
-            if remaining:
-                total_tokens += len(remaining.split())
+            # Count actual tokens by tokenizing the final result directly
+            # This matches how _sample_text actually works
+            total_tokens = len(mock_encode(result, add_special_tokens=False))
 
             self.assertEqual(
                 total_tokens,
