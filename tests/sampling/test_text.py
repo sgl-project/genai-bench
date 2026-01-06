@@ -219,11 +219,12 @@ class TestTextSampler(unittest.TestCase):
             words = text.split()
             return list(range(len(words)))
 
+        def mock_decode(tokens, skip_special_tokens=True):
+            # Return text that will encode to same number of tokens
+            return " ".join(["word"] * len(tokens))
+
         self.tokenizer.encode.side_effect = mock_encode
-        # Decode returns a string with same number of words as tokens
-        self.tokenizer.decode.side_effect = (
-            lambda tokens, skip_special_tokens=True: " ".join(["word"] * len(tokens))
-        )
+        self.tokenizer.decode.side_effect = mock_decode
 
         # Test requesting exact token counts
         test_cases = [2, 3, 5, 7]
@@ -231,8 +232,7 @@ class TestTextSampler(unittest.TestCase):
         for num_tokens in test_cases:
             result = self.sampler._sample_text(num_tokens)
 
-            # Count actual tokens by tokenizing the final result directly
-            # This matches how _sample_text actually works
+            # Count actual tokens by tokenizing the final result
             total_tokens = len(mock_encode(result, add_special_tokens=False))
 
             self.assertEqual(
