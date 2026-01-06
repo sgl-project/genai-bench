@@ -222,11 +222,56 @@ class TextSampler(Sampler):
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
                     prompt += (" " if prompt else "") + truncated_text
+                    # Verify and adjust to exact token count
+                    actual_tokens = len(
+                        self.tokenizer.encode(prompt, add_special_tokens=False)
+                    )
+                    if actual_tokens > num_input_tokens:
+                        # Re-tokenize and truncate to exact count
+                        prompt_tokens = self.tokenizer.encode(
+                            prompt, add_special_tokens=False
+                        )
+                        prompt = self.tokenizer.decode(
+                            prompt_tokens[:num_input_tokens],
+                            skip_special_tokens=True,
+                        )
+                    elif actual_tokens < num_input_tokens:
+                        # Need more tokens, try to add from the remaining tokens
+                        remaining_needed = num_input_tokens - actual_tokens
+                        if remaining_needed <= len(line_tokens) - left_tokens_to_sample:
+                            # Can get more from this line
+                            additional_tokens = line_tokens[
+                                left_tokens_to_sample : left_tokens_to_sample + remaining_needed
+                            ]
+                            additional_text = self.tokenizer.decode(
+                                additional_tokens, skip_special_tokens=True
+                            )
+                            prompt += (" " if prompt else "") + additional_text
+                            # Final check
+                            final_tokens = len(
+                                self.tokenizer.encode(prompt, add_special_tokens=False)
+                            )
+                            if final_tokens > num_input_tokens:
+                                prompt_tokens = self.tokenizer.encode(
+                                    prompt, add_special_tokens=False
+                                )
+                                prompt = self.tokenizer.decode(
+                                    prompt_tokens[:num_input_tokens],
+                                    skip_special_tokens=True,
+                                )
                     return prompt
 
                 # Add line with space separator (consistent with truncated text handling)
                 prompt += (" " if prompt else "") + line
                 left_tokens_to_sample -= num_line_tokens
+        
+        # Final verification and adjustment to ensure exact token count
+        actual_tokens = len(self.tokenizer.encode(prompt, add_special_tokens=False))
+        if actual_tokens != num_input_tokens:
+            prompt_tokens = self.tokenizer.encode(prompt, add_special_tokens=False)
+            prompt = self.tokenizer.decode(
+                prompt_tokens[:num_input_tokens], skip_special_tokens=True
+            )
         return prompt
 
     def _check_discrepancy(
