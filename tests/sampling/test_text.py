@@ -193,6 +193,16 @@ class TestTextSampler(unittest.TestCase):
         to ensure exact token counts even with simple mocks.
         """
 
+        # Reset the tokenizer mock to ensure clean state
+        # This prevents interference from previous tests that may have set
+        # return_value or other mock attributes
+        self.tokenizer.reset_mock()
+        # Clear any side_effect or return_value that might have been set
+        self.tokenizer.encode.side_effect = None
+        self.tokenizer.encode.return_value = None
+        self.tokenizer.decode.side_effect = None
+        self.tokenizer.decode.return_value = None
+
         # Set up consistent tokenization behavior
         # Each line in test_data has a predictable token count
         token_map = {
