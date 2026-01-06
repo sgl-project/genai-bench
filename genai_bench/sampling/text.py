@@ -318,11 +318,11 @@ class TextSampler(Sampler):
         self._suffix_counter += 1
         separator = f"\n\n--- Request #{self._suffix_counter} ---\n\n"
         separator_tokens = self.get_token_length(separator)
-        
+
         # Adjust suffix length to account for separator overhead
         # This ensures total = prefix_len + suffix_len (not prefix_len + suffix_len + separator)
         adjusted_suffix_len = max(1, suffix_len - separator_tokens)
-        
+
         # Generate unique suffix for THIS specific request
         suffix = self._sample_text(adjusted_suffix_len)
 
