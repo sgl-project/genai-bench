@@ -189,7 +189,7 @@ def _create_summary_sheet_common(
 
                 summary_value = max(summary_value, getattr(metrics, iteration_key))
                 summary_total_tokens_per_minute = (
-                    metrics.mean_total_tokens_throughput_tokens_per_min
+                    metrics.mean_total_tokens_throughput_tokens_per_s * 60
                 )
 
         if summary_value == -1:
