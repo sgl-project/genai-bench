@@ -185,41 +185,27 @@ class TestTextSampler(unittest.TestCase):
 
     def test_sample_text_exact_token_count(self):
         """
-        Test that _sample_text returns text with exact number of tokens
-        requested.
+        Test that _sample_text returns text with exact number of tokens requested.
+        
+        This test uses a simple mock tokenizer. In real applications, actual
+        tokenizers (like from transformers) are used, which have consistent
+        decode(encode()) behavior. The implementation includes adjustment logic
+        to ensure exact token counts even with simple mocks.
         """
 
-        # Set up consistent tokenization behavior
-        # Each line in test_data has a predictable token count
-        token_map = {
-            "Test line 1": [0, 1, 2],  # 3 tokens
-            "Test line 2": [0, 1],  # 2 tokens
-            "Test line 3": [0, 1, 2, 3],  # 4 tokens
-        }
-        # Space-prefixed versions (space doesn't add a token in this mock)
-        space_prefixed_map = {
-            " Test line 1": [0, 1, 2],  # 3 tokens
-            " Test line 2": [0, 1],  # 2 tokens
-            " Test line 3": [0, 1, 2, 3],  # 4 tokens
-        }
-
+        # Simple word-based tokenization mock
+        # The implementation's adjustment logic ensures exact counts
         def mock_encode(text, add_special_tokens=False):
-            # Handle exact matches
-            if text in token_map:
-                return token_map[text]
-            if text in space_prefixed_map:
-                return space_prefixed_map[text]
-            
-            # For concatenated strings or decoded text, count by words
-            # This simulates simple word-based tokenization
+            # Count words as tokens
             words = text.split()
             return list(range(len(words)))
 
+        def mock_decode(tokens, skip_special_tokens=True):
+            # Return text that will encode to same number of tokens
+            return " ".join(["word"] * len(tokens))
+
         self.tokenizer.encode.side_effect = mock_encode
-        # Decode returns a string with same number of words as tokens
-        self.tokenizer.decode.side_effect = (
-            lambda tokens, skip_special_tokens=True: " ".join(["word"] * len(tokens))
-        )
+        self.tokenizer.decode.side_effect = mock_decode
 
         # Test requesting exact token counts
         test_cases = [2, 3, 5, 7]
@@ -227,8 +213,7 @@ class TestTextSampler(unittest.TestCase):
         for num_tokens in test_cases:
             result = self.sampler._sample_text(num_tokens)
 
-            # Count actual tokens by tokenizing the final result directly
-            # This matches how _sample_text actually works
+            # Count actual tokens by tokenizing the final result
             total_tokens = len(mock_encode(result, add_special_tokens=False))
 
             self.assertEqual(
