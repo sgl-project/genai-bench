@@ -223,7 +223,8 @@ class TextSampler(Sampler):
                     )
                     prompt += (" " if prompt else "") + truncated_text
                     # Verify actual token count and adjust if needed
-                    # Real tokenizers are generally consistent, but we verify to ensure exact count
+                    # Real tokenizers are generally consistent, but we verify
+                    # to ensure exact count
                     actual_tokens = len(
                         self.tokenizer.encode(prompt, add_special_tokens=False)
                     )
@@ -320,7 +321,8 @@ class TextSampler(Sampler):
         separator_tokens = self.get_token_length(separator)
 
         # Adjust suffix length to account for separator overhead
-        # This ensures total = prefix_len + suffix_len (not prefix_len + suffix_len + separator)
+        # This ensures total = prefix_len + suffix_len
+        # (not prefix_len + suffix_len + separator)
         adjusted_suffix_len = max(1, suffix_len - separator_tokens)
 
         # Generate unique suffix for THIS specific request
@@ -358,7 +360,8 @@ class TextSampler(Sampler):
                 f"(expected {prefix_len + suffix_len})"
             )
 
-        # Expected tokens: prefix + suffix (separator overhead is accounted for in suffix)
+        # Expected tokens: prefix + suffix
+        # (separator overhead is accounted for in suffix)
         expected_tokens = prefix_len + suffix_len
         self._check_discrepancy(expected_tokens, num_prefill_tokens, threshold=0.05)
 
