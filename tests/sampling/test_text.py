@@ -186,7 +186,7 @@ class TestTextSampler(unittest.TestCase):
     def test_sample_text_exact_token_count(self):
         """
         Test that _sample_text returns text with exact number of tokens requested.
-        
+
         This test uses a simple mock tokenizer. In real applications, actual
         tokenizers (like from transformers) are used, which have consistent
         decode(encode()) behavior. The implementation includes adjustment logic
