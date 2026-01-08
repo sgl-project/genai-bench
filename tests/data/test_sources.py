@@ -56,3 +56,37 @@ def test_custom_dataset_source_no_loader():
         ValueError, match="Loader class is required for custom dataset source"
     ):
         source.load()
+
+
+def test_huggingface_dataset_source_local_path_skips_dataset_info(
+    monkeypatch, tmp_path
+):
+    """When data_dir is a local directory, dataset_info should not be called."""
+
+    called = {"dataset_info": False, "load_dataset": False}
+
+    def fake_dataset_info(*args, **kwargs):  # pragma: no cover - should not be called
+        called["dataset_info"] = True
+        raise RuntimeError("dataset_info should not be called for local paths")
+
+    def fake_load_dataset(path, **kwargs):
+        called["load_dataset"] = True
+        # Ensure kwargs are passed through correctly
+        assert kwargs["data_dir"] == str(tmp_path)
+        assert kwargs["split"] == "train"
+        return {"ok": True}
+
+    monkeypatch.setattr("genai_bench.data.sources.dataset_info", fake_dataset_info)
+    monkeypatch.setattr("genai_bench.data.sources.load_dataset", fake_load_dataset)
+
+    config = DatasetSourceConfig(
+        type="huggingface",
+        path="dummy-id",
+        huggingface_kwargs={"data_dir": str(tmp_path), "split": "train"},
+    )
+    source = HuggingFaceDatasetSource(config)
+
+    result = source.load()
+    assert result == {"ok": True}
+    assert not called["dataset_info"]
+    assert called["load_dataset"]
