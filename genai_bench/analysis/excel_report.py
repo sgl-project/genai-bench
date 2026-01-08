@@ -122,9 +122,6 @@ def _create_sheet_with_common_layout(
     column_width_autofit(sheet)
     make_header_bold(sheet)
 
-    if add_footnote and experiment_metadata:
-        _add_footnote(sheet, num_rows + 2, len(headers), experiment_metadata)
-
     return sheet
 
 
@@ -149,7 +146,7 @@ def _create_summary_sheet_common(
         summary_iteration_header_map[experiment_metadata.iteration_type].format(
             threshold
         ),
-        "Total Characters per hour",
+        "Total Throughput (tokens/min)",
     ]
 
     gpu_type_value = (
@@ -164,9 +161,9 @@ def _create_summary_sheet_common(
 
     for scenario in merged_scenarios:
         summary_value = -1
-        summary_total_chars_per_hour = 0.0
+        summary_total_tokens_per_minute = 0.0
         display_summary_value: Union[str, int]
-        display_total_chars_per_hour: Union[str, float]
+        display_total_tokens_per_minute: Union[str, float]
 
         iteration_key = experiment_metadata.iteration_type
 
@@ -191,7 +188,9 @@ def _create_summary_sheet_common(
                         break
 
                 summary_value = max(summary_value, getattr(metrics, iteration_key))
-                summary_total_chars_per_hour = metrics.mean_total_chars_per_hour
+                summary_total_tokens_per_minute = (
+                    metrics.mean_total_tokens_throughput_tokens_per_s * 60
+                )
 
         if summary_value == -1:
             logger.warning(
@@ -200,16 +199,16 @@ def _create_summary_sheet_common(
                 f" Please add lower concurrency test cases."
             )
             display_summary_value = "N/A"
-            display_total_chars_per_hour = "N/A"
+            display_total_tokens_per_minute = "N/A"
         else:
             display_summary_value = summary_value
-            display_total_chars_per_hour = summary_total_chars_per_hour
+            display_total_tokens_per_minute = summary_total_tokens_per_minute
         rows.append(
             [
                 gpu_type_value,
                 SCENARIO_MAP.get(scenario, scenario),
                 display_summary_value,
-                display_total_chars_per_hour,
+                display_total_tokens_per_minute,
             ]
         )
 
@@ -627,32 +626,3 @@ def is_within_relative_difference(
     # Check if both throughput and requests per minute are within the defined
     # thresholds
     return throughput_diff < throughput_threshold and requests_diff < requests_threshold
-
-
-def _add_footnote(
-    sheet: Worksheet,
-    footnote_row: int,
-    num_columns: int,
-    experiment_metadata: ExperimentMetadata,
-) -> None:
-    """Adds a footnote to the sheet explaining character-to-token ratio."""
-    footnote_text = (
-        f"To get Total Chars/Hour, you can calculate it as Total Throughput "
-        f"(tokens/s) * 3600 * 'char-to-token ratio'. The char-to-token ratio "
-        f"for {experiment_metadata.model} is "
-        f"{experiment_metadata.character_token_ratio:.2f}"
-        f" for many typical use cases (e.g., average English conversations and "
-        f"our standard testing datasets). Special cases (e.g., international "
-        f"languages, coding, mathematics, medical cases) have different "
-        f"char-to-token ratios because their dense syntax or technical terms "
-        f"tend to group fewer or more characters per token. Depending on the "
-        f"model used (e.g., Llama-3.1-70B, Cohere R+), the char-to-token ratio "
-        f"exhibits distinct variations. Consult the relevant data scientist team "
-        f"to get such ratio."
-    )
-    sheet.cell(row=footnote_row, column=1, value=footnote_text)
-
-    # Formatting the footnote text
-    for col in range(1, num_columns + 1):
-        cell = sheet.cell(row=footnote_row, column=col)
-        cell.font = Font(italic=True)

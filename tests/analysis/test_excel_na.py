@@ -32,7 +32,6 @@ def _make_metadata(
         max_requests_per_run=10,
         experiment_folder_name="/tmp",
         dataset_path=None,
-        character_token_ratio=1.0,
         metrics_time_unit=metrics_time_unit,
     )
 
@@ -85,7 +84,8 @@ def test_summary_displays_na_when_threshold_not_met():
         display_scenario = "Scenario 2: Chatbot/Dialog D(100,100)"
         found = False
         for row in ws.iter_rows(min_row=2, values_only=True):
-            # Columns: [GPU Type, Use Case, Summary Value, Total Chars/Hour]
+            # Columns: [GPU Type, Use Case, Summary Value,
+            #           Total Throughput (tokens/min)]
             if row[1] == display_scenario:
                 assert row[2] == "N/A"
                 assert row[3] == "N/A"
