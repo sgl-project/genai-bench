@@ -104,13 +104,9 @@ class HuggingFaceDatasetSource(DatasetSource):
             logger.info(f"Using HuggingFace kwargs: {self.config.huggingface_kwargs}")
 
         kwargs = self.config.huggingface_kwargs or {}
-        local_data_dir = kwargs.get("data_dir", None)
-        if local_data_dir:
-            # Verify local data path exists
-            data_dir = Path(local_data_dir)
-            if not data_dir.exists() or not data_dir.is_dir():
-                raise ValueError(f"Dataset path not found: {data_dir}")
-        else:
+        data_dir = Path(self.config.path).expanduser().resolve()
+        is_local_data = data_dir.exists() and data_dir.is_dir()
+        if not is_local_data:
             # Verify dataset exists
             try:
                 dataset_info(self.config.path, token=os.environ.get("HF_TOKEN"))
