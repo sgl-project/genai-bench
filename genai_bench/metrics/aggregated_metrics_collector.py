@@ -88,7 +88,13 @@ class AggregatedMetricsCollector:
         inference_speed = metrics.output_inference_speed
 
         # filter silently for short output latency
-        if metrics.output_latency is not None and metrics.output_latency < 0.001:
+        # Don't filter for non-streaming tasks where tpot=0 is intentional
+        # (e.g., embeddings, image generation set by _reset_output_metrics)
+        if (
+            metrics.output_latency is not None
+            and metrics.output_latency < 0.001
+            and metrics.tpot != 0
+        ):
             logger.warning(
                 f"Metric may have abnormal inference speed: "
                 f"{inference_speed} tokens/s. "
