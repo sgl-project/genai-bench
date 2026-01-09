@@ -222,6 +222,20 @@ class TextSampler(Sampler):
                         line_tokens[:left_tokens_to_sample], skip_special_tokens=True
                     )
                     prompt += (" " if prompt else "") + truncated_text
+                    # Verify actual token count and adjust if needed
+                    # Real tokenizers are generally consistent, but we verify
+                    # to ensure exact count
+                    actual_tokens = len(
+                        self.tokenizer.encode(prompt, add_special_tokens=False)
+                    )
+                    if actual_tokens != num_input_tokens:
+                        # Re-tokenize and truncate to exact count
+                        prompt_tokens = self.tokenizer.encode(
+                            prompt, add_special_tokens=False
+                        )
+                        prompt = self.tokenizer.decode(
+                            prompt_tokens[:num_input_tokens], skip_special_tokens=True
+                        )
                     return prompt
 
                 # Add line with space separator (consistent with truncated text handling)
@@ -299,9 +313,20 @@ class TextSampler(Sampler):
                     f"♻️  Reusing cached prefix (hash: {prefix_hash}) for request #{self._suffix_counter + 1}"
                 )
 
-        # Generate unique suffix for THIS specific request
-        suffix = self._sample_text(suffix_len)
+        # Calculate separator first to adjust suffix length
+        # The separator helps distinguish requests while keeping prefix identical
+        # Increment counter first to get the correct request number
         self._suffix_counter += 1
+        separator = f"\n\n--- Request #{self._suffix_counter} ---\n\n"
+        separator_tokens = self.get_token_length(separator)
+
+        # Adjust suffix length to account for separator overhead
+        # This ensures total = prefix_len + suffix_len
+        # (not prefix_len + suffix_len + separator)
+        adjusted_suffix_len = max(1, suffix_len - separator_tokens)
+
+        # Generate unique suffix for THIS specific request
+        suffix = self._sample_text(adjusted_suffix_len)
 
         # Log suffix info for first few requests
         if self._suffix_counter <= 5:
@@ -310,13 +335,15 @@ class TextSampler(Sampler):
             suffix_hash = hashlib.md5(suffix.encode()).hexdigest()[:8]
             suffix_actual_tokens = self.get_token_length(suffix)
             logger.debug(
-                f"📝 Request #{self._suffix_counter}: Unique suffix generated (hash: {suffix_hash}), "
-                f"requested {suffix_len} tokens, actual {suffix_actual_tokens} tokens"
+                f"📝 Request #{self._suffix_counter}: "
+                f"Unique suffix generated (hash: {suffix_hash}), "
+                f"requested {adjusted_suffix_len} tokens "
+                f"(adjusted from {suffix_len} to account for "
+                f"{separator_tokens} separator tokens), "
+                f"actual {suffix_actual_tokens} tokens"
             )
 
         # Combine prefix + separator + suffix
-        # The separator helps distinguish requests while keeping prefix identical
-        separator = f"\n\n--- Request #{self._suffix_counter} ---\n\n"
         prompt = f"{prefix}{separator}{suffix}"
 
         num_prefill_tokens = self.get_token_length(prompt)
@@ -324,17 +351,19 @@ class TextSampler(Sampler):
         # Log actual token breakdown for first request
         if self._suffix_counter <= 2:
             prefix_tokens = self.get_token_length(prefix)
-            separator_tokens = self.get_token_length(separator)
+            actual_separator_tokens = self.get_token_length(separator)
             suffix_tokens = self.get_token_length(suffix)
             logger.debug(
                 f"🔍 Token breakdown for request #{self._suffix_counter}: "
-                f"prefix={prefix_tokens}, separator={separator_tokens}, suffix={suffix_tokens}, "
-                f"total={num_prefill_tokens} (expected ~{prefix_len + suffix_len + 20})"
+                f"prefix={prefix_tokens}, separator={actual_separator_tokens}, "
+                f"suffix={suffix_tokens}, total={num_prefill_tokens} "
+                f"(expected {prefix_len + suffix_len})"
             )
 
-        # Expected tokens: prefix + suffix + separator overhead (~20 tokens)
-        expected_tokens = prefix_len + suffix_len + 20
-        self._check_discrepancy(expected_tokens, num_prefill_tokens, threshold=0.15)
+        # Expected tokens: prefix + suffix
+        # (separator overhead is accounted for in suffix)
+        expected_tokens = prefix_len + suffix_len
+        self._check_discrepancy(expected_tokens, num_prefill_tokens, threshold=0.05)
 
         # Set ignore_eos to ensure we get the expected output length
         self.additional_request_params["ignore_eos"] = True

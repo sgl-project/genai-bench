@@ -3,7 +3,8 @@
 import asyncio
 import os
 import time
-from typing import Optional, List, Dict, Any
+from dataclasses import dataclass
+from typing import Optional
 
 import aiohttp
 
@@ -26,6 +27,76 @@ from genai_bench.scenarios.base import Scenario
 logger = init_logger(__name__)
 
 
+@dataclass
+class NetworkTimingContext:
+    """Context to track network timing for a single request."""
+
+    dns_start: Optional[float] = None
+    dns_end: Optional[float] = None
+    connect_start: Optional[float] = None
+    connect_end: Optional[float] = None
+    tls_start: Optional[float] = None
+    tls_end: Optional[float] = None
+
+    @property
+    def dns_time(self) -> Optional[float]:
+        """DNS resolution time in seconds."""
+        if self.dns_start is not None and self.dns_end is not None:
+            return self.dns_end - self.dns_start
+        return None
+
+    @property
+    def connect_time(self) -> Optional[float]:
+        """Total connection time (TCP + TLS) in seconds."""
+        if self.connect_start is not None and self.connect_end is not None:
+            return self.connect_end - self.connect_start
+        return None
+
+    @property
+    def tls_time(self) -> Optional[float]:
+        """TLS handshake time in seconds."""
+        if self.tls_start is not None and self.tls_end is not None:
+            return self.tls_end - self.tls_start
+        return None
+
+
+def create_trace_config() -> aiohttp.TraceConfig:
+    """
+    Create an aiohttp TraceConfig to capture network timing metrics.
+
+    The trace config hooks into various connection events to measure:
+    - DNS resolution time
+    - TCP + TLS connection time
+    - TLS handshake time (if separate from TCP)
+
+    Note: With connection pooling, DNS and connection times may be 0
+    for requests that reuse an existing connection.
+    """
+
+    async def on_dns_resolvehost_start(session, ctx, params):
+        ctx.trace_request_ctx.dns_start = time.monotonic()
+
+    async def on_dns_resolvehost_end(session, ctx, params):
+        ctx.trace_request_ctx.dns_end = time.monotonic()
+
+    async def on_connection_create_start(session, ctx, params):
+        ctx.trace_request_ctx.connect_start = time.monotonic()
+
+    async def on_connection_create_end(session, ctx, params):
+        ctx.trace_request_ctx.connect_end = time.monotonic()
+
+    # Note: aiohttp doesn't have separate TLS events, but we can approximate
+    # by using the connection reuseconn events when available
+
+    trace_config = aiohttp.TraceConfig()
+    trace_config.on_dns_resolvehost_start.append(on_dns_resolvehost_start)
+    trace_config.on_dns_resolvehost_end.append(on_dns_resolvehost_end)
+    trace_config.on_connection_create_start.append(on_connection_create_start)
+    trace_config.on_connection_create_end.append(on_connection_create_end)
+
+    return trace_config
+
+
 class BaseAsyncRunner:
     """
     Base class for async runners with shared functionality:
@@ -45,6 +116,7 @@ class BaseAsyncRunner:
         auth_provider,
         aggregated_metrics_collector,
         dashboard=None,
+        track_network_timing: bool = False,
     ) -> None:
         self.sampler = sampler
         self.api_backend = api_backend
@@ -53,6 +125,7 @@ class BaseAsyncRunner:
         self.auth_provider = auth_provider
         self.aggregated = aggregated_metrics_collector
         self.dashboard = dashboard
+        self._track_network_timing = track_network_timing
 
         self.headers = None
         if auth_provider and hasattr(auth_provider, "get_headers"):
@@ -71,6 +144,9 @@ class BaseAsyncRunner:
         # AIOHTTP settings aligned with tore-speed
         self._aio_timeout = aiohttp.ClientTimeout(total=6 * 60 * 60)
         self._aio_read_bufsize = 256 * 1024
+
+        # Trace config for network timing metrics (only if tracking enabled)
+        self._trace_config = create_trace_config() if track_network_timing else None
 
         # Reuse session per runner instance to avoid creating new session per request
         self._session: Optional[aiohttp.ClientSession] = None
@@ -281,9 +357,21 @@ class BaseAsyncRunner:
                         headers=self.headers,
                         timeout=self._aio_timeout,
                         read_bufsize=self._aio_read_bufsize,
+                        trace_configs=[self._trace_config]
+                        if self._trace_config
+                        else None,
                     )
 
-                async with self._session.post(url=request_url, json=payload) as resp:
+                # Create a new timing context for this request (only if tracking enabled)
+                timing_ctx = (
+                    NetworkTimingContext() if self._track_network_timing else None
+                )
+
+                async with self._session.post(
+                    url=request_url,
+                    json=payload,
+                    trace_request_ctx=timing_ctx,
+                ) as resp:
                     if resp.status != 200:
                         # Stream entire error body for parity with tore-speed
                         error_message_bytes = b""
@@ -485,6 +573,12 @@ class BaseAsyncRunner:
                     num_prefill_tokens=num_prompt_tokens,
                     start_time=start_time,
                     end_time=end_time,
+                    # Network timing metrics from trace context (if tracking enabled)
+                    network_connect_time=timing_ctx.connect_time
+                    if timing_ctx
+                    else None,
+                    network_dns_time=timing_ctx.dns_time if timing_ctx else None,
+                    network_tls_time=timing_ctx.tls_time if timing_ctx else None,
                 )
 
             elif isinstance(req, UserEmbeddingRequest):
@@ -508,9 +602,21 @@ class BaseAsyncRunner:
                         headers=self.headers,
                         timeout=self._aio_timeout,
                         read_bufsize=self._aio_read_bufsize,
+                        trace_configs=[self._trace_config]
+                        if self._trace_config
+                        else None,
                     )
 
-                async with self._session.post(url=request_url, json=payload) as resp:
+                # Create a new timing context for this request (only if tracking enabled)
+                timing_ctx = (
+                    NetworkTimingContext() if self._track_network_timing else None
+                )
+
+                async with self._session.post(
+                    url=request_url,
+                    json=payload,
+                    trace_request_ctx=timing_ctx,
+                ) as resp:
                     end_time = time.monotonic()
                     if resp.status == 200:
                         data = await resp.json()
@@ -521,6 +627,16 @@ class BaseAsyncRunner:
                             end_time=end_time,
                             time_at_first_token=end_time,
                             num_prefill_tokens=num_prompt_tokens,
+                            # Network timing metrics from trace context (if tracking enabled)
+                            network_connect_time=timing_ctx.connect_time
+                            if timing_ctx
+                            else None,
+                            network_dns_time=timing_ctx.dns_time
+                            if timing_ctx
+                            else None,
+                            network_tls_time=timing_ctx.tls_time
+                            if timing_ctx
+                            else None,
                         )
                     else:
                         # Stream entire error body for parity with tore-speed

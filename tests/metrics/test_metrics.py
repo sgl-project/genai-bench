@@ -171,7 +171,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
-        output_inference_speed=1 / 0.0000002,
+        output_inference_speed=1 / 0.0000002,  # ~5M tokens/sec - extreme but allowed
         total_tokens=12,
     )
 

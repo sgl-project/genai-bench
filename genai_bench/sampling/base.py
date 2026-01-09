@@ -50,11 +50,16 @@ class Sampler(ABC):
         self.model = model
         self.output_modality = output_modality
         self.additional_request_params = additional_request_params or {}
-        self.get_token_length = lambda text, add_special_tokens=False: len(
-            tokenizer.encode(text, add_special_tokens=add_special_tokens)
-        )
         self.batch_size = 1  # Default batch size
         self.dataset_config = dataset_config
+
+    def get_token_length(self, text: str, add_special_tokens: bool = False) -> int:
+        """Get the token length of text using the current tokenizer.
+
+        This method dynamically references self.tokenizer, allowing the tokenizer
+        to be swapped at runtime (e.g., when benchmarking multiple models).
+        """
+        return len(self.tokenizer.encode(text, add_special_tokens=add_special_tokens))
 
     def _is_dataset_mode(self, scenario: Optional[Scenario]) -> bool:
         """Return True when sampler should use raw dataset without token shaping.

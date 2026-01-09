@@ -336,9 +336,25 @@ def validate_task(ctx, param, value):
 def set_model_from_tokenizer(ctx, param, value):
     """
     Infer the model name from the tokenizer if not explicitly provided.
+    If tokenizer_from_model is set and model_tokenizer is None, use the first api_model_name.
     """
+    if value:
+        return value
+
     model_tokenizer = ctx.params.get("model_tokenizer")
-    return value or model_tokenizer.split("/")[-1]
+    if model_tokenizer:
+        return model_tokenizer.split("/")[-1]
+
+    # If tokenizer_from_model is set, use the first api_model_name
+    tokenizer_from_model = ctx.params.get("tokenizer_from_model")
+    api_model_name = ctx.params.get("api_model_name")
+    if tokenizer_from_model and api_model_name:
+        first_model = (
+            api_model_name[0] if isinstance(api_model_name, tuple) else api_model_name
+        )
+        return first_model.split("/")[-1]
+
+    return None
 
 
 def validate_additional_request_params(ctx, param, value):

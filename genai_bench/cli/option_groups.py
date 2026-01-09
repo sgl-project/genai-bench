@@ -40,9 +40,11 @@ def api_options(func):
     func = click.option(
         "--api-model-name",
         type=str,
+        multiple=True,
         required=True,
-        prompt=True,
-        help="The model to use for the backend server request body.",
+        help="The model(s) to use for the backend server request body. "
+        "Can be specified multiple times to benchmark multiple models.\n\n"
+        "Example: --api-model-name model-a --api-model-name model-b",
     )(func)
     func = click.option(
         "--task",
@@ -56,6 +58,7 @@ def api_options(func):
             ],
             case_sensitive=False,
         ),
+        default="text-to-text",
         required=True,
         prompt=True,
         callback=validate_task,
@@ -96,6 +99,7 @@ def api_options(func):
             ],
             case_sensitive=False,
         ),
+        default="baseten",
         required=True,
         prompt=True,
         callback=validate_api_backend,
@@ -365,7 +369,15 @@ def server_options(func):
     func = click.option(
         "--server-engine",
         type=click.Choice(
-            ["vLLM", "SGLang", "TGI", "cohere-TensorRT", "cohere-vLLM", "LlamaCPP"],
+            [
+                "vLLM",
+                "SGLang",
+                "TGI",
+                "TRT-LLM",
+                "cohere-TensorRT",
+                "cohere-vLLM",
+                "LlamaCPP",
+            ],
             case_sensitive=True,
         ),
         required=False,
@@ -595,11 +607,20 @@ def experiment_options(func):
     func = click.option(
         "--model-tokenizer",
         type=str,
-        required=True,
-        prompt=True,
+        required=False,
+        default=None,
         help="The tokenizer to use. Should be a Huggingface loadable tokenizer "
         "or a local path. IMPORTANT: it should match the tokenizer the model "
-        "server uses.",
+        "server uses. If not specified and --tokenizer-from-model is set, "
+        "uses the model name as tokenizer.",
+    )(func)
+    func = click.option(
+        "--tokenizer-from-model",
+        is_flag=True,
+        default=False,
+        help="When set, uses each --api-model-name as its tokenizer. "
+        "Useful for multi-model benchmarking where each model has its own tokenizer. "
+        "Overrides --model-tokenizer.",
     )(func)
     func = click.option(
         "--metrics-time-unit",
@@ -670,6 +691,14 @@ def execution_engine_options(func):
         required=False,
         help="Inter-arrival distribution for async runner: "
         "'exponential' (default), 'uniform', or 'constant'",
+    )(func)
+    func = click.option(
+        "--track-network-timing",
+        is_flag=True,
+        default=False,
+        help="Track network timing metrics (DNS lookup, TCP+TLS connection time) "
+        "for each request. Useful for detecting network congestion. "
+        "Only available with --execution-engine=async.",
     )(func)
     return func
 

@@ -43,10 +43,25 @@ class RequestMetricsCollector:
         self.metrics.e2e_latency = response.end_time - response.start_time
         self.metrics.total_tokens = self.metrics.num_input_tokens
 
+        # Guard against negative time values from clock skew or timing issues
+        if self.metrics.ttft < 0:
+            logger.warning(
+                f"‼️ Negative ttft detected: {self.metrics.ttft}s. "
+                f"This may indicate clock skew or timing issues. Clamping to 0."
+            )
+            self.metrics.ttft = 0.0
+
+        if self.metrics.e2e_latency < 0:
+            logger.warning(
+                f"‼️ Negative e2e_latency detected: {self.metrics.e2e_latency}s. "
+                f"This may indicate clock skew or timing issues. Clamping to 0."
+            )
+            self.metrics.e2e_latency = 0.0
+
         # Calculate prefill throughput
         self.metrics.input_throughput = (
             self.metrics.num_input_tokens / self.metrics.ttft
-            if self.metrics.ttft
+            if self.metrics.ttft > 0
             else 0
         )
 
@@ -58,6 +73,16 @@ class RequestMetricsCollector:
             # Error in AggregatedMetricsCollector
             self._reset_output_metrics()
 
+        # Transfer network timing metrics if available
+        # These are optional and may be None if not using async runner with tracing
+        # Use getattr with default None for backwards compatibility with mocks and
+        # non-async responses that don't have these attributes
+        self.metrics.network_connect_time = getattr(
+            response, "network_connect_time", None
+        )
+        self.metrics.network_dns_time = getattr(response, "network_dns_time", None)
+        self.metrics.network_tls_time = getattr(response, "network_tls_time", None)
+
     def _calculate_output_metrics(self, response: UserChatResponse):
         """
         Helper function to calculate output metrics from a UserChatResponse.
@@ -67,17 +92,32 @@ class RequestMetricsCollector:
         self.metrics.total_tokens += self.metrics.num_output_tokens
         self.metrics.output_latency = self.metrics.e2e_latency - self.metrics.ttft
 
+        # Guard against negative output_latency from timing issues
+        if self.metrics.output_latency < 0:
+            logger.warning(
+                f"‼️ Negative output_latency detected: {self.metrics.output_latency}s. "
+                f"This may indicate clock skew or timing issues. Clamping to 0."
+            )
+            self.metrics.output_latency = 0.0
+
         # Avoid divide by zero for tokens
         if self.metrics.num_output_tokens > 1:
-            self.metrics.tpot = self.metrics.output_latency / (
-                self.metrics.num_output_tokens - 1
-            )
-            self.metrics.output_inference_speed = 1 / self.metrics.tpot
-            self.metrics.output_throughput = (
-                (self.metrics.num_output_tokens - 1) / self.metrics.output_latency
-                if self.metrics.output_latency
-                else 0
-            )
+            denominator = self.metrics.num_output_tokens - 1
+            if self.metrics.output_latency > 0:
+                self.metrics.tpot = self.metrics.output_latency / denominator
+                self.metrics.output_inference_speed = 1 / self.metrics.tpot
+                self.metrics.output_throughput = (
+                    denominator / self.metrics.output_latency
+                )
+            else:
+                # output_latency is 0 - instant generation, set to 0 to avoid division by zero
+                self.metrics.tpot = 0.0
+                self.metrics.output_inference_speed = 0.0
+                self.metrics.output_throughput = 0.0
+                logger.warning(
+                    f"‼️ output_latency is 0 with {self.metrics.num_output_tokens} tokens. "
+                    f"Cannot calculate meaningful tpot/throughput metrics."
+                )
         else:
             logger.warning(
                 f"‼️ num_output_tokens:"

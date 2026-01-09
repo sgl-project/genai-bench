@@ -232,7 +232,11 @@ class TestBasetenUser:
 
     @patch("genai_bench.user.baseten_user.requests.post")
     def test_chat_image_request(self, mock_post, baseten_user):
-        """Test chat with image request."""
+        """Test chat with image request.
+
+        Note: image_content should contain full data URLs (e.g., data:image/jpeg;base64,...)
+        as the code passes them through directly without modification.
+        """
         baseten_user.on_start()
         # Note: image_content should contain full data URLs as per implementation
         baseten_user.sample = lambda: UserImageChatRequest(
