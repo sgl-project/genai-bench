@@ -1,8 +1,9 @@
 """Base class for async runners with shared functionality."""
 
 import asyncio
+import os
 import time
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 import aiohttp
 
@@ -73,6 +74,18 @@ class BaseAsyncRunner:
 
         # Reuse session per runner instance to avoid creating new session per request
         self._session: Optional[aiohttp.ClientSession] = None
+
+        # Track prompts and completions for debugging
+        self._completions_log: List[Dict[str, Any]] = []
+        self._completions_file: Optional[str] = None
+        
+        # Check if completions logging is enabled via environment variable
+        if os.getenv("GENAI_BENCH_SAVE_COMPLETIONS", "").lower() in ("true", "1", "yes"):
+            self._completions_file = os.getenv(
+                "GENAI_BENCH_COMPLETIONS_FILE", 
+                "genai_bench_completions.jsonl"
+            )
+            logger.info(f"📝 Completions will be saved to: {self._completions_file}")
 
     def _prepare_request(self, scenario_input):
         """Prepare a request from a scenario string or Scenario object."""
@@ -200,6 +213,9 @@ class BaseAsyncRunner:
                             if k not in filtered_keys
                         },
                     }
+                    # Log the prompt being sent
+                    prompt_preview = req.prompt[:500] + "..." if len(req.prompt) > 500 else req.prompt
+                    logger.debug(f"📝 Prompt preview: {prompt_preview}")
                 else:
                     # Use OpenAI-compatible chat format (default)
                     if isinstance(req, UserImageChatRequest):
@@ -435,6 +451,31 @@ class BaseAsyncRunner:
                         "Using end_time as fallback. This may indicate an issue with the streaming response."
                     )
                     time_at_first_token = end_time
+
+                # Log the generated text for debugging
+                if generated_text:
+                    preview = generated_text[:500] + "..." if len(generated_text) > 500 else generated_text
+                    logger.debug(f"📤 Generated text preview ({tokens_received} tokens): {preview}")
+                else:
+                    logger.debug(f"📤 Generated text is EMPTY (0 tokens)")
+
+                # Save prompt and completion to file if enabled
+                if self._completions_file:
+                    completion_record = {
+                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "prompt": req.prompt,
+                        "completion": generated_text,
+                        "num_input_tokens": num_prompt_tokens,
+                        "num_output_tokens": tokens_received,
+                        "latency_s": end_time - start_time if end_time and start_time else None,
+                    }
+                    try:
+                        import json  # Use standard json for file output (simpler)
+                        with open(self._completions_file, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(completion_record, ensure_ascii=False))
+                            f.write("\n")
+                    except Exception as e:
+                        logger.warning(f"Failed to save completion to file: {e}")
 
                 return UserChatResponse(
                     status_code=200,

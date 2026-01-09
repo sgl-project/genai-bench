@@ -261,19 +261,31 @@ class BasetenUser(OpenAIUser):
         """
         Override parse_non_streaming_chat_response to handle both OpenAI format and plain text responses.
         """
-        # First, try to determine if this is JSON or plain text
+        # Baseten endpoints can return:
+        # - OpenAI chat format: choices[0].message.content
+        # - OpenAI completions-like format: choices[0].text
+        # - Plain text (or JSON with common fields like "output")
+        #
+        # Be permissive here: try OpenAI chat parse first, then fall back to a
+        # generic text extractor for any other JSON shape.
         response_text = response.text.strip()
 
         try:
-            # Try to parse as JSON
             json.loads(response_text)
-            # If successful, try to parse as OpenAI format
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.debug(f"Response is not JSON, treating as plain text: {e}")
+            return self._parse_plain_text_response(
+                response, start_time, num_prefill_tokens, _
+            )
+
+        try:
             return super().parse_non_streaming_chat_response(
                 response, start_time, num_prefill_tokens, _
             )
-        except (json.JSONDecodeError, AttributeError) as e:
-            # If JSON parsing fails, treat as plain text
-            logger.debug(f"Response is not JSON, treating as plain text: {e}")
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
+            logger.debug(
+                f"OpenAI chat format parsing failed, falling back to generic extractor: {e}"
+            )
             return self._parse_plain_text_response(
                 response, start_time, num_prefill_tokens, _
             )
@@ -356,8 +368,28 @@ class BasetenUser(OpenAIUser):
                 data = json.loads(response_text)
                 # If it's JSON, try to extract text from common fields
                 if isinstance(data, dict):
+                    # Common OpenAI(-ish) formats
+                    generated_text = None
+                    try:
+                        choices = data.get("choices")
+                        if isinstance(choices, list) and choices:
+                            c0 = choices[0]
+                            if isinstance(c0, dict):
+                                # Chat completions
+                                if isinstance(c0.get("message"), dict):
+                                    generated_text = c0["message"].get("content")
+                                # Completions
+                                if generated_text is None:
+                                    generated_text = c0.get("text")
+                                # Streaming-ish payloads sometimes show up even when non-streaming
+                                if generated_text is None and isinstance(c0.get("delta"), dict):
+                                    generated_text = c0["delta"].get("content")
+                    except Exception:
+                        generated_text = None
+
                     generated_text = (
-                        data.get("text")
+                        generated_text
+                        or data.get("text")
                         or data.get("output")
                         or data.get("response")
                         or data.get("generated_text")
