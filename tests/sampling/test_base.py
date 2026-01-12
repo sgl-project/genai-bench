@@ -55,7 +55,10 @@ def test_sampler_factory(mock_vision_dataset):
     )
     assert isinstance(sampler, ImageSampler)
 
-    with pytest.raises(ValueError):
-        Sampler.create(
-            task="text-to-image", tokenizer=Mock(), model="dummy-model", data=[]
-        )
+    sampler = Sampler.create(
+        task="text-to-image",
+        tokenizer=Mock(),
+        model="gpt-3",
+        data=text_data,
+    )
+    assert isinstance(sampler, TextSampler)

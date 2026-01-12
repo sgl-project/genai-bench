@@ -7,7 +7,10 @@ import random
 import time
 from typing import Any, Callable, Dict, Optional
 
+import httpx
 import requests
+from oci_openai import OciSessionAuth
+from openai import OpenAI
 from requests import Response
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
@@ -17,6 +20,8 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
+    UserImageGenerationResponse,
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
@@ -30,23 +35,45 @@ class OpenAIUser(BaseUser):
         "text-to-text": "chat",
         "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        # Future support can be added here
+        "text-to-image": "image_generation",
     }
 
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
+    openai_client = None
+    oci_profile: Optional[str] = None
+    oci_config_file: Optional[str] = None
+    oci_compartment_id: Optional[str] = None
 
     def on_start(self):
         if not self.host or not self.auth_provider:
             raise ValueError("API key and base must be set for OpenAIUser.")
-        auth_headers = self.auth_provider.get_headers()
-        self.headers = {
-            **auth_headers,
-            "Content-Type": "application/json",
-        }
+
+        # Check if using OCI endpoint (based on --profile and compartmentId)
+        if self.oci_compartment_id:
+            self._setup_oci_client()
+        else:
+            # Standard OpenAI authentication
+            auth_headers = self.auth_provider.get_headers()
+            self.headers = {
+                **auth_headers,
+                "Content-Type": "application/json",
+            }
         self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super().on_start()
+
+    def _setup_oci_client(self):
+        """Setup OpenAI SDK client with OCI authentication."""
+        self.openai_client = OpenAI(
+            api_key="OCI",
+            base_url=self.host,
+            http_client=httpx.Client(
+                auth=OciSessionAuth(profile_name=self.oci_profile or "DEFAULT"),
+                headers={"CompartmentId": self.oci_compartment_id},
+            ),
+        )
+        logger.info("OCI OpenAI client initialized")
 
     @task
     def chat(self):
@@ -133,6 +160,96 @@ class OpenAIUser(BaseUser):
             **user_request.additional_request_params,
         }
         self.send_request(False, endpoint, payload, self.parse_embedding_response)
+
+    @task
+    def image_generation(self):
+        endpoint = "/v1/images/generations"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserImageGenerationRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserImageGenerationRequest for OpenAIUser."
+                f"image_generation, got {type(user_request)}"
+            )
+
+        # If using OCI endpoint, use OpenAI SDK client
+        if self.openai_client:
+            return self._oci_image_generation(user_request)
+
+        # Otherwise use standard requests.post
+        payload = {
+            "model": user_request.model,
+            "prompt": user_request.prompt,
+            "n": user_request.num_images,
+            "size": user_request.size,
+            "quality": user_request.quality,
+            "response_format": user_request.additional_request_params.get(
+                "response_format", "url"
+            ),
+            **user_request.additional_request_params,
+        }
+        self.send_request(
+            False, endpoint, payload, self.parse_image_generation_response
+        )
+
+    def _oci_image_generation(
+        self, user_request: UserImageGenerationRequest
+    ) -> UserImageGenerationResponse:
+        """Handle image generation using OpenAI SDK"""
+        start_time = time.monotonic()
+
+        try:
+            # Filter out OCI-specific params that OpenAI SDK doesn't accept
+            sdk_params = {
+                k: v
+                for k, v in user_request.additional_request_params.items()
+                if k != "compartmentId"
+            }
+
+            assert self.openai_client is not None, "OpenAI client must be initialized"
+            response = self.openai_client.images.generate(
+                model=user_request.model,
+                prompt=user_request.prompt,
+                n=user_request.num_images,
+                size=user_request.size,
+                **sdk_params,
+            )
+
+            end_time = time.monotonic()
+
+            # Parse response from OpenAI SDK
+            generated_images = [img.url or img.b64_json for img in response.data if img]
+            revised_prompt = response.data[0].revised_prompt if response.data else None
+
+            metrics_response = UserImageGenerationResponse(
+                status_code=200,
+                start_time=start_time,
+                end_time=end_time,
+                time_at_first_token=end_time,
+                generated_images=generated_images,
+                revised_prompt=revised_prompt,
+                num_prefill_tokens=0,
+                tokens_received=len(generated_images),
+            )
+
+        except Exception as e:
+            logger.error(f"OCI image generation failed: {e}")
+            metrics_response = UserImageGenerationResponse(
+                status_code=500,
+                error_message=str(e),
+                start_time=start_time,
+                end_time=time.monotonic(),
+                time_at_first_token=None,
+                generated_images=[],
+                revised_prompt=None,
+                num_prefill_tokens=0,
+                tokens_received=0,
+            )
+
+        self.collect_metrics(metrics_response, "/v1/images/generations")
+        return metrics_response
 
     def send_request(
         self,
@@ -395,4 +512,40 @@ class OpenAIUser(BaseUser):
             end_time=end_time,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
+        )
+
+    @staticmethod
+    def parse_image_generation_response(
+        response: Response, start_time: float, _: Optional[int], end_time: float
+    ) -> UserImageGenerationResponse:
+        """
+        Parses an image generation response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            _ (Optional[int]): Placeholder for an unused var, to keep
+                parse_*_response have the same interface.
+            end_time(float): The time when the request was finished.
+
+        Returns:
+            UserImageGenerationResponse: A response object with generated images.
+        """
+
+        data = response.json()
+        image_data = data.get("data", [])
+        generated_images = [
+            img.get("url") or img.get("b64_json", "") for img in image_data
+        ]
+        revised_prompt = image_data[0].get("revised_prompt") if image_data else None
+
+        return UserImageGenerationResponse(
+            status_code=200,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            generated_images=generated_images,
+            revised_prompt=revised_prompt,
+            num_prefill_tokens=0,
+            tokens_received=len(generated_images),
         )

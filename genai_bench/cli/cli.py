@@ -105,6 +105,7 @@ def benchmark(
     auth,
     security_token,
     region,
+    compartment_id,
     # Server options
     server_engine,
     server_version,
@@ -267,6 +268,11 @@ def benchmark(
     user_class.auth_provider = auth_provider
     user_class.host = api_base
     user_class.api_backend = api_backend
+
+    # Pass OCI config to user class (for OpenAI backend with OCI endpoints)
+    user_class.oci_profile = profile
+    user_class.oci_config_file = config_file
+    user_class.oci_compartment_id = compartment_id
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)

@@ -1,6 +1,10 @@
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import RequestLevelMetrics
-from genai_bench.protocol import UserChatResponse, UserResponse
+from genai_bench.protocol import (
+    UserChatResponse,
+    UserImageGenerationResponse,
+    UserResponse,
+)
 
 logger = init_logger(__name__)
 
@@ -53,6 +57,10 @@ class RequestMetricsCollector:
         # Check if the response is a UserChatResponse for output metrics
         if isinstance(response, UserChatResponse):
             self._calculate_output_metrics(response)
+        elif isinstance(response, UserImageGenerationResponse):
+            # For image generation (non-streaming), use same approach as embeddings
+            # to avoid filter_metrics setting tpot/output_inference_speed to None
+            self._reset_output_metrics()
         else:
             # For non-chat responses, reset output metrics to avoid NoneType
             # Error in AggregatedMetricsCollector
