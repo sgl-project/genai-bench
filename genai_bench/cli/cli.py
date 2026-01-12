@@ -25,6 +25,7 @@ from genai_bench.cli.option_groups import (
     oci_auth_options,
     sampling_options,
     server_options,
+    sglang_profile_options,
     storage_auth_options,
 )
 from genai_bench.cli.report import excel, plot
@@ -67,6 +68,7 @@ def cli(ctx):
 @distributed_locust_options
 @object_storage_options
 @storage_auth_options
+@sglang_profile_options
 @click.pass_context
 def benchmark(
     ctx,
@@ -144,6 +146,12 @@ def benchmark(
     github_owner,
     github_repo,
     metrics_time_unit,
+    # SGLang profiling options
+    sglang_profile,
+    sglang_profile_output_dir,
+    sglang_profile_steps,
+    sglang_profile_by_stage,
+    sglang_profile_activities,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -350,6 +358,32 @@ def benchmark(
     )
     experiment_metadata_file.write_text(experiment_metadata.model_dump_json(indent=4))
 
+    # Initialize SGLang profiler if enabled
+    sglang_profiler = None
+    if sglang_profile and api_backend == "sglang":
+        from genai_bench.user.sglang_user import SGLangProfiler
+
+        # Use provided output dir or default to experiment folder
+        profile_dir = sglang_profile_output_dir or os.path.join(
+            experiment_folder_abs_path, "profiles"
+        )
+        # Get the API key for profiling requests
+        profile_api_key = model_api_key or api_key
+        sglang_profiler = SGLangProfiler(
+            base_url=api_base,
+            output_dir=profile_dir,
+            profile_by_stage=sglang_profile_by_stage,
+            api_key=profile_api_key,
+        )
+        logger.info(
+            f"SGLang profiling enabled. Traces will be saved to: {profile_dir}"
+        )
+    elif sglang_profile and api_backend != "sglang":
+        logger.warning(
+            "SGLang profiling is only supported with --api-backend sglang. "
+            "Profiling will be skipped."
+        )
+
     # Initialize environment
     environment = Environment(user_classes=[user_class])
     # Assign the selected task to the user class
@@ -383,6 +417,15 @@ def benchmark(
     # and run the experiment
     iteration_values = batch_size if iteration_type == "batch_size" else num_concurrency
     total_runs = len(traffic_scenario) * len(iteration_values)
+
+    # Track all profile traces for final report
+    all_profile_traces = []
+
+    # Parse profiling activities once
+    profile_activities = None
+    if sglang_profiler:
+        profile_activities = [a.strip() for a in sglang_profile_activities.split(",")]
+
     with dashboard.live:
         for scenario_str in traffic_scenario:
             dashboard.reset_plot_metrics()
@@ -411,6 +454,30 @@ def benchmark(
                 aggregated_metrics_collector.set_run_metadata(
                     iteration, scenario_str, iteration_type
                 )
+
+                # Start SGLang profiling for this specific run
+                run_profile_path = None
+                if sglang_profiler and profile_activities:
+                    try:
+                        profile_name = (
+                            f"{sanitized_scenario_str}_{iteration_type}_{iteration}"
+                        )
+                        run_profile_path = sglang_profiler.start_profile(
+                            num_steps=sglang_profile_steps,
+                            activities=profile_activities,
+                            profile_name=profile_name,
+                        )
+                        all_profile_traces.append({
+                            "scenario": scenario_str,
+                            iteration_type: iteration,
+                            "profile_path": run_profile_path,
+                        })
+                        logger.info(
+                            f"SGLang profiling for {scenario_str} {iteration_type}={iteration}: "
+                            f"{run_profile_path}"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to start profiling for this run: {e}")
 
                 # Start the run
                 start_time = time.monotonic()
@@ -511,6 +578,18 @@ def benchmark(
     if delayed_log_handler:
         delayed_log_handler.flush_buffer()
     logger.info("🚀 The whole experiment has finished!")
+
+    # Report SGLang profiling results if enabled
+    if all_profile_traces:
+        logger.info(
+            f"📊 SGLang Perfetto traces generated for {len(all_profile_traces)} runs:\n"
+            f"   To view traces: Open https://ui.perfetto.dev in Chrome"
+        )
+        for trace_info in all_profile_traces:
+            scenario = trace_info.get("scenario", "unknown")
+            iteration_val = trace_info.get(iteration_type, "?")
+            path = trace_info.get("profile_path", "")
+            logger.info(f"   - {scenario} @ {iteration_type}={iteration_val}: {path}")
 
     # Generate excel and plots for report
     experiment_metadata, run_data = load_one_experiment(experiment_folder_abs_path)
