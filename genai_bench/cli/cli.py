@@ -474,8 +474,6 @@ def benchmark(
                             f"Initialized Token Bucket Rate Limiter at "
                             f"{iteration} req/s"
                         )
-                    # Set target rate for rate monitoring
-                    aggregated_metrics_collector.set_target_rate(iteration)
                     logger.info(
                         f"Starting benchmark with request_rate={iteration} req/s, "
                         f"concurrency={concurrency} "
@@ -488,7 +486,6 @@ def benchmark(
                 else:
                     # Remove any existing rate limiter for non-rate-limited runs
                     environment.rate_limiter = None
-                    aggregated_metrics_collector.set_target_rate(None)
                     # Use custom spawn rate if provided, otherwise use concurrency
                     actual_spawn_rate = (
                         spawn_rate if spawn_rate is not None else concurrency
