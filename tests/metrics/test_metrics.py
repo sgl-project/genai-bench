@@ -270,9 +270,7 @@ def test_aggregate_metrics_with_error_filtering(
     # Manually call the aggregation logic to verify results
     start_time = 0
     end_time = 1.5
-    aggregated_metrics_collector.aggregate_metrics_data(
-        start_time, end_time, 0.0, 0.0
-    )
+    aggregated_metrics_collector.aggregate_metrics_data(start_time, end_time, 0.0, 0.0)
     aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
 
     # Check aggregate calculations
