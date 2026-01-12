@@ -837,3 +837,103 @@ def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
     call_args = mock_post.call_args
     payload = call_args.kwargs["json"]
     assert "ignore_eos" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_with_system_message(mock_post, mock_openai_user):
+    """Test that system message is added to messages array without replacing
+    user message."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={"system_message": "You are a helpful assistant."},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":null}]}',  # noqa: E501
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-3","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":15,"completion_tokens":1,"total_tokens":16}}',  # noqa: E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    # Verify the request payload
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+
+    # Check that messages array has both system and user messages
+    assert "messages" in payload
+    messages = payload["messages"]
+    assert len(messages) == 2
+
+    # First message should be system message
+    assert messages[0]["role"] == "system"
+    assert messages[0]["content"] == "You are a helpful assistant."
+
+    # Second message should be user message with the prompt from traffic scenario
+    assert messages[1]["role"] == "user"
+    assert messages[1]["content"] == "Hello"
+
+    # Verify system_message is not in the payload (it's been filtered out)
+    assert "system_message" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
+    """Test that system message works with vision (multimodal) requests."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageChatRequest(
+        model="gpt-4-vision",
+        prompt="What's in this image?",
+        num_prefill_tokens=10,
+        image_content=["data:image/jpeg;base64,base64_image_content"],
+        num_images=1,
+        additional_request_params={"system_message": "You are an image analyst."},
+        max_tokens=20,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-4-vision","choices":[{"index":0,"delta":{"content":"A cat"},"finish_reason":null}]}',  # noqa: E501
+            b'data: {"id":"chat-1","object":"chat.completion.chunk","created":1744238720,"model":"gpt-4-vision","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":20,"completion_tokens":2,"total_tokens":22}}',  # noqa: E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    # Verify the request payload
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+
+    # Check that messages array has both system and user messages
+    assert "messages" in payload
+    messages = payload["messages"]
+    assert len(messages) == 2
+
+    # First message should be system message
+    assert messages[0]["role"] == "system"
+    assert messages[0]["content"] == "You are an image analyst."
+
+    # Second message should be user message with multimodal content
+    assert messages[1]["role"] == "user"
+    assert isinstance(messages[1]["content"], list)
+    # Should have both text and image content
+    assert messages[1]["content"][0]["type"] == "text"
+    assert messages[1]["content"][0]["text"] == "What's in this image?"
+    assert messages[1]["content"][1]["type"] == "image_url"
+    assert "base64_image_content" in messages[1]["content"][1]["image_url"]["url"]
+
+    # Verify system_message is not in the payload (it's been filtered out)
+    assert "system_message" not in payload
