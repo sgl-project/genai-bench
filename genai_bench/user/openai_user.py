@@ -9,9 +9,16 @@ from typing import Any, Callable, Dict, Optional
 
 import httpx
 import requests
-from oci_openai import OciSessionAuth
 from openai import OpenAI
 from requests import Response
+
+try:
+    from oci_openai import OciSessionAuth
+
+    HAS_OCI_OPENAI = True
+except ImportError:
+    HAS_OCI_OPENAI = False
+    OciSessionAuth = None  # type: ignore[misc,assignment]
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
@@ -65,6 +72,11 @@ class OpenAIUser(BaseUser):
 
     def _setup_oci_client(self):
         """Setup OpenAI SDK client with OCI authentication."""
+        if not HAS_OCI_OPENAI:
+            raise ImportError(
+                "oci-openai package is required for OCI GenAI Service support. "
+                "Install it with: pip install oci-openai"
+            )
         self.openai_client = OpenAI(
             api_key="OCI",
             base_url=self.host,
