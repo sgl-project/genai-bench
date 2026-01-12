@@ -271,7 +271,7 @@ def test_aggregate_metrics_with_error_filtering(
     start_time = 0
     end_time = 1.5
     aggregated_metrics_collector.aggregate_metrics_data(
-        start_time, end_time, 4.4, 0.0, 0.0
+        start_time, end_time, 0.0, 0.0
     )
     aggregated_metrics = aggregated_metrics_collector.aggregated_metrics
 
@@ -295,9 +295,6 @@ def test_aggregate_metrics_with_error_filtering(
     assert (
         aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
         == pytest.approx(17.33333332536, rel=0.00005)
-    )
-    assert aggregated_metrics.mean_total_chars_per_hour == pytest.approx(
-        4.4 * 17.33333332536 * 3600, rel=0.05
     )
     assert aggregated_metrics.requests_per_second == pytest.approx(80 / 60)
 
