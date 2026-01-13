@@ -1,6 +1,6 @@
 import json
 import time
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import numpy as np
 
@@ -279,7 +279,7 @@ class AggregatedMetricsCollector:
 
     def set_run_metadata(
         self,
-        iteration: Union[int, float],
+        iteration: int,
         scenario_str: str,
         metrics_refresh_interval: Optional[float] = None,
         iteration_type: str = "num_concurrency",

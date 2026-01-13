@@ -27,7 +27,7 @@ from genai_bench.protocol import (
     UserReRankRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -101,12 +101,9 @@ class OCICohereUser(BaseUser):
             return metrics_response
 
     @task
+    @rate_limited
     def chat(self):
         """Send a chat completion request using Cohere format."""
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
-
         user_request = self.sample()
 
         if not isinstance(user_request, UserChatRequest):
@@ -163,12 +160,9 @@ class OCICohereUser(BaseUser):
         )
 
     @task
+    @rate_limited
     def embeddings(self):
         """Send an embedding request using Cohere format."""
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
-
         user_request = self.sample()
 
         if not isinstance(user_request, UserEmbeddingRequest):
@@ -207,11 +201,9 @@ class OCICohereUser(BaseUser):
         logger.debug(f"Response received {response}")
 
     @task
+    @rate_limited
     def rerank(self):
         """Send an rerank request using Cohere format."""
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
         user_request = self.sample()
 
         if not isinstance(user_request, UserReRankRequest):

@@ -35,7 +35,7 @@ from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.logging import LoggingManager, init_logger
-from genai_bench.protocol import ExperimentMetadata
+from genai_bench.protocol import ExperimentMetadata, IterationType
 from genai_bench.rate_limiter import TokenBucketRateLimiter
 from genai_bench.sampling.base import Sampler
 from genai_bench.storage.factory import StorageFactory
@@ -390,12 +390,12 @@ def benchmark(
 
     # Iterate over each scenario_str and iteration value,
     # and run the experiment
-    if iteration_type == "batch_size":
-        iteration_values = batch_size
-    elif iteration_type == "request_rate":
-        iteration_values = request_rate
-    else:
-        iteration_values = num_concurrency
+    iteration_type_enum = IterationType(iteration_type)
+    iteration_values = {
+        IterationType.BATCH_SIZE: batch_size,
+        IterationType.REQUEST_RATE: request_rate,
+        IterationType.NUM_CONCURRENCY: num_concurrency,
+    }[iteration_type_enum]
     total_runs = len(traffic_scenario) * len(iteration_values)
     with dashboard.live:
         for scenario_str in traffic_scenario:

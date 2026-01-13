@@ -21,7 +21,7 @@ from genai_bench.protocol import (
     UserRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -101,12 +101,9 @@ class OCIGenAIUser(BaseUser):
             return metrics_response
 
     @task
+    @rate_limited
     def chat(self):
         """Send a chat completion request using OCI GenAI Service format."""
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
-
         user_request = self.sample()
 
         if not isinstance(user_request, UserChatRequest):

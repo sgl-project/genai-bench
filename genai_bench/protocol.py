@@ -1,8 +1,15 @@
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, conint
 
 LiveMetricsData = Dict[str, List[float] | Dict[str, float]]
+
+
+class IterationType(Enum):
+    BATCH_SIZE = "batch_size"
+    REQUEST_RATE = "request_rate"
+    NUM_CONCURRENCY = "num_concurrency"
 
 
 class UserRequest(BaseModel):

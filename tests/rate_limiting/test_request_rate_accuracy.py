@@ -29,7 +29,7 @@ from genai_bench.cli.cli import benchmark
 from genai_bench.cli.utils import get_run_params
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
 from genai_bench.scenarios.base import Scenario
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 # ============================================================================
 # Mock User Class for Local Mode (CLI-based tests)
@@ -47,11 +47,9 @@ class MockRateTestUser(BaseUser):
     _timestamps_lock = threading.Lock()
 
     @task
+    @rate_limited
     def chat(self):
         """Record timestamp when we would send a request."""
-        if not self.acquire_rate_limit_token():
-            return
-
         timestamp = time.monotonic()
 
         with MockRateTestUser._timestamps_lock:
@@ -89,10 +87,8 @@ class MockDistributedUser(BaseUser):
     _timestamps_lock = threading.Lock()
 
     @task
+    @rate_limited
     def mock_request(self):
-        if not self.acquire_rate_limit_token():
-            return
-
         timestamp = time.monotonic()
 
         if hasattr(self.environment, "runner") and self.environment.runner:

@@ -19,7 +19,7 @@ from genai_bench.protocol import (
     UserImageChatRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -49,11 +49,8 @@ class OpenAIUser(BaseUser):
         super().on_start()
 
     @task
+    @rate_limited
     def chat(self):
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
-
         endpoint = "/v1/chat/completions"
         user_request = self.sample()
 
@@ -144,11 +141,8 @@ class OpenAIUser(BaseUser):
         return messages
 
     @task
+    @rate_limited
     def embeddings(self):
-        # Acquire rate limit token before making request
-        if not self.acquire_rate_limit_token():
-            return
-
         endpoint = "/v1/embeddings"
 
         user_request = self.sample()
