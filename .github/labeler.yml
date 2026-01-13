@@ -1,5 +1,75 @@
 # Automatic labeler configuration for genai-bench
-# This file defines which labels should be applied to PRs based on changed files
+# Supports both Python and Rust implementations
+
+# =============================================================================
+# Rust labels
+# =============================================================================
+
+rust:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'src/**'
+      - 'core/**'
+      - 'vendors/**'
+      - 'auth/**'
+      - 'storage/**'
+      - 'samplers/**'
+      - 'ui/**'
+      - 'report/**'
+      - 'tests/**/*.rs'
+      - 'benches/**'
+      - 'rustfmt.toml'
+      - 'clippy.toml'
+      - '.cargo/**'
+
+rust-core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'core/**'
+      - 'src/**'
+
+rust-vendors:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vendors/**'
+
+rust-auth:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'auth/**'
+
+rust-storage:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'storage/**'
+
+rust-ui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'ui/**'
+
+rust-report:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'report/**'
+
+rust-samplers:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'samplers/**'
+
+# =============================================================================
+# Python labels
+# =============================================================================
+
+python:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'genai_bench/**'
+      - 'tests/**/*.py'
+      - 'pyproject.toml'
 
 core:
   - changed-files:
@@ -47,6 +117,10 @@ ui:
       - 'genai_bench/ui/**'
       - 'tests/ui/**'
 
+# =============================================================================
+# Cross-cutting labels
+# =============================================================================
+
 infrastructure:
   - changed-files:
     - any-glob-to-any-file:
@@ -65,3 +139,23 @@ documentation:
       - 'docs/**'
       - '*.md'
       - 'examples/**'
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.github/dependabot.yml'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'pyproject.toml'
+      - '.github/dependabot.yml'
+
+benchmarks:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'benches/**'
+      - '.github/workflows/bench.yml'
