@@ -1,0 +1,134 @@
+[workspace]
+resolver = "2"
+members = [
+    ".",           # Main binary (genai-bench)
+    "core",        # genai-bench-core
+    "vendors",     # genai-bench-vendors
+    "auth",        # genai-bench-auth
+    "storage",     # genai-bench-storage
+    "samplers",    # genai-bench-samplers
+    "ui",          # genai-bench-ui
+    "report",      # genai-bench-report
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/sgl-project/genai-bench"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# HTTP
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# TUI
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random
+rand = "0.8"
+rand_distr = "0.4"
+
+# Metrics
+hdrhistogram = "7.5"
+
+# Rate limiting
+governor = "0.6"
+
+# Tokenization
+tokenizers = "0.21"
+
+# Cloud SDKs (optional features)
+aws-sdk-s3 = "1.0"
+aws-sdk-bedrockruntime = "1.0"
+aws-config = "1.0"
+azure_identity = "0.21"
+azure_storage_blobs = "0.21"
+google-cloud-storage = "0.22"
+
+# Excel report
+rust_xlsxwriter = "0.79"
+
+# Charts and plots
+plotters = "0.3"
+
+# Testing
+tokio-test = "0.4"
+wiremock = "0.6"
+
+# Internal crates
+genai-bench-core = { path = "core" }
+genai-bench-vendors = { path = "vendors" }
+genai-bench-auth = { path = "auth" }
+genai-bench-storage = { path = "storage" }
+genai-bench-samplers = { path = "samplers" }
+genai-bench-ui = { path = "ui" }
+genai-bench-report = { path = "report" }
+
+[package]
+name = "genai-bench"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "High-performance GenAI benchmarking tool"
+keywords = ["genai", "llm", "benchmark", "performance", "testing"]
+categories = ["command-line-utilities", "development-tools::testing"]
+
+[[bin]]
+name = "genai-bench"
+path = "src/main.rs"
+
+[dependencies]
+genai-bench-core.workspace = true
+genai-bench-vendors.workspace = true
+genai-bench-auth.workspace = true
+genai-bench-storage.workspace = true
+genai-bench-samplers.workspace = true
+genai-bench-ui.workspace = true
+genai-bench-report.workspace = true
+
+tokio.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
+wiremock.workspace = true
+
+[features]
+default = []
+aws = ["genai-bench-vendors/aws", "genai-bench-auth/aws", "genai-bench-storage/aws"]
+azure = ["genai-bench-vendors/azure", "genai-bench-auth/azure", "genai-bench-storage/azure"]
+gcp = ["genai-bench-vendors/gcp", "genai-bench-auth/gcp", "genai-bench-storage/gcp"]
+oci = ["genai-bench-vendors/oci", "genai-bench-auth/oci", "genai-bench-storage/oci"]
+all-vendors = ["aws", "azure", "gcp", "oci"]

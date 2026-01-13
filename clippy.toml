@@ -1,0 +1,10 @@
+# Clippy configuration for genai-bench
+
+# Complexity thresholds
+cognitive-complexity-threshold = 25
+too-many-arguments-threshold = 7
+type-complexity-threshold = 250
+
+# Allow some common patterns
+allow-print-in-tests = true
+allow-unwrap-in-tests = true

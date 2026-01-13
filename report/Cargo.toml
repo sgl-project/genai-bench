@@ -1,0 +1,21 @@
+[package]
+name = "genai-bench-report"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Report generation for genai-bench"
+
+[dependencies]
+genai-bench-core.workspace = true
+
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+rust_xlsxwriter.workspace = true
+plotters.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true

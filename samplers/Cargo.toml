@@ -1,0 +1,21 @@
+[package]
+name = "genai-bench-samplers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Request samplers and data generators for genai-bench"
+
+[dependencies]
+genai-bench-core.workspace = true
+
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+rand.workspace = true
+rand_distr.workspace = true
+tokenizers.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true

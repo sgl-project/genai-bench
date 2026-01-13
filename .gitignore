@@ -55,5 +55,6 @@ site/
 # Test files
 coverage.xml
 
-# Rust files (tmp)
-rust/**
+# Rust
+target/
+Cargo.lock

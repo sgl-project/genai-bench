@@ -1,0 +1,33 @@
+[package]
+name = "genai-bench-vendors"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Vendor client implementations for genai-bench"
+
+[dependencies]
+genai-bench-core.workspace = true
+genai-bench-auth.workspace = true
+
+tokio.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+
+# Optional cloud SDKs
+aws-sdk-bedrockruntime = { workspace = true, optional = true }
+aws-config = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio-test.workspace = true
+wiremock.workspace = true
+
+[features]
+default = []
+aws = ["dep:aws-sdk-bedrockruntime", "dep:aws-config"]
+azure = []
+gcp = []
+oci = []

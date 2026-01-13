@@ -1,0 +1,27 @@
+# Cargo configuration for genai-bench
+
+[build]
+# Use all available CPU cores for compilation
+jobs = -1
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=native"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "target-cpu=native"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "target-cpu=native"]
+
+[alias]
+# Convenient aliases
+c = "check"
+t = "test"
+b = "build"
+r = "run"
+lint = "clippy --all-targets --all-features -- -D warnings"
+fmt-check = "fmt --all -- --check"
+
+[env]
+# Default log level for development
+RUST_LOG = "info"

@@ -1,0 +1,29 @@
+[package]
+name = "genai-bench-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Authentication providers for genai-bench"
+
+[dependencies]
+tokio.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+
+# Optional cloud SDKs
+aws-config = { workspace = true, optional = true }
+azure_identity = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio-test.workspace = true
+
+[features]
+default = []
+aws = ["dep:aws-config"]
+azure = ["dep:azure_identity"]
+gcp = []
+oci = []
