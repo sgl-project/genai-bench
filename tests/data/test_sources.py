@@ -102,7 +102,7 @@ def test_huggingface_dataset_source_local_path_not_exists(tmp_path):
     )
     source = HuggingFaceDatasetSource(config)
 
-    with pytest.raises(ValueError, match="Dataset path not found"):
+    with pytest.raises(ValueError, match="Repo id must be in the form"):
         source.load()
 
 
@@ -118,7 +118,7 @@ def test_huggingface_dataset_source_local_path_is_file(tmp_path):
     )
     source = HuggingFaceDatasetSource(config)
 
-    with pytest.raises(ValueError, match="Dataset path not found"):
+    with pytest.raises(ValueError, match="Repo id must be in the form"):
         source.load()
 
 
