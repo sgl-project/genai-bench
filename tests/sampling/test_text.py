@@ -270,7 +270,9 @@ class TestTextSampler(unittest.TestCase):
             data=self.test_data,
         )
         scenario = ImageModality(
-            num_input_dimension_width=512, num_input_dimension_height=512, num_input_images=1
+            num_input_dimension_width=512,
+            num_input_dimension_height=512,
+            num_input_images=1,
         )
 
         request = image_sampler.sample(scenario)

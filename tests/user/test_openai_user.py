@@ -895,9 +895,7 @@ def test_image_generation_error_handling(mock_openai_user):
 
     # Mock the OpenAI client to raise an exception
     mock_openai_user.openai_client = MagicMock()
-    mock_openai_user.openai_client.images.generate.side_effect = Exception(
-        "API error"
-    )
+    mock_openai_user.openai_client.images.generate.side_effect = Exception("API error")
 
     result = mock_openai_user.image_generation()
 
