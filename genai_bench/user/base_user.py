@@ -1,6 +1,7 @@
 from locust import HttpUser
 
 import time
+from functools import wraps
 from typing import Dict, Optional
 
 from genai_bench.logging import init_logger
@@ -8,6 +9,18 @@ from genai_bench.metrics.request_metrics_collector import RequestMetricsCollecto
 from genai_bench.protocol import UserRequest, UserResponse
 
 logger = init_logger(__name__)
+
+
+def rate_limited(func):
+    """Decorator to automatically acquire rate limit token before task execution."""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.acquire_rate_limit_token():
+            return
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class BaseUser(HttpUser):

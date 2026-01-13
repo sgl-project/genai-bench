@@ -65,15 +65,15 @@ class DistributedRunner:
        - Worker processes: Execute actual API requests and send metrics to master
        - Local mode: Single process handles both execution and aggregation
 
-       2. Message Flow:
-           - Master → Workers:
-               * "update_scenario": Updates test scenario configuration
-               * "update_batch_size": Updates batch size for requests
-               * "update_rate_limiter": Updates rate limiter with per-worker rate
-           - Workers → Master:
-               * "request_metrics": Sends metrics from each request for aggregation
-               * "worker_log": Sends worker logs to master
-               * "rate_limiter_stopped": Confirmation that rate limiter has been stopped
+    2. Message Flow:
+       - Master → Workers:
+           * "update_scenario": Updates test scenario configuration
+           * "update_batch_size": Updates batch size for requests
+           * "update_rate_limiter": Updates rate limiter with per-worker rate
+       - Workers → Master:
+           * "request_metrics": Sends metrics from each request for aggregation
+           * "worker_log": Sends worker logs to master
+           * "rate_limiter_stopped": Confirmation that rate limiter has been stopped
 
     3. Execution Flow:
        - Master process:

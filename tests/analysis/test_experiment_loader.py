@@ -481,32 +481,6 @@ class TestRequestRateInExperimentLoader:
 class TestRequestRateFormulas:
     """Test calculations and formulas related to request_rate."""
 
-    def test_requests_per_second_matches_request_rate(self):
-        """Test that requests_per_second in metrics matches the target request_rate."""
-        metrics = AggregatedMetrics(
-            scenario="test_scenario",
-            num_concurrency=10,
-            batch_size=1,
-            request_rate=20,
-            iteration_type="request_rate",
-            run_duration=60.0,
-            mean_output_throughput_tokens_per_s=1000.0,
-            mean_input_throughput_tokens_per_s=1000.0,
-            mean_total_tokens_throughput_tokens_per_s=2000.0,
-            mean_total_chars_per_hour=10000000.0,
-            requests_per_second=20.0,
-            error_codes_frequency={},
-            error_rate=0.0,
-            num_error_requests=0,
-            num_completed_requests=1200,
-            num_requests=1200,
-            stats=create_test_metric_stats(),
-        )
-
-        # For request_rate runs, the actual RPS should be close to target
-        # (within some tolerance due to rate limiter precision)
-        assert abs(metrics.requests_per_second - metrics.request_rate) < 1.0
-
     def test_throughput_calculated_correctly_for_request_rate(self):
         """Test that throughput calculations work for request_rate runs."""
         # Throughput = tokens/s should be independent of whether we used

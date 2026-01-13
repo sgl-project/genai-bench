@@ -189,13 +189,34 @@ def validate_iteration_params(ctx, param, value) -> str:
     """
     Validate and determine iteration parameters based on task type.
 
+    - Step 1: Validate flags
+      - If `--max-concurrency` is set without `--request-rate`: raise error.
+      - If `--iteration-type request_rate` is chosen without `--request-rate`:
+        raise error.
+
+    - Step 2: Decide which iteration type to run (priority order)
+      - If task is text-to-embeddings or text-to-rerank:
+        - Force batch_size iteration.
+        - Use provided `--batch-size` (or defaults).
+        - Set `num_concurrency = [1]` (batching happens inside the request).
+      - Else if `--request-rate` is provided:
+        - Use request_rate iteration.
+        - Validate all rates are positive.
+        - Force `num_concurrency = [1]` as a placeholder; actual concurrency is derived
+          later in `get_run_params(...)`.
+        - `--max-concurrency` (when provided) caps that derived concurrency
+          (defaults to 5000).
+      - Else:
+        - Use num_concurrency iteration (default path).
+        - Use provided `--num-concurrency` (or defaults).
+
     Args:
-        ctx: Click context
-        param: Click parameter
-        value: Current parameter value (iteration_type)
+        ctx: Click context containing all CLI parameters
+        param: Click parameter (iteration_type)
+        value: Current parameter value (iteration_type string)
 
     Returns:
-        str: The validated iteration_type
+        str: The validated and potentially modified iteration_type
     """
     task = ctx.params.get("task")
     num_concurrency = ctx.params.get("num_concurrency", [])

@@ -2,7 +2,7 @@ from locust.env import Environment
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import gevent
 
@@ -112,7 +112,7 @@ def get_experiment_path(
 
 def get_run_params(
     iteration_type: str,
-    iteration_value: Union[int, float],
+    iteration_value: int,
     max_concurrency: Optional[int] = None,
 ) -> Tuple[str, int, int]:
     """

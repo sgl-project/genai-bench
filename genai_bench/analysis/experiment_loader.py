@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Set, Tuple
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
-from genai_bench.protocol import ExperimentMetadata
+from genai_bench.protocol import ExperimentMetadata, IterationType
 
 logger = init_logger(__name__)
 
@@ -221,12 +221,10 @@ def load_run_data(
 
         # Get the iteration type and value
         iteration_type = aggregated_metrics.iteration_type
-        if iteration_type == "batch_size":
-            iteration_value: Optional[int] = aggregated_metrics.batch_size
-        elif iteration_type == "request_rate":
-            iteration_value = aggregated_metrics.request_rate
-        else:
-            iteration_value = aggregated_metrics.num_concurrency
+        iteration_type_enum = IterationType(iteration_type)
+        iteration_value: Optional[int] = getattr(
+            aggregated_metrics, iteration_type_enum.value
+        )
 
         # Skip file if iteration_value is None
         # This can happen since request_rate is optional in AggregatedMetrics
