@@ -83,7 +83,8 @@ def test_chat_text_request(mock_post, mock_together_user):
     response_mock.status_code = 200
     response_mock.iter_lines.return_value = [
         b'data: {"choices":[{"delta":{"content":"Hi"}}],"usage":null}',
-        b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":2,"total_tokens":7}}',
+        b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],'
+        b'"usage":{"prompt_tokens":5,"completion_tokens":2,"total_tokens":7}}',
         b"data: [DONE]",
     ]
     mock_post.return_value = response_mock
@@ -117,7 +118,8 @@ def test_chat_image_request(mock_post, mock_together_user):
     response_mock.status_code = 200
     response_mock.iter_lines.return_value = [
         b'data: {"choices":[{"delta":{"content":"A cat"}}],"usage":null}',
-        b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":3,"total_tokens":13}}',
+        b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],'
+        b'"usage":{"prompt_tokens":10,"completion_tokens":3,"total_tokens":13}}',
         b"data: [DONE]",
     ]
     mock_post.return_value = response_mock
