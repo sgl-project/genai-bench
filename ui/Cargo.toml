@@ -1,0 +1,19 @@
+[package]
+name = "genai-bench-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Terminal UI for genai-bench"
+
+[dependencies]
+genai-bench-core.workspace = true
+
+tokio.workspace = true
+ratatui.workspace = true
+crossterm.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
