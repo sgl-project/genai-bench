@@ -6,20 +6,29 @@
 //! - Protocol data structures (requests, responses)
 //! - Core traits (VendorClient, Sampler)
 //! - Metrics collection and aggregation
+//! - Orchestration and worker management
 //! - Error handling
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 
+pub mod channel;
+pub mod config;
 pub mod error;
 pub mod metrics;
+pub mod orchestrator;
 pub mod request;
 pub mod response;
 pub mod traits;
 pub mod worker;
 
+pub use channel::ChannelConfig;
+pub use config::{ConfigError, ExperimentConfig};
 pub use error::*;
 pub use metrics::*;
+pub use orchestrator::{
+    aggregate_worker_stats, AggregatedStats, Orchestrator, OrchestratorBuilder,
+};
 pub use request::*;
 pub use response::*;
 pub use traits::*;
