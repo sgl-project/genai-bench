@@ -248,7 +248,7 @@ jobs:
       - name: Install MSRV toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.83"  # Must match rust-version in Cargo.toml
+          toolchain: "1.88"  # Must match rust-version in Cargo.toml
 
       - name: Cache cargo registry
         uses: Swatinem/rust-cache@v2
