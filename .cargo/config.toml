@@ -4,14 +4,8 @@
 # Use all available CPU cores for compilation
 jobs = -1
 
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "target-cpu=native"]
-
-[target.x86_64-apple-darwin]
-rustflags = ["-C", "target-cpu=native"]
-
-[target.aarch64-apple-darwin]
-rustflags = ["-C", "target-cpu=native"]
+# Note: Avoid target-cpu=native here as it causes SIGILL on CI runners
+# with different CPU features. Use RUSTFLAGS env var locally if needed.
 
 [alias]
 # Convenient aliases
