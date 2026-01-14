@@ -4,6 +4,7 @@
 //! including:
 //!
 //! - Protocol data structures (requests, responses)
+//! - Core traits (VendorClient, Sampler)
 //! - Metrics collection and aggregation
 //! - Error handling
 
@@ -14,11 +15,15 @@ pub mod error;
 pub mod metrics;
 pub mod request;
 pub mod response;
+pub mod traits;
+pub mod worker;
 
 pub use error::*;
 pub use metrics::*;
 pub use request::*;
 pub use response::*;
+pub use traits::*;
+pub use worker::{RequestRateLimiter, Worker, WorkerBuilder, WorkerStats};
 
 #[cfg(test)]
 mod integration_tests {
