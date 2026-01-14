@@ -210,7 +210,7 @@ pub enum SamplerError {
 // ============================================================================
 
 /// Experiment stop condition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum StopCondition {
     /// Run exactly N requests total (divided among workers)
     RequestCount(usize),
