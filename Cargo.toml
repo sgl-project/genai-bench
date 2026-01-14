@@ -21,6 +21,8 @@ rust-version = "1.88"
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
 
 # HTTP
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "native-tls"] }

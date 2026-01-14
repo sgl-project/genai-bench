@@ -148,6 +148,22 @@ impl BenchError {
         Self::new(BenchErrorKind::Internal, message)
     }
 
+    /// Create a shutdown error
+    pub fn shutdown() -> Self {
+        Self::new(
+            BenchErrorKind::Shutdown,
+            "Operation cancelled due to shutdown",
+        )
+    }
+
+    /// Create a missing config error
+    pub fn missing_config(field: &'static str) -> Self {
+        Self::new(
+            BenchErrorKind::MissingConfig(field),
+            format!("Missing required configuration: {}", field),
+        )
+    }
+
     /// Check if this error is retryable
     pub fn is_retryable(&self) -> bool {
         match &self.kind {
@@ -176,6 +192,8 @@ impl std::error::Error for BenchError {
 pub enum BenchErrorKind {
     /// Configuration error
     Configuration,
+    /// Missing required configuration field
+    MissingConfig(&'static str),
     /// Vendor/API error
     Vendor(ErrorKind),
     /// I/O error
@@ -188,6 +206,8 @@ pub enum BenchErrorKind {
     Orchestration,
     /// Metrics calculation error
     Metrics,
+    /// Shutdown signal received
+    Shutdown,
     /// Internal error
     Internal,
 }
@@ -196,12 +216,14 @@ impl fmt::Display for BenchErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BenchErrorKind::Configuration => write!(f, "CONFIG"),
+            BenchErrorKind::MissingConfig(field) => write!(f, "MISSING:{}", field),
             BenchErrorKind::Vendor(kind) => write!(f, "VENDOR:{}", kind),
             BenchErrorKind::Io => write!(f, "IO"),
             BenchErrorKind::Serialization => write!(f, "SERDE"),
             BenchErrorKind::Sampler => write!(f, "SAMPLER"),
             BenchErrorKind::Orchestration => write!(f, "ORCHESTRATOR"),
             BenchErrorKind::Metrics => write!(f, "METRICS"),
+            BenchErrorKind::Shutdown => write!(f, "SHUTDOWN"),
             BenchErrorKind::Internal => write!(f, "INTERNAL"),
         }
     }
