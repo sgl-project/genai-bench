@@ -16,14 +16,14 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/sgl-project/genai-bench"
-rust-version = "1.75"
+rust-version = "1.88"
 
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "native-tls"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
