@@ -4,7 +4,8 @@ use crate::request::{RequestId, Task};
 use crate::response::ResponseStatus;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use tokio::sync::mpsc;
 
 /// Aggregated metrics for an experiment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -505,8 +506,24 @@ impl UIUpdate {
 // Metrics Aggregator
 // ============================================================================
 
-use std::time::Instant;
-use tokio::sync::mpsc;
+/// Per-scenario aggregation state
+struct ScenarioState {
+    counters: MetricsCounters,
+    ttft_hist: LatencyHistogram,
+    tpot_hist: LatencyHistogram,
+    e2e_hist: LatencyHistogram,
+}
+
+impl ScenarioState {
+    fn new() -> Self {
+        Self {
+            counters: MetricsCounters::default(),
+            ttft_hist: LatencyHistogram::new(),
+            tpot_hist: LatencyHistogram::new(),
+            e2e_hist: LatencyHistogram::new(),
+        }
+    }
+}
 
 /// Aggregates metrics from workers and produces final experiment metrics
 pub struct MetricsAggregator {
@@ -520,6 +537,8 @@ pub struct MetricsAggregator {
     e2e_hist: LatencyHistogram,
     /// Running counters
     counters: MetricsCounters,
+    /// Per-scenario aggregation state
+    scenario_states: HashMap<String, ScenarioState>,
     /// Request records (for final report)
     records: Vec<RequestRecord>,
     /// Time-series buffer
@@ -528,8 +547,10 @@ pub struct MetricsAggregator {
     last_ui_update: Instant,
     /// Last timeseries recording time
     last_timeseries: Instant,
-    /// Start time
+    /// Start time (monotonic)
     start_time: Instant,
+    /// Start time (wall clock)
+    start_time_utc: chrono::DateTime<chrono::Utc>,
     /// Target request count (for progress calculation)
     target_requests: Option<usize>,
 }
@@ -545,12 +566,23 @@ impl MetricsAggregator {
             tpot_hist: LatencyHistogram::new(),
             e2e_hist: LatencyHistogram::new(),
             counters: MetricsCounters::default(),
+            scenario_states: HashMap::new(),
             records: Vec::new(),
             timeseries: Vec::new(),
             last_ui_update: now,
             last_timeseries: now,
             start_time: now,
+            start_time_utc: chrono::Utc::now(),
             target_requests: None,
+        }
+    }
+
+    /// Calculate rate multiplier from elapsed seconds
+    fn rate_multiplier(elapsed_secs: f64) -> f64 {
+        if elapsed_secs > 0.0 {
+            1.0 / elapsed_secs
+        } else {
+            0.0
         }
     }
 
@@ -593,26 +625,50 @@ impl MetricsAggregator {
 
     /// Process a single request record
     fn process_record(&mut self, record: RequestRecord) {
+        // Update global counters
         self.counters.total_requests += 1;
+
+        // Get or create scenario state
+        let scenario_state = self
+            .scenario_states
+            .entry(record.scenario.clone())
+            .or_insert_with(ScenarioState::new);
+        scenario_state.counters.total_requests += 1;
 
         match &record.status {
             ResponseStatus::Success => {
+                // Update global counters
                 self.counters.successful_requests += 1;
                 self.counters.total_input_tokens += record.input_tokens;
                 self.counters.total_output_tokens += record.output_tokens;
 
-                // Record latencies in histograms
+                // Update scenario counters
+                scenario_state.counters.successful_requests += 1;
+                scenario_state.counters.total_input_tokens += record.input_tokens;
+                scenario_state.counters.total_output_tokens += record.output_tokens;
+
+                // Record latencies in global histograms
                 if let Some(ttft) = record.ttft_ms {
                     self.ttft_hist.record_ms(ttft);
+                    scenario_state.ttft_hist.record_ms(ttft);
                 }
                 if let Some(tpot) = record.tpot_ms {
                     self.tpot_hist.record_ms(tpot);
+                    scenario_state.tpot_hist.record_ms(tpot);
                 }
                 self.e2e_hist.record_ms(record.e2e_ms);
+                scenario_state.e2e_hist.record_ms(record.e2e_ms);
             }
             ResponseStatus::Error(kind) => {
                 self.counters.failed_requests += 1;
                 *self.counters.error_counts.entry(*kind).or_insert(0) += 1;
+
+                scenario_state.counters.failed_requests += 1;
+                *scenario_state
+                    .counters
+                    .error_counts
+                    .entry(*kind)
+                    .or_insert(0) += 1;
             }
         }
 
@@ -622,20 +678,14 @@ impl MetricsAggregator {
 
     /// Record a timeseries data point
     fn record_timeseries_point(&mut self) {
-        let elapsed = self.start_time.elapsed();
-        let elapsed_secs = elapsed.as_secs_f64();
-
-        let rate_multiplier = if elapsed_secs > 0.0 {
-            1.0 / elapsed_secs
-        } else {
-            0.0
-        };
+        let elapsed_secs = self.start_time.elapsed().as_secs_f64();
+        let rate = Self::rate_multiplier(elapsed_secs);
 
         let point = TimeseriesPoint {
             timestamp: chrono::Utc::now(),
             requests_completed: self.counters.total_requests,
-            requests_per_second: self.counters.total_requests as f64 * rate_multiplier,
-            tokens_per_second: self.counters.total_output_tokens as f64 * rate_multiplier,
+            requests_per_second: self.counters.total_requests as f64 * rate,
+            tokens_per_second: self.counters.total_output_tokens as f64 * rate,
             avg_ttft_ms: self.ttft_hist.percentiles().mean,
             avg_tpot_ms: self.tpot_hist.percentiles().mean,
             error_count: self.counters.failed_requests,
@@ -654,19 +704,13 @@ impl MetricsAggregator {
 
         let elapsed = self.start_time.elapsed();
         let elapsed_secs = elapsed.as_secs_f64();
-
-        let rate_multiplier = if elapsed_secs > 0.0 {
-            1.0 / elapsed_secs
-        } else {
-            0.0
-        };
-
+        let rate = Self::rate_multiplier(elapsed_secs);
         let estimated_remaining = self.estimate_remaining_time(elapsed);
 
         let update = UIUpdate {
             requests_completed: self.counters.total_requests,
-            requests_per_second: self.counters.total_requests as f64 * rate_multiplier,
-            tokens_per_second: self.counters.total_output_tokens as f64 * rate_multiplier,
+            requests_per_second: self.counters.total_requests as f64 * rate,
+            tokens_per_second: self.counters.total_output_tokens as f64 * rate,
             ttft_p50: self.ttft_hist.percentiles().p50,
             tpot_p50: self.tpot_hist.percentiles().p50,
             error_count: self.counters.failed_requests,
@@ -704,6 +748,25 @@ impl MetricsAggregator {
     /// Build the final experiment metrics
     fn build_final_metrics(self) -> ExperimentMetrics {
         let elapsed = self.start_time.elapsed();
+        let duration_secs = elapsed.as_secs_f64();
+        let rate = Self::rate_multiplier(duration_secs);
+
+        // Build summary from pre-aggregated counters and histograms
+        let summary = MetricsSummary {
+            total_requests: self.counters.total_requests,
+            successful_requests: self.counters.successful_requests,
+            failed_requests: self.counters.failed_requests,
+            error_rate: self.counters.error_rate(),
+            total_input_tokens: self.counters.total_input_tokens,
+            total_output_tokens: self.counters.total_output_tokens,
+            requests_per_second: self.counters.total_requests as f64 * rate,
+            input_tokens_per_second: self.counters.total_input_tokens as f64 * rate,
+            output_tokens_per_second: self.counters.total_output_tokens as f64 * rate,
+            ttft: self.ttft_hist.percentiles(),
+            tpot: self.tpot_hist.percentiles(),
+            e2e: self.e2e_hist.percentiles(),
+            total_duration_secs: duration_secs,
+        };
 
         ExperimentMetrics {
             metadata: ExperimentMetadata {
@@ -711,58 +774,34 @@ impl MetricsAggregator {
                 vendor: String::new(),        // Set by caller
                 model: String::new(),         // Set by caller
                 task: crate::request::Task::TextToText,
-                start_time: chrono::Utc::now()
-                    - chrono::Duration::from_std(elapsed).unwrap_or_default(),
+                start_time: self.start_time_utc,
                 end_time: Some(chrono::Utc::now()),
                 config: ExperimentConfig::default(),
             },
-            summary: MetricsSummary::from_records(&self.records, elapsed),
+            summary,
             scenarios: self.build_scenario_metrics(),
             timeseries: self.timeseries,
             requests: self.records,
         }
     }
 
-    /// Build per-scenario metrics
+    /// Build per-scenario metrics from pre-aggregated state
     fn build_scenario_metrics(&self) -> HashMap<String, ScenarioMetrics> {
-        let mut scenarios: HashMap<String, Vec<&RequestRecord>> = HashMap::new();
-
-        // Group records by scenario
-        for record in &self.records {
-            scenarios
-                .entry(record.scenario.clone())
-                .or_default()
-                .push(record);
-        }
-
-        // Build metrics for each scenario
-        scenarios
-            .into_iter()
-            .map(|(name, records)| {
-                let request_count = records.len();
-                let success_count = records.iter().filter(|r| r.status.is_success()).count();
-                let error_count = request_count - success_count;
-
-                let input_tokens: usize = records.iter().map(|r| r.input_tokens).sum();
-                let output_tokens: usize = records.iter().map(|r| r.output_tokens).sum();
-
-                let ttft_values: Vec<f64> = records.iter().filter_map(|r| r.ttft_ms).collect();
-                let tpot_values: Vec<f64> = records.iter().filter_map(|r| r.tpot_ms).collect();
-                let e2e_values: Vec<f64> = records.iter().map(|r| r.e2e_ms).collect();
-
+        self.scenario_states
+            .iter()
+            .map(|(name, state)| {
                 let metrics = ScenarioMetrics {
                     scenario_name: name.clone(),
-                    request_count,
-                    success_count,
-                    error_count,
-                    input_tokens,
-                    output_tokens,
-                    ttft: LatencyPercentiles::from_values(&ttft_values),
-                    tpot: LatencyPercentiles::from_values(&tpot_values),
-                    e2e: LatencyPercentiles::from_values(&e2e_values),
+                    request_count: state.counters.total_requests,
+                    success_count: state.counters.successful_requests,
+                    error_count: state.counters.failed_requests,
+                    input_tokens: state.counters.total_input_tokens,
+                    output_tokens: state.counters.total_output_tokens,
+                    ttft: state.ttft_hist.percentiles(),
+                    tpot: state.tpot_hist.percentiles(),
+                    e2e: state.e2e_hist.percentiles(),
                 };
-
-                (name, metrics)
+                (name.clone(), metrics)
             })
             .collect()
     }
@@ -792,14 +831,11 @@ pub fn calculate_tpot(token_timings: &[Duration]) -> Option<Duration> {
     }
 
     // Calculate inter-token intervals
+    // Note: intervals is guaranteed non-empty since token_timings.len() >= 2
     let intervals: Vec<Duration> = token_timings
         .windows(2)
         .map(|w| w[1].saturating_sub(w[0]))
         .collect();
-
-    if intervals.is_empty() {
-        return None;
-    }
 
     // Calculate mean interval
     let total: Duration = intervals.iter().sum();
@@ -813,14 +849,11 @@ pub fn calculate_tpot_ms(token_timings_ms: &[f64]) -> Option<f64> {
     }
 
     // Calculate inter-token intervals
+    // Note: intervals is guaranteed non-empty since token_timings_ms.len() >= 2
     let intervals: Vec<f64> = token_timings_ms
         .windows(2)
         .map(|w| (w[1] - w[0]).max(0.0))
         .collect();
-
-    if intervals.is_empty() {
-        return None;
-    }
 
     // Calculate mean interval
     let sum: f64 = intervals.iter().sum();
