@@ -38,7 +38,7 @@ from genai_bench.protocol import ExperimentMetadata
 from genai_bench.sampling.base import Sampler
 from genai_bench.storage.factory import StorageFactory
 from genai_bench.ui.dashboard import create_dashboard
-from genai_bench.utils import calculate_sonnet_char_token_ratio, sanitize_string
+from genai_bench.utils import sanitize_string
 from genai_bench.version import __version__ as GENAI_BENCH_VERSION
 
 
@@ -272,9 +272,6 @@ def benchmark(
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
 
-    sonnet_character_token_ratio = calculate_sonnet_char_token_ratio(tokenizer)
-    logger.info(f"The average character token ratio is: {sonnet_character_token_ratio}")
-
     # Handle dataset configuration
     if dataset_config:
         # Load from config file
@@ -347,7 +344,6 @@ def benchmark(
         experiment_folder_name=experiment_folder_abs_path,
         additional_request_params=additional_request_params,
         dataset_path=str(dataset_path),
-        character_token_ratio=sonnet_character_token_ratio,
         metrics_time_unit=metrics_time_unit,
     )
     experiment_metadata_file = Path(
@@ -445,7 +441,6 @@ def benchmark(
                     aggregated_metrics_collector.aggregate_metrics_data(
                         start_time,
                         end_time,
-                        sonnet_character_token_ratio,
                         warmup_ratio,
                         cooldown_ratio,
                     )

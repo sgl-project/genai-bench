@@ -150,10 +150,6 @@ class AggregatedMetrics(BaseModel):
         description="The mean of total tokens throughput across all requests "
         "in tokens/s",
     )
-    mean_total_chars_per_hour: float = Field(
-        0.0,
-        description="The mean of total chars throughput per hour",
-    )
     requests_per_second: float = Field(
         0.0, description="The average number of completed requests per second"
     )

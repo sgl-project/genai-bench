@@ -215,9 +215,3 @@ class ExperimentMetadata(BaseModel):
         description="Time unit for latency metrics display and export (s or ms).",
     )
     dataset_path: Optional[str] = None
-    character_token_ratio: Optional[float] = Field(
-        None,
-        description="The ratio of the total character count in the sonnet "
-        "dataset to the total token count, as determined by the model "
-        "tokenizer.",
-    )

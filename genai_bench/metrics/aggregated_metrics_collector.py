@@ -88,7 +88,13 @@ class AggregatedMetricsCollector:
         inference_speed = metrics.output_inference_speed
 
         # filter silently for short output latency
-        if metrics.output_latency is not None and metrics.output_latency < 0.001:
+        # Don't filter for non-streaming tasks where tpot=0 is intentional
+        # (e.g., embeddings, image generation set by _reset_output_metrics)
+        if (
+            metrics.output_latency is not None
+            and metrics.output_latency < 0.001
+            and metrics.tpot != 0
+        ):
             logger.warning(
                 f"Metric may have abnormal inference speed: "
                 f"{inference_speed} tokens/s. "
@@ -131,7 +137,6 @@ class AggregatedMetricsCollector:
         self,
         start_time: float,
         end_time: float,
-        dataset_character_to_token_ratio: float,
         warmup_ratio: Optional[float],
         cooldown_ratio: Optional[float],
     ):
@@ -141,9 +146,6 @@ class AggregatedMetricsCollector:
         Args:
             start_time (float): The start time of the aggregated metrics data.
             end_time (float): The end time of the aggregated metrics data.
-            dataset_character_to_token_ratio (float): The ratio of characters
-                to tokens. It is required to calculate character-level metric:
-                mean_total_chars_per_hour.
             warmup_ratio (Optional[float]): The portion of initial requests
                 to exclude from the aggregation as warmup.
             cooldown_ratio (Optional[float]): The portion of final requests
@@ -233,12 +235,6 @@ class AggregatedMetricsCollector:
 
         self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s = (
             total_tokens_sum / self.aggregated_metrics.run_duration
-        )
-
-        self.aggregated_metrics.mean_total_chars_per_hour = (
-            self.aggregated_metrics.mean_total_tokens_throughput_tokens_per_s
-            * dataset_character_to_token_ratio
-            * 3600
         )
 
         # Calculate error rate
