@@ -34,9 +34,6 @@ class RequestLevelMetrics(BaseModel):
     )
     error_code: Optional[int] = Field(None, description="Error code")
     error_message: Optional[str] = Field(None, description="Error message")
-    send_timestamp: Optional[float] = Field(
-        None, description="Timestamp when request was sent (for rate monitoring)"
-    )
 
     # Class-level dictionaries to map output metrics to output fields
     OUTPUT_METRICS_FIELDS: ClassVar[set[str]] = {
@@ -52,7 +49,6 @@ class RequestLevelMetrics(BaseModel):
     OPTIONAL_FIELDS: ClassVar[set[str]] = {
         "error_code",
         "error_message",
-        "send_timestamp",
     }
 
     @model_validator(mode="before")
@@ -118,7 +114,7 @@ class MetricStats(BaseModel):
         return {
             name: getattr(self, name).model_dump()
             for name in RequestLevelMetrics.model_fields
-            if name not in {"error_code", "error_message", "send_timestamp"}
+            if name not in {"error_code", "error_message"}
         }
 
     @classmethod
