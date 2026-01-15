@@ -47,6 +47,7 @@ class BaseFastUser(FastHttpUser):
         self,
         user_response: UserResponse,
         endpoint: str,
+        fire_event: bool = True,
     ):
         """
         Collects metrics based on the UserResponse.
@@ -55,31 +56,37 @@ class BaseFastUser(FastHttpUser):
             user_response (UserResponse): The response object containing the
                 request metrics.
             endpoint (str): The API endpoint for the request.
+            fire_event (bool): Whether to fire Locust request event.
+                Set to False when using FastHttpUser with catch_response=True,
+                as the event will be automatically fired by the context manager.
+                Default True for backward compatibility with other User classes.
         """
         request_metrics_collector = RequestMetricsCollector()
         if user_response.status_code == 200:
             request_metrics_collector.calculate_metrics(user_response)
-            self.environment.events.request.fire(
-                request_type="POST",
-                name=endpoint,
-                response_time=request_metrics_collector.metrics.e2e_latency,
-                response_length=request_metrics_collector.metrics.num_output_tokens,
-            )
+            if fire_event:
+                self.environment.events.request.fire(
+                    request_type="POST",
+                    name=endpoint,
+                    response_time=request_metrics_collector.metrics.e2e_latency,
+                    response_length=request_metrics_collector.metrics.num_output_tokens,
+                )
         else:
             # Handle error responses
             request_metrics_collector.metrics.error_code = user_response.status_code
             request_metrics_collector.metrics.error_message = (
                 user_response.error_message
             )
-            self.environment.events.request.fire(
-                request_type="POST",
-                name=endpoint,
-                response_time=0,
-                response_length=0,
-                exception=f"Request failed with "
-                f"status {user_response.status_code}, "
-                f"message: {user_response.error_message}",
-            )
+            if fire_event:
+                self.environment.events.request.fire(
+                    request_type="POST",
+                    name=endpoint,
+                    response_time=0,
+                    response_length=0,
+                    exception=f"Request failed with "
+                    f"status {user_response.status_code}, "
+                    f"message: {user_response.error_message}",
+                )
             logger.warning(
                 f"Received error response from server. Error code:"
                 f" {user_response.status_code},"

@@ -159,7 +159,21 @@ class FastOpenAIUser(BaseFastUser):
         response = None
 
         try:
+            # TTFT Measurement Timeline:
+            # T0: start_time - Request initiation timestamp
+            # T1: POST request sent over network
+            # T2: non_stream_post_end_time - HTTP response headers received
+            # T3: Iteration begins (for streaming requests)
+            # T4: time_at_first_token - First content chunk arrives (streaming only)
+            #
+            # For streaming requests (chat):
+            #   TTFT = time_at_first_token - start_time
+            #   (measured in parse_chat_response)
+            # For non-streaming requests (embeddings):
+            #   TTFT = non_stream_post_end_time - start_time
+            #   (end_time = TTFT)
             start_time = time.monotonic()
+
             # Use self.client.post instead of requests.post to
             # leverage FastHttpUser's connection pooling
             # Use data=json.dumps(payload) to ensure correct serialization
@@ -171,7 +185,13 @@ class FastOpenAIUser(BaseFastUser):
                 headers=self.headers,
                 # Required for FastHttpUser to handle response manually
                 catch_response=True,
+                name=endpoint,
             ) as response:
+                # Timestamp when HTTP response headers are received.
+                # For non-streaming requests: this is the end_time.
+                # For streaming requests: this is passed to parse_strategy
+                # but unused, as TTFT is measured when the first content
+                # chunk arrives during iteration.
                 non_stream_post_end_time = time.monotonic()
 
                 if response.status_code == 200:
@@ -181,11 +201,19 @@ class FastOpenAIUser(BaseFastUser):
                         num_prefill_tokens,
                         non_stream_post_end_time,
                     )
+                    # Check if stream contains errors (e.g., data.get("error"))
+                    if metrics_response.status_code == 200:
+                        response.success()
+                    else:
+                        response.failure(
+                            f"Stream error: {metrics_response.error_message}"
+                        )
                 else:
                     metrics_response = UserResponse(
                         status_code=response.status_code,
                         error_message=response.text,
                     )
+                    response.failure(f"HTTP {response.status_code}: {response.text}")
         except Exception as e:
             # FastHttpUser raises different exceptions,
             # catch generic Exception for simplicity
@@ -198,7 +226,8 @@ class FastOpenAIUser(BaseFastUser):
             # but explicit close doesn't hurt
             pass
 
-        self.collect_metrics(metrics_response, endpoint)
+        # FastHttpUser already emits Locust request events; suppress duplicate fire
+        self.collect_metrics(metrics_response, endpoint, fire_event=False)
         return metrics_response
 
     def parse_chat_response(
@@ -209,17 +238,31 @@ class FastOpenAIUser(BaseFastUser):
         _: float,
     ) -> UserResponse:
         """
-        Parses a streaming response.
+        Parses a streaming chat response.
+
+        Interface Design Note:
+            This method shares the same signature as parse_embedding_response()
+            to support the Strategy Pattern in send_request(). The 4th parameter
+            (non_stream_post_end_time) is intentionally unused here because:
+
+            - For streaming requests, TTFT must be measured when the first
+              content chunk arrives during iteration (see line ~332)
+            - The end_time is also measured after iteration completes
+            - non_stream_post_end_time is captured before iteration starts,
+              so it cannot represent either TTFT or end_time for streaming
+
+            This design allows send_request() to uniformly call all parse
+            strategies without needing to know their specific implementations.
 
         Args:
-            response (Response): The response object.
-            start_time (float): The time when the request was started.
+            response (Response): The streaming response object to iterate.
+            start_time (float): Request initiation timestamp (T0).
             num_prefill_tokens (int): The num of tokens in the prefill/prompt.
-            _ (float): Placeholder for an unused var, to keep parse_*_response
-                have the same interface.
+            _ (float): Unused. Kept for interface compatibility with
+                parse_embedding_response().
 
         Returns:
-            UserChatResponse: A response object with metrics and generated text.
+            UserChatResponse: Response with dynamically measured TTFT and end_time.
         """
         stream_chunk_prefix = "data: "
 
