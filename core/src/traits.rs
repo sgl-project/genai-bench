@@ -46,20 +46,54 @@ pub trait VendorClient: Send + Sync {
     fn validate(&self) -> Result<(), VendorError>;
 }
 
+/// Reason why a response finished generating
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FinishReason {
+    /// Natural end of generation (stop token)
+    Stop,
+    /// Maximum token limit reached
+    Length,
+    /// Content filtered by safety systems
+    ContentFilter,
+    /// Tool/function call requested
+    ToolCalls,
+}
+
+/// Token usage statistics from vendor response
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct Usage {
+    /// Number of tokens in the prompt
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_tokens: Option<usize>,
+    /// Number of tokens in the completion
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completion_tokens: Option<usize>,
+    /// Total tokens (prompt + completion)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_tokens: Option<usize>,
+}
+
 /// A chunk from a streaming response
 #[derive(Debug, Clone)]
 pub struct StreamChunk {
-    /// The text content of this chunk
-    pub content: String,
+    /// Timestamp when this chunk was received
+    pub timestamp: std::time::Instant,
 
-    /// Token count for this chunk (if available from API)
-    pub token_count: Option<usize>,
+    /// The text content of this chunk (None for metadata-only chunks)
+    pub content: Option<String>,
+
+    /// Token count for this chunk (0 if not available from API)
+    pub token_count: usize,
 
     /// Whether this is the final chunk
     pub is_final: bool,
 
-    /// Timestamp when this chunk was received
-    pub timestamp: std::time::Instant,
+    /// Reason for completion (only in final chunk)
+    pub finish_reason: Option<FinishReason>,
+
+    /// Usage statistics (typically only in final chunk)
+    pub usage: Option<Usage>,
 }
 
 /// Vendor-specific errors

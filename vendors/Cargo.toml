@@ -9,12 +9,26 @@ description = "Vendor client implementations for genai-bench"
 genai-bench-core.workspace = true
 genai-bench-auth.workspace = true
 
+# Async runtime
 tokio.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+
+# HTTP
 reqwest.workspace = true
+
+# Serialization
 serde.workspace = true
 serde_json.workspace = true
+humantime-serde = "1.1"
+
+# Error handling
 thiserror.workspace = true
+
+# Logging
 tracing.workspace = true
+
+# Time
 chrono.workspace = true
 
 # Optional cloud SDKs
