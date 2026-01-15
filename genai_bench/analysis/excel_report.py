@@ -408,7 +408,7 @@ def create_aggregated_metrics_sheet(
     filtered_keys = [
         key
         for key in RequestLevelMetrics.model_fields
-        if key not in {"error_code", "error_message", "send_timestamp"}
+        if key not in {"error_code", "error_message"}
     ]
 
     # Apply time unit labels to latency fields in stats headers
@@ -475,7 +475,7 @@ def create_single_request_metrics_sheet(
     headers = ["scenario", experiment_metadata.iteration_type]
     field_mapping = {}  # Map display headers to actual field names
     for field in RequestLevelMetrics.model_fields:
-        if field in {"error_code", "error_message", "send_timestamp"}:
+        if field in {"error_code", "error_message"}:
             continue
         if TimeUnitConverter.is_latency_field(field):
             # Add time unit to latency field headers
