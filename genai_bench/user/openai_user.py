@@ -9,16 +9,14 @@ from typing import Any, Callable, Dict, Optional
 
 import httpx
 import requests
+from oci_openai import (
+    OciInstancePrincipalAuth,
+    OciResourcePrincipalAuth,
+    OciSessionAuth,
+    OciUserPrincipalAuth,
+)
 from openai import OpenAI
 from requests import Response
-
-try:
-    from oci_openai import OciSessionAuth
-
-    HAS_OCI_OPENAI = True
-except ImportError:
-    HAS_OCI_OPENAI = False
-    OciSessionAuth = None  # type: ignore[misc,assignment]
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger
@@ -72,20 +70,38 @@ class OpenAIUser(BaseUser):
 
     def _setup_oci_client(self):
         """Setup OpenAI SDK client with OCI authentication."""
-        if not HAS_OCI_OPENAI:
-            raise ImportError(
-                "oci-openai package is required for OCI GenAI Service support. "
-                "Install it with: pip install oci-openai"
+        # Get auth type from auth provider to use correct oci-openai auth class
+        auth_type = self.auth_provider.get_auth_type()
+
+        # Map genai-bench auth types to oci-openai auth classes
+        if auth_type == "oci_security_token":
+            # Session auth (security token)
+            oci_auth = OciSessionAuth(profile_name=self.oci_profile or "DEFAULT")
+        elif auth_type == "oci_user_principal":
+            # User principal (API key)
+            oci_auth = OciUserPrincipalAuth(profile_name=self.oci_profile or "DEFAULT")
+        elif auth_type == "oci_instance_principal":
+            # Instance principal (for VMs)
+            oci_auth = OciInstancePrincipalAuth()
+        elif auth_type == "oci_obo_token":
+            # Resource principal / OBO token
+            oci_auth = OciResourcePrincipalAuth()
+        else:
+            raise ValueError(
+                f"Unsupported auth type for OpenAI SDK: {auth_type}. "
+                f"Supported types: oci_security_token, oci_user_principal, "
+                f"oci_instance_principal, oci_obo_token"
             )
+
         self.openai_client = OpenAI(
             api_key="OCI",
             base_url=self.host,
             http_client=httpx.Client(
-                auth=OciSessionAuth(profile_name=self.oci_profile or "DEFAULT"),
+                auth=oci_auth,
                 headers={"CompartmentId": self.oci_compartment_id},
             ),
         )
-        logger.info("OCI OpenAI client initialized")
+        logger.info(f"OCI OpenAI client initialized with {auth_type}")
 
     @task
     def chat(self):

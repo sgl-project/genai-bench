@@ -245,6 +245,18 @@ def benchmark(
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
 
+    # Override auth backend to OCI when using OpenAI backend with OCI endpoints
+    if api_backend == "openai" and compartment_id:
+        auth_backend = "oci"
+        # Set up OCI auth kwargs instead of OpenAI API key
+        auth_kwargs = {
+            "auth_type": auth,
+            "config_path": config_file,
+            "profile": profile,
+            "token": security_token,
+            "region": region,
+        }
+
     # Create authentication provider
     auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
     logger.info(f"Using {api_backend} authentication")
