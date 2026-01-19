@@ -105,6 +105,7 @@ def benchmark(
     auth,
     security_token,
     region,
+    compartment_id,
     # Server options
     server_engine,
     server_version,
@@ -244,6 +245,18 @@ def benchmark(
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
 
+    # Override auth backend to OCI when using OpenAI backend with OCI endpoints
+    if api_backend == "openai" and compartment_id:
+        auth_backend = "oci"
+        # Set up OCI auth kwargs instead of OpenAI API key
+        auth_kwargs = {
+            "auth_type": auth,
+            "config_path": config_file,
+            "profile": profile,
+            "token": security_token,
+            "region": region,
+        }
+
     # Create authentication provider
     auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
     logger.info(f"Using {api_backend} authentication")
@@ -267,6 +280,11 @@ def benchmark(
     user_class.auth_provider = auth_provider
     user_class.host = api_base
     user_class.api_backend = api_backend
+
+    # Pass OCI config to user class (for OpenAI backend with OCI endpoints)
+    user_class.oci_profile = profile
+    user_class.oci_config_file = config_file
+    user_class.oci_compartment_id = compartment_id
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
