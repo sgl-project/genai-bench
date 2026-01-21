@@ -99,21 +99,23 @@ class HuggingFaceDatasetSource(DatasetSource):
         if not self.config.path:
             raise ValueError("Dataset ID is required for HuggingFace dataset source")
 
-        # Verify dataset exists
-        try:
-            dataset_info(self.config.path, token=os.environ.get("HF_TOKEN"))
-        except DatasetNotFoundError as e:
-            raise ValueError(
-                f"Dataset '{self.config.path}' not found on HuggingFace Hub. "
-                f"If it's a gated repo, please set HF_TOKEN environment "
-                f"variable."
-            ) from e
-
-        # Load dataset with all provided kwargs
-        kwargs = self.config.huggingface_kwargs or {}
         logger.info(f"Loading HuggingFace dataset: {self.config.path}")
-        if kwargs:
-            logger.info(f"Using HuggingFace kwargs: {kwargs}")
+        if self.config.huggingface_kwargs:
+            logger.info(f"Using HuggingFace kwargs: {self.config.huggingface_kwargs}")
+
+        kwargs = self.config.huggingface_kwargs or {}
+        data_dir = Path(self.config.path).expanduser().resolve()
+        is_local_data = data_dir.exists() and data_dir.is_dir()
+        if not is_local_data:
+            # Verify dataset exists
+            try:
+                dataset_info(self.config.path, token=os.environ.get("HF_TOKEN"))
+            except DatasetNotFoundError as e:
+                raise ValueError(
+                    f"Dataset '{self.config.path}' not found on HuggingFace Hub. "
+                    f"If it's a gated repo, please set HF_TOKEN environment "
+                    f"variable."
+                ) from e
 
         dataset = load_dataset(self.config.path, **kwargs)
 
