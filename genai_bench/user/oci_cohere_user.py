@@ -92,11 +92,13 @@ class OCICohereUser(BaseUser):
             self.collect_metrics(metrics_response, endpoint)
             return metrics_response
         except Exception as e:
-            return UserResponse(
-                status_code=500,
+            metrics_response = UserResponse(
+                status_code=getattr(e, "status", 500),
                 error_message=str(e),
                 num_prefill_tokens=num_prefill_tokens or 0,
             )
+            self.collect_metrics(metrics_response, endpoint)
+            return metrics_response
 
     @task
     def chat(self):

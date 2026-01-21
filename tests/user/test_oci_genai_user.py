@@ -304,6 +304,35 @@ def test_chat_with_response_error(mock_client_class, test_genai_user):
     metrics_collector_mock.assert_called_once()
 
 
+def test_send_request_collects_metrics_on_exception(test_genai_user):
+    """Test that exceptions are caught and metrics are collected."""
+    test_genai_user.client = MagicMock()
+    test_genai_user.client.chat.side_effect = ValueError("Something went wrong")
+
+    metrics_collector_mock = MagicMock()
+    test_genai_user.collect_metrics = metrics_collector_mock
+
+    response = test_genai_user.send_request(
+        endpoint="chat",
+        payload=MagicMock(),
+        parse_strategy=None,
+        num_prefill_tokens=3,
+    )
+
+    # Verify collect_metrics was called with correct parameters
+    metrics_collector_mock.assert_called_once()
+    call_args = metrics_collector_mock.call_args
+    user_response = call_args[0][0]
+    endpoint = call_args[0][1]
+
+    # Verify metrics are properly collected
+    assert user_response.status_code == 500
+    assert response.status_code == 500
+    assert user_response.num_prefill_tokens == 3
+    assert endpoint == "chat"
+    assert "Something went wrong" in user_response.error_message
+
+
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_json_decode_error(mock_client_class, test_genai_user):
     """Test handling of JSON decode errors in streaming response."""
