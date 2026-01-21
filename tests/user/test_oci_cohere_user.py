@@ -235,6 +235,36 @@ def test_chat_with_response_error(mock_client_class, mock_logger, test_cohere_us
     assert user_response.status_code == 401
 
 
+def test_send_request_collects_metrics_on_exception(test_cohere_user):
+    """Test that exceptions are caught and metrics are collected."""
+    metrics_collector_mock = MagicMock()
+    test_cohere_user.collect_metrics = metrics_collector_mock
+
+    def raise_error():
+        raise ValueError("Something went wrong")
+
+    response = test_cohere_user.send_request(
+        make_request=raise_error,
+        endpoint="chat",
+        payload=None,
+        parse_strategy=None,
+        num_prefill_tokens=5,
+    )
+
+    # Verify collect_metrics was called with correct parameters
+    metrics_collector_mock.assert_called_once()
+    call_args = metrics_collector_mock.call_args
+    user_response = call_args[0][0]
+    endpoint = call_args[0][1]
+
+    # Verify metrics are properly collected
+    assert user_response.status_code == 500
+    assert response.status_code == 500
+    assert user_response.num_prefill_tokens == 5
+    assert endpoint == "chat"
+    assert "Something went wrong" in user_response.error_message
+
+
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
 def test_embed(mock_client_class, test_cohere_user):
     mock_client_instance = mock_client_class.return_value
