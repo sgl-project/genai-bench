@@ -275,6 +275,22 @@ class OCIGenAIUser(BaseUser):
                                 f"Text: '{text_segment}', "
                                 f"streaming events count: {streaming_events_count}"
                             )
+
+                    reasoning_segment = message.get("reasoningContent", "")
+                    if reasoning_segment:
+                        # Capture the time at the first token
+                        if not time_at_first_token:
+                            time_at_first_token = time.monotonic()
+                            logger.debug(
+                                f"First token received at: {time_at_first_token}"
+                            )
+                        generated_text += reasoning_segment
+                        streaming_events_count += 1  # each event contains one token
+                        logger.debug(
+                            f"Reasoning Text: '{reasoning_segment}', "
+                            f"streaming events count: {streaming_events_count}"
+                        )
+
                     # Track the previous data for debugging purposes
                     previous_data = parsed_data
                 else:
