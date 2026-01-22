@@ -2,9 +2,11 @@ import pytest
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import RequestLevelMetrics
 
+
 @pytest.fixture
 def aggregated_metrics_collector():
     return AggregatedMetricsCollector()
+
 
 def test_update_live_metrics_interval(aggregated_metrics_collector):
     """Test that live metrics are updated only after the specified interval."""
@@ -12,9 +14,7 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
 
     # Set update interval to 1.0 second
     aggregated_metrics_collector.set_run_metadata(
-        iteration=1,
-        scenario_str="test",
-        metrics_update_interval=1.0
+        iteration=1, scenario_str="test", metrics_update_interval=1.0
     )
 
     metric1 = RequestLevelMetrics(
@@ -47,11 +47,10 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
         mock_time.return_value = start_time
 
         aggregated_metrics_collector.add_single_request_metrics(metric1)
-        
+
         stats = aggregated_metrics_collector.get_live_metrics()["stats"]
         assert "ttft" in stats
         assert stats["ttft"]["mean"] == 0.1
-
 
         mock_time.return_value = start_time + 0.5
         aggregated_metrics_collector.add_single_request_metrics(metric2)
@@ -61,7 +60,6 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
         assert len(aggregated_metrics_collector.get_live_metrics()["ttft"]) == 2
         assert stats["ttft"]["mean"] == 0.1
 
-   
         mock_time.return_value = start_time + 1.1
         metric3 = RequestLevelMetrics(
             ttft=0.3,
@@ -80,27 +78,27 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
         assert len(aggregated_metrics_collector.get_live_metrics()["ttft"]) == 3
         assert stats["ttft"]["mean"] == pytest.approx(0.2)
 
+
 def test_update_live_metrics_interval_invalid_value(aggregated_metrics_collector):
     """Test that setting an invalid update interval raises ValueError."""
-    with pytest.raises(ValueError, match="metrics_update_interval must be non-negative"):
+    with pytest.raises(
+        ValueError, match="metrics_update_interval must be non-negative"
+    ):
         aggregated_metrics_collector.set_run_metadata(
-            iteration=1,
-            scenario_str="test",
-            metrics_update_interval=-1.0
+            iteration=1, scenario_str="test", metrics_update_interval=-1.0
         )
+
 
 def test_update_live_metrics_interval_invalid_type(aggregated_metrics_collector):
     """Test that setting an invalid type for update interval raises TypeError."""
     with pytest.raises(TypeError, match="metrics_update_interval must be a number"):
         aggregated_metrics_collector.set_run_metadata(
-            iteration=1,
-            scenario_str="test",
-            metrics_update_interval="invalid"
+            iteration=1, scenario_str="test", metrics_update_interval="invalid"
         )
+
 
 def test_clear_resets_last_update_time(aggregated_metrics_collector):
     """Test that clear() resets the last update time."""
     aggregated_metrics_collector._last_update_time = 12345.0
     aggregated_metrics_collector.clear()
     assert aggregated_metrics_collector._last_update_time == 0.0
-
