@@ -808,12 +808,12 @@ def object_storage_options(func):
 
 # Metrics options
 def metrics_options(func):
-    """Metrics related options for live updates during benchmarking."""
+    """Metrics related options for live dashboard refresh during benchmarking."""
     func = click.option(
-        "--metrics-update-interval",
+        "--metrics-refresh-interval",
         type=float,
         default=None,
-        help="Interval in seconds to update live metrics. "
+        help="Interval in seconds to refresh live metrics dashboard. "
         "If not set, it uses the default interval.",
     )(func)
     return func

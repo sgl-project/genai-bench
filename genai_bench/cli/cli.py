@@ -147,7 +147,7 @@ def benchmark(
     github_repo,
     metrics_time_unit,
     # Metrics options
-    metrics_update_interval,
+    metrics_refresh_interval,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -415,7 +415,7 @@ def benchmark(
                 aggregated_metrics_collector.set_run_metadata(
                     iteration,
                     scenario_str,
-                    metrics_update_interval,
+                    metrics_refresh_interval,
                     iteration_type,
                 )
 

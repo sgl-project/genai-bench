@@ -281,20 +281,22 @@ class AggregatedMetricsCollector:
         self,
         iteration: int,
         scenario_str: str,
-        metrics_update_interval: Optional[float] = None,
+        metrics_refresh_interval: Optional[float] = None,
         iteration_type: str = "num_concurrency",
     ):
         """Set metadata for the current run"""
         setattr(self.aggregated_metrics, iteration_type, iteration)
         self.aggregated_metrics.scenario = scenario_str
         self.aggregated_metrics.iteration_type = iteration_type
-        if metrics_update_interval is not None:
-            if not isinstance(metrics_update_interval, (int, float)):
-                raise TypeError("metrics_update_interval must be a number")
-            if metrics_update_interval < 0:
-                raise ValueError("metrics_update_interval must be non-negative")
-            self._update_interval = float(metrics_update_interval)
-            logger.info(f"Live metrics update interval to : {self._update_interval}s")
+        if metrics_refresh_interval is not None:
+            if not isinstance(metrics_refresh_interval, (int, float)):
+                raise TypeError("metrics_refresh_interval must be a number")
+            if metrics_refresh_interval < 0:
+                raise ValueError("metrics_refresh_interval must be non-negative")
+            self._update_interval = float(metrics_refresh_interval)
+            logger.info(
+                f"Live metrics refresh interval set to: {self._update_interval}s"
+            )
 
     def clear(self):
         """Clear the metrics to prepare for the next experiment run."""

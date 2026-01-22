@@ -14,7 +14,7 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
 
     # Set update interval to 1.0 second
     aggregated_metrics_collector.set_run_metadata(
-        iteration=1, scenario_str="test", metrics_update_interval=1.0
+        iteration=1, scenario_str="test", metrics_refresh_interval=1.0
     )
 
     metric1 = RequestLevelMetrics(
@@ -82,18 +82,18 @@ def test_update_live_metrics_interval(aggregated_metrics_collector):
 def test_update_live_metrics_interval_invalid_value(aggregated_metrics_collector):
     """Test that setting an invalid update interval raises ValueError."""
     with pytest.raises(
-        ValueError, match="metrics_update_interval must be non-negative"
+        ValueError, match="metrics_refresh_interval must be non-negative"
     ):
         aggregated_metrics_collector.set_run_metadata(
-            iteration=1, scenario_str="test", metrics_update_interval=-1.0
+            iteration=1, scenario_str="test", metrics_refresh_interval=-1.0
         )
 
 
 def test_update_live_metrics_interval_invalid_type(aggregated_metrics_collector):
     """Test that setting an invalid type for update interval raises TypeError."""
-    with pytest.raises(TypeError, match="metrics_update_interval must be a number"):
+    with pytest.raises(TypeError, match="metrics_refresh_interval must be a number"):
         aggregated_metrics_collector.set_run_metadata(
-            iteration=1, scenario_str="test", metrics_update_interval="invalid"
+            iteration=1, scenario_str="test", metrics_refresh_interval="invalid"
         )
 
 
