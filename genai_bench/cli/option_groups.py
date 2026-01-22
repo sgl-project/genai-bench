@@ -814,6 +814,6 @@ def metrics_options(func):
         type=float,
         default=None,
         help="Interval in seconds to refresh live metrics dashboard. "
-        "If not set, it uses the default interval.",
+        "If not set, metrics refresh per request (default behavior).",
     )(func)
     return func

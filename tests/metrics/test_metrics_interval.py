@@ -1,4 +1,5 @@
 import pytest
+
 from genai_bench.metrics.aggregated_metrics_collector import AggregatedMetricsCollector
 from genai_bench.metrics.metrics import RequestLevelMetrics
 
@@ -98,7 +99,9 @@ def test_update_live_metrics_interval_invalid_type(aggregated_metrics_collector)
 
 
 def test_clear_resets_last_update_time(aggregated_metrics_collector):
-    """Test that clear() resets the last update time."""
+    """Test that clear() resets the last update time and update interval."""
     aggregated_metrics_collector._last_update_time = 12345.0
+    aggregated_metrics_collector._update_interval = 1.0
     aggregated_metrics_collector.clear()
     assert aggregated_metrics_collector._last_update_time == 0.0
+    assert aggregated_metrics_collector._update_interval is None

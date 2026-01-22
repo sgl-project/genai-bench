@@ -310,6 +310,7 @@ class AggregatedMetricsCollector:
             "stats": {},
         }
         self._last_update_time = 0.0
+        self._update_interval = None
 
     def save(self, file_path: str, metrics_time_unit: str = "s"):
         if not self.all_request_metrics:
