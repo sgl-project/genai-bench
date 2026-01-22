@@ -49,6 +49,27 @@ def test_load_data_for_image_task():
         assert data == [("prompt1", "image1"), ("prompt2", "image2")]
 
 
+def test_load_data_for_video_task():
+    """Test loading data for video-to-text task."""
+    config = DatasetConfig(
+        source=DatasetSourceConfig(type="huggingface", path="video/dataset")
+    )
+
+    with patch(
+        "genai_bench.data.loaders.factory.VideoDatasetLoader"
+    ) as mock_loader_class:
+        mock_loader = MagicMock()
+        mock_loader.load_request.return_value = [
+            ("prompt1", "video1.mp4"),
+            ("prompt2", "video2.mp4"),
+        ]
+        mock_loader_class.return_value = mock_loader
+
+        data = DataLoaderFactory.load_data_for_task("video-text-to-text", config)
+
+        assert data == [("prompt1", "video1.mp4"), ("prompt2", "video2.mp4")]
+
+
 def test_load_data_for_invalid_task():
     """Test loading data for unsupported task."""
     config = DatasetConfig(
@@ -57,5 +78,5 @@ def test_load_data_for_invalid_task():
         )
     )
 
-    with pytest.raises(ValueError, match="Unsupported input modality: video"):
-        DataLoaderFactory.load_data_for_task("video-to-text", config)
+    with pytest.raises(ValueError, match="Unsupported input modality: audio"):
+        DataLoaderFactory.load_data_for_task("audio-to-text", config)

@@ -119,6 +119,7 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
+    dataset_video_column,
     num_workers,
     master_port,
     spawn_rate,
@@ -281,6 +282,7 @@ def benchmark(
             dataset_path=dataset_path,
             prompt_column=dataset_prompt_column,
             image_column=dataset_image_column,
+            video_column=dataset_video_column,
         )
 
     # Load data using the factory
