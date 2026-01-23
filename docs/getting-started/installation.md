@@ -149,6 +149,38 @@ If you encounter issues:
    - Full error message
    - Steps to reproduce
 
+## Running with CPU-Only PyTorch
+
+When running genai-bench on GPU machines, PyTorch may install GPU-enabled wheels by default, which are significantly larger (~2GB+) than CPU-only wheels (~200MB). Since genai-bench primarily uses PyTorch for tokenization (not GPU computation), you can force CPU-only PyTorch installation to reduce download size and installation time.
+
+### Option 1: Use `--torch-backend=cpu` flag
+
+Add the `--torch-backend=cpu` flag when running with `uv`:
+
+```bash
+uv run -p 3.13 --torch-backend=cpu --with git+https://github.com/basetenlabs/genai-bench.git genai-bench benchmark
+```
+
+### Option 2: Use `UV_TORCH_BACKEND=cpu` environment variable
+
+Set the environment variable:
+
+```bash
+UV_TORCH_BACKEND=cpu uv run -p 3.13 --with git+https://github.com/basetenlabs/genai-bench.git genai-bench benchmark
+```
+
+### Verification
+
+After installation, verify CPU-only PyTorch is installed:
+
+```bash
+# Check torch version (should show +cpu suffix)
+python -c "import torch; print(torch.__version__)"
+
+# Verify CUDA is not available
+python -c "import torch; print(torch.cuda.is_available())"  # Should print False
+```
+
 ## Next Steps
 
 After successful installation:
