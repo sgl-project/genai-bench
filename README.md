@@ -45,6 +45,24 @@ It provides detailed insights into model serving performance, offering both a us
 **Quick Start**: Install with `pip install genai-bench`.
 Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/getting-started/installation) for other options.
 
+### Running with CPU-Only PyTorch
+
+When running genai-bench on GPU machines, PyTorch may install GPU-enabled wheels by default, which are significantly larger (~2GB+) than CPU-only wheels (~200MB). Since genai-bench primarily uses PyTorch for tokenization (not GPU computation), you can force CPU-only PyTorch installation to reduce download size and installation time.
+
+**Option 1**: Use `--torch-backend=cpu` flag with `uv`:
+
+```bash
+uv run -p 3.13 --torch-backend=cpu --with git+https://github.com/basetenlabs/genai-bench.git genai-bench benchmark
+```
+
+**Option 2**: Use `UV_TORCH_BACKEND=cpu` environment variable:
+
+```bash
+UV_TORCH_BACKEND=cpu uv run -p 3.13 --with git+https://github.com/basetenlabs/genai-bench.git genai-bench benchmark
+```
+
+For more details, see the [Installation Guide](https://docs.sglang.ai/genai-bench/getting-started/installation#running-with-cpu-only-pytorch).
+
 ## How to use
 
 ### Quick Start
