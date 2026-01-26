@@ -9,8 +9,8 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
-    UserVideoChatRequest,
     UserResponse,
+    UserVideoChatRequest,
 )
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -209,10 +209,7 @@ def test_video_chat(mock_post, mock_openai_user):
     assert content[1]["type"] == "video_url"
     assert content[1]["video_url"]["url"] == "https://example.com/video1.mp4"
     assert content[2]["type"] == "video_url"
-    assert (
-        content[2]["video_url"]["url"]
-        == "data:video/mp4;base64,BASE64_VIDEO"
-    )
+    assert content[2]["video_url"]["url"] == "data:video/mp4;base64,BASE64_VIDEO"
 
 
 @patch("genai_bench.user.openai_user.requests.post")

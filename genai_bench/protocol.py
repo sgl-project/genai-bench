@@ -64,6 +64,7 @@ class UserVideoChatRequest(UserChatRequest):
         description="Video URL list (base64 data URLs or HTTP/HTTPS URLs).",
     )
 
+
 class UserEmbeddingRequest(UserRequest):
     """
     A class to encapsulate the details related to embedding request tasks.

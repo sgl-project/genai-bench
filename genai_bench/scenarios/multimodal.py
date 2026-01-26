@@ -98,12 +98,8 @@ class VideoModality(Scenario):
 
     def to_string(self) -> str:
         if self.num_input_videos == 1:
-            return (
-                f"V(1)"
-            )
-        return (
-            f"V({self.num_input_videos})"
-        )
+            return "V(1)"
+        return f"V({self.num_input_videos})"
 
     @classmethod
     def parse(cls, params_str: str) -> "VideoModality":

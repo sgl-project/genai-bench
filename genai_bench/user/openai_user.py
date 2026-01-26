@@ -17,8 +17,8 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
-    UserVideoChatRequest,
     UserResponse,
+    UserVideoChatRequest,
 )
 from genai_bench.user.base_user import BaseUser
 

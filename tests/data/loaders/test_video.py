@@ -31,7 +31,9 @@ def test_video_loader_returns_hf_dataset_as_is(mock_factory, video_dataset_confi
 
 
 @patch("genai_bench.data.sources.DatasetSourceFactory.create")
-def test_video_loader_selects_train_split_from_datasetdict(mock_factory, video_dataset_config):
+def test_video_loader_selects_train_split_from_datasetdict(
+    mock_factory, video_dataset_config
+):
     train = HFDataset.from_dict({"video_column": [1], "prompt_column": ["t"]})
     valid = HFDataset.from_dict({"video_column": [2], "prompt_column": ["v"]})
     dd = HFDatasetDict({"train": train, "validation": valid})

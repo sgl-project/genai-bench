@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -91,7 +91,9 @@ def test_video_sampler_invalid_scenario(mock_tokenizer, mock_video_dataset):
         sampler.sample(bad_scenario)
 
 
-@pytest.mark.skip(reason="Video modality not registered in Sampler.modality_registry yet")
+@pytest.mark.skip(
+    reason="Video modality not registered in Sampler.modality_registry yet"
+)
 def test_video_sampler_factory_and_dataset_integration(monkeypatch, mock_tokenizer):
     """Integration-style test: Sampler.create + DatasetConfig + VideoSampler."""
     data = [
@@ -202,7 +204,9 @@ def test_video_sampler_dataset_mode_hf_data_url_preserved(monkeypatch, mock_toke
     ]
 
 
-def test_video_sampler_dataset_mode_invalid_video_type_raises(monkeypatch, mock_tokenizer):
+def test_video_sampler_dataset_mode_invalid_video_type_raises(
+    monkeypatch, mock_tokenizer
+):
     """Dataset mode: non-string video value should trigger a clear error."""
     data = [
         {

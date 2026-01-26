@@ -171,5 +171,3 @@ class VideoSampler(Sampler):
             raise ValueError("No valid video URL found in dataset to sample from.")
 
         return " ".join(texts), videos
-
-
