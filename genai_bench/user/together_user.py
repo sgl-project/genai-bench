@@ -19,7 +19,7 @@ from genai_bench.protocol import (
     UserImageChatRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -47,6 +47,7 @@ class TogetherUser(BaseUser):
         super().on_start()
 
     @task
+    @rate_limited
     def chat(self):
         endpoint = "/v1/chat/completions"
         user_request = self.sample()
@@ -105,6 +106,7 @@ class TogetherUser(BaseUser):
         )
 
     @task
+    @rate_limited
     def embeddings(self):
         endpoint = "/v1/embeddings"
 
