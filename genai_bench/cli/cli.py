@@ -20,6 +20,7 @@ from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
     experiment_options,
+    metrics_options,
     model_auth_options,
     object_storage_options,
     oci_auth_options,
@@ -67,6 +68,7 @@ def cli(ctx):
 @distributed_locust_options
 @object_storage_options
 @storage_auth_options
+@metrics_options
 @click.pass_context
 def benchmark(
     ctx,
@@ -144,6 +146,8 @@ def benchmark(
     github_owner,
     github_repo,
     metrics_time_unit,
+    # Metrics options
+    metrics_refresh_interval,
 ):
     """
     Run a benchmark based on user defined scenarios.
@@ -409,7 +413,10 @@ def benchmark(
                 runner.update_batch_size(batch_size)
 
                 aggregated_metrics_collector.set_run_metadata(
-                    iteration, scenario_str, iteration_type
+                    iteration,
+                    scenario_str,
+                    metrics_refresh_interval,
+                    iteration_type,
                 )
 
                 # Start the run

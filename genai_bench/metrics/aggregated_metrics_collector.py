@@ -1,4 +1,5 @@
 import json
+import time
 from typing import List, Optional
 
 import numpy as np
@@ -34,6 +35,8 @@ class AggregatedMetricsCollector:
             "output_latency": [],
             "stats": {},
         }
+        self._last_update_time = 0.0
+        self._update_interval = None
 
     def add_single_request_metrics(self, metrics: RequestLevelMetrics):
         """Adds metrics from a single request to the aggregated metrics."""
@@ -66,6 +69,11 @@ class AggregatedMetricsCollector:
                 self._live_metrics_data["output_latency"].append(metrics.output_latency)  # type: ignore[union-attr]
 
             # Update live metrics aggregation
+            if self._update_interval is not None:
+                current_time = time.time()
+                if current_time - self._last_update_time < self._update_interval:
+                    return
+                self._last_update_time = current_time
             self._update_live_metrics()
 
     @staticmethod
@@ -270,12 +278,25 @@ class AggregatedMetricsCollector:
         )
 
     def set_run_metadata(
-        self, iteration: int, scenario_str: str, iteration_type: str = "num_concurrency"
+        self,
+        iteration: int,
+        scenario_str: str,
+        metrics_refresh_interval: Optional[float] = None,
+        iteration_type: str = "num_concurrency",
     ):
         """Set metadata for the current run"""
         setattr(self.aggregated_metrics, iteration_type, iteration)
         self.aggregated_metrics.scenario = scenario_str
         self.aggregated_metrics.iteration_type = iteration_type
+        if metrics_refresh_interval is not None:
+            if not isinstance(metrics_refresh_interval, (int, float)):
+                raise TypeError("metrics_refresh_interval must be a number")
+            if metrics_refresh_interval < 0:
+                raise ValueError("metrics_refresh_interval must be non-negative")
+            self._update_interval = float(metrics_refresh_interval)
+            logger.info(
+                f"Live metrics refresh interval set to: {self._update_interval}s"
+            )
 
     def clear(self):
         """Clear the metrics to prepare for the next experiment run."""
@@ -288,6 +309,8 @@ class AggregatedMetricsCollector:
             "output_latency": [],
             "stats": {},
         }
+        self._last_update_time = 0.0
+        self._update_interval = None
 
     def save(self, file_path: str, metrics_time_unit: str = "s"):
         if not self.all_request_metrics:
