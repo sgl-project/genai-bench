@@ -52,6 +52,39 @@ def test_on_start_missing_api_key_base():
         user.on_start()
 
 
+def test_on_start_headers(mock_together_user):
+    """Test that on_start correctly sets the headers from the auth provider."""
+    mock_together_user.on_start()
+    assert mock_together_user.headers == {
+        "Authorization": "Bearer fake_api_key",
+        "Content-Type": "application/json",
+    }
+
+
+@pytest.mark.parametrize(
+    "input_host, expected_host",
+    [
+        ("https://api.together.ai/v1/", "https://api.together.ai"),
+        ("https://api.together.ai/v1", "https://api.together.ai"),
+        ("https://api.together.ai/", "https://api.together.ai"),
+        ("https://api.together.ai", "https://api.together.ai"),
+    ],
+)
+def test_host_normalization(input_host, expected_host):
+    """Test that host is correctly normalized in on_start."""
+    env = MagicMock()
+    mock_auth = MagicMock()
+    mock_auth.get_headers.return_value = {"Authorization": "Bearer fake_api_key"}
+
+    # Set class host to avoid StopTest in __init__
+    TogetherUser.host = input_host
+    user = TogetherUser(env)
+    user.auth_provider = mock_auth
+
+    user.on_start()
+    assert user.host == expected_host
+
+
 @patch("genai_bench.user.together_user.requests.post")
 def test_chat(mock_post, mock_together_user):
     mock_together_user.on_start()
