@@ -68,6 +68,10 @@ def test_on_start_headers(mock_together_user):
         ("https://api.together.ai/v1", "https://api.together.ai"),
         ("https://api.together.ai/", "https://api.together.ai"),
         ("https://api.together.ai", "https://api.together.ai"),
+        ("https://api.together.xyz/v1/", "https://api.together.xyz"),
+        ("https://api.together.xyz/v1", "https://api.together.xyz"),
+        ("https://api.together.xyz/", "https://api.together.xyz"),
+        ("https://api.together.xyz", "https://api.together.xyz"),
     ],
 )
 def test_host_normalization(input_host, expected_host):
