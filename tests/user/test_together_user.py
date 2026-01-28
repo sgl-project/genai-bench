@@ -548,7 +548,7 @@ def test_ignore_eos_behavior(mock_post, mock_together_user):
     response_mock.iter_lines = MagicMock(
         return_value=[
             b'data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}',
-            b'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',  # noqa:E501
             b"data: [DONE]",
         ]
     )
@@ -569,7 +569,7 @@ def test_ignore_eos_behavior(mock_post, mock_together_user):
     )
     response_mock.iter_lines.return_value = [
         b'data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}',
-        b'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+        b'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',  # noqa:E501
         b"data: [DONE]",
     ]
     mock_together_user.chat()
