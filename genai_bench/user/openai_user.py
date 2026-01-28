@@ -265,7 +265,7 @@ class OpenAIUser(BaseUser):
         except Exception as e:
             logger.error(f"OCI image generation failed: {e}")
             metrics_response = UserImageGenerationResponse(
-                status_code=500,
+                status_code=getattr(e, "status_code", 500),
                 error_message=str(e),
                 start_time=start_time,
                 end_time=time.monotonic(),

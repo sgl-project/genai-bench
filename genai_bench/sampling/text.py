@@ -189,8 +189,8 @@ class TextSampler(Sampler):
             model=self.model,
             prompt=prompt,
             size=size,
-            quality=self.additional_request_params.get("quality", "standard"),
-            num_images=self.additional_request_params.get("n", 1),
+            quality=self.additional_request_params.get("quality"),
+            num_images=self.additional_request_params.get("n"),
             additional_request_params=self.additional_request_params,
         )
 
