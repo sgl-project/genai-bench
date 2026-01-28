@@ -389,3 +389,18 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
             param_hint=["--warmup-ratio", "--cooldown-ratio"],
         )
     return value
+
+
+def validate_prefix_lengths_options(ctx, param, value):
+    """Parse a comma-separated string into a list of integers."""
+    if value is None:
+        return []
+    try:
+        # Split the string by commas, strip spaces, and convert to int
+        if value.startswith("[") and value.endswith("]"):
+            value = value[1:-1]
+        return [int(x.strip()) for x in value.split(",")]
+    except ValueError as e:
+        raise click.BadParameter(
+            "Prefix lengths must be a comma-separated list of integers."
+        ) from e
