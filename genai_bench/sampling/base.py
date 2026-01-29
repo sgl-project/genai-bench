@@ -105,9 +105,12 @@ class Sampler(ABC):
         # Handle composite input modalities like "image-text" by checking for
         # base modalities
         if input_modality not in cls.modality_registry:
-            # For composite modalities like "image-text", use the primary modality
+            # For composite modalities like "image-text" or "video-text",
+            # use the primary modality
             if "image" in input_modality and "image" in cls.modality_registry:
                 sampler_cls = cls.modality_registry["image"]
+            elif "video" in input_modality and "video" in cls.modality_registry:
+                sampler_cls = cls.modality_registry["video"]
             else:
                 raise ValueError(
                     f"No sampler supports input modality: {input_modality}"
