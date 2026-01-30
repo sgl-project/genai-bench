@@ -134,6 +134,22 @@ genai-bench benchmark --api-backend oci-cohere \
             --num-workers 4
 ```
 
+## Custom Backends
+
+For APIs not supported by built-in backends, create a custom backend:
+
+```bash
+genai-bench benchmark \
+    --api-backend custom \
+    --custom-backend /path/to/your_backend.py \
+    --api-base <your-api-endpoint> \
+    --api-model-name <your-model> \
+    --task text-to-text \
+    --model-tokenizer <tokenizer>
+```
+
+Custom backends allow benchmarking any API without modifying genai-bench. See the [Custom Backends Guide](../../examples/README_CUSTOM_BACKENDS.md) for details on creating your own backend.
+
 ## Specify a custom benchmark load
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.

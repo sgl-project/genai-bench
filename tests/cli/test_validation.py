@@ -77,6 +77,45 @@ def test_validate_api_backend():
         validate_api_backend(ctx, param, "invalid_backend")
 
 
+def test_validate_api_backend_custom_missing_path():
+    """Test that custom backend requires --custom-backend path."""
+    ctx = click.Context(click.Command("test"))
+    ctx.obj = {}
+    ctx.params = {}  # No custom_backend
+
+    with pytest.raises(click.BadParameter, match="must provide --custom-backend"):
+        validate_api_backend(ctx, None, "custom")
+
+
+@patch("genai_bench.cli.validation.CustomUser.load_custom_class")
+def test_validate_api_backend_custom_with_valid_path(mock_load):
+    """Test successful custom backend validation."""
+    mock_class = MagicMock()
+    mock_load.return_value = mock_class
+
+    ctx = click.Context(click.Command("test"))
+    ctx.obj = {}
+    ctx.params = {"custom_backend": "/path/to/backend.py"}
+
+    result = validate_api_backend(ctx, None, "custom")
+    assert result == "custom"
+    mock_load.assert_called_once_with("/path/to/backend.py", class_name=None)
+
+
+@patch("genai_bench.cli.validation.CustomUser.load_custom_class")
+def test_validate_api_backend_custom_with_class_name(mock_load):
+    """Test custom backend with :ClassName syntax."""
+    mock_class = MagicMock()
+    mock_load.return_value = mock_class
+
+    ctx = click.Context(click.Command("test"))
+    ctx.obj = {}
+    ctx.params = {"custom_backend": "/path/to/backend.py:MyUser"}
+
+    result = validate_api_backend(ctx, None, "custom")
+    mock_load.assert_called_once_with("/path/to/backend.py", class_name="MyUser")
+
+
 def test_validate_task():
     # Mocked user class with supported tasks
     class MockUserClass:
