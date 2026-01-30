@@ -30,7 +30,6 @@ API_BACKEND_USER_MAP = {
     AzureOpenAIUser.BACKEND_NAME: AzureOpenAIUser,
     GCPVertexUser.BACKEND_NAME: GCPVertexUser,
     TogetherUser.BACKEND_NAME: TogetherUser,
-    AWSSagemakerUser.BACKEND_NAME: AWSSagemakerUser,
     CustomUser.BACKEND_NAME: CustomUser,
     "vllm": OpenAIUser,  # vLLM uses OpenAI-compatible API
     "sglang": OpenAIUser,  # SGLang uses OpenAI-compatible API
