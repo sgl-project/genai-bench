@@ -268,6 +268,8 @@ class OpenAIUser(BaseUser):
 
             if chunk.startswith(b"data:"):
                 chunk = chunk[5:].lstrip()
+            else:
+                continue
 
             if chunk == end_chunk:
                 break
