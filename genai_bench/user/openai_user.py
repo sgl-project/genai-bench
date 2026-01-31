@@ -251,7 +251,6 @@ class OpenAIUser(BaseUser):
         Returns:
             UserChatResponse: A response object with metrics and generated text.
         """
-        stream_chunk_prefix = "data: "
         end_chunk = b"[DONE]"
 
         generated_text = ""
@@ -267,9 +266,12 @@ class OpenAIUser(BaseUser):
             if not chunk:
                 continue
 
-            chunk = chunk[len(stream_chunk_prefix) :]
+            if chunk.startswith(b"data:"):
+                chunk = chunk[5:].lstrip()
+
             if chunk == end_chunk:
                 break
+
             data = json.loads(chunk)
 
             # Handle streaming error response as OpenAI API server handles it

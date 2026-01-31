@@ -937,3 +937,52 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
 
     # Verify system_message is not in the payload (it's been filtered out)
     assert "system_message" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_sse_parsing_variations(mock_post, mock_openai_user):
+    """Test SSE parsing with and without space after 'data:'."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        max_tokens=10,
+        additional_request_params={},
+    )
+
+    # Case 1: No space after data:
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data:{"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
+            b'data:{"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b"data:[DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+    # If no exception, it passed.
+
+    # Case 2: With space (Standard) - verify no regression
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
+            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b"data: [DONE]",
+        ]
+    )
+    mock_openai_user.chat()
+
+
+    # Case 3: Multiple spaces
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data:   {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
+            b'data:   {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b"data:   [DONE]",
+        ]
+    )
+    mock_openai_user.chat()
