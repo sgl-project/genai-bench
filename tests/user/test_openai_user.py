@@ -950,22 +950,28 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
         ],
         # Case 2: Standard space
         [
-            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
-            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},'
+            b'"finish_reason":null}]}',
+            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,'
+            b'"completion_tokens":1,"total_tokens":6}}',
             b"data: [DONE]",
         ],
         # Case 3: Multiple spaces
         [
-            b'data:   {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
-            b'data:   {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b'data:   {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},'
+            b'"finish_reason":null}]}',
+            b'data:   {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,'
+            b'"completion_tokens":1,"total_tokens":6}}',
             b"data:   [DONE]",
         ],
         # Case 4: With comments (ignored)
         [
-            b': keep-alive',
-            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
-            b': another comment',
-            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b": keep-alive",
+            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},'
+            b'"finish_reason":null}]}',
+            b": another comment",
+            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,'
+            b'"completion_tokens":1,"total_tokens":6}}',
             b"data: [DONE]",
         ],
     ],
