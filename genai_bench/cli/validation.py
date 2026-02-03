@@ -391,16 +391,46 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
     return value
 
 
-def validate_prefix_lengths_options(ctx, param, value):
-    """Parse a comma-separated string into a list of integers."""
+def validate_prefix_len_option(ctx, param, value):
+    """Validate basic prefix length constraints (type and non-negative)."""
     if value is None:
-        return []
-    try:
-        # Split the string by commas, strip spaces, and convert to int
-        if value.startswith("[") and value.endswith("]"):
-            value = value[1:-1]
-        return [int(x.strip()) for x in value.split(",")]
-    except ValueError as e:
-        raise click.BadParameter(
-            "Prefix lengths must be a comma-separated list of integers."
-        ) from e
+        return None
+    if not isinstance(value, int):
+        raise click.BadParameter("Prefix length must be an integer.")
+    if value < 0:
+        raise click.BadParameter("Prefix length must be non-negative.")
+    return value
+
+
+def validate_prefix_len_with_context(prefix_len, task, dataset_path, dataset_config, traffic_scenario):
+    """
+    Validate prefix_len compatibility with task type and dataset mode.
+
+    Called after all CLI parameters are parsed to ensure all dependencies are available.
+    """
+    if prefix_len is None:
+        return
+
+    if task != "text-to-text":
+        raise click.UsageError(
+            f"--prefix-len is only supported for text-to-text tasks, not '{task}'."
+        )
+
+    if (dataset_path or dataset_config) and not traffic_scenario:
+        raise click.UsageError(
+            "--prefix-len requires a deterministic traffic scenario (e.g., --traffic-scenario 'D(100,50)'). "
+            "Not supported with dataset mode."
+        )
+
+    # Check if at least one scenario is deterministic (starts with "D(")
+    if traffic_scenario:
+        has_deterministic = any(
+            scenario.strip().startswith("D(")
+            for scenario in traffic_scenario
+            if scenario != "dataset"
+        )
+        if not has_deterministic:
+            raise click.UsageError(
+                "--prefix-len requires at least one deterministic traffic scenario (e.g., 'D(100,50)'). "
+                f"Got: {', '.join(traffic_scenario)}"
+            )

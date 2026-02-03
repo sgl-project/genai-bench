@@ -34,8 +34,7 @@ class TextSampler(Sampler):
         data: List[str],
         additional_request_params: Optional[Dict[str, Any]] = None,
         dataset_config: Optional[DatasetConfig] = None,
-        prefix_lens: Optional[list[int]] = None,
-        random_prompt: bool = False,
+        prefix_len: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(
@@ -44,20 +43,9 @@ class TextSampler(Sampler):
 
         self.data = data
         self.batch_size = 1  # Default batch size
-        self.tokens = [
-            v for k, v in tokenizer.get_vocab().items() if not re.match(r"^<.*>$", k)
-        ]  # filter out special tokens
-        self.random_prompt = random_prompt
-        self.prefix = (
-            [
-                self.tokenizer.decode(
-                    [random.choice(self.tokens) for _ in range(length)]
-                )
-                for length in prefix_lens
-            ]
-            if prefix_lens
-            else []
-        )
+        self.prefix_len = prefix_len
+        self._shared_prefix = None  # Globally shared prefix (generated once)
+        self._request_counter = 0  # For numbered separators
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -90,6 +78,15 @@ class TextSampler(Sampler):
             self._validate_scenario(scenario)
             num_input_tokens, num_output_tokens = scenario.sample()
             self.additional_request_params["ignore_eos"] = True
+
+            # Validate prefix_len is within allowed range [0, num_input_tokens]
+            if self.prefix_len is not None:
+                if self.prefix_len < 0 or self.prefix_len > num_input_tokens:
+                    raise ValueError(
+                        f"--prefix-len must be in range [0, {num_input_tokens}] for "
+                        f"traffic scenario with {num_input_tokens} input tokens. "
+                        f"Got: {self.prefix_len}"
+                    )
 
         prompt = self._sample_text(num_input_tokens)
         num_prefill_tokens = self._get_prefill_token_count(prompt)
@@ -192,39 +189,114 @@ class TextSampler(Sampler):
         Returns:
             str: A text prompt containing the desired number of tokens.
         """
-        prefix = random.choice(self.prefix) + "\n" if self.prefix else ""
-
         if not num_input_tokens:
-            return f"{prefix}{random.choice(self.data)}"
+            return random.choice(self.data)
 
-        if self.random_prompt:
-            prompt = self.tokenizer.decode(
-                [random.choice(self.tokens) for _ in range(num_input_tokens)]
+        # Generate shared prefix if needed (only once per session)
+        if self.prefix_len is not None and self._shared_prefix is None:
+            self._shared_prefix = self._generate_text_from_dataset(self.prefix_len)
+            logger.info(
+                f"Generated shared prefix ({self.prefix_len} tokens) from dataset for prefix caching. "
+                f"This prefix will be reused across all requests."
             )
-            return f"{prefix}{prompt}"
+
+        # Generate suffix (remaining tokens after prefix)
+        suffix_len = num_input_tokens
+        if self.prefix_len is not None:
+            suffix_len = num_input_tokens - self.prefix_len
+
+        # Generate suffix from dataset
+        suffix = self._generate_text_from_dataset(suffix_len) if suffix_len > 0 else ""
+
+        # Combine prefix + separator + suffix
+        if self.prefix_len is not None and self.prefix_len > 0:
+            self._request_counter += 1
+            separator = f"\n#{self._request_counter}\n"
+            separator_len = self.get_token_length(separator)
+
+            # Check if separator fits in available space
+            available_for_separator_and_suffix = suffix_len
+            if separator_len > available_for_separator_and_suffix:
+                # Truncate separator to fit available space
+                max_separator_len = available_for_separator_and_suffix
+
+                # Tokenize and truncate separator
+                separator_token_ids = self.tokenizer.encode(separator, add_special_tokens=False)
+                truncated_separator_ids = separator_token_ids[:max_separator_len]
+                separator = self.tokenizer.decode(truncated_separator_ids, skip_special_tokens=True)
+                separator_len = len(truncated_separator_ids)
+
+                logger.debug(
+                    f"Truncated separator from {len(separator_token_ids)} to {separator_len} tokens "
+                    f"to fit within available space ({available_for_separator_and_suffix} tokens)."
+                )
+
+            # Adjust suffix to account for separator length (truncated or full)
+            adjusted_suffix_len = suffix_len - separator_len
+            suffix = self._generate_text_from_dataset(adjusted_suffix_len) if adjusted_suffix_len > 0 else ""
+            return f"{self._shared_prefix}{separator}{suffix}"
+        else:
+            # No prefix caching - just return the full prompt
+            return self._generate_text_from_dataset(num_input_tokens)
+
+    def _generate_text_from_dataset(self, num_tokens: int) -> str:
+        """
+        Generate text from the dataset by concatenating lines until target token count.
+
+        Args:
+            num_tokens (int): The target number of tokens.
+
+        Returns:
+            str: Generated text with approximately num_tokens tokens.
+        """
+        if num_tokens == 0:
+            return ""
 
         data_copy = self.data.copy()
-        prompt = ""
-        left_tokens_to_sample = num_input_tokens
+        text = ""
+        tokens_remaining = num_tokens
 
-        while left_tokens_to_sample > 0:
+        while tokens_remaining > 0:
             random.shuffle(data_copy)
             for line in data_copy:
-                line_tokens = self.tokenizer.encode(line, add_special_tokens=False)
+                # Tokenize line with space prefix to match concatenation
+                line_with_space = (" " if text else "") + line
+                line_tokens = self.tokenizer.encode(
+                    line_with_space, add_special_tokens=False
+                )
                 num_line_tokens = len(line_tokens)
-                if num_line_tokens > left_tokens_to_sample:
-                    # Truncate at token level, decode only needed tokens
-                    truncated_text = str(
-                        self.tokenizer.decode(
-                            line_tokens[:left_tokens_to_sample],
-                            skip_special_tokens=True,
-                        )
+
+                if num_line_tokens > tokens_remaining:
+                    # Truncate at token level
+                    truncated_text = self.tokenizer.decode(
+                        line_tokens[:tokens_remaining], skip_special_tokens=True
                     )
-                    prompt += (" " if prompt else "") + truncated_text
-                    return f"{prefix}{prompt}"
-                prompt += line
-                left_tokens_to_sample -= num_line_tokens
-        return f"{prefix}{prompt}"
+                    text += (" " if text else "") + truncated_text
+
+                    # Verify actual token count
+                    actual_tokens = len(
+                        self.tokenizer.encode(text, add_special_tokens=False)
+                    )
+                    if actual_tokens != num_tokens:
+                        # Re-tokenize and truncate to exact count
+                        text_tokens = self.tokenizer.encode(
+                            text, add_special_tokens=False
+                        )
+                        text = self.tokenizer.decode(
+                            text_tokens[:num_tokens], skip_special_tokens=True
+                        )
+                    return text
+
+                text += line_with_space
+                tokens_remaining -= num_line_tokens
+
+        return text
+
+    def reset_prefix_cache(self):
+        """Reset the prefix cache and request counter (for new scenarios)."""
+        self._shared_prefix = None
+        self._request_counter = 0
+        logger.debug("Reset prefix cache and request counter")
 
     def _check_discrepancy(
         self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1
