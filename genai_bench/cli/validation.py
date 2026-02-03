@@ -402,7 +402,9 @@ def validate_prefix_len_option(ctx, param, value):
     return value
 
 
-def validate_prefix_len_with_context(prefix_len, task, dataset_path, dataset_config, traffic_scenario):
+def validate_prefix_len_with_context(
+    prefix_len, task, dataset_path, dataset_config, traffic_scenario
+):
     """
     Validate prefix_len compatibility with task type and dataset mode.
 
@@ -418,7 +420,8 @@ def validate_prefix_len_with_context(prefix_len, task, dataset_path, dataset_con
 
     if (dataset_path or dataset_config) and not traffic_scenario:
         raise click.UsageError(
-            "--prefix-len requires a deterministic traffic scenario (e.g., --traffic-scenario 'D(100,50)'). "
+            "--prefix-len requires a deterministic traffic scenario "
+            "(e.g., --traffic-scenario 'D(100,50)'). "
             "Not supported with dataset mode."
         )
 
@@ -431,6 +434,7 @@ def validate_prefix_len_with_context(prefix_len, task, dataset_path, dataset_con
         )
         if not has_deterministic:
             raise click.UsageError(
-                "--prefix-len requires at least one deterministic traffic scenario (e.g., 'D(100,50)'). "
+                "--prefix-len requires at least one deterministic "
+                "traffic scenario (e.g., 'D(100,50)'). "
                 f"Got: {', '.join(traffic_scenario)}"
             )
