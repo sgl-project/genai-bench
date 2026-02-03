@@ -962,7 +962,7 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
             b'"finish_reason":null}]}',
             b'data:   {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,'
             b'"completion_tokens":1,"total_tokens":6}}',
-            b"data:   [DONE]",
+            b"data: [DONE]",
         ],
         # Case 4: With comments (ignored)
         [

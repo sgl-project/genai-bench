@@ -266,8 +266,10 @@ class OpenAIUser(BaseUser):
             if not chunk:
                 continue
 
-            if chunk.startswith(b"data:"):
-                chunk = chunk[5:].lstrip()
+            if chunk.startswith(b"data: "):
+                chunk = chunk[6:]
+            elif chunk.startswith(b"data:"):
+                chunk = chunk[5:]
             else:
                 continue
 
