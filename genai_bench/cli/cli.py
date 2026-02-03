@@ -121,8 +121,7 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
-    random_prompt,
-    prefix_lens,
+    prefix_len,
     num_workers,
     master_port,
     spawn_rate,
@@ -277,6 +276,16 @@ def benchmark(
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
 
+    # Validate prefix_len with full context now that all CLI parameters are available
+    from genai_bench.cli.validation import validate_prefix_len_with_context
+    validate_prefix_len_with_context(
+        prefix_len=prefix_len,
+        task=task,
+        dataset_path=dataset_path,
+        dataset_config=dataset_config,
+        traffic_scenario=traffic_scenario,
+    )
+
     # Handle dataset configuration
     if dataset_config:
         # Load from config file
@@ -300,8 +309,7 @@ def benchmark(
         data=data,
         additional_request_params=additional_request_params,
         dataset_config=dataset_config_obj,
-        random_prompt=random_prompt,
-        prefix_lens=prefix_lens,
+        prefix_len=prefix_len,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode
