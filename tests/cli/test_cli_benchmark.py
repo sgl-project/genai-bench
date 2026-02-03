@@ -732,35 +732,8 @@ def test_spawn_rate_option_in_help(cli_runner):
     "mock_http_requests",
     "mock_experiment_path",
 )
-def test_benchmark_command_with_random_prompt(cli_runner, default_options):
-    """Test benchmark command with --random-prompt option."""
-    with patch("genai_bench.cli.cli.Sampler.create") as mock_sampler_create:
-        result = cli_runner.invoke(
-            benchmark,
-            [*default_options, "--traffic-scenario", "D(100,100)", "--random-prompt"],
-        )
-        assert result.exit_code == 0, f"Command failed with output: {result.output}"
-
-        # Verify that Sampler.create was called with random_prompt=True
-        mock_sampler_create.assert_called()
-        call_kwargs = mock_sampler_create.call_args[1]
-        assert "random_prompt" in call_kwargs
-        assert call_kwargs["random_prompt"] is True
-
-
-@pytest.mark.usefixtures(
-    "mock_env_variables",
-    "mock_dashboard",
-    "mock_validate_tokenizer",
-    "mock_time_sleep",
-    "mock_makedirs",
-    "mock_file_system",
-    "mock_report_and_plot",
-    "mock_http_requests",
-    "mock_experiment_path",
-)
-def test_benchmark_command_with_prefix_lens(cli_runner, default_options):
-    """Test benchmark command with --prefix-lens option."""
+def test_benchmark_command_with_prefix_len(cli_runner, default_options):
+    """Test benchmark command with --prefix-len option."""
     with patch("genai_bench.cli.cli.Sampler.create") as mock_sampler_create:
         result = cli_runner.invoke(
             benchmark,
@@ -768,30 +741,22 @@ def test_benchmark_command_with_prefix_lens(cli_runner, default_options):
                 *default_options,
                 "--traffic-scenario",
                 "D(100,100)",
-                "--prefix-lens",
-                "5,10,15",
+                "--prefix-len",
+                "50",
             ],
         )
         assert result.exit_code == 0, f"Command failed with output: {result.output}"
 
-        # Verify that Sampler.create was called with prefix_lens=[5, 10, 15]
+        # Verify that Sampler.create was called with prefix_len=50
         mock_sampler_create.assert_called()
         call_kwargs = mock_sampler_create.call_args[1]
-        assert "prefix_lens" in call_kwargs
-        assert call_kwargs["prefix_lens"] == [5, 10, 15]
+        assert "prefix_len" in call_kwargs
+        assert call_kwargs["prefix_len"] == 50
 
 
-def test_random_prompt_option_in_help(cli_runner):
-    """Test that --random-prompt option appears in the CLI help output."""
+def test_prefix_len_option_in_help(cli_runner):
+    """Test that --prefix-len option appears in the CLI help output."""
     result = cli_runner.invoke(benchmark, ["--help"])
     assert result.exit_code == 0
-    assert "--random-prompt" in result.output
-    assert "Enable random prompt generation" in result.output
-
-
-def test_prefix_lens_option_in_help(cli_runner):
-    """Test that --prefix-lens option appears in the CLI help output."""
-    result = cli_runner.invoke(benchmark, ["--help"])
-    assert result.exit_code == 0
-    assert "--prefix-lens" in result.output
-    assert "List of prefix lengths to sample from" in result.output
+    assert "--prefix-len" in result.output
+    assert "Length of shared prefix" in result.output
