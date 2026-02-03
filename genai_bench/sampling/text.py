@@ -1,5 +1,4 @@
 import random
-import re
 from typing import Any, Dict, List, Optional
 
 from genai_bench.data.config import DatasetConfig
@@ -44,7 +43,8 @@ class TextSampler(Sampler):
         self.data = data
         self.batch_size = 1  # Default batch size
         self.prefix_len = prefix_len
-        self._shared_prefix = None  # Globally shared prefix (generated once)
+        # Globally shared prefix (generated once)
+        self._shared_prefix: Optional[str] = None
         self._request_counter = 0  # For numbered separators
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
@@ -80,13 +80,14 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = True
 
             # Validate prefix_len is within allowed range [0, num_input_tokens]
-            if self.prefix_len is not None:
-                if self.prefix_len < 0 or self.prefix_len > num_input_tokens:
-                    raise ValueError(
-                        f"--prefix-len must be in range [0, {num_input_tokens}] for "
-                        f"traffic scenario with {num_input_tokens} input tokens. "
-                        f"Got: {self.prefix_len}"
-                    )
+            if self.prefix_len is not None and (
+                self.prefix_len < 0 or self.prefix_len > num_input_tokens
+            ):
+                raise ValueError(
+                    f"--prefix-len must be in range [0, {num_input_tokens}] for "
+                    f"traffic scenario with {num_input_tokens} input tokens. "
+                    f"Got: {self.prefix_len}"
+                )
 
         prompt = self._sample_text(num_input_tokens)
         num_prefill_tokens = self._get_prefill_token_count(prompt)
@@ -196,7 +197,8 @@ class TextSampler(Sampler):
         if self.prefix_len is not None and self._shared_prefix is None:
             self._shared_prefix = self._generate_text_from_dataset(self.prefix_len)
             logger.info(
-                f"Generated shared prefix ({self.prefix_len} tokens) from dataset for prefix caching. "
+                f"Generated shared prefix ({self.prefix_len} tokens) "
+                f"from dataset for prefix caching. "
                 f"This prefix will be reused across all requests."
             )
 
@@ -221,19 +223,28 @@ class TextSampler(Sampler):
                 max_separator_len = available_for_separator_and_suffix
 
                 # Tokenize and truncate separator
-                separator_token_ids = self.tokenizer.encode(separator, add_special_tokens=False)
+                separator_token_ids = self.tokenizer.encode(
+                    separator, add_special_tokens=False
+                )
                 truncated_separator_ids = separator_token_ids[:max_separator_len]
-                separator = self.tokenizer.decode(truncated_separator_ids, skip_special_tokens=True)
+                separator = self.tokenizer.decode(
+                    truncated_separator_ids, skip_special_tokens=True
+                )
                 separator_len = len(truncated_separator_ids)
 
                 logger.debug(
-                    f"Truncated separator from {len(separator_token_ids)} to {separator_len} tokens "
-                    f"to fit within available space ({available_for_separator_and_suffix} tokens)."
+                    f"Truncated separator from {len(separator_token_ids)} "
+                    f"to {separator_len} tokens to fit within available space "
+                    f"({available_for_separator_and_suffix} tokens)."
                 )
 
             # Adjust suffix to account for separator length (truncated or full)
             adjusted_suffix_len = suffix_len - separator_len
-            suffix = self._generate_text_from_dataset(adjusted_suffix_len) if adjusted_suffix_len > 0 else ""
+            suffix = (
+                self._generate_text_from_dataset(adjusted_suffix_len)
+                if adjusted_suffix_len > 0
+                else ""
+            )
             return f"{self._shared_prefix}{separator}{suffix}"
         else:
             # No prefix caching - just return the full prompt

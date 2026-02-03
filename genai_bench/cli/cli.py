@@ -278,6 +278,7 @@ def benchmark(
 
     # Validate prefix_len with full context now that all CLI parameters are available
     from genai_bench.cli.validation import validate_prefix_len_with_context
+
     validate_prefix_len_with_context(
         prefix_len=prefix_len,
         task=task,
