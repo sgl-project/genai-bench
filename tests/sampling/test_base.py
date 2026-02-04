@@ -22,20 +22,10 @@ def mock_vision_dataset():
 
 def test_sampler_factory(mock_vision_dataset):
     text_data = ["Sample text 1", "Sample text 2"]
-    test_text_tokenizer = Mock()
-    # Mock tokenizer's get_vocab to some tokens with special tokens
-    test_text_tokenizer.get_vocab.return_value = {
-        "token1": 0,
-        "token2": 1,
-        "token3": 2,
-        "<special>": 3,
-        "<pad>": 4,
-        "token4": 5,
-    }
 
     sampler = Sampler.create(
         task="text-to-text",
-        tokenizer=test_text_tokenizer,
+        tokenizer=Mock(),
         model="gpt-3",
         data=text_data,
     )
@@ -43,7 +33,7 @@ def test_sampler_factory(mock_vision_dataset):
 
     sampler = Sampler.create(
         task="text-to-embeddings",
-        tokenizer=test_text_tokenizer,
+        tokenizer=Mock(),
         model="gpt-3",
         data=text_data,
     )
@@ -51,7 +41,7 @@ def test_sampler_factory(mock_vision_dataset):
 
     sampler = Sampler.create(
         task="image-text-to-text",
-        tokenizer=test_text_tokenizer,
+        tokenizer=Mock(),
         model="gpt-3",
         data=mock_vision_dataset,
     )
@@ -67,8 +57,5 @@ def test_sampler_factory(mock_vision_dataset):
 
     with pytest.raises(ValueError):
         Sampler.create(
-            task="text-to-image",
-            tokenizer=test_text_tokenizer,
-            model="dummy-model",
-            data=[],
+            task="text-to-image", tokenizer=Mock(), model="dummy-model", data=[]
         )
