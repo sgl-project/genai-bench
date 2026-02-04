@@ -327,13 +327,12 @@ class TestTextSampler(unittest.TestCase):
         # Sample second request to verify separator increments
         request2 = prefix_sampler.sample(scenario)
 
-        # Verify both requests are valid strings and different
-        self.assertIsInstance(request2.prompt, str)
+        # Verify the counter increments (proving separators are being created)
+        self.assertEqual(prefix_sampler._request_counter, 2)
+
+        # Verify prompts are different due to numbered separators
         self.assertNotEqual(
             request1.prompt,
             request2.prompt,
             "Prompts should be different due to numbered separators",
         )
-
-        # Request counter should increment to 2
-        self.assertEqual(prefix_sampler._request_counter, 2)
