@@ -7,11 +7,7 @@ from genai_bench.protocol import (
     UserReRankRequest,
 )
 from genai_bench.sampling.text import TextSampler
-from genai_bench.scenarios import (
-    DatasetScenario,
-    EmbeddingScenario,
-    NormalDistribution,
-)
+from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
 from genai_bench.scenarios.text import DeterministicDistribution, ReRankScenario
 
 
@@ -273,7 +269,7 @@ class TestTextSampler(unittest.TestCase):
         )
 
     def test_prefix_len_feature(self):
-        """Test that prefix_len functionality works correctly."""
+        """Test prefix_len functionality with numbered separators."""
         prefix_len = 50
 
         # Create sampler with prefix_len
@@ -301,47 +297,30 @@ class TestTextSampler(unittest.TestCase):
         self.tokenizer.encode.return_value = list(range(100))
         self.tokenizer.decode.return_value = "Test prompt text with prefix"
 
-        request = prefix_sampler.sample(scenario)
+        # Sample first request
+        request1 = prefix_sampler.sample(scenario)
 
-        self.assertIsInstance(request, UserChatRequest, "Expected UserChatRequest")
-        self.assertEqual(request.model, "mock_model", "Expected model to be mock_model")
-        self.assertIsInstance(request.prompt, str, "Expected prompt to be a string")
-        # Check that shared prefix was generated
+        # Verify first request
+        self.assertIsInstance(request1, UserChatRequest, "Expected UserChatRequest")
+        self.assertEqual(
+            request1.model, "mock_model", "Expected model to be mock_model"
+        )
+        self.assertIsInstance(request1.prompt, str, "Expected prompt to be a string")
+
+        # Check that shared prefix was generated after first sample
         self.assertIsNotNone(
             prefix_sampler._shared_prefix,
             "Expected shared prefix to be generated after first sample",
         )
 
-    def test_prefix_len_with_separator(self):
-        """Test that prefix_len includes numbered separator in requests."""
-        prefix_len = 50
+        # Request counter should be 1 after first sample
+        self.assertEqual(prefix_sampler._request_counter, 1)
 
-        # Create sampler with prefix_len
-        prefix_sampler = TextSampler(
-            tokenizer=self.tokenizer,
-            model=self.model,
-            output_modality=self.output_modality,
-            data=self.test_data,
-            prefix_len=prefix_len,
-        )
-
-        # Mock scenario - deterministic with 100 input tokens
-        scenario = DeterministicDistribution(
-            num_input_tokens=100,
-            num_output_tokens=50,
-        )
-
-        # Mock tokenizer methods
-        self.tokenizer.encode.return_value = list(range(100))
-        self.tokenizer.decode.return_value = "Test prompt with separator"
-
-        # Sample first request
-        request1 = prefix_sampler.sample(scenario)
-        # Sample second request
+        # Sample second request to verify separator increments
         request2 = prefix_sampler.sample(scenario)
 
-        # Verify both requests have different numbered separators
-        self.assertIsInstance(request1.prompt, str)
+        # Verify both requests are valid strings
         self.assertIsInstance(request2.prompt, str)
-        # Request counter should increment
+
+        # Request counter should increment to 2
         self.assertEqual(prefix_sampler._request_counter, 2)
