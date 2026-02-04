@@ -491,3 +491,62 @@ def test_validate_warmup_cooldown_ratio_options():
             "cooldown_ratio": 0.5,
         }
         validate_warmup_cooldown_ratio_options(ctx, param, 0.5)
+
+
+def test_validate_prefix_len_with_dataset_scenario():
+    """Test that prefix_len requires all scenarios to be deterministic."""
+    from genai_bench.cli.validation import validate_prefix_len_with_context
+
+    # Test with dataset in traffic_scenario list
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_len_with_context(
+            prefix_len=50,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)", "dataset"],
+        )
+    assert "not supported with dataset mode" in str(exc.value)
+
+    # Test with only dataset scenario
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_len_with_context(
+            prefix_len=50,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["dataset"],
+        )
+    assert "not supported with dataset mode" in str(exc.value)
+
+    # Test with mixed deterministic and non-deterministic scenarios
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_len_with_context(
+            prefix_len=50,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)", "N(480,240)/(300,150)"],
+        )
+    assert "all traffic scenarios to be deterministic" in str(exc.value)
+    assert "N(480,240)/(300,150)" in str(exc.value)
+
+    # Test with only non-deterministic scenarios
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_len_with_context(
+            prefix_len=50,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["N(480,240)/(300,150)", "U(50,100)/(200,250)"],
+        )
+    assert "all traffic scenarios to be deterministic" in str(exc.value)
+
+    # Test with valid deterministic scenarios only (should pass)
+    validate_prefix_len_with_context(
+        prefix_len=50,
+        task="text-to-text",
+        dataset_path="path/to/dataset",
+        dataset_config=None,
+        traffic_scenario=["D(100,50)", "D(200,100)"],
+    )
