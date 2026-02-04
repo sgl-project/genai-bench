@@ -14,8 +14,17 @@ from genai_bench.scenarios.text import ReRankScenario
 class TestTextSampler(unittest.TestCase):
     def setUp(self):
         # Mock data instead of config
-        self.test_data = ["Test line 1", "Test line 2", "Test line 3"]
+        self.test_data = ["Test line1", "Test line2", "Test line3"]
         self.tokenizer = MagicMock()
+        # Mock tokenizer's get_vocab to some tokens with special tokens
+        self.tokenizer.get_vocab.return_value = {
+            "token1": 0,
+            "token2": 1,
+            "token3": 2,
+            "<special>": 3,
+            "<pad>": 4,
+            "token4": 5,
+        }
         self.model = "mock_model"
         self.output_modality = "text"
         self.sampler = TextSampler(
@@ -258,3 +267,181 @@ class TestTextSampler(unittest.TestCase):
         self.tokenizer.decode.assert_called_with(
             line_tokens[:requested_tokens], skip_special_tokens=True
         )
+
+    def test_random_prompt_feature(self):
+        """Test that random prompt generation works correctly."""
+        # Create sampler with random_prompt=True
+        random_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            random_prompt=True,
+        )
+
+        # Mock the tokens list to have some predictable tokens
+        random_sampler.tokens = ["token1", "token2", "token3"]
+
+        # Mock scenario
+        scenario = NormalDistribution(
+            mean_input_tokens=10,
+            stddev_input_tokens=2,
+            mean_output_tokens=20,
+            stddev_output_tokens=5,
+        )
+
+        # Mock random.choice to return predictable values
+        import random
+
+        original_choice = random.choice
+        random.choice = MagicMock(
+            side_effect=lambda x: list(x)[0]
+            if hasattr(x, "__iter__") and not isinstance(x, str)
+            else x
+        )
+
+        try:
+            request = random_sampler.sample(scenario)
+
+            self.assertIsInstance(request, UserChatRequest, "Expected UserChatRequest")
+            self.assertEqual(
+                request.model, "mock_model", "Expected model to be mock_model"
+            )
+            self.assertIsInstance(request.prompt, str)
+            # Check that prompt is generated from tokens (not from data)
+            self.assertTrue(
+                all(
+                    token not in request.prompt
+                    for line in self.test_data
+                    for token in line.split()
+                ),
+                "Expected prompt not to contain any from data",
+            )
+
+        finally:
+            # Restore original random.choice
+            random.choice = original_choice
+
+    def test_prefix_feature(self):
+        """Test that prefix functionality works correctly."""
+        prefix_lens = [5, 10, 15]
+
+        # Create sampler with prefix_lens
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            prefix_lens=prefix_lens,
+        )
+
+        # Check that prefixes were created correctly
+        self.assertEqual(
+            len(prefix_sampler.prefix),
+            len(prefix_lens),
+            "Expected prefixes to be created",
+        )
+        # Mock prefix to predictable values
+        prefix_sampler.prefix = ["prefix1", "prefix2"]
+
+        # Mock scenario
+        scenario = NormalDistribution(
+            mean_input_tokens=10,
+            stddev_input_tokens=2,
+            mean_output_tokens=20,
+            stddev_output_tokens=5,
+        )
+
+        # Mock tokenizer methods
+        self.tokenizer.encode.return_value = [1, 2, 3, 4, 5]
+        self.tokenizer.decode.return_value = "Test prompt text"
+
+        request = prefix_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserChatRequest, "Expected UserChatRequest")
+        self.assertEqual(request.model, "mock_model", "Expected model to be mock_model")
+        self.assertIsInstance(request.prompt, str, "Expected prompt to be a string")
+        # Check that prompt contains a prefix (with newline)
+        self.assertTrue(
+            any(prefix in request.prompt for prefix in prefix_sampler.prefix),
+            "Expected prompt to contain any prefix",
+        )
+
+    def test_random_prompt_with_prefix(self):
+        """Test that random prompt generation works with prefixes."""
+        prefix_lens = [5, 10]
+
+        # Create sampler with both features
+        combined_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            random_prompt=True,
+            prefix_lens=prefix_lens,
+        )
+
+        # Mock the tokens list to have some predictable tokens
+        combined_sampler.tokens = ["token1", "token2", "token3"]
+        # Mock prefix to predictable values
+        combined_sampler.prefix = ["prefix1", "prefix2"]
+
+        # Mock scenario
+        scenario = NormalDistribution(
+            mean_input_tokens=10,
+            stddev_input_tokens=2,
+            mean_output_tokens=20,
+            stddev_output_tokens=5,
+        )
+
+        # Mock random.choice to return predictable values
+        import random
+
+        original_choice = random.choice
+        random.choice = MagicMock(
+            side_effect=lambda x: list(x)[0]
+            if hasattr(x, "__iter__") and not isinstance(x, str)
+            else x
+        )
+
+        try:
+            request = combined_sampler.sample(scenario)
+
+            self.assertIsInstance(request, UserChatRequest, "Expected UserChatRequest")
+            self.assertEqual(
+                request.model, "mock_model", "Expected model to be mock_model"
+            )
+            self.assertIsInstance(request.prompt, str, "Expected prompt to be a string")
+            # Check that prompt contains both prefix and random tokens
+            self.assertTrue(
+                any(prefix in request.prompt for prefix in combined_sampler.prefix),
+                "Expected prompt to contain any prefix",
+            )
+            self.assertTrue(
+                all(
+                    token not in request.prompt
+                    for line in self.test_data
+                    for token in line.split()
+                ),
+                "Expected prompt not to contain any from data",
+            )
+        finally:
+            # Restore original random.choice
+            random.choice = original_choice
+
+    def test_special_tokens_filtered(self):
+        """Test that special tokens are filtered out from the tokens list."""
+        sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            random_prompt=True,
+        )
+
+        # Check that special tokens (<special>, <pad>) are filtered out
+        # and regular tokens (token1, token2, etc.) are kept
+        for token in sampler.tokens:
+            self.assertNotEqual(3, token, "Expected special tokens to be filtered out")
+            self.assertNotEqual(4, token, "Expected special tokens to be filtered out")
+            self.assertIn(token, [0, 1, 2, 5], "Expected regular tokens to be kept")
