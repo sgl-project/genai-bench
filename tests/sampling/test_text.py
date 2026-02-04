@@ -293,9 +293,17 @@ class TestTextSampler(unittest.TestCase):
             num_output_tokens=50,
         )
 
-        # Mock tokenizer methods
-        self.tokenizer.encode.return_value = list(range(100))
-        self.tokenizer.decode.return_value = "Test prompt text with prefix"
+        # Mock tokenizer to pass through text for better verification
+        def mock_encode(text, add_special_tokens=False):
+            # Return token list with length proportional to text
+            return list(range(len(text.split())))
+
+        def mock_decode(tokens, skip_special_tokens=True):
+            # Return text that preserves the input text structure
+            return " ".join([f"token{i}" for i in tokens])
+
+        self.tokenizer.encode.side_effect = mock_encode
+        self.tokenizer.decode.side_effect = mock_decode
 
         # Sample first request
         request1 = prefix_sampler.sample(scenario)
@@ -319,8 +327,13 @@ class TestTextSampler(unittest.TestCase):
         # Sample second request to verify separator increments
         request2 = prefix_sampler.sample(scenario)
 
-        # Verify both requests are valid strings
+        # Verify both requests are valid strings and different
         self.assertIsInstance(request2.prompt, str)
+        self.assertNotEqual(
+            request1.prompt,
+            request2.prompt,
+            "Prompts should be different due to numbered separators",
+        )
 
         # Request counter should increment to 2
         self.assertEqual(prefix_sampler._request_counter, 2)

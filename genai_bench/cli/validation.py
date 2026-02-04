@@ -427,14 +427,19 @@ def validate_prefix_len_with_context(
 
     # Check if at least one scenario is deterministic (starts with "D(")
     if traffic_scenario:
-        has_deterministic = any(
-            scenario.strip().startswith("D(")
-            for scenario in traffic_scenario
-            if scenario != "dataset"
-        )
-        if not has_deterministic:
+        # Reject if any scenario is "dataset" when prefix_len is set
+        if "dataset" in traffic_scenario:
             raise click.UsageError(
-                "--prefix-len requires at least one deterministic "
-                "traffic scenario (e.g., 'D(100,50)'). "
-                f"Got: {', '.join(traffic_scenario)}"
+                "--prefix-len is not supported with dataset mode. "
+                "Remove 'dataset' from --traffic-scenario or remove --prefix-len."
+            )
+        # All scenarios must be deterministic when prefix_len is set
+        non_deterministic = [
+            s for s in traffic_scenario if not s.strip().startswith("D(")
+        ]
+        if non_deterministic:
+            raise click.UsageError(
+                "--prefix-len requires all traffic scenarios to be deterministic "
+                "(e.g., 'D(100,50)'). "
+                f"Non-deterministic scenarios found: {', '.join(non_deterministic)}"
             )
