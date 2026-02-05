@@ -497,6 +497,7 @@ def test_validate_metrics_partial_none_values():
             output_inference_speed=10.0,
             num_input_tokens=5,
             num_output_tokens=10,
+            num_reasoning_tokens=0,
             total_tokens=15,
             input_throughput=20.0,
             output_throughput=25.0,
