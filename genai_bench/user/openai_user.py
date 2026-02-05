@@ -17,6 +17,7 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserReRankRequest,
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
@@ -30,7 +31,7 @@ class OpenAIUser(BaseUser):
         "text-to-text": "chat",
         "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
-        # Future support can be added here
+        "text-to-rerank": "rerank",
     }
 
     host: Optional[str] = None
@@ -162,6 +163,34 @@ class OpenAIUser(BaseUser):
             **user_request.additional_request_params,
         }
         self.send_request(False, endpoint, payload, self.parse_embedding_response)
+
+    @task
+    def rerank(self):
+        endpoint = "/rerank"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserReRankRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserReRankRequest for OpenAIUser.rerank, "
+                f"got {type(user_request)}"
+            )
+
+        payload = {
+            "model": user_request.model,
+            "query": user_request.query,
+            "documents": user_request.documents,
+            **user_request.additional_request_params,
+        }
+
+        self.send_request(
+            False,
+            endpoint,
+            payload,
+            self.parse_rerank_response,
+            user_request.num_prefill_tokens,
+        )
 
     def send_request(
         self,
@@ -424,4 +453,39 @@ class OpenAIUser(BaseUser):
             end_time=end_time,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
+        )
+
+    @staticmethod
+    def parse_rerank_response(
+        response: Response,
+        start_time: float,
+        num_prefill_tokens: Optional[int],
+        end_time: float,
+    ) -> UserResponse:
+        """
+        Parses a rerank response from vLLM/SGLang backends.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            num_prefill_tokens (Optional[int]): Number of tokens in the request.
+            end_time (float): The time when the request was finished.
+
+        Returns:
+            UserResponse: A response object with metrics.
+        """
+        data = response.json()
+
+        # Extract token count from usage if available
+        if "usage" in data and "prompt_tokens" in data["usage"]:
+            actual_tokens = data["usage"]["prompt_tokens"]
+            if num_prefill_tokens is None:
+                num_prefill_tokens = actual_tokens
+
+        return UserResponse(
+            status_code=200,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            num_prefill_tokens=num_prefill_tokens or 0,
         )
