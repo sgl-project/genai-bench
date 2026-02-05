@@ -661,6 +661,8 @@ def test_openai_model_format(mock_post, mock_together_user):
     assert response.generated_text == "Hello"
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 8
+    # usage chunk had completion_tokens_details.reasoning_tokens: 0
+    assert response.reasoning_tokens == 0
 
 
 @patch("genai_bench.user.together_user.requests.post")
@@ -729,11 +731,13 @@ def test_chat_with_reasoning_content_and_token_estimation(
     final_text = "The sky is blue"
     combined_text = reasoning_text + final_text
 
-    # Mock sampler so token estimation equals len(combined_text)
+    # Mock sampler: first call for tokens_received (combined_text), second for
+    # reasoning_tokens (reasoning_text)
     mock_together_user.environment.sampler = MagicMock()
-    mock_together_user.environment.sampler.get_token_length.return_value = len(
-        combined_text
-    )
+    mock_together_user.environment.sampler.get_token_length.side_effect = [
+        len(combined_text),
+        len(reasoning_text),
+    ]
 
     # Stream: first reasoning_content, then content,
     # then a final chunk without usage (forces estimation)
@@ -784,6 +788,134 @@ def test_chat_with_reasoning_content_and_token_estimation(
 
     # Token estimation must be based on reasoning + content
     assert resp.tokens_received == len(combined_text)
-    mock_together_user.environment.sampler.get_token_length.assert_called_once_with(
+    # reasoning_tokens estimated from reasoning_content when server sends no usage
+    assert resp.reasoning_tokens == len(reasoning_text)
+    mock_together_user.environment.sampler.get_token_length.assert_any_call(
         combined_text, add_special_tokens=False
     )
+    mock_together_user.environment.sampler.get_token_length.assert_any_call(
+        reasoning_text, add_special_tokens=False
+    )
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_streaming_parses_reasoning_tokens(mock_post, mock_together_user):
+    """When usage chunk has completion_tokens_details.reasoning_tokens, it is parsed."""
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="gpt-4",
+        prompt="Think step by step",
+        num_prefill_tokens=10,
+        additional_request_params={},
+        max_tokens=100,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    chunk = (
+        b'data: {"id": "chat-1", "choices": [{"delta": {"content": "Done"}, '
+        b'"finish_reason": "stop", "index": 0}], "usage": {"prompt_tokens": 10, '
+        b'"completion_tokens": 50, '
+        b'"completion_tokens_details": {"reasoning_tokens": 30}}}'
+    )
+    response_mock.iter_lines = MagicMock(return_value=[chunk])
+    mock_post.return_value = response_mock
+
+    response = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/chat",
+        payload={},
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert isinstance(response, UserChatResponse)
+    assert response.tokens_received == 50
+    assert response.reasoning_tokens == 30
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_client_estimates_reasoning_tokens_when_server_reports_zero(
+    mock_post, mock_together_user
+):
+    """
+    When server sends reasoning_content but usage has reasoning_tokens=0,
+    we estimate reasoning_tokens from streamed reasoning_content via tokenizer.
+    """
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="gpt-4",
+        prompt="Think step by step",
+        num_prefill_tokens=10,
+        additional_request_params={},
+        max_tokens=100,
+    )
+    reasoning_only = "Thinking step by step..."
+    mock_together_user.environment.sampler = MagicMock()
+    mock_together_user.environment.sampler.get_token_length = MagicMock(return_value=42)
+
+    chunk = (
+        b'data: {"id": "chat-1", "choices": [{"delta": {"reasoning_content": '
+        b'"Thinking step by step..."}, "finish_reason": "stop", "index": 0}], '
+        b'"usage": {"prompt_tokens": 10, "completion_tokens": 50, '
+        b'"completion_tokens_details": {"reasoning_tokens": 0}}}'
+    )
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(return_value=[chunk])
+    mock_post.return_value = response_mock
+
+    response = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/chat",
+        payload={},
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert isinstance(response, UserChatResponse)
+    assert response.tokens_received == 50
+    assert response.reasoning_tokens == 42
+    mock_together_user.environment.sampler.get_token_length.assert_called_once_with(
+        reasoning_only, add_special_tokens=False
+    )
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_server_reasoning_tokens_not_overwritten(mock_post, mock_together_user):
+    """
+    When server reports reasoning_tokens > 0, we do not overwrite with
+    client-side estimate.
+    """
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="gpt-4",
+        prompt="Think",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=50,
+    )
+    mock_together_user.environment.sampler = MagicMock()
+    mock_together_user.environment.sampler.get_token_length = MagicMock(
+        return_value=999
+    )
+
+    chunk = (
+        b'data: {"id": "chat-1", "choices": [{"delta": {"reasoning_content": '
+        b'"Some reasoning"}, "finish_reason": "stop", "index": 0}], '
+        b'"usage": {"prompt_tokens": 5, "completion_tokens": 20, '
+        b'"completion_tokens_details": {"reasoning_tokens": 5}}}'
+    )
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(return_value=[chunk])
+    mock_post.return_value = response_mock
+
+    response = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/chat",
+        payload={},
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert isinstance(response, UserChatResponse)
+    assert response.reasoning_tokens == 5
+    mock_together_user.environment.sampler.get_token_length.assert_not_called()

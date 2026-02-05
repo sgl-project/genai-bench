@@ -46,6 +46,46 @@ def test_request_level_metrics_calculation_with_chat_response():
     assert request_metrics_collector.metrics.ttft == 100
     assert request_metrics_collector.metrics.e2e_latency == 110
     assert request_metrics_collector.metrics.num_input_tokens == 10
+    # No reasoning_tokens on mock -> 0
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 0
+
+
+def test_request_level_metrics_calculation_with_reasoning_tokens():
+    """When UserChatResponse has reasoning_tokens set, metrics record it."""
+    mock_response = MagicMock(spec=UserChatResponse)
+    mock_response.status_code = 200
+    mock_response.generated_text = "answer"
+    mock_response.tokens_received = 10
+    mock_response.reasoning_tokens = 4
+    mock_response.time_at_first_token = 1722986731
+    mock_response.start_time = 1722986631
+    mock_response.end_time = 1722986741
+    mock_response.num_prefill_tokens = 10
+
+    request_metrics_collector = RequestMetricsCollector()
+    request_metrics_collector.calculate_metrics(mock_response)
+
+    assert request_metrics_collector.metrics.num_output_tokens == 10
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 4
+
+
+def test_request_level_metrics_calculation_with_reasoning_tokens_none():
+    """When UserChatResponse has reasoning_tokens=None, collector stores 0."""
+    mock_response = MagicMock(spec=UserChatResponse)
+    mock_response.status_code = 200
+    mock_response.generated_text = "answer"
+    mock_response.tokens_received = 10
+    mock_response.reasoning_tokens = None
+    mock_response.time_at_first_token = 1722986731
+    mock_response.start_time = 1722986631
+    mock_response.end_time = 1722986741
+    mock_response.num_prefill_tokens = 10
+
+    request_metrics_collector = RequestMetricsCollector()
+    request_metrics_collector.calculate_metrics(mock_response)
+
+    assert request_metrics_collector.metrics.num_output_tokens == 10
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 0
 
 
 def test_request_level_metrics_calculation_with_embeddings_response():
@@ -89,6 +129,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
+        num_reasoning_tokens=0,
         output_inference_speed=5,
         total_tokens=12,
     )
@@ -102,6 +143,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         output_throughput=8.46,
         num_input_tokens=3,
         num_output_tokens=11,
+        num_reasoning_tokens=2,
         output_inference_speed=3.3,
         total_tokens=14,
     )
@@ -130,6 +172,8 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert aggregated_metrics.stats.e2e_latency["mean"] == pytest.approx(1.25)
     assert aggregated_metrics.stats.input_throughput["mean"] == pytest.approx(17.5)
     assert aggregated_metrics.stats.output_throughput["mean"] == pytest.approx(9.7855)
+    assert aggregated_metrics.stats.num_reasoning_tokens["mean"] == pytest.approx(1.0)
+    assert aggregated_metrics.stats.num_reasoning_tokens["sum"] == pytest.approx(2.0)
 
     # Check metadata calculations
     assert aggregated_metrics.num_requests == 3
@@ -167,6 +211,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
+        num_reasoning_tokens=0,
         output_inference_speed=1 / 0.0000002,
         total_tokens=12,
     )
@@ -190,6 +235,7 @@ def test_filter_metrics(aggregated_metrics_collector):
         e2e_latency=0.1,
         input_throughput=20.0,
         num_input_tokens=2,
+        num_reasoning_tokens=0,
     )
 
     aggregated_metrics_collector.add_single_request_metrics(embedding_metrics)
@@ -207,6 +253,7 @@ def test_update_live_metrics(aggregated_metrics_collector):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
+        num_reasoning_tokens=0,
         output_inference_speed=5,
         total_tokens=12,
     )
@@ -220,6 +267,7 @@ def test_update_live_metrics(aggregated_metrics_collector):
         output_throughput=8.46,
         num_input_tokens=3,
         num_output_tokens=11,
+        num_reasoning_tokens=0,
         output_inference_speed=3.3,
         total_tokens=14,
     )
@@ -258,6 +306,7 @@ def test_filter_warmup_and_cooldown_metrics(aggregated_metrics_collector):
             output_throughput=11.111,
             num_input_tokens=2,
             num_output_tokens=10,
+            num_reasoning_tokens=0,
             output_inference_speed=5,
             total_tokens=12,
         )
@@ -295,6 +344,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
+        num_reasoning_tokens=0,
         output_inference_speed=5,
         total_tokens=12,
     )
@@ -313,6 +363,37 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
     assert "individual_request_metrics" in saved_data
     assert len(saved_data["individual_request_metrics"]) == 1
     assert saved_data["aggregated_metrics"]["num_requests"] == 1
+
+
+def test_save_and_load_metrics_num_reasoning_tokens_roundtrip(
+    aggregated_metrics_collector, tmp_path
+):
+    """Save metrics with num_reasoning_tokens set; reload and assert field present."""
+    metrics = RequestLevelMetrics(
+        ttft=0.1,
+        tpot=0.2,
+        e2e_latency=1.0,
+        output_latency=0.9,
+        input_throughput=20.0,
+        output_throughput=11.111,
+        num_input_tokens=2,
+        num_output_tokens=10,
+        num_reasoning_tokens=3,
+        output_inference_speed=5,
+        total_tokens=12,
+    )
+    aggregated_metrics_collector.add_single_request_metrics(metrics)
+    aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.0, 0.0)
+
+    save_path = tmp_path / "metrics_roundtrip.json"
+    aggregated_metrics_collector.save(str(save_path))
+
+    with open(save_path, "r") as f:
+        loaded = json.load(f)
+
+    assert loaded["individual_request_metrics"][0]["num_reasoning_tokens"] == 3
+    assert loaded["aggregated_metrics"]["stats"]["num_reasoning_tokens"]["mean"] == 3
+    assert loaded["aggregated_metrics"]["stats"]["num_reasoning_tokens"]["sum"] == 3
 
 
 def test_aggregate_empty_metrics(aggregated_metrics_collector, tmp_path, caplog):
@@ -366,6 +447,7 @@ def test_validate_metrics_success():
         output_inference_speed=10.0,
         num_input_tokens=5,
         num_output_tokens=10,
+        num_reasoning_tokens=0,
         total_tokens=15,
         input_throughput=20.0,
         output_throughput=25.0,
@@ -433,6 +515,7 @@ def test_validate_metrics_from_json():
             "output_inference_speed": 10.0,
             "num_input_tokens": 5,
             "num_output_tokens": 10,
+            "num_reasoning_tokens": 2,
             "total_tokens": 15,
             "input_throughput": 20.0,
             "output_throughput": 25.0,
@@ -441,6 +524,7 @@ def test_validate_metrics_from_json():
     metrics = RequestLevelMetrics.model_validate_json(valid_json)
     assert metrics.ttft == 1.0
     assert metrics.output_throughput == 25.0
+    assert metrics.num_reasoning_tokens == 2
 
     # Valid JSON with error code
     error_json = json.dumps(
@@ -454,6 +538,7 @@ def test_validate_metrics_from_json():
             "output_inference_speed": None,
             "num_input_tokens": None,
             "num_output_tokens": None,
+            "num_reasoning_tokens": None,
             "total_tokens": None,
             "input_throughput": None,
             "output_throughput": None,
@@ -473,6 +558,7 @@ def test_validate_metrics_from_json():
             "output_inference_speed": 10.0,
             "num_input_tokens": 5,
             "num_output_tokens": 10,
+            "num_reasoning_tokens": 0,
             "total_tokens": 15,
             "input_throughput": 20.0,
             "output_throughput": 25.0,

@@ -767,21 +767,22 @@ class TestAzureOpenAIUser:
         """Test _get_usage_info with None prefill tokens (vision task)."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
-        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
-            data, None
+        num_prefill, num_prompt, tokens_received, reasoning_tokens = (
+            azure_user._get_usage_info(data, None)
         )
 
         assert num_prefill == 100  # Uses prompt tokens for vision
         assert num_prompt == 100
         assert tokens_received == 50
+        assert reasoning_tokens is None
 
     def test_get_usage_info_with_token_difference_warning(self, azure_user):
         """Test _get_usage_info with significant token difference."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
         with patch("genai_bench.user.azure_openai_user.logger") as mock_logger:
-            num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
-                data, 40
+            num_prefill, num_prompt, tokens_received, reasoning_tokens = (
+                azure_user._get_usage_info(data, 40)
             )
 
             # Check warning was logged (100 - 40 = 60, which is >= 50)
@@ -793,6 +794,7 @@ class TestAzureOpenAIUser:
         assert num_prefill == 40
         assert num_prompt == 100
         assert tokens_received == 50
+        assert reasoning_tokens is None
 
     def test_parse_streaming_response_with_index_error(self, azure_user):
         """Test parsing streaming response with malformed data causing IndexError."""
@@ -908,3 +910,61 @@ class TestAzureOpenAIUser:
 
         assert result.generated_text == "Hello"
         assert result.tokens_received == 1
+
+    def test_streaming_parses_reasoning_tokens(self, azure_user):
+        """Usage chunk with completion_tokens_details.reasoning_tokens is parsed."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            b'data: {"id": "chat-1", "choices": [{"delta": {"content": "Done"}, '
+            b'"finish_reason": "stop", "index": 0}], "usage": {"prompt_tokens": 10, '
+            b'"completion_tokens": 50, '
+            b'"completion_tokens_details": {"reasoning_tokens": 30}}}',
+            b"data: [DONE]",
+        ]
+
+        result = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+
+        assert isinstance(result, UserChatResponse)
+        assert result.tokens_received == 50
+        assert result.reasoning_tokens == 30
+
+    def test_client_estimates_reasoning_tokens_when_server_reports_zero(
+        self, azure_user
+    ):
+        """reasoning_content + reasoning_tokens=0: we estimate via tokenizer."""
+        azure_user.environment.sampler.get_token_length = MagicMock(return_value=42)
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            b'data: {"id": "chat-1", "choices": [{"delta": {"reasoning_content": '
+            b'"Thinking step by step..."}, "finish_reason": "stop", "index": 0}], '
+            b'"usage": {"prompt_tokens": 10, "completion_tokens": 50, '
+            b'"completion_tokens_details": {"reasoning_tokens": 0}}}',
+            b"data: [DONE]",
+        ]
+
+        result = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+
+        assert isinstance(result, UserChatResponse)
+        assert result.tokens_received == 50
+        assert result.reasoning_tokens == 42
+        azure_user.environment.sampler.get_token_length.assert_called_once_with(
+            "Thinking step by step...", add_special_tokens=False
+        )
+
+    def test_server_reasoning_tokens_not_overwritten(self, azure_user):
+        """Server reasoning_tokens > 0 is used; client estimate not overwritten."""
+        azure_user.environment.sampler.get_token_length = MagicMock(return_value=999)
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            b'data: {"id": "chat-1", "choices": [{"delta": {"reasoning_content": '
+            b'"Some reasoning"}, "finish_reason": "stop", "index": 0}], '
+            b'"usage": {"prompt_tokens": 5, "completion_tokens": 20, '
+            b'"completion_tokens_details": {"reasoning_tokens": 5}}}',
+            b"data: [DONE]",
+        ]
+
+        result = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+
+        assert isinstance(result, UserChatResponse)
+        assert result.reasoning_tokens == 5
+        azure_user.environment.sampler.get_token_length.assert_not_called()
