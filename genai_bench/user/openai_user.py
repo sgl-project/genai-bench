@@ -481,6 +481,15 @@ class OpenAIUser(BaseUser):
             actual_tokens = data["usage"]["prompt_tokens"]
             if num_prefill_tokens is None:
                 num_prefill_tokens = actual_tokens
+            elif abs(actual_tokens - num_prefill_tokens) >= 50:
+                logger.warning(
+                    f"Significant difference detected in prompt tokens: "
+                    f"The number of prompt tokens processed by the model "
+                    f"server ({actual_tokens}) differs from the number "
+                    f"of prefill tokens returned by the sampler "
+                    f"({num_prefill_tokens}) by "
+                    f"{abs(actual_tokens - num_prefill_tokens)} tokens."
+                )
 
         return UserResponse(
             status_code=200,
