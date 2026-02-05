@@ -136,6 +136,7 @@ def _create_summary_sheet_common(
     summary_iteration_header_map = {
         "batch_size": "Batch Size at target throughput (>{} tokens/s)",
         "num_concurrency": "Concurrency at target speed (>{} tokens/s)",
+        "request_rate": "Request Rate at target speed (>{} tokens/s)",
     }
 
     threshold = 100 if is_embedding else 10
@@ -233,6 +234,7 @@ def _create_appendix_sheet_common(
     iteration_header_map = {
         "batch_size": "Batch Size",
         "num_concurrency": "Concurrency",
+        "request_rate": "Request Rate (req/s)",
     }
     headers = [
         "GPU Type",
@@ -393,7 +395,14 @@ def create_aggregated_metrics_sheet(
         key
         for key in AggregatedMetrics.model_fields
         if key
-        not in {"stats", "scenario", "iteration_type", "num_concurrency", "batch_size"}
+        not in {
+            "stats",
+            "scenario",
+            "iteration_type",
+            "num_concurrency",
+            "batch_size",
+            "request_rate",
+        }
     ]
 
     filtered_keys = [
@@ -466,6 +475,8 @@ def create_single_request_metrics_sheet(
     headers = ["scenario", experiment_metadata.iteration_type]
     field_mapping = {}  # Map display headers to actual field names
     for field in RequestLevelMetrics.model_fields:
+        if field in {"error_code", "error_message"}:
+            continue
         if TimeUnitConverter.is_latency_field(field):
             # Add time unit to latency field headers
             display_header = TimeUnitConverter.get_unit_label(

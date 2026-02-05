@@ -40,6 +40,12 @@ class RequestLevelMetrics(BaseModel):
         "output_throughput",
     }
 
+    # Fields that are optional even when error_code is None
+    OPTIONAL_FIELDS: ClassVar[set[str]] = {
+        "error_code",
+        "error_message",
+    }
+
     @model_validator(mode="before")
     def validate_metrics(cls, values):
         """
@@ -50,12 +56,9 @@ class RequestLevelMetrics(BaseModel):
 
         error_code = values.get("error_code")
         if error_code is None:
-            # Validate all metric fields
+            # Validate all metric fields except optional ones
             for field_name, field_value in values.items():
-                if (
-                    field_name not in {"error_code", "error_message"}
-                    and field_value is None
-                ):
+                if field_name not in cls.OPTIONAL_FIELDS and field_value is None:
                     raise ValueError(
                         f"{field_name} must not be None if error_code is None."
                     )
@@ -129,9 +132,14 @@ class AggregatedMetrics(BaseModel):
     scenario: Optional[str] = Field(None, description="The sample scenario")
     num_concurrency: int = Field(1, description="Number of concurrency")
     batch_size: int = Field(1, description="Batch size for embedding tasks")
+    request_rate: Optional[int] = Field(
+        None, description="Target request rate in requests per second"
+    )
     iteration_type: str = Field(
         "num_concurrency",
-        description="Type of iteration used (num_concurrency or batch_size)",
+        description=(
+            "Type of iteration used (num_concurrency, batch_size, or request_rate)"
+        ),
     )
 
     run_duration: float = Field(0.0, description="Run duration in seconds.")

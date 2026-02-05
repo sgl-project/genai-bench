@@ -1,5 +1,6 @@
 from locust import HttpUser
 
+from functools import wraps
 from typing import Dict
 
 from genai_bench.logging import init_logger
@@ -7,6 +8,18 @@ from genai_bench.metrics.request_metrics_collector import RequestMetricsCollecto
 from genai_bench.protocol import UserRequest, UserResponse
 
 logger = init_logger(__name__)
+
+
+def rate_limited(func):
+    """Decorator to automatically acquire rate limit token before task execution."""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.acquire_rate_limit_token():
+            return
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class BaseUser(HttpUser):
@@ -19,6 +32,26 @@ class BaseUser(HttpUser):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+    def acquire_rate_limit_token(self) -> bool:
+        """
+        Acquire a token from the rate limiter if one is configured.
+
+        This should be called before making any request to enforce rate limiting.
+        Blocks until a token is available if rate limiting is enabled.
+        Returns False if rate limiter is stopped (run is ending).
+
+        Returns:
+            True if token was acquired (or no rate limiter exists), False otherwise.
+        """
+        if hasattr(self.environment, "rate_limiter") and self.environment.rate_limiter:
+            acquired = self.environment.rate_limiter.acquire()
+            if not acquired:
+                # Rate limiter stopped or timeout - don't proceed with request
+                # This is expected when run is stopping
+                return False
+
+        return True
 
     @classmethod
     def is_task_supported(cls, task: str) -> bool:
