@@ -780,8 +780,8 @@ def test_chat_with_reasoning_content_and_token_estimation(
     assert resp.status_code == 200
     assert resp.time_at_first_token is not None
 
-    # generated_text should include reasoning_content
-    assert resp.generated_text == combined_text
+    # generated_text is answer only (excludes reasoning_content)
+    assert resp.generated_text == final_text
 
     # Warning about missing usage must be present
     assert "There is no usage info returned from the model server" in caplog.text

@@ -284,21 +284,23 @@ class TogetherUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content")
+                content = delta.get("content")
+                reasoning_chunk = delta.get("reasoning_content") or ""
                 usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
-                reasoning_text += delta.get("reasoning_content") or ""
+                reasoning_text += reasoning_chunk
+                has_token = content or reasoning_chunk
+                if has_token and not time_at_first_token:
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                    time_at_first_token = time.monotonic()
                 if content:
-                    if not time_at_first_token:
-                        if tokens_received > 1:
-                            logger.warning(
-                                f"🚨🚨🚨 The first chunk the server returned "
-                                f"has >1 tokens: {tokens_received}. It will "
-                                f"affect the accuracy of time_at_first_token!"
-                            )
-                        time_at_first_token = time.monotonic()
                     generated_text += content
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
@@ -336,7 +338,7 @@ class TogetherUser(BaseUser):
 
         if not tokens_received:
             tokens_received = self.environment.sampler.get_token_length(
-                generated_text, add_special_tokens=False
+                reasoning_text + generated_text, add_special_tokens=False
             )
             logger.warning(
                 "🚨🚨🚨 There is no usage info returned from the model "
