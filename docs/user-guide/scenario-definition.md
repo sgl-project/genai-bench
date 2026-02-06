@@ -117,21 +117,30 @@ Many LLM inference servers (like vLLM, SGLang, and others) can cache and reuse t
 
 #### How to enable
 
-Use the `--prefix-len` option to specify the length of the shared prefix in tokens. Must be used with a deterministic scenario like `D(input_tokens,output_tokens)`.
+Choose one of two mutually exclusive options:
+
+1. **`--prefix-len`**: Specify an absolute prefix length in tokens
+   - Same prefix length for all requests
+   - Example: `--prefix-len 1500` uses exactly 1500 tokens as prefix
+   - Works with any scenario type (deterministic, normal, uniform)
+   - Must be ≤ minimum possible input tokens for all scenarios
+
+2. **`--prefix-ratio`**: Specify a ratio of prefix length to input length
+   - Value in range [0.0, 1.0] (e.g., `0.75` for 75%, `1.0` for 100%)
+   - Prefix length computed per-request as `int(num_input_tokens * ratio)`
+   - Requires deterministic scenarios like `D(input_tokens,output_tokens)`
 
 #### Request format
 
 Each request follows this format:
 
 ```
-<shared_prefix>
-#N
-<unique_suffix>
+<shared_prefix><separator><unique_suffix>
 ```
 
 Where:
 - `<shared_prefix>`: Generated once from the dataset and reused for all requests (length specified by `--prefix-len`)
-- `#N`: A numbered separator that makes each request unique (e.g., `\n#1\n`, `\n#2\n`, `\n#3\n`). Typically 4 tokens, but may be truncated if space is limited.
+- `<separator>`: A random 4-character hex hash that makes each request unique (e.g., `a7f3`, `2b9c`). Typically 1 token, but may be truncated if space is limited.
 - `<unique_suffix>`: Generated from the dataset for each request
 
 The separator and suffix lengths are automatically adjusted to ensure the total token count matches the scenario specification exactly.
@@ -141,12 +150,20 @@ The separator and suffix lengths are automatically adjusted to ensure the total 
 Prefix caching has the following requirements:
 
 1. **Task type**: Only supported for `text-to-text` tasks
-2. **Traffic scenarios**: Requires a deterministic traffic scenario (e.g., `D(100,50)`)
-   - Must use at least one deterministic scenario starting with `D(`
+2. **Traffic scenarios**:
+   - **`--prefix-len`**: Works with any scenario type (D, N, U)
+     - Must be ≤ minimum possible input tokens
+     - For `D(1000,100)`: min = 1000
+     - For `N(1000,200)/(500,100)`: min = max(1, mean - 3*stddev) = 400
+     - For `U(500,1000)/(100,200)`: min = 500
+     - If a sample results in `num_input_tokens < prefix_len`, it will be resampled
+   - **`--prefix-ratio`**: Requires deterministic scenarios only
+     - All scenarios must be deterministic starting with `D(`
    - **Not supported** with dataset mode (when using `--dataset-path` without `--traffic-scenario`)
-3. **Prefix length range**: Must be in the range `[0, input_tokens]`
-   - For `D(1000,100)`, `--prefix-len` can be 0 to 1000
+3. **Prefix length range**: Must be in the range `[0, min_input_tokens]`
+   - For multiple scenarios, `prefix_len` must be `<= min(input_tokens)` across all scenarios
    - The separator will be truncated automatically if needed to maintain exact token counts
+4. **Multi-worker consistency**: Currently, the prefix is generated using a fixed random seed so all workers produce the same prefix text. This ensures the server can cache and reuse the KV cache across requests from different workers. Note: This approach may be refined in future versions.
 
 #### Examples
 
@@ -182,6 +199,44 @@ genai-bench benchmark --task text-to-text --traffic-scenario "D(1000,100)" --pre
 genai-bench benchmark --task text-to-text --traffic-scenario "D(1000,100)" --prefix-len 900 --num-concurrency 8 ...
 ```
 
+**Using --prefix-len with multiple scenarios** (same absolute prefix, different ratios):
+
+```bash
+# Test how cache efficiency changes across different input sizes with same prefix length
+genai-bench benchmark \
+  --task text-to-text \
+  --traffic-scenario "D(1000,100)" \
+  --traffic-scenario "D(2000,200)" \
+  --traffic-scenario "D(4000,400)" \
+  --prefix-len 800 \
+  --num-concurrency 10 \
+  --api-backend sglang \
+  --api-base http://localhost:8000 \
+  --api-model-name meta-llama/Meta-Llama-3-8B-Instruct \
+  --model-tokenizer meta-llama/Meta-Llama-3-8B-Instruct
+```
+
+This tests scenarios with different cache ratios (80%, 40%, 20%) while keeping the same 800-token prefix.
+
+**Using --prefix-ratio with multiple scenarios** (same ratio, different absolute lengths):
+
+```bash
+# Test how 75% prefix caching performs across different input sizes
+genai-bench benchmark \
+  --task text-to-text \
+  --traffic-scenario "D(1000,100)" \
+  --traffic-scenario "D(2000,200)" \
+  --traffic-scenario "D(4000,400)" \
+  --prefix-ratio 0.75 \
+  --num-concurrency 10 \
+  --api-backend sglang \
+  --api-base http://localhost:8000 \
+  --api-model-name meta-llama/Meta-Llama-3-8B-Instruct \
+  --model-tokenizer meta-llama/Meta-Llama-3-8B-Instruct
+```
+
+This automatically uses 750, 1500, and 3000 token prefixes respectively, maintaining 75% ratio across all scenarios.
+
 #### Use cases
 
 Prefix caching is particularly useful for:
@@ -194,7 +249,7 @@ Prefix caching is particularly useful for:
 #### Implementation details
 
 - The prefix is generated **once** at the start of the benchmark from the dataset and reused for all requests
-- Each request gets a unique numbered separator (`\n#1\n`, `\n#2\n`, etc.) to distinguish it from others
-- The separator is typically 4 tokens but may be truncated when `prefix_len` is close to `input_tokens`
+- Each request gets a unique random 4-character hex hash separator (e.g., `a7f3`, `2b9c`) to distinguish it from others
+- The separator is typically 1 token but may be truncated when `prefix_len` is close to `input_tokens`
 - The suffix varies for each request, generated from the dataset to simulate real-world usage patterns
 - Total token count always matches the scenario specification exactly (e.g., `D(1000,100)` always sends exactly 1000 input tokens)

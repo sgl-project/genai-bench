@@ -34,6 +34,7 @@ class TextSampler(Sampler):
         additional_request_params: Optional[Dict[str, Any]] = None,
         dataset_config: Optional[DatasetConfig] = None,
         prefix_len: Optional[int] = None,
+        prefix_ratio: Optional[float] = None,
         **kwargs,
     ):
         super().__init__(
@@ -43,9 +44,10 @@ class TextSampler(Sampler):
         self.data = data
         self.batch_size = 1  # Default batch size
         self.prefix_len = prefix_len
-        # Globally shared prefix (generated once)
+        self.prefix_ratio = prefix_ratio
+        # Globally shared prefix (generated once for --prefix-len,
+        # per-request for --prefix-ratio)
         self._shared_prefix: Optional[str] = None
-        self._request_counter = 0  # For numbered separators
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -72,6 +74,7 @@ class TextSampler(Sampler):
         if self._is_dataset_mode(scenario):
             # Use dataset-mode sampling
             num_input_tokens, num_output_tokens = None, None
+            effective_prefix_len = None
             self.additional_request_params["ignore_eos"] = False
         else:
             # Use scenario-based sampling
@@ -79,18 +82,32 @@ class TextSampler(Sampler):
             num_input_tokens, num_output_tokens = scenario.sample()
             self.additional_request_params["ignore_eos"] = True
 
-            # Validate prefix_len is within allowed range [0, num_input_tokens]
-            if self.prefix_len is not None and (
-                self.prefix_len < 0 or self.prefix_len > num_input_tokens
-            ):
-                raise ValueError(
-                    f"--prefix-len must be in range [0, {num_input_tokens}] for "
-                    f"traffic scenario with {num_input_tokens} input tokens. "
-                    f"Got: {self.prefix_len}"
-                )
+            # Compute effective prefix length based on which option is used
+            if self.prefix_ratio is not None:
+                # For --prefix-ratio: compute per-request based on actual input tokens
+                effective_prefix_len = int(num_input_tokens * self.prefix_ratio)
+            elif self.prefix_len is not None:
+                # For --prefix-len: use the fixed value
+                effective_prefix_len = self.prefix_len
+                # For non-deterministic scenarios, resample if needed
+                max_resample_attempts = 10
+                for _ in range(max_resample_attempts):
+                    if num_input_tokens >= effective_prefix_len:
+                        break
+                    num_input_tokens, num_output_tokens = scenario.sample()
+                else:
+                    raise ValueError(
+                        f"Could not sample input_tokens >= prefix_len "
+                        f"({self.prefix_len}) after {max_resample_attempts} attempts. "
+                        f"Last sample: {num_input_tokens} tokens."
+                    )
+            else:
+                effective_prefix_len = None
 
-        prompt = self._sample_text(num_input_tokens)
-        num_prefill_tokens = self._get_prefill_token_count(prompt)
+        prompt = self._sample_text(num_input_tokens, effective_prefix_len)
+        num_prefill_tokens = self.get_token_length(prompt)
+        if num_input_tokens is not None:
+            self._check_discrepancy(num_input_tokens, num_prefill_tokens, threshold=0.1)
 
         return UserChatRequest(
             model=self.model,
@@ -178,7 +195,11 @@ class TextSampler(Sampler):
                 f"{type(scenario.scenario_type)}"
             )
 
-    def _sample_text(self, num_input_tokens: Optional[int]) -> str:
+    def _sample_text(
+        self,
+        num_input_tokens: Optional[int],
+        effective_prefix_len: Optional[int] = None,
+    ) -> str:
         """
         Samples text from a list of lines based on the specified number of
         input tokens. If num_input_tokens is None, samples a random line
@@ -186,6 +207,8 @@ class TextSampler(Sampler):
 
         Args:
             num_input_tokens (int): The target number of input tokens.
+            effective_prefix_len (int): The effective prefix length for this
+                request.
 
         Returns:
             str: A text prompt containing the desired number of tokens.
@@ -193,27 +216,45 @@ class TextSampler(Sampler):
         if not num_input_tokens:
             return random.choice(self.data)
 
-        # Generate shared prefix if needed (only once per session)
-        if self.prefix_len is not None and self._shared_prefix is None:
-            self._shared_prefix = self._generate_text_from_dataset(self.prefix_len)
-            logger.info(
-                f"Generated shared prefix ({self.prefix_len} tokens) "
-                f"from dataset for prefix caching. "
-                f"This prefix will be reused across all requests."
-            )
+        # Generate shared prefix if needed
+        # Use fixed seed for multi-worker consistency (all workers generate same prefix)
+        if effective_prefix_len is not None:
+            prefix_rng = random.Random(42)
+            if self.prefix_len is not None:
+                # --prefix-len mode: generate once and cache
+                if self._shared_prefix is None:
+                    self._shared_prefix = self._generate_text_from_dataset(
+                        effective_prefix_len, rng=prefix_rng
+                    )
+                    logger.info(
+                        f"Generated shared prefix ({effective_prefix_len} tokens) "
+                        f"from dataset for prefix caching. "
+                        f"This prefix will be reused across all requests."
+                    )
+                prefix = self._shared_prefix
+            else:
+                # --prefix-ratio mode: generate fresh prefix per-request
+                prefix = self._generate_text_from_dataset(
+                    effective_prefix_len, rng=prefix_rng
+                )
+        else:
+            prefix = None
 
         # Generate suffix (remaining tokens after prefix)
         suffix_len = num_input_tokens
-        if self.prefix_len is not None:
-            suffix_len = num_input_tokens - self.prefix_len
+        if effective_prefix_len is not None:
+            suffix_len = num_input_tokens - effective_prefix_len
 
         # Generate suffix from dataset
         suffix = self._generate_text_from_dataset(suffix_len) if suffix_len > 0 else ""
 
         # Combine prefix + separator + suffix
-        if self.prefix_len is not None and self.prefix_len > 0:
-            self._request_counter += 1
-            separator = f"\n#{self._request_counter}\n"
+        if effective_prefix_len is not None and effective_prefix_len > 0:
+            # Generate a random 4-character hex string as separator
+            # Using secrets.token_hex for cryptographic randomness
+            import secrets
+
+            separator = secrets.token_hex(2)  # 2 bytes = 4 hex chars
             separator_len = self.get_token_length(separator)
 
             # Check if separator fits in available space
@@ -245,17 +286,23 @@ class TextSampler(Sampler):
                 if adjusted_suffix_len > 0
                 else ""
             )
-            return f"{self._shared_prefix}{separator}{suffix}"
+            return f"{prefix}{separator}{suffix}"
         else:
             # No prefix caching - just return the full prompt
             return self._generate_text_from_dataset(num_input_tokens)
 
-    def _generate_text_from_dataset(self, num_tokens: int) -> str:
+    def _generate_text_from_dataset(
+        self, num_tokens: int, rng: random.Random | None = None
+    ) -> str:
         """
         Generate text from the dataset by concatenating lines until target token count.
 
         Args:
             num_tokens (int): The target number of tokens.
+            rng (random.Random | None): Random generator to use for shuffling.
+                If None, uses the global random state.
+                Pass a seeded Random instance for deterministic generation
+                (e.g., for prefix generation to ensure multi-worker consistency).
 
         Returns:
             str: Generated text with approximately num_tokens tokens.
@@ -266,15 +313,12 @@ class TextSampler(Sampler):
         data_copy = self.data.copy()
         text = ""
         tokens_remaining = num_tokens
+        shuffle_func = rng.shuffle if rng else random.shuffle
 
         while tokens_remaining > 0:
-            random.shuffle(data_copy)
+            shuffle_func(data_copy)
             for line in data_copy:
-                # Tokenize line with space prefix to match concatenation
-                line_with_space = (" " if text else "") + line
-                line_tokens = self.tokenizer.encode(
-                    line_with_space, add_special_tokens=False
-                )
+                line_tokens = self.tokenizer.encode(line, add_special_tokens=False)
                 num_line_tokens = len(line_tokens)
 
                 if num_line_tokens > tokens_remaining:
@@ -283,31 +327,16 @@ class TextSampler(Sampler):
                         line_tokens[:tokens_remaining], skip_special_tokens=True
                     )
                     text += (" " if text else "") + truncated_text
-
-                    # Verify actual token count
-                    actual_tokens = len(
-                        self.tokenizer.encode(text, add_special_tokens=False)
-                    )
-                    if actual_tokens != num_tokens:
-                        # Re-tokenize and truncate to exact count
-                        text_tokens = self.tokenizer.encode(
-                            text, add_special_tokens=False
-                        )
-                        text = self.tokenizer.decode(
-                            text_tokens[:num_tokens], skip_special_tokens=True
-                        )
                     return text
 
-                text += line_with_space
+                text += line
                 tokens_remaining -= num_line_tokens
 
         return text
 
     def reset_prefix_cache(self):
-        """Reset the prefix cache and request counter (for new scenarios)."""
+        """Reset the prefix cache when switching to a new scenario."""
         self._shared_prefix = None
-        self._request_counter = 0
-        logger.debug("Reset prefix cache and request counter")
 
     def _check_discrepancy(
         self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1

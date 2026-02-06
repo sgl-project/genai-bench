@@ -759,4 +759,4 @@ def test_prefix_len_option_in_help(cli_runner):
     result = cli_runner.invoke(benchmark, ["--help"])
     assert result.exit_code == 0
     assert "--prefix-len" in result.output
-    assert "Length of shared prefix" in result.output
+    assert "prefix caching" in result.output
