@@ -217,12 +217,12 @@ def test_scatter_plot_spacing_for_different_time_units():
     assert label_line_ms is not None, "Could not find label line with milliseconds"
 
     # Verify the label spacing
-    assert label_line_s.index("|") == 7, (
-        f"Expected 7 spaces for seconds, got: {label_line_s.index('|')}"
-    )
-    assert label_line_ms.index("|") == 9, (
-        f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
-    )
+    assert (
+        label_line_s.index("|") == 7
+    ), f"Expected 7 spaces for seconds, got: {label_line_s.index('|')}"
+    assert (
+        label_line_ms.index("|") == 9
+    ), f"Expected 9 spaces for milliseconds, got: {label_line_ms.index('|')}"
 
 
 def test_minimal_dashboard_update_scatter_plot_does_not_crash():
