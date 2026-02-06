@@ -302,12 +302,26 @@ def validate_task(ctx, param, value):
             "before --task."
         )
 
-    # Check task compatibility
+    # Check task compatibility at the user class level
     if not user_class.is_task_supported(task):
         supported_tasks = ", ".join(user_class.supported_tasks.keys())
         raise click.BadParameter(
             f"Task '{task}' is not supported by the selected API backend. "
             f"Supported tasks are: {supported_tasks}."
+        )
+
+    # Some tasks are only supported by specific backends within the same
+    # user class. For example, text-to-rerank requires a /rerank endpoint
+    # which is available on vLLM/SGLang but not on the standard OpenAI API.
+    backend_task_restrictions = {
+        "text-to-rerank": {"vllm", "sglang"},
+    }
+    api_backend = ctx.params.get("api_backend", "").lower()
+    allowed_backends = backend_task_restrictions.get(task)
+    if allowed_backends and api_backend not in allowed_backends:
+        raise click.BadParameter(
+            f"Task '{task}' is not supported by the '{api_backend}' backend. "
+            f"Supported backends for this task: {', '.join(sorted(allowed_backends))}."
         )
 
     # Store the user task function in the context
