@@ -362,6 +362,7 @@ class OpenAIUser(BaseUser):
         end_time = time.monotonic()
         logger.debug(
             f"Generated text: {generated_text} \n"
+            f"Reasoning text: {reasoning_text} \n"
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
             f"Prompt Tokens: {num_prompt_tokens} \n"
