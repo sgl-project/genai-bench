@@ -12,7 +12,6 @@ from genai_bench.cli.validation import (
     validate_dataset_path_callback,
     validate_iteration_params,
     validate_object_storage_options,
-    validate_prefix_len_option,
     validate_task,
     validate_traffic_scenario_callback,
     validate_warmup_cooldown_ratio_options,
@@ -324,13 +323,24 @@ def sampling_options(func):
     )(func)
     func = click.option(
         "--prefix-len",
-        callback=validate_prefix_len_option,
         type=int,
         default=None,
-        help="Length of shared prefix in tokens for prefix caching benchmarks. "
-        "Must be in range [0, input_tokens] (e.g., for D(1000,100), use 0-1000). "
-        "If specified, prompts will include a shared prefix. "
-        "Only for text-to-text with deterministic scenarios like D(100,50).",
+        help=(
+            "Absolute prefix length in tokens for prefix caching. "
+            "Works with any scenario type (D, N, U). "
+            "Must be <= minimum possible input tokens. "
+            "Mutually exclusive with --prefix-ratio."
+        ),
+    )(func)
+    func = click.option(
+        "--prefix-ratio",
+        type=click.FloatRange(0.0, 1.0),
+        default=None,
+        help=(
+            "Prefix length as ratio of input length for prefix caching. "
+            "Range: [0.0, 1.0]. Requires deterministic scenarios. "
+            "Mutually exclusive with --prefix-len."
+        ),
     )(func)
     return func
 

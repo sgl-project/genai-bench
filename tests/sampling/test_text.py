@@ -217,8 +217,8 @@ class TestTextSampler(unittest.TestCase):
 
         self.tokenizer.encode.side_effect = mock_encode
         # Decode returns a string with same number of words as tokens
-        self.tokenizer.decode.side_effect = (
-            lambda tokens, skip_special_tokens=True: " ".join(["word"] * len(tokens))
+        self.tokenizer.decode.side_effect = lambda tokens, skip_special_tokens=True: (
+            " ".join(["word"] * len(tokens))
         )
 
         # Test requesting exact token counts
@@ -269,7 +269,7 @@ class TestTextSampler(unittest.TestCase):
         )
 
     def test_prefix_len_feature(self):
-        """Test prefix_len functionality with numbered separators."""
+        """Test prefix_len functionality with random hash separators."""
         prefix_len = 50
 
         # Create sampler with prefix_len
@@ -321,18 +321,16 @@ class TestTextSampler(unittest.TestCase):
             "Expected shared prefix to be generated after first sample",
         )
 
-        # Request counter should be 1 after first sample
-        self.assertEqual(prefix_sampler._request_counter, 1)
-
-        # Sample second request to verify separator increments
+        # Sample second request
         request2 = prefix_sampler.sample(scenario)
 
-        # Verify the counter increments (proving separators are being created)
-        self.assertEqual(prefix_sampler._request_counter, 2)
+        # Verify second request is valid
+        self.assertIsInstance(request2, UserChatRequest)
+        self.assertIsInstance(request2.prompt, str)
 
-        # Verify prompts are different due to numbered separators
+        # Verify prompts are different due to random hash separators
         self.assertNotEqual(
             request1.prompt,
             request2.prompt,
-            "Prompts should be different due to numbered separators",
+            "Prompts should be different due to random hash separators",
         )

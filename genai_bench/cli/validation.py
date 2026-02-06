@@ -391,55 +391,119 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
     return value
 
 
-def validate_prefix_len_option(ctx, param, value):
-    """Validate basic prefix length constraints (type and non-negative)."""
-    if value is None:
-        return None
-    if not isinstance(value, int):
-        raise click.BadParameter("Prefix length must be an integer.")
-    if value < 0:
-        raise click.BadParameter("Prefix length must be non-negative.")
-    return value
+def _get_min_input_tokens(scenario: Scenario) -> int | None:
+    """
+    Get the minimum possible input tokens for a scenario.
+
+    Returns:
+        Minimum input tokens, or None if cannot be determined.
+    """
+    # Deterministic: exact value
+    if hasattr(scenario, "num_input_tokens"):
+        return scenario.num_input_tokens
+
+    # Normal distribution: mean - 3*stddev (practical lower bound, ~99.7% of samples)
+    if hasattr(scenario, "mean_input_tokens") and hasattr(
+        scenario, "stddev_input_tokens"
+    ):
+        return max(1, scenario.mean_input_tokens - 3 * scenario.stddev_input_tokens)
+
+    # Uniform distribution: min_input_tokens or 1
+    if hasattr(scenario, "min_input_tokens"):
+        return scenario.min_input_tokens or 1
+
+    return None
 
 
-def validate_prefix_len_with_context(
-    prefix_len, task, dataset_path, dataset_config, traffic_scenario
+def validate_prefix_options(
+    prefix_len, prefix_ratio, task, dataset_path, dataset_config, traffic_scenario
 ):
     """
-    Validate prefix_len compatibility with task type and dataset mode.
+    Validate --prefix-len and --prefix-ratio options after CLI parsing completes.
 
-    Called after all CLI parameters are parsed to ensure all dependencies are available.
+    All validation (basic and contextual) happens here in one place.
     """
-    if prefix_len is None:
-        return
-
-    if task != "text-to-text":
+    # Check mutual exclusivity
+    if prefix_len is not None and prefix_ratio is not None:
         raise click.UsageError(
-            f"--prefix-len is only supported for text-to-text tasks, not '{task}'."
+            "--prefix-len and --prefix-ratio are mutually exclusive. Use only one."
         )
 
+    # If neither is set, nothing to validate
+    if prefix_len is None and prefix_ratio is None:
+        return
+
+    # Determine which option is being used
+    option_name = "--prefix-len" if prefix_len is not None else "--prefix-ratio"
+
+    # Basic validation for prefix_len
+    if prefix_len is not None:
+        if not isinstance(prefix_len, int):
+            raise click.UsageError("--prefix-len must be an integer.")
+        if prefix_len < 0:
+            raise click.UsageError("--prefix-len must be non-negative.")
+
+    # Task compatibility
+    if task != "text-to-text":
+        raise click.UsageError(
+            f"{option_name} is only supported for text-to-text tasks, not '{task}'."
+        )
+
+    # Dataset mode compatibility
     if (dataset_path or dataset_config) and not traffic_scenario:
         raise click.UsageError(
-            "--prefix-len requires a deterministic traffic scenario "
+            f"{option_name} requires a deterministic traffic scenario "
             "(e.g., --traffic-scenario 'D(100,50)'). "
             "Not supported with dataset mode."
         )
 
-    # Check if at least one scenario is deterministic (starts with "D(")
+    # Validate traffic scenarios
     if traffic_scenario:
-        # Reject if any scenario is "dataset" when prefix_len is set
+        # Reject if any scenario is "dataset"
         if "dataset" in traffic_scenario:
             raise click.UsageError(
-                "--prefix-len is not supported with dataset mode. "
-                "Remove 'dataset' from --traffic-scenario or remove --prefix-len."
+                f"{option_name} is not supported with dataset mode. "
+                f"Remove 'dataset' from --traffic-scenario or remove {option_name}."
             )
-        # All scenarios must be deterministic when prefix_len is set
-        non_deterministic = [
-            s for s in traffic_scenario if not s.strip().startswith("D(")
-        ]
-        if non_deterministic:
-            raise click.UsageError(
-                "--prefix-len requires all traffic scenarios to be deterministic "
-                "(e.g., 'D(100,50)'). "
-                f"Non-deterministic scenarios found: {', '.join(non_deterministic)}"
-            )
+
+        # --prefix-ratio requires deterministic scenarios (ratio adapts per-request)
+        # --prefix-len works with any scenario type (fixed prefix, variable suffix)
+        if prefix_ratio is not None:
+            non_deterministic = [
+                s for s in traffic_scenario if not s.strip().startswith("D(")
+            ]
+            if non_deterministic:
+                raise click.UsageError(
+                    "--prefix-ratio requires all traffic scenarios to be "
+                    "deterministic (e.g., 'D(100,50)'). "
+                    f"Non-deterministic scenarios found: {', '.join(non_deterministic)}"
+                )
+
+        # For --prefix-len, validate against minimum possible input tokens
+        # Supported: D(n,m), N(mean,std)/(m,s), U(min,max)/(m,n)
+        # Unsupported: I(), E(), R()
+        if prefix_len is not None:
+            unsupported_scenarios = []
+            invalid_scenarios = []
+            for scenario_str in traffic_scenario:
+                scenario = Scenario.from_string(scenario_str)
+                min_input_tokens = _get_min_input_tokens(scenario)
+                if min_input_tokens is None:
+                    unsupported_scenarios.append(scenario_str)
+                elif min_input_tokens < prefix_len:
+                    invalid_scenarios.append(
+                        f"{scenario_str} (min_input_tokens={min_input_tokens})"
+                    )
+
+            if unsupported_scenarios:
+                raise click.UsageError(
+                    "--prefix-len only supports text scenarios (D, N, U). "
+                    f"Unsupported scenarios: {', '.join(unsupported_scenarios)}"
+                )
+
+            if invalid_scenarios:
+                raise click.UsageError(
+                    f"--prefix-len ({prefix_len}) must be <= minimum input tokens "
+                    f"for all scenarios. "
+                    f"Invalid scenarios: {', '.join(invalid_scenarios)}"
+                )
