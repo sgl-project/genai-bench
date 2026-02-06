@@ -969,7 +969,10 @@ def test_rerank(mock_post, mock_openai_user):
         json={
             "model": "reranker-model",
             "query": "What is machine learning?",
-            "documents": ["ML is a subset of AI.", "Deep learning uses neural networks."],
+            "documents": [
+                "ML is a subset of AI.",
+                "Deep learning uses neural networks.",
+            ],
         },
         stream=False,
         headers={
