@@ -140,6 +140,10 @@ class UserChatResponse(UserResponse):
         default=0,
         description="The number of tokens received in the response.",
     )
+    reasoning_tokens: Optional[int] = Field(
+        default=None,
+        description="Completion tokens used for reasoning when provided by the API.",
+    )
 
 
 class APIAuthConfig(BaseModel):

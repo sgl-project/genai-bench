@@ -114,3 +114,10 @@ def test_apply_time_unit_conversion_missing_fields():
     # Should not crash and should return the config
     assert "title" in converted["plots"][0]
     assert converted["plots"][0]["title"] == "Test Plot"
+
+
+def test_num_reasoning_tokens_in_available_plot_fields():
+    """num_reasoning_tokens is included in plottable metrics."""
+    fields = PlotConfigManager.get_available_fields()
+    assert "stats.num_reasoning_tokens.mean" in fields
+    assert "stats.num_reasoning_tokens.sum" in fields

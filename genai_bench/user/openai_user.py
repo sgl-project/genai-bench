@@ -255,7 +255,9 @@ class OpenAIUser(BaseUser):
         end_chunk = b"[DONE]"
 
         generated_text = ""
+        reasoning_text = ""
         tokens_received = 0
+        reasoning_tokens = None
         time_at_first_token = None
         finish_reason = None
         previous_data = None
@@ -293,9 +295,12 @@ class OpenAIUser(BaseUser):
                 and "usage" in data
                 and data["usage"]
             ):
-                num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                    self._get_usage_info(data, num_prefill_tokens)
-                )
+                (
+                    num_prefill_tokens,
+                    num_prompt_tokens,
+                    tokens_received,
+                    reasoning_tokens,
+                ) = self._get_usage_info(data, num_prefill_tokens)
                 # Additional check for time_at_first_token when the response is
                 # too short
                 if not time_at_first_token:
@@ -313,20 +318,23 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content")
+                content = delta.get("content")
+                reasoning_chunk = delta.get("reasoning_content") or ""
                 usage = delta.get("usage")
 
                 if usage:
                     tokens_received = usage["completion_tokens"]
+                reasoning_text += reasoning_chunk
+                has_token = content or reasoning_chunk
+                if has_token and not time_at_first_token:
+                    if tokens_received > 1:
+                        logger.warning(
+                            f"🚨🚨🚨 The first chunk the server returned "
+                            f"has >1 tokens: {tokens_received}. It will "
+                            f"affect the accuracy of time_at_first_token!"
+                        )
+                    time_at_first_token = time.monotonic()
                 if content:
-                    if not time_at_first_token:
-                        if tokens_received > 1:
-                            logger.warning(
-                                f"🚨🚨🚨 The first chunk the server returned "
-                                f"has >1 tokens: {tokens_received}. It will "
-                                f"affect the accuracy of time_at_first_token!"
-                            )
-                        time_at_first_token = time.monotonic()
                     generated_text += content
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
@@ -334,9 +342,12 @@ class OpenAIUser(BaseUser):
                 # SGLang v0.4.3 to v0.4.7 has finish_reason and usage
                 # in the last chunk
                 if finish_reason and "usage" in data and data["usage"]:
-                    num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                        self._get_usage_info(data, num_prefill_tokens)
-                    )
+                    (
+                        num_prefill_tokens,
+                        num_prompt_tokens,
+                        tokens_received,
+                        reasoning_tokens,
+                    ) = self._get_usage_info(data, num_prefill_tokens)
                     break
 
             except (IndexError, KeyError) as e:
@@ -351,6 +362,7 @@ class OpenAIUser(BaseUser):
         end_time = time.monotonic()
         logger.debug(
             f"Generated text: {generated_text} \n"
+            f"Reasoning text: {reasoning_text} \n"
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
             f"Prompt Tokens: {num_prompt_tokens} \n"
@@ -361,17 +373,30 @@ class OpenAIUser(BaseUser):
 
         if not tokens_received:
             tokens_received = self.environment.sampler.get_token_length(
-                generated_text, add_special_tokens=False
+                reasoning_text + generated_text, add_special_tokens=False
             )
             logger.warning(
                 "🚨🚨🚨 There is no usage info returned from the model "
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
+        # Client-side estimate when server omits reasoning_tokens but we have
+        # reasoning_content
+        if reasoning_text.strip() and (
+            reasoning_tokens is None or reasoning_tokens == 0
+        ):
+            reasoning_tokens = self.environment.sampler.get_token_length(
+                reasoning_text, add_special_tokens=False
+            )
+            logger.debug(
+                "reasoning_tokens not reported by server; estimated from "
+                "streamed reasoning_content using client tokenizer."
+            )
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
             tokens_received=tokens_received,
+            reasoning_tokens=reasoning_tokens,
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
@@ -382,6 +407,9 @@ class OpenAIUser(BaseUser):
     def _get_usage_info(data, num_prefill_tokens):
         num_prompt_tokens = data["usage"]["prompt_tokens"]
         tokens_received = data["usage"]["completion_tokens"]
+        reasoning_tokens = (
+            data["usage"].get("completion_tokens_details", {}).get("reasoning_tokens")
+        )
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
@@ -395,7 +423,7 @@ class OpenAIUser(BaseUser):
                 f"({num_prefill_tokens}) by "
                 f"{abs(num_prompt_tokens - num_prefill_tokens)} tokens."
             )
-        return num_prefill_tokens, num_prompt_tokens, tokens_received
+        return num_prefill_tokens, num_prompt_tokens, tokens_received, reasoning_tokens
 
     @staticmethod
     def parse_embedding_response(
