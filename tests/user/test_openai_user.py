@@ -9,6 +9,7 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserReRankRequest,
     UserResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
@@ -937,3 +938,113 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
 
     # Verify system_message is not in the payload (it's been filtered out)
     assert "system_message" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_rerank(mock_post, mock_openai_user):
+    """Test rerank request."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserReRankRequest(
+        model="reranker-model",
+        query="What is machine learning?",
+        documents=["ML is a subset of AI.", "Deep learning uses neural networks."],
+        num_prefill_tokens=20,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "results": [
+            {"index": 0, "relevance_score": 0.9},
+            {"index": 1, "relevance_score": 0.7},
+        ],
+        "usage": {"prompt_tokens": 20},
+    }
+    mock_post.return_value = response_mock
+
+    mock_openai_user.rerank()
+
+    mock_post.assert_called_once_with(
+        url="http://example.com/rerank",
+        json={
+            "model": "reranker-model",
+            "query": "What is machine learning?",
+            "documents": ["ML is a subset of AI.", "Deep learning uses neural networks."],
+        },
+        stream=False,
+        headers={
+            "Authorization": "Bearer fake_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_rerank_with_wrong_request_type(mock_openai_user):
+    """Test rerank with wrong request type raises error."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: "InvalidRequestType"
+
+    with pytest.raises(
+        AttributeError,
+        match="user_request should be of type UserReRankRequest for OpenAIUser.rerank",
+    ):
+        mock_openai_user.rerank()
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_send_request_rerank_response(mock_post, mock_openai_user):
+    """Test parsing of rerank response."""
+    mock_openai_user.on_start()
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "results": [
+            {"index": 0, "relevance_score": 0.9},
+            {"index": 1, "relevance_score": 0.7},
+        ],
+        "usage": {"prompt_tokens": 25},
+    }
+    mock_post.return_value = response_mock
+
+    user_response = mock_openai_user.send_request(
+        stream=False,
+        endpoint="/rerank",
+        payload={"model": "reranker", "query": "test", "documents": ["doc1", "doc2"]},
+        num_prefill_tokens=20,
+        parse_strategy=mock_openai_user.parse_rerank_response,
+    )
+
+    assert isinstance(user_response, UserResponse)
+    assert user_response.status_code == 200
+    assert user_response.num_prefill_tokens == 20
+    mock_post.assert_called_once()
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_send_request_rerank_response_no_usage(mock_post, mock_openai_user):
+    """Test parsing of rerank response without usage info."""
+    mock_openai_user.on_start()
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "results": [
+            {"index": 0, "relevance_score": 0.9},
+        ],
+    }
+    mock_post.return_value = response_mock
+
+    user_response = mock_openai_user.send_request(
+        stream=False,
+        endpoint="/rerank",
+        payload={"model": "reranker", "query": "test", "documents": ["doc1"]},
+        num_prefill_tokens=15,
+        parse_strategy=mock_openai_user.parse_rerank_response,
+    )
+
+    assert isinstance(user_response, UserResponse)
+    assert user_response.status_code == 200
+    # Should use the provided num_prefill_tokens when no usage info
+    assert user_response.num_prefill_tokens == 15
+    mock_post.assert_called_once()
