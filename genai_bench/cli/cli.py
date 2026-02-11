@@ -180,7 +180,7 @@ def benchmark(
     # Create model authentication based on API backend
     auth_kwargs = {}
 
-    if api_backend == "openai":
+    if api_backend in ["openai", "fast-openai"]:
         # OpenAI uses API key from --api-key for backward compatibility
         # or --model-api-key for consistency with multi-cloud
         auth_kwargs["api_key"] = model_api_key or api_key
@@ -245,6 +245,7 @@ def benchmark(
         "oci-genai": "oci",
         "vllm": "openai",
         "sglang": "openai",
+        "fast-openai": "openai",
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
 
