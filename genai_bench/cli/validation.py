@@ -352,6 +352,11 @@ def validate_additional_request_params(ctx, param, value):
             ):
                 value["ignore_eos"] = True
 
+        if ctx.params.get("task") == "text-to-image" and "n" in value:
+            raise click.BadParameter(
+                "Set image count via --traffic-scenario I(width,height,num_images)."
+            )
+
         return value
     except json.JSONDecodeError as e:
         raise click.BadParameter(

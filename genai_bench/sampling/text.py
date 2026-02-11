@@ -192,7 +192,7 @@ class TextSampler(Sampler):
             prompt=prompt,
             size=size,
             quality=self.additional_request_params.get("quality"),
-            num_images=self.additional_request_params.get("n", num_images),
+            num_images=num_images,
             additional_request_params=self.additional_request_params,
         )
 

@@ -86,7 +86,7 @@ class OCIOpenAIUser(OpenAIUser):
             sdk_params = {
                 k: v
                 for k, v in user_request.additional_request_params.items()
-                if k != "compartmentId"
+                if k not in ("compartmentId", "n")
             }
 
             response = self.openai_client.images.generate(

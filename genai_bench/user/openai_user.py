@@ -184,12 +184,17 @@ class OpenAIUser(BaseUser):
             "prompt": user_request.prompt,
             "n": user_request.num_images,
             "size": user_request.size,
-            "quality": user_request.quality,
             "response_format": user_request.additional_request_params.get(
                 "response_format", "url"
             ),
-            **user_request.additional_request_params,
+            **{
+                k: v
+                for k, v in user_request.additional_request_params.items()
+                if k != "n"
+            },
         }
+        if user_request.quality is not None:
+            payload["quality"] = user_request.quality
         self.send_request(
             False, endpoint, payload, self.parse_image_generation_response
         )

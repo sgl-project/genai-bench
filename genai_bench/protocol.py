@@ -108,7 +108,7 @@ class UserImageGenerationRequest(UserRequest):
         default="1024x1024", description="The size of the generated image."
     )
     quality: Optional[str] = Field(
-        default="standard", description="The quality of the generated image."
+        default=None, description="The quality of the generated image."
     )
     num_images: Optional[int] = Field(
         default=1, description="Number of images to generate."
@@ -252,9 +252,3 @@ class ExperimentMetadata(BaseModel):
         description="Time unit for latency metrics display and export (s or ms).",
     )
     dataset_path: Optional[str] = None
-    character_token_ratio: Optional[float] = Field(
-        None,
-        description="The ratio of the total character count in the sonnet "
-        "dataset to the total token count, as determined by the model "
-        "tokenizer.",
-    )

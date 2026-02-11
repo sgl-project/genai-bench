@@ -250,8 +250,9 @@ def benchmark(
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
 
-    # Override auth backend and user class for OCI OpenAI-compatible endpoints
-    if api_backend == "openai" and compartment_id:
+    # Override auth backend and user class for OCI OpenAI-compatible endpoints.
+    # TODO: Remove task guard when OCIOpenAIUser supports chat/embeddings.
+    if api_backend == "openai" and compartment_id and task == "text-to-image":
         auth_backend = "oci"
         auth_kwargs = {
             "auth_type": auth,
