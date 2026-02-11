@@ -37,6 +37,7 @@ def test_request_level_metrics_calculation_with_chat_response():
     mock_response.start_time = 1722986631
     mock_response.end_time = 1722986741
     mock_response.num_prefill_tokens = 10
+    mock_response.reasoning_tokens = None
 
     # Initialize and calculate request metrics
     request_metrics_collector = RequestMetricsCollector()

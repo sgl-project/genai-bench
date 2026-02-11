@@ -21,6 +21,10 @@ class RequestLevelMetrics(BaseModel):
     num_output_tokens: Optional[int] = Field(
         None, description="Number of output tokens"
     )
+    num_reasoning_tokens: Optional[int] = Field(
+        None,
+        description="Number of reasoning tokens",
+    )
     total_tokens: Optional[int] = Field(None, description="Total tokens processed")
     input_throughput: Optional[float] = Field(
         None, description="Input throughput in tokens/s"
@@ -50,10 +54,12 @@ class RequestLevelMetrics(BaseModel):
 
         error_code = values.get("error_code")
         if error_code is None:
-            # Validate all metric fields
+            # Validate all metric fields (optional metrics may be None)
+            optional_metric_fields = {"num_reasoning_tokens"}
             for field_name, field_value in values.items():
                 if (
                     field_name not in {"error_code", "error_message"}
+                    and field_name not in optional_metric_fields
                     and field_value is None
                 ):
                     raise ValueError(
@@ -96,6 +102,7 @@ class MetricStats(BaseModel):
     output_inference_speed: StatField = Field(default_factory=StatField)
     num_input_tokens: StatField = Field(default_factory=StatField)
     num_output_tokens: StatField = Field(default_factory=StatField)
+    num_reasoning_tokens: StatField = Field(default_factory=StatField)
     total_tokens: StatField = Field(default_factory=StatField)
     input_throughput: StatField = Field(default_factory=StatField)
     output_throughput: StatField = Field(default_factory=StatField)
