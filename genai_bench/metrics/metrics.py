@@ -55,10 +55,12 @@ class RequestLevelMetrics(BaseModel):
 
         error_code = values.get("error_code")
         if error_code is None:
-            # Validate all metric fields
+            # Validate all metric fields (optional metrics may be None)
+            optional_metric_fields = {"num_reasoning_tokens"}
             for field_name, field_value in values.items():
                 if (
                     field_name not in {"error_code", "error_message"}
+                    and field_name not in optional_metric_fields
                     and field_value is None
                 ):
                     raise ValueError(

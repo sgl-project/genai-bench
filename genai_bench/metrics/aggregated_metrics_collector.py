@@ -205,11 +205,9 @@ class AggregatedMetricsCollector:
                 if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
                     values.append(value)
 
-            # Validate that all values are valid for processing
+            # Skip optional metrics that have no samples (e.g. num_reasoning_tokens)
             if not values:
-                raise ValueError(
-                    f"No values found for metric '{key}'. This should never happen!"
-                )
+                continue
 
             percentiles = np.percentile(values, [25, 50, 75, 90, 95, 99])
             stat_field = getattr(self.aggregated_metrics.stats, key)
