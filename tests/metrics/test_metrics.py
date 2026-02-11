@@ -47,6 +47,25 @@ def test_request_level_metrics_calculation_with_chat_response():
     assert request_metrics_collector.metrics.ttft == 100
     assert request_metrics_collector.metrics.e2e_latency == 110
     assert request_metrics_collector.metrics.num_input_tokens == 10
+    assert request_metrics_collector.metrics.num_reasoning_tokens is None
+
+
+def test_request_level_metrics_calculation_with_reasoning_tokens():
+    mock_response = MagicMock(spec=UserChatResponse)
+    mock_response.status_code = 200
+    mock_response.generated_text = "and and and and"
+    mock_response.tokens_received = 4
+    mock_response.time_at_first_token = 1722986731
+    mock_response.start_time = 1722986631
+    mock_response.end_time = 1722986741
+    mock_response.num_prefill_tokens = 10
+    mock_response.reasoning_tokens = 5
+
+    # Initialize and calculate request metrics
+    request_metrics_collector = RequestMetricsCollector()
+    request_metrics_collector.calculate_metrics(mock_response)
+
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 5
 
 
 def test_request_level_metrics_calculation_with_embeddings_response():
