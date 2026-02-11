@@ -9,6 +9,7 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
     UserResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
@@ -837,6 +838,66 @@ def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
     call_args = mock_post.call_args
     payload = call_args.kwargs["json"]
     assert "ignore_eos" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_image_generation_rest_api(mock_post, mock_openai_user):
+    """Test image generation using REST API."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageGenerationRequest(
+        model="dall-e-3",
+        prompt="A test image",
+        size="1024x1024",
+        quality="standard",
+        num_images=1,
+        additional_request_params={},
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "created": 1589478378,
+        "data": [{"url": "https://example.com/image.png"}],
+    }
+    mock_post.return_value = response_mock
+
+    # This method uses send_request and doesn't return a value
+    # Just verify it doesn't raise an exception
+    mock_openai_user.image_generation()
+
+    # Verify REST API was called
+    mock_post.assert_called_once_with(
+        url="http://example.com/v1/images/generations",
+        json={
+            "model": "dall-e-3",
+            "prompt": "A test image",
+            "n": 1,
+            "size": "1024x1024",
+            "quality": "standard",
+            "response_format": "url",
+        },
+        stream=False,
+        headers={
+            "Authorization": "Bearer fake_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_image_generation_wrong_request_type(mock_openai_user):
+    """Test image_generation with wrong request type raises AttributeError."""
+    mock_openai_user.on_start()
+    # Return wrong request type
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+
+    with pytest.raises(AttributeError, match="UserImageGenerationRequest"):
+        mock_openai_user.image_generation()
 
 
 @patch("genai_bench.user.openai_user.requests.post")

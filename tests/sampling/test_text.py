@@ -4,10 +4,12 @@ from unittest.mock import MagicMock
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
+    UserImageGenerationRequest,
     UserReRankRequest,
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
+from genai_bench.scenarios.multimodal import ImageModality
 from genai_bench.scenarios.text import ReRankScenario
 
 
@@ -258,3 +260,55 @@ class TestTextSampler(unittest.TestCase):
         self.tokenizer.decode.assert_called_with(
             line_tokens[:requested_tokens], skip_special_tokens=True
         )
+
+    def test_sample_image_generation_request(self):
+        """Test image generation request sampling."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+        scenario = ImageModality(
+            num_input_dimension_width=512,
+            num_input_dimension_height=512,
+            num_input_images=1,
+        )
+
+        request = image_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.model, "mock_model")
+        self.assertEqual(request.size, "512x512")
+        self.assertIsInstance(request.prompt, str)
+        self.assertEqual(request.num_images, 1)
+
+    def test_sample_image_generation_request_default_size(self):
+        """Test image generation with default size when no scenario."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+
+        request = image_sampler.sample(None)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.size, "1024x1024")  # Default size
+
+    def test_sample_image_generation_request_with_dataset(self):
+        """Test image generation request with dataset mode."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+        scenario = DatasetScenario()
+
+        request = image_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.size, "1024x1024")  # Default when dataset mode
+        self.assertIn(request.prompt, self.test_data)

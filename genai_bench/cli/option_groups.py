@@ -43,6 +43,7 @@ def api_options(func):
         type=click.Choice(
             [
                 "text-to-text",
+                "text-to-image",
                 "text-to-embeddings",
                 "text-to-rerank",
                 "image-text-to-text",
@@ -54,8 +55,8 @@ def api_options(func):
         prompt=True,
         callback=validate_task,
         help="The task to benchmark: it follows `<input_modality>-to-"
-        "<output_modality>` pattern. Currently we support `text-to-text`,"
-        " `image-text-to-text`, `text-to-embeddings, and `image-to-embeddings`.",
+        "<output_modality>` pattern. Currently we support `text-to-image`,"
+        " `text-to-embeddings`, `image-text-to-text`, and `image-to-embeddings`.",
     )(func)
     func = click.option(
         "--api-key",
@@ -281,6 +282,14 @@ def oci_auth_options(func):
         type=str,
         default=None,
         help="OCI region for security_token authentication",
+    )(func)
+
+    func = click.option(
+        "--compartment-id",
+        type=str,
+        default=None,
+        envvar="OCI_COMPARTMENT_ID",
+        help="OCI compartment ID for OpenAI-compatible endpoints",
     )(func)
 
     return func
