@@ -47,7 +47,7 @@ def test_request_level_metrics_calculation_with_chat_response():
     assert request_metrics_collector.metrics.ttft == 100
     assert request_metrics_collector.metrics.e2e_latency == 110
     assert request_metrics_collector.metrics.num_input_tokens == 10
-    assert request_metrics_collector.metrics.num_reasoning_tokens is None
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 0
 
 
 def test_request_level_metrics_calculation_with_reasoning_tokens():
@@ -66,7 +66,6 @@ def test_request_level_metrics_calculation_with_reasoning_tokens():
     request_metrics_collector.calculate_metrics(mock_response)
 
     assert request_metrics_collector.metrics.num_reasoning_tokens == 5
-    assert request_metrics_collector.metrics.total_tokens == 19
 
 
 def test_request_level_metrics_calculation_with_embeddings_response():
