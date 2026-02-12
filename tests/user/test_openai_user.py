@@ -573,6 +573,7 @@ def test_vllm_model_format(mock_post, mock_openai_user):
     assert response.generated_text == " a sequence"
     assert response.tokens_received == 2
     assert response.num_prefill_tokens == 5
+    assert response.reasoning_tokens is None
 
 
 @patch("genai_bench.user.openai_user.requests.post")
@@ -616,6 +617,47 @@ def test_openai_model_format(mock_post, mock_openai_user):
     assert response.generated_text == "Hello"
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 8
+    assert response.reasoning_tokens == 0
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_parse_chat_response_reasoning_tokens_in_usage(mock_post, mock_openai_user):
+    """Test reasoning_tokens from completion_tokens_details is passed to response."""
+    mock_openai_user.environment.sampler = MagicMock()
+    mock_openai_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=True: len(text)
+    )
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}]}',
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+            b'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":2,"total_tokens":7,"completion_tokens_details":{"reasoning_tokens":5}}}',  # noqa:E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    response = mock_openai_user.send_request(
+        stream=True,
+        endpoint="/v1/test",
+        payload={"key": "value"},
+        num_prefill_tokens=5,
+        parse_strategy=mock_openai_user.parse_chat_response,
+    )
+
+    assert response.status_code == 200
+    assert response.reasoning_tokens == 5
 
 
 @patch("genai_bench.user.openai_user.requests.post")

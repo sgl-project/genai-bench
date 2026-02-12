@@ -259,6 +259,7 @@ class OpenAIUser(BaseUser):
         finish_reason = None
         previous_data = None
         num_prompt_tokens = None
+        reasoning_tokens = None
         for chunk in response.iter_lines(chunk_size=None):
             # Caution: Adding logs here can make debug mode unusable.
             chunk = chunk.strip()
@@ -299,9 +300,12 @@ class OpenAIUser(BaseUser):
                 and "usage" in data
                 and data["usage"]
             ):
-                num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                    self._get_usage_info(data, num_prefill_tokens)
-                )
+                (
+                    num_prefill_tokens,
+                    num_prompt_tokens,
+                    tokens_received,
+                    reasoning_tokens,
+                ) = self._get_usage_info(data, num_prefill_tokens)
                 # Additional check for time_at_first_token when the response is
                 # too short
                 if not time_at_first_token:
@@ -351,9 +355,12 @@ class OpenAIUser(BaseUser):
                 # SGLang v0.4.3 to v0.4.7 has finish_reason and usage
                 # in the last chunk
                 if finish_reason and "usage" in data and data["usage"]:
-                    num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                        self._get_usage_info(data, num_prefill_tokens)
-                    )
+                    (
+                        num_prefill_tokens,
+                        num_prompt_tokens,
+                        tokens_received,
+                        reasoning_tokens,
+                    ) = self._get_usage_info(data, num_prefill_tokens)
                     break
 
             except (IndexError, KeyError) as e:
@@ -393,12 +400,15 @@ class OpenAIUser(BaseUser):
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
             end_time=end_time,
+            reasoning_tokens=reasoning_tokens,
         )
 
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
-        num_prompt_tokens = data["usage"].get("prompt_tokens")
-        tokens_received = data["usage"].get("completion_tokens", 0)
+        num_prompt_tokens = data["usage"]["prompt_tokens"]
+        tokens_received = data["usage"]["completion_tokens"]
+        details = data["usage"].get("completion_tokens_details") or {}
+        reasoning_tokens = details.get("reasoning_tokens")
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
@@ -407,7 +417,7 @@ class OpenAIUser(BaseUser):
         effective_prefill = (
             num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
         )
-        return effective_prefill, num_prompt_tokens, tokens_received
+        return effective_prefill, num_prompt_tokens, tokens_received, reasoning_tokens
 
     @staticmethod
     def parse_embedding_response(
