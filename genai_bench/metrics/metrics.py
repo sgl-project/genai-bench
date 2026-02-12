@@ -58,8 +58,7 @@ class RequestLevelMetrics(BaseModel):
             # Validate all metric fields
             for field_name, field_value in values.items():
                 if (
-                    field_name
-                    not in {"error_code", "error_message", "num_reasoning_tokens"}
+                    field_name not in {"error_code", "error_message"}
                     and field_value is None
                 ):
                     raise ValueError(
