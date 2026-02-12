@@ -111,6 +111,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         num_output_tokens=10,
         output_inference_speed=5,
         total_tokens=12,
+        num_reasoning_tokens=0,
     )
 
     metrics2 = RequestLevelMetrics(
@@ -124,6 +125,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         num_output_tokens=11,
         output_inference_speed=3.3,
         total_tokens=14,
+        num_reasoning_tokens=0,
     )
 
     metrics3 = RequestLevelMetrics(
@@ -280,6 +282,7 @@ def test_filter_warmup_and_cooldown_metrics(aggregated_metrics_collector):
             num_output_tokens=10,
             output_inference_speed=5,
             total_tokens=12,
+            num_reasoning_tokens=3,
         )
         for _ in range(10)
     ]
@@ -317,6 +320,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
         num_output_tokens=10,
         output_inference_speed=5,
         total_tokens=12,
+        num_reasoning_tokens=0,
     )
     aggregated_metrics_collector.add_single_request_metrics(metrics)
     aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.0, 0.0)
