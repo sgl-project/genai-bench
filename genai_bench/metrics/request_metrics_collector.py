@@ -65,7 +65,9 @@ class RequestMetricsCollector:
         assert response.tokens_received is not None, "response.tokens_received is None"
         self.metrics.num_output_tokens = response.tokens_received
         self.metrics.num_reasoning_tokens = response.reasoning_tokens
-        self.metrics.total_tokens += self.metrics.num_output_tokens
+        self.metrics.total_tokens += self.metrics.num_output_tokens + (
+            self.metrics.num_reasoning_tokens or 0
+        )
         self.metrics.output_latency = self.metrics.e2e_latency - self.metrics.ttft
 
         # Avoid divide by zero for tokens
