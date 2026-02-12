@@ -258,6 +258,8 @@ class CohereUser(BaseUser):
                                 f"({num_prefill_tokens}) by "
                                 f"{abs(num_input_tokens - num_prefill_tokens)} tokens."
                             )
+                        # Prefer server-reported input token count
+                        num_prefill_tokens = num_input_tokens
 
             except json.JSONDecodeError:
                 logger.warning(f"Failed to decode JSON line: {output_line}")

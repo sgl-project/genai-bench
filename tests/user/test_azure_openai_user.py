@@ -790,8 +790,44 @@ class TestAzureOpenAIUser:
                 "Significant difference detected" in mock_logger.warning.call_args[0][0]
             )
 
-        assert num_prefill == 40
+        assert num_prefill == 100  # Prefers server-reported prompt tokens
         assert num_prompt == 100
+        assert tokens_received == 50
+
+    def test_get_usage_info_prefers_server_tokens(self, azure_user):
+        """Test _get_usage_info returns server-reported prompt tokens over local estimate."""
+        data = {"usage": {"prompt_tokens": 105, "completion_tokens": 50}}
+
+        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
+            data, 100
+        )
+
+        assert num_prefill == 105  # Server value, not local (100)
+        assert num_prompt == 105
+        assert tokens_received == 50
+
+    def test_get_usage_info_falls_back_to_local_when_server_missing(self, azure_user):
+        """Test _get_usage_info falls back to local estimate when server doesn't report prompt_tokens."""
+        data = {"usage": {"completion_tokens": 50}}
+
+        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
+            data, 100
+        )
+
+        assert num_prefill == 100  # Falls back to local estimate
+        assert num_prompt is None
+        assert tokens_received == 50
+
+    def test_get_usage_info_both_none(self, azure_user):
+        """Test _get_usage_info when both server and local token counts are unavailable."""
+        data = {"usage": {"completion_tokens": 50}}
+
+        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
+            data, None
+        )
+
+        assert num_prefill is None
+        assert num_prompt is None
         assert tokens_received == 50
 
     def test_parse_streaming_response_with_index_error(self, azure_user):

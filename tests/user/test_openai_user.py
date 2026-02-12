@@ -305,7 +305,7 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
     assert isinstance(user_response, UserChatResponse)
     assert user_response.status_code == 200
     assert user_response.tokens_received == 5
-    assert user_response.num_prefill_tokens == 5
+    assert user_response.num_prefill_tokens == 6421  # Prefers server-reported prompt tokens
     assert user_response.generated_text == "The image depicts a serene"
     mock_post.assert_called_once()
 
