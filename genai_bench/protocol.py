@@ -141,7 +141,7 @@ class UserChatResponse(UserResponse):
         description="The number of tokens received in the response.",
     )
     reasoning_tokens: Optional[int] = Field(
-        default=None,
+        default=0,
         description="Number of reasoning tokens.",
     )
 
