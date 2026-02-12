@@ -200,11 +200,7 @@ class AggregatedMetricsCollector:
                     continue
                 value = getattr(metrics, key)
                 if value is None:
-                    # Don't log warnings for reasoning tokens since they're optional
-                    if key != "num_reasoning_tokens":
-                        logger.info(
-                            f"{i}th request has NoneType value in metric {key}."
-                        )
+                    logger.info(f"{i}th request has NoneType value in metric {key}.")
                     continue
                 if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
                     values.append(value)
