@@ -940,6 +940,46 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
     assert "system_message" not in payload
 
 
+@pytest.mark.parametrize(
+    "sse_lines",
+    [
+        # Case 1: No space
+        [
+            b'data:{"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}',
+            b'data:{"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}',
+            b"data:[DONE]",
+        ],
+        # Case 2: Standard space
+        [
+            b'data: {"id":"chat-1","choices":[{"index":0,"delta":{"content":"Hello"},'
+            b'"finish_reason":null}]}',
+            b'data: {"id":"chat-1","choices":[],"usage":{"prompt_tokens":5,'
+            b'"completion_tokens":1,"total_tokens":6}}',
+            b"data: [DONE]",
+        ],
+    ],
+    ids=["no_space", "standard_space"],
+)
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_sse_parsing_variations(mock_post, mock_openai_user, sse_lines):
+    """Test SSE parsing with various formats and comments."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        max_tokens=10,
+        additional_request_params={},
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(return_value=sse_lines)
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+
 @patch("genai_bench.user.openai_user.requests.post")
 def test_rerank(mock_post, mock_openai_user):
     """Test rerank request."""
@@ -965,7 +1005,7 @@ def test_rerank(mock_post, mock_openai_user):
     mock_openai_user.rerank()
 
     mock_post.assert_called_once_with(
-        url="http://example.com/rerank",
+        url="http://example.com/v1/rerank",
         json={
             "model": "reranker-model",
             "query": "What is machine learning?",
@@ -1012,7 +1052,7 @@ def test_send_request_rerank_response(mock_post, mock_openai_user):
 
     user_response = mock_openai_user.send_request(
         stream=False,
-        endpoint="/rerank",
+        endpoint="/v1/rerank",
         payload={"model": "reranker", "query": "test", "documents": ["doc1", "doc2"]},
         num_prefill_tokens=20,
         parse_strategy=mock_openai_user.parse_rerank_response,
@@ -1040,7 +1080,7 @@ def test_send_request_rerank_response_no_usage(mock_post, mock_openai_user):
 
     user_response = mock_openai_user.send_request(
         stream=False,
-        endpoint="/rerank",
+        endpoint="/v1/rerank",
         payload={"model": "reranker", "query": "test", "documents": ["doc1"]},
         num_prefill_tokens=15,
         parse_strategy=mock_openai_user.parse_rerank_response,
