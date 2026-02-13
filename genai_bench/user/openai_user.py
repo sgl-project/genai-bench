@@ -166,7 +166,7 @@ class OpenAIUser(BaseUser):
 
     @task
     def rerank(self):
-        endpoint = "/rerank"
+        endpoint = "/v1/rerank"
 
         user_request = self.sample()
 
