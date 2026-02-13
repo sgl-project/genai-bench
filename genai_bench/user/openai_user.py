@@ -491,6 +491,11 @@ class OpenAIUser(BaseUser):
                     f"{abs(actual_tokens - num_prefill_tokens)} tokens."
                 )
 
+        if not num_prefill_tokens:
+            logger.warning(
+                "num_prefill_tokens is not set, defaulting to 0."
+            )
+
         return UserResponse(
             status_code=200,
             start_time=start_time,
