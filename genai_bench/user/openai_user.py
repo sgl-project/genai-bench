@@ -509,9 +509,7 @@ class OpenAIUser(BaseUser):
                 )
 
         if not num_prefill_tokens:
-            logger.warning(
-                "num_prefill_tokens is not set, defaulting to 0."
-            )
+            logger.warning("num_prefill_tokens is not set, defaulting to 0.")
 
         return UserResponse(
             status_code=200,
