@@ -1,0 +1,77 @@
+# Dependabot configuration for automatic dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Python dependencies (pip ecosystem, reads pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      core-deps:
+        patterns:
+          - "locust"
+          - "numpy"
+          - "requests"
+          - "transformers"
+          - "click"
+          - "pandas"
+          - "pydantic"
+          - "rich"
+          - "openpyxl"
+          - "matplotlib"
+          - "gevent"
+          - "oci"
+          - "tenacity"
+          - "datasets"
+          - "pillow"
+          - "huggingface_hub"
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "isort"
+          - "black"
+          - "pre-commit"
+          - "pytest"
+          - "pytest-cov"
+      cloud-sdks:
+        patterns:
+          - "boto3"
+          - "botocore"
+          - "azure-*"
+          - "google-*"
+      docs-tools:
+        patterns:
+          - "mkdocs*"
+          - "mike"
+          - "pymdown-extensions"
+    ignore:
+      # Ignore major pydantic updates (no upper bound in pyproject.toml)
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker base image
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    labels:
+      - "dependencies"
+      - "docker"
