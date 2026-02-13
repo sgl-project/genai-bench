@@ -337,7 +337,18 @@ class OpenAIUser(BaseUser):
                         )
                         time_at_first_token = time.monotonic()
                     else:
-                        raise Exception("Invalid Response")
+                        raise Exception(
+                            "Invalid streaming response: "
+                            "received final usage chunk "
+                            "with completion_tokens="
+                            f"{tokens_received}, but no "
+                            "content was delivered during "
+                            "streaming (time_at_first_token"
+                            " was never set). This typically"
+                            " means the model returned an "
+                            "empty response. Raw usage "
+                            f"data: {data.get('usage')}"
+                        )
                 break
 
             try:
