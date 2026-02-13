@@ -51,9 +51,30 @@ updates:
           - "mkdocs*"
           - "mike"
           - "pymdown-extensions"
+      # Catch-all for any new dependencies not listed above
+      other:
+        patterns:
+          - "*"
     ignore:
-      # Ignore major pydantic updates (no upper bound in pyproject.toml)
+      # Ignore major updates for dependencies without upper bounds in pyproject.toml
+      # (deps with upper bounds like locust<3.0.0 are already protected)
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "click"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pandas"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "rich"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "gevent"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "oci"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "datasets"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "huggingface_hub"
         update-types: ["version-update:semver-major"]
 
   # GitHub Actions

@@ -42,8 +42,10 @@ genai-bench = "genai_bench.cli.cli:cli"
 
 [project.optional-dependencies]
 dev = [
+    # Pinned to minor: ruff formatting rules change across minor versions,
+    # upgrading requires a codebase-wide reformat (ruff format .)
     "ruff>=0.5.6,<0.6.0",
-    "mypy>=1.11.1",
+    "mypy>=1.11.1,<2.0.0",
     "isort>=5.13.2",
     "black>=24.8.0",
     "pre-commit>=3.8.0",
