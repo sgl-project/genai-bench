@@ -75,9 +75,7 @@ class TextSampler(Sampler):
             self.additional_request_params["ignore_eos"] = True
 
         prompt = self._sample_text(num_input_tokens)
-        num_prefill_tokens = self.get_token_length(prompt)
-        if num_input_tokens is not None:
-            self._check_discrepancy(num_input_tokens, num_prefill_tokens, threshold=0.1)
+        num_prefill_tokens = self._get_prefill_token_count(prompt)
 
         return UserChatRequest(
             model=self.model,
@@ -222,3 +220,24 @@ class TextSampler(Sampler):
                 f"num_prefill_tokens={num_prefill_tokens}, "
                 f"discrepancy={discrepancy}"
             )
+
+    def _get_prefill_token_count(self, prompt: str) -> int:
+        """
+        Counts prefill tokens by applying the chat template, matching how
+        the model server counts prompt tokens.
+
+        Falls back to raw token count if the tokenizer does not support
+        chat templates.
+        """
+        messages = [{"role": "user", "content": prompt}]
+        system_message = self.additional_request_params.get("system_message")
+        if system_message:
+            messages.insert(0, {"role": "system", "content": system_message})
+        try:
+            return len(
+                self.tokenizer.apply_chat_template(
+                    messages, add_generation_prompt=True, tokenize=True
+                )
+            )
+        except Exception:
+            return self.get_token_length(prompt, add_special_tokens=True)
