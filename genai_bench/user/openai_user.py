@@ -254,6 +254,7 @@ class OpenAIUser(BaseUser):
         end_chunk = b"[DONE]"
 
         generated_text = ""
+        reasoning_text = ""
         tokens_received = 0
         time_at_first_token = None
         finish_reason = None
@@ -335,6 +336,7 @@ class OpenAIUser(BaseUser):
             try:
                 delta = data["choices"][0]["delta"]
                 content = delta.get("content") or delta.get("reasoning_content")
+                reasoning_content_chunk = delta.get("reasoning_content")
                 usage = delta.get("usage")
 
                 if usage:
@@ -349,6 +351,8 @@ class OpenAIUser(BaseUser):
                             )
                         time_at_first_token = time.monotonic()
                     generated_text += content
+                if reasoning_content_chunk:
+                    reasoning_text += reasoning_content_chunk
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
 
@@ -392,6 +396,16 @@ class OpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
+        # If reasoning_tokens is not provided by the server,
+        # fall back to estimating it from reasoning_content.
+        if (not reasoning_tokens) and len(reasoning_text) > 0:
+            reasoning_tokens = self.environment.sampler.get_token_length(
+                reasoning_text, add_special_tokens=False
+            )
+            logger.warning(
+                "🚨🚨🚨 Server did not report reasoning_tokens. Estimated "
+                "reasoning_tokens based on the model tokenizer."
+            )
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -405,8 +419,8 @@ class OpenAIUser(BaseUser):
 
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
-        num_prompt_tokens = data["usage"]["prompt_tokens"]
-        tokens_received = data["usage"]["completion_tokens"]
+        num_prompt_tokens = data["usage"].get("prompt_tokens")
+        tokens_received = data["usage"].get("completion_tokens", 0)
         details = data["usage"].get("completion_tokens_details") or {}
         reasoning_tokens = details.get("reasoning_tokens")
         # For vision task
