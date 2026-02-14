@@ -1,102 +1,16 @@
-# Dependabot configuration for automatic dependency updates
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # Python dependencies (pip ecosystem, reads pyproject.toml)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "saturday"
-    labels:
-      - "dependencies"
-      - "python"
-    groups:
-      core-deps:
-        patterns:
-          - "locust"
-          - "numpy"
-          - "requests"
-          - "transformers"
-          - "click"
-          - "pandas"
-          - "pydantic"
-          - "rich"
-          - "openpyxl"
-          - "matplotlib"
-          - "gevent"
-          - "oci"
-          - "tenacity"
-          - "datasets"
-          - "pillow"
-          - "huggingface_hub"
-      dev-tools:
-        patterns:
-          - "ruff"
-          - "mypy"
-          - "isort"
-          - "black"
-          - "pre-commit"
-          - "pytest"
-          - "pytest-cov"
-      cloud-sdks:
-        patterns:
-          - "boto3"
-          - "botocore"
-          - "azure-*"
-          - "google-*"
-      docs-tools:
-        patterns:
-          - "mkdocs*"
-          - "mike"
-          - "pymdown-extensions"
-      # Catch-all for any new dependencies not listed above
-      other:
-        patterns:
-          - "*"
-    ignore:
-      # Ignore major updates for dependencies without upper bounds in pyproject.toml
-      # (deps with upper bounds like locust<3.0.0 are already protected)
-      - dependency-name: "numpy"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "click"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "pandas"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "pydantic"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "rich"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "gevent"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "oci"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "datasets"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "huggingface_hub"
-        update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "saturday"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
 
-  # Docker base image
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "saturday"
-    labels:
-      - "dependencies"
-      - "docker"
