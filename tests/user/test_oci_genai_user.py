@@ -46,8 +46,7 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         '"content": [{"type": "TEXT", "text": " world"}]}}'
     )
     exclamation_msg = (
-        '{"message": {"role": "ASSISTANT", '
-        '"content": [{"type": "TEXT", "text": "!"}]}}'
+        '{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "!"}]}}'
     )
 
     usage_msg = (
@@ -121,7 +120,7 @@ def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
     mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.return_value.status = 200
     reasoning_msg = (
-        '{"message": {"role": "ASSISTANT", ' '"reasoningContent": "Thinking..."}}'
+        '{"message": {"role": "ASSISTANT", "reasoningContent": "Thinking..."}}'
     )
     content_msg = (
         '{"message": {"role": "ASSISTANT", '
