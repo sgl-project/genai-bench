@@ -227,6 +227,7 @@ class AzureOpenAIUser(BaseUser):
 
         generated_text = ""
         tokens_received = 0
+        reasoning_tokens = None
         time_at_first_token = None
         finish_reason = None
         previous_data = None
@@ -260,9 +261,12 @@ class AzureOpenAIUser(BaseUser):
                 and "usage" in data
                 and data["usage"]
             ):
-                num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                    self._get_usage_info(data, num_prefill_tokens)
-                )
+                (
+                    num_prefill_tokens,
+                    num_prompt_tokens,
+                    tokens_received,
+                    reasoning_tokens,
+                ) = self._get_usage_info(data, num_prefill_tokens)
                 break
 
             try:
@@ -288,9 +292,12 @@ class AzureOpenAIUser(BaseUser):
 
                 # Check for usage in the last chunk
                 if finish_reason and "usage" in data and data["usage"]:
-                    num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                        self._get_usage_info(data, num_prefill_tokens)
-                    )
+                    (
+                        num_prefill_tokens,
+                        num_prompt_tokens,
+                        tokens_received,
+                        reasoning_tokens,
+                    ) = self._get_usage_info(data, num_prefill_tokens)
                     break
 
             except (IndexError, KeyError) as e:
@@ -322,7 +329,6 @@ class AzureOpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
-
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -331,12 +337,15 @@ class AzureOpenAIUser(BaseUser):
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
             end_time=end_time,
+            reasoning_tokens=reasoning_tokens,
         )
 
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
         num_prompt_tokens = data["usage"].get("prompt_tokens")
-        tokens_received = data["usage"].get("completion_tokens", 0)
+        tokens_received = data["usage"].get("completion_tokens")
+        details = data["usage"].get("completion_tokens_details") or {}
+        reasoning_tokens = details.get("reasoning_tokens")
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
@@ -345,7 +354,7 @@ class AzureOpenAIUser(BaseUser):
         effective_prefill = (
             num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
         )
-        return effective_prefill, num_prompt_tokens, tokens_received
+        return effective_prefill, num_prompt_tokens, tokens_received, reasoning_tokens
 
     @staticmethod
     def parse_embedding_response(

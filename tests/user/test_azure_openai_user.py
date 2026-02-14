@@ -763,27 +763,50 @@ class TestAzureOpenAIUser:
 
         assert result.generated_text == "Hello"
 
+    def test_parse_streaming_response_reasoning_tokens_from_usage(self, azure_user):
+        """Test reasoning_tokens from completion_tokens_details is passed through."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            b'data: {"choices":[{"delta":{"content":"Hi"}}]}',
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+            b'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":2,'
+            b'"completion_tokens_details":{"reasoning_tokens":5}}}',
+            b"data: [DONE]",
+        ]
+        result = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+        assert result.generated_text == "Hi"
+        assert result.tokens_received == 2
+        assert result.reasoning_tokens == 5
+
     def test_get_usage_info_for_vision_task(self, azure_user):
         """Test _get_usage_info with None prefill tokens (vision task)."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
-        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
-            data, None
+        num_prefill, num_prompt, tokens_received, reasoning_tokens = (
+            azure_user._get_usage_info(data, None)
         )
 
         assert num_prefill == 100  # Uses prompt tokens for vision
         assert num_prompt == 100
         assert tokens_received == 50
+        assert reasoning_tokens is None
 
     def test_get_usage_info_prefers_server_tokens(self, azure_user):
         """Test _get_usage_info prefers server-reported prompt tokens."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
-        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(data, 40)
+        with patch("genai_bench.user.azure_openai_user.logger") as mock_logger:
+            (
+                num_prefill,
+                num_prompt,
+                tokens_received,
+                reasoning_tokens,
+            ) = azure_user._get_usage_info(data, 40)
 
         assert num_prefill == 100  # Prefers server-reported prompt tokens
         assert num_prompt == 100
         assert tokens_received == 50
+        assert reasoning_tokens is None
 
     def test_parse_streaming_response_with_index_error(self, azure_user):
         """Test parsing streaming response with malformed data causing IndexError."""
