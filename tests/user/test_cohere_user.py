@@ -102,6 +102,40 @@ def test_chat_success(cohere_user, mock_response):
         assert response.tokens_received == 22
         assert response.num_prefill_tokens == 68  # Prefers server-reported input tokens
         assert response.time_at_first_token is not None
+        assert response.reasoning_tokens is None
+
+
+def test_chat_reasoning_accumulation_and_tokenizer(cohere_user, mock_response):
+    """Thinking chunks accumulated; reasoning_tokens from tokenizer."""
+    cohere_user.environment.sampler.get_token_length.return_value = 2
+    chat_events = [
+        'event: message-start\ndata: {"type":"message-start","delta":{"message":{"role":"assistant","content":[]}}}\n\n',  # noqa:E501
+        'event: content-start\ndata: {"type":"content-start","index":0,"delta":{"message":{"content":{"type":"text","text":""}}}}\n\n',  # noqa:E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"thinking":"A"}}}}\n\n',  # noqa:E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"thinking":"B"}}}}\n\n',  # noqa:E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"Hi"}}}}\n\n',  # noqa:E501
+        'event: content-end\ndata: {"type":"content-end","index":0}\n\n',
+        'event: message-end\ndata: {"type":"message-end","delta":{"finish_reason":"COMPLETE","usage":{"tokens":{"input_tokens":5,"output_tokens":10}}}}\n\n',  # noqa:E501
+        "data: [DONE]\n\n",
+    ]
+    mock_response.iter_lines.return_value = [line.encode() for line in chat_events]
+    with patch("requests.post", return_value=mock_response):
+        chat_request = UserChatRequest(
+            model="command-r",
+            prompt="Say hi",
+            max_tokens=100,
+            num_prefill_tokens=5,
+            additional_request_params={},
+        )
+        cohere_user.sample = MagicMock(return_value=chat_request)
+        response = cohere_user.chat()
+    assert isinstance(response, UserChatResponse)
+    assert response.status_code == 200
+    assert response.generated_text == "Hi"
+    assert response.reasoning_tokens == 2
+    cohere_user.environment.sampler.get_token_length.assert_called_once_with(
+        "AB", add_special_tokens=False
+    )
 
 
 def test_chat_without_usage(cohere_user, mock_response):
