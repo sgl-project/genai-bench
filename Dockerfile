@@ -1,5 +1,5 @@
 # Use the official Python 3.11 slim image from Docker Hub
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Set the working directory in the container
 WORKDIR /genai-bench
