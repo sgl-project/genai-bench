@@ -191,8 +191,11 @@ class TextSampler(Sampler):
                 num_line_tokens = len(line_tokens)
                 if num_line_tokens > left_tokens_to_sample:
                     # Truncate at token level, decode only needed tokens
-                    truncated_text = self.tokenizer.decode(
-                        line_tokens[:left_tokens_to_sample], skip_special_tokens=True
+                    truncated_text = str(
+                        self.tokenizer.decode(
+                            line_tokens[:left_tokens_to_sample],
+                            skip_special_tokens=True,
+                        )
                     )
                     prompt += (" " if prompt else "") + truncated_text
                     return prompt
