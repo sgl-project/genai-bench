@@ -142,12 +142,14 @@ You can specify a custom load to benchmark through setting traffic scenarios and
 
 Traffic scenarios let you define the shape of requests when benchmarking. See [Traffic Scenarios](./scenario-definition.md) for more information.
 
-The concurrency is the number of concurrent users making requests. Running various concurrencies allows you to benchmark performance at different loads. Each specified scenario is run at each concurrency. Specify concurrencies to run with `--num-concurrency`. 
+You can control benchmark intensity using either concurrency levels or request rates:
 
-**IMPORTANT**: Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency`
-and `--traffic-scenario`.
+- **Concurrency-based**: The number of concurrent users making requests. Running various concurrencies allows you to benchmark performance at different loads. Each specified scenario is run at each concurrency. Specify concurrencies to run with `--num-concurrency`.
+- **Rate-based**: Target request rates (requests/second) using token bucket rate limiting for precise rate control. Specify request rates with `--request-rate`.
 
-Both options are defined as [multi-value options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options) in click. Meaning you can pass this command multiple times. 
+**IMPORTANT**: `--num-concurrency` and `--request-rate` are mutually exclusive (except for embedding/rerank tasks which use `--batch-size`). By default, GenAI Bench uses `--num-concurrency`. Please use `genai-bench benchmark --help` to check out the latest default value of `--num-concurrency` and `--traffic-scenario`.
+
+Both `--num-concurrency` and `--request-rate` are defined as [multi-value options](https://click.palletsprojects.com/en/8.1.x/options/#multi-value-options) in click. Meaning you can pass these commands multiple times. 
 
 For example, the below benchmark command runs a scenario with a normal distribution of input and output tokens (Input mean=480, st.dev=240), (Output mean=300, st.dev=150) at concurrencies 1, 2, 4, 8, 16 and 32. 
 
@@ -161,6 +163,25 @@ genai-bench benchmark \
             --num-concurrency 8 --num-concurrency 16 --num-concurrency 32 \
             --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)"
 ```
+
+### Using Request Rate
+
+Alternatively, you can use `--request-rate` to specify target request rates (requests/second) instead of concurrency levels. For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. 
+```shell
+genai-bench benchmark \
+            --api-backend openai \
+            --task text-to-text \
+            --max-time-per-run 10 \
+            --max-requests-per-run 300 \
+            --request-rate 1 --request-rate 5 --request-rate 10 --request-rate 20 \
+            --traffic-scenario "N(480,240)/(300,150)" --traffic-scenario "D(100,100)"
+```
+
+When using `--request-rate`, the benchmark automatically uses request rate iteration instead of concurrency-based iteration. The rate limiter ensures requests are sent at the specified target rate with precise timing control.
+
+**Concurrency and Spawn Rate**: For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. The spawn rate defaults to the maximum concurrency value unless otherwise specified with `--spawn-rate`. You can override the spawn rate using `--spawn-rate` if needed, but this is generally not recommended as it may affect rate limiting accuracy.
+
+**Note**: In distributed mode (when using `--num-workers`), the target request rate is automatically divided among all workers. For example, with `--request-rate 20` and `--num-workers 4`, each worker will target 5 requests/second. If the per-worker rate is very low (< 0.1 req/s), a warning will be displayed suggesting fewer workers or a higher target rate for better accuracy.
 
 ### Notes on benchmark duration
 
@@ -188,6 +209,20 @@ For heavier traffic scenarios, like `D(16000,200)` or `D(128000,200)`, use the f
             --num-concurrency 16 \
             --num-concurrency 32 \
 ```
+
+## Request Rate vs Concurrency
+
+GenAI Bench supports two approaches to control benchmark intensity:
+
+- **`--num-concurrency`**: Sets the number of concurrent users/requests. This is useful for testing how the system performs under different levels of concurrent load. The actual request rate will depend on how quickly requests complete.
+
+- **`--request-rate`**: Sets a target request rate (requests/second). This is useful when you need to test specific throughput targets or want precise control over request timing. For request rate runs, maximum concurrency defaults to 5000 to ensure sufficient workers are available, but can be overridden with `--max-concurrency`. The spawn rate defaults to the maximum concurrency value unless otherwise specified with `--spawn-rate`.
+
+Choose the approach that best matches your testing needs:
+- Use `--num-concurrency` when you want to test system behavior under specific concurrent load levels
+- Use `--request-rate` when you need to test specific throughput targets or want precise rate control
+
+**Important**: These options are mutually exclusive (except for embedding/rerank tasks which use `--batch-size`).
 
 ## Distributed Benchmark
 
