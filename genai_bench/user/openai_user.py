@@ -426,22 +426,17 @@ class OpenAIUser(BaseUser):
 
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
-        num_prompt_tokens = data["usage"]["prompt_tokens"]
-        tokens_received = data["usage"]["completion_tokens"]
+        num_prompt_tokens = data["usage"].get("prompt_tokens")
+        tokens_received = data["usage"].get("completion_tokens", 0)
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
             num_prefill_tokens = num_prompt_tokens
-        if abs(num_prompt_tokens - num_prefill_tokens) >= 50:
-            logger.warning(
-                f"Significant difference detected in prompt tokens: "
-                f"The number of prompt tokens processed by the model "
-                f"server ({num_prompt_tokens}) differs from the number "
-                f"of prefill tokens returned by the sampler "
-                f"({num_prefill_tokens}) by "
-                f"{abs(num_prompt_tokens - num_prefill_tokens)} tokens."
-            )
-        return num_prefill_tokens, num_prompt_tokens, tokens_received
+        # Prefer server-reported prompt token count, fall back to local
+        effective_prefill = (
+            num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
+        )
+        return effective_prefill, num_prompt_tokens, tokens_received
 
     @staticmethod
     def parse_embedding_response(
