@@ -498,6 +498,79 @@ class TestGCPVertexUser:
         assert result.generated_text == "Part 1 Part 2"
         assert result.status_code == 200
 
+    def test_parse_chat_response_reasoning_tokens_from_usage_metadata(
+        self, vertex_user
+    ):
+        """Reasoning tokens come from usageMetadata.thoughtsTokenCount."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            json.dumps(
+                {"candidates": [{"content": {"parts": [{"text": "Hi"}]}}]}
+            ).encode(),
+            json.dumps({"usageMetadata": {"thoughtsTokenCount": 3}}).encode(),
+        ]
+
+        result = vertex_user.parse_chat_response(
+            mock_response, 0.0, 10, 1.0, "gemini-pro"
+        )
+
+        assert result.reasoning_tokens == 3
+        assert result.generated_text == "Hi"
+
+    def test_parse_chat_response_no_usage_metadata(self, vertex_user):
+        """When no usageMetadata, reasoning_tokens is None and tokens estimated."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            json.dumps(
+                {"candidates": [{"content": {"parts": [{"text": "Hi"}]}}]}
+            ).encode(),
+        ]
+        vertex_user.environment.sampler.get_token_length.return_value = 50
+
+        result = vertex_user.parse_chat_response(
+            mock_response, 0.0, 10, 1.0, "gemini-pro"
+        )
+
+        assert result.reasoning_tokens is None
+        assert result.tokens_received == 50
+        assert result.generated_text == "Hi"
+
+    def test_parse_chat_response_usage_metadata_without_thoughts_token_count(
+        self, vertex_user
+    ):
+        """usageMetadata without thoughtsTokenCount: reasoning_tokens is 0."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            json.dumps(
+                {"candidates": [{"content": {"parts": [{"text": "Hi"}]}}]}
+            ).encode(),
+            json.dumps({"usageMetadata": {"candidatesTokenCount": 2}}).encode(),
+        ]
+        vertex_user.environment.sampler.get_token_length.return_value = 50
+
+        result = vertex_user.parse_chat_response(
+            mock_response, 0.0, 10, 1.0, "gemini-pro"
+        )
+
+        assert result.reasoning_tokens == 0
+        assert result.tokens_received == 50
+        assert result.generated_text == "Hi"
+
+    def test_parse_chat_response_reasoning_tokens_snake_case_fallback(
+        self, vertex_user
+    ):
+        """Reasoning tokens from usage_metadata.thoughts_token_count."""
+        mock_response = MagicMock()
+        mock_response.iter_lines.return_value = [
+            json.dumps({"usage_metadata": {"thoughts_token_count": 4}}).encode(),
+        ]
+
+        result = vertex_user.parse_chat_response(
+            mock_response, 0.0, 10, 1.0, "gemini-pro"
+        )
+
+        assert result.reasoning_tokens == 4
+
     def test_parse_non_streaming_response(self, vertex_user):
         """Test parsing non-streaming response."""
         mock_response = MagicMock()
