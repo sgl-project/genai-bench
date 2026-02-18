@@ -21,6 +21,10 @@ class RequestLevelMetrics(BaseModel):
     num_output_tokens: Optional[int] = Field(
         None, description="Number of output tokens"
     )
+    num_reasoning_tokens: Optional[int] = Field(
+        None,
+        description="Number of reasoning tokens",
+    )
     total_tokens: Optional[int] = Field(None, description="Total tokens processed")
     input_throughput: Optional[float] = Field(
         None, description="Input throughput in tokens/s"
@@ -38,6 +42,7 @@ class RequestLevelMetrics(BaseModel):
         "output_inference_speed",
         "num_output_tokens",
         "output_throughput",
+        "num_reasoning_tokens",
     }
 
     @model_validator(mode="before")
@@ -96,6 +101,7 @@ class MetricStats(BaseModel):
     output_inference_speed: StatField = Field(default_factory=StatField)
     num_input_tokens: StatField = Field(default_factory=StatField)
     num_output_tokens: StatField = Field(default_factory=StatField)
+    num_reasoning_tokens: StatField = Field(default_factory=StatField)
     total_tokens: StatField = Field(default_factory=StatField)
     input_throughput: StatField = Field(default_factory=StatField)
     output_throughput: StatField = Field(default_factory=StatField)
