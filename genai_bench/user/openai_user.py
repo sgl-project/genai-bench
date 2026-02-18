@@ -488,23 +488,10 @@ class OpenAIUser(BaseUser):
         """
         data = response.json()
 
-        # Extract token count from usage if available
-        if "usage" in data and "prompt_tokens" in data["usage"]:
-            actual_tokens = data["usage"]["prompt_tokens"]
-            if num_prefill_tokens is None:
-                num_prefill_tokens = actual_tokens
-            elif abs(actual_tokens - num_prefill_tokens) >= 50:
-                logger.warning(
-                    f"Significant difference detected in prompt tokens: "
-                    f"The number of prompt tokens processed by the model "
-                    f"server ({actual_tokens}) differs from the number "
-                    f"of prefill tokens returned by the sampler "
-                    f"({num_prefill_tokens}) by "
-                    f"{abs(actual_tokens - num_prefill_tokens)} tokens."
-                )
-
-        if not num_prefill_tokens:
-            logger.warning("num_prefill_tokens is not set, defaulting to 0.")
+        if "usage" in data and data["usage"]:
+            num_prefill_tokens, _, _ = OpenAIUser._get_usage_info(
+                data, num_prefill_tokens
+            )
 
         return UserResponse(
             status_code=200,
