@@ -775,22 +775,13 @@ class TestAzureOpenAIUser:
         assert num_prompt == 100
         assert tokens_received == 50
 
-    def test_get_usage_info_with_token_difference_warning(self, azure_user):
-        """Test _get_usage_info with significant token difference."""
+    def test_get_usage_info_prefers_server_tokens(self, azure_user):
+        """Test _get_usage_info prefers server-reported prompt tokens."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
-        with patch("genai_bench.user.azure_openai_user.logger") as mock_logger:
-            num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(
-                data, 40
-            )
+        num_prefill, num_prompt, tokens_received = azure_user._get_usage_info(data, 40)
 
-            # Check warning was logged (100 - 40 = 60, which is >= 50)
-            mock_logger.warning.assert_called_once()
-            assert (
-                "Significant difference detected" in mock_logger.warning.call_args[0][0]
-            )
-
-        assert num_prefill == 40
+        assert num_prefill == 100  # Prefers server-reported prompt tokens
         assert num_prompt == 100
         assert tokens_received == 50
 

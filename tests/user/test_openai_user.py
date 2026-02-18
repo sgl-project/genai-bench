@@ -305,7 +305,9 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
     assert isinstance(user_response, UserChatResponse)
     assert user_response.status_code == 200
     assert user_response.tokens_received == 5
-    assert user_response.num_prefill_tokens == 5
+    assert (
+        user_response.num_prefill_tokens == 6421
+    )  # Prefers server-reported prompt tokens
     assert user_response.generated_text == "The image depicts a serene"
     mock_post.assert_called_once()
 
@@ -462,8 +464,8 @@ def test_chat_empty_choices_warning(mock_post, mock_openai_user, caplog):
 
 
 @patch("genai_bench.user.openai_user.requests.post")
-def test_chat_significant_token_difference(mock_post, mock_openai_user, caplog):
-    """Test warning when there's a significant difference in prompt tokens."""
+def test_chat_prefers_server_prompt_tokens(mock_post, mock_openai_user):
+    """Test that server-reported prompt tokens are preferred over local estimate."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
         model="gpt-3",
@@ -483,14 +485,15 @@ def test_chat_significant_token_difference(mock_post, mock_openai_user, caplog):
     )
     mock_post.return_value = response_mock
 
-    with caplog.at_level(logging.WARNING):
-        mock_openai_user.chat()
-
-    assert "Significant difference detected in prompt tokens" in caplog.text
-    assert (
-        "differs from the number of prefill tokens returned by the sampler (5) by 95 tokens"  # noqa:E501
-        in caplog.text
+    response = mock_openai_user.send_request(
+        stream=True,
+        endpoint="/v1/test",
+        payload={"key": "value"},
+        num_prefill_tokens=5,
+        parse_strategy=mock_openai_user.parse_chat_response,
     )
+
+    assert response.num_prefill_tokens == 100  # Prefers server-reported tokens
 
 
 @patch("genai_bench.user.openai_user.requests.post")
