@@ -18,6 +18,7 @@ from genai_bench.protocol import (
     UserEmbeddingRequest,
     UserImageChatRequest,
     UserResponse,
+    UserVideoChatRequest,
 )
 from genai_bench.user.base_user import BaseUser
 
@@ -29,6 +30,7 @@ class OpenAIUser(BaseUser):
     supported_tasks = {
         "text-to-text": "chat",
         "image-text-to-text": "chat",
+        "video-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         # Future support can be added here
     }
@@ -70,6 +72,17 @@ class OpenAIUser(BaseUser):
                 for image in user_request.image_content
             ]
             content = text_content + image_content
+        elif isinstance(user_request, UserVideoChatRequest):
+            text_content = [{"type": "text", "text": user_request.prompt}]
+            video_content = [
+                {
+                    "type": "video_url",
+                    "video_url": {"url": video},
+                }
+                for video in user_request.video_content
+            ]
+            content = text_content + video_content
+            print(content)
         else:
             # Backward compatibility for vLLM versions prior to v0.5.1.
             # OpenAI API used a different text prompt format before

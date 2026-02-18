@@ -10,6 +10,7 @@ from genai_bench.protocol import (
     UserEmbeddingRequest,
     UserImageChatRequest,
     UserResponse,
+    UserVideoChatRequest,
 )
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -168,6 +169,47 @@ def test_vision(mock_post, mock_openai_user):
             "Content-Type": "application/json",
         },
     )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_video_chat(mock_post, mock_openai_user):
+    """Test that OpenAIUser.chat builds correct video_url content for videos."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserVideoChatRequest(
+        model="qwen3-omni-flash",
+        prompt="Describe this video",
+        num_prefill_tokens=5,
+        max_tokens=16,
+        video_content=[
+            "https://example.com/video1.mp4",
+            "data:video/mp4;base64,BASE64_VIDEO",
+        ],
+        additional_request_params={},
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"content":"ok"}}]}',
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    call_args = mock_post.call_args
+    body = call_args.kwargs["json"]
+    assert body["model"] == "qwen3-omni-flash"
+    content = body["messages"][0]["content"]
+    assert len(content) == 3
+    assert content[0]["type"] == "text"
+    assert content[0]["text"] == "Describe this video"
+    assert content[1]["type"] == "video_url"
+    assert content[1]["video_url"]["url"] == "https://example.com/video1.mp4"
+    assert content[2]["type"] == "video_url"
+    assert content[2]["video_url"]["url"] == "data:video/mp4;base64,BASE64_VIDEO"
 
 
 @patch("genai_bench.user.openai_user.requests.post")

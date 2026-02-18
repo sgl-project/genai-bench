@@ -49,6 +49,22 @@ class UserImageChatRequest(UserChatRequest):
     num_images: int = Field(..., description="Number of images.")
 
 
+class UserVideoChatRequest(UserChatRequest):
+    """
+    Represents a request that combines video and chat modalities, used for tasks
+    where video input is processed alongside textual prompts.
+
+    This class is an extension of `UserChatRequest` because video-based tasks
+    (e.g., video question answering, video understanding) use the same endpoint
+    as chat-based tasks and follow similar input/output structures.
+    """
+
+    video_content: List[str] = Field(
+        ...,
+        description="Video URL list (base64 data URLs or HTTP/HTTPS URLs).",
+    )
+
+
 class UserEmbeddingRequest(UserRequest):
     """
     A class to encapsulate the details related to embedding request tasks.
