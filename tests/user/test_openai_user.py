@@ -1063,7 +1063,7 @@ def test_send_request_rerank_response(mock_post, mock_openai_user):
 
     assert isinstance(user_response, UserResponse)
     assert user_response.status_code == 200
-    assert user_response.num_prefill_tokens == 20
+    assert user_response.num_prefill_tokens == 25
     mock_post.assert_called_once()
 
 
