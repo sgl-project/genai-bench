@@ -750,7 +750,7 @@ def test_chat_with_reasoning_content_and_token_estimation(
         return_value=[
             (
                 b'data: {"id": "chat-xxx", "choices": [{"delta": '
-                b'{"reasoning_content": "Thinking..."}, "index": 0}], '
+                b'{"reasoning": "Thinking..."}, "index": 0}], '
                 b'"model": "gpt-oss-llama-3"}'
             ),
             (
