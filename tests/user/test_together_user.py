@@ -664,6 +664,7 @@ def test_openai_model_format(mock_post, mock_together_user):
     assert response.generated_text == "Hello"
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 8
+    assert response.reasoning_tokens == 0
 
 
 @patch("genai_bench.user.together_user.requests.post")
@@ -705,6 +706,7 @@ def test_sgl_model_format(mock_post, mock_together_user):
     assert response.generated_text == " on"
     assert response.tokens_received == 1
     assert response.num_prefill_tokens == 5
+    assert response.reasoning_tokens == 0
 
 
 @patch("genai_bench.user.together_user.requests.post")
@@ -732,11 +734,13 @@ def test_chat_with_reasoning_content_and_token_estimation(
     final_text = "The sky is blue"
     combined_text = reasoning_text + final_text
 
-    # Mock sampler so token estimation equals len(combined_text)
+    # Mock sampler: first call for tokens_received (combined_text),
+    # second for reasoning_tokens (reasoning_text)
     mock_together_user.environment.sampler = MagicMock()
-    mock_together_user.environment.sampler.get_token_length.return_value = len(
-        combined_text
-    )
+    mock_together_user.environment.sampler.get_token_length.side_effect = [
+        len(combined_text),  # tokens_received
+        3,  # reasoning_tokens for "Thinking..."
+    ]
 
     # Stream: first reasoning_content, then content,
     # then a final chunk without usage (forces estimation)
@@ -785,8 +789,51 @@ def test_chat_with_reasoning_content_and_token_estimation(
     # Warning about missing usage must be present
     assert "There is no usage info returned from the model server" in caplog.text
 
-    # Token estimation must be based on reasoning + content
+    # Token estimation: tokens_received from combined_text,
+    # reasoning_tokens from reasoning_text
     assert resp.tokens_received == len(combined_text)
-    mock_together_user.environment.sampler.get_token_length.assert_called_once_with(
-        combined_text, add_special_tokens=False
+    assert resp.reasoning_tokens is not None
+    assert resp.reasoning_tokens == 3
+    get_token_length = mock_together_user.environment.sampler.get_token_length
+    assert get_token_length.call_count == 2
+    get_token_length.assert_any_call(combined_text, add_special_tokens=False)
+    get_token_length.assert_any_call(reasoning_text, add_special_tokens=False)
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_reasoning_tokens_from_usage(mock_post, mock_together_user):
+    """Server-reported reasoning_tokens in usage are passed through."""
+    mock_together_user.environment.sampler = MagicMock()
+    mock_together_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=True: len(text)
     )
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="gpt-reasoning",
+        prompt="Think step by step",
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    # Stream: content chunk with finish_reason, then usage chunk with reasoning_tokens
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id": "x", "choices": [{"delta": {"content": "OK"}, '
+            b'"finish_reason": "stop"}], "usage": null}',
+            b'data: {"id": "x", "choices": [], "usage": {"completion_tokens": 7, '
+            b'"prompt_tokens": 3, "completion_tokens_details": '
+            b'{"reasoning_tokens": 5}, "prompt_tokens_details": null}}',
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    response = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/test",
+        payload={"key": "value"},
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert response.status_code == 200
+    assert response.reasoning_tokens == 5
