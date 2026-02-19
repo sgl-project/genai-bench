@@ -95,7 +95,7 @@ def test_on_start_unsupported_auth(mock_oci_openai_user):
 
 @patch("genai_bench.user.oci_openai_user.OpenAI")
 @patch.dict(OCI_AUTH_CLASS_MAP, {"oci_security_token": MagicMock()})
-def test_image_generation(mock_openai, mock_oci_openai_user):
+def test_images_generations(mock_openai, mock_oci_openai_user):
     mock_client = MagicMock()
     mock_openai.return_value = mock_client
 
@@ -115,7 +115,7 @@ def test_image_generation(mock_openai, mock_oci_openai_user):
         additional_request_params={"compartmentId": "ocid1.compartment.oc1..test"},
     )
 
-    result = mock_oci_openai_user.image_generation()
+    result = mock_oci_openai_user.images_generations()
 
     assert isinstance(result, UserImageGenerationResponse)
     assert result.status_code == 200
@@ -133,7 +133,7 @@ def test_image_generation(mock_openai, mock_oci_openai_user):
 
 @patch("genai_bench.user.oci_openai_user.OpenAI")
 @patch.dict(OCI_AUTH_CLASS_MAP, {"oci_security_token": MagicMock()})
-def test_image_generation_error(mock_openai, mock_oci_openai_user):
+def test_images_generations_error(mock_openai, mock_oci_openai_user):
     """Test that errors from OCI server are handled gracefully."""
     mock_client = MagicMock()
     mock_openai.return_value = mock_client
@@ -152,7 +152,7 @@ def test_image_generation_error(mock_openai, mock_oci_openai_user):
         additional_request_params={"compartmentId": "ocid1.compartment.oc1..test"},
     )
 
-    result = mock_oci_openai_user.image_generation()
+    result = mock_oci_openai_user.images_generations()
 
     assert isinstance(result, UserImageGenerationResponse)
     assert result.status_code == 503

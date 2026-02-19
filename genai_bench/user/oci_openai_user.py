@@ -32,7 +32,7 @@ class OCIOpenAIUser(OpenAIUser):
 
     BACKEND_NAME = "oci-openai"
     supported_tasks = {
-        "text-to-image": "image_generation",
+        "text-to-image": "images_generations",
     }
 
     def on_start(self):
@@ -67,14 +67,14 @@ class OCIOpenAIUser(OpenAIUser):
         super(OpenAIUser, self).on_start()
 
     @task
-    def image_generation(self):
+    def images_generations(self):
         user_request = self.sample()
 
         if not isinstance(user_request, UserImageGenerationRequest):
             raise AttributeError(
                 f"user_request should be of type "
                 f"UserImageGenerationRequest for OCIOpenAIUser."
-                f"image_generation, got {type(user_request)}"
+                f"images_generations, got {type(user_request)}"
             )
 
         compartment_id = user_request.additional_request_params.get("compartmentId")

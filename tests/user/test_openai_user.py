@@ -841,7 +841,7 @@ def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
 
 
 @patch("genai_bench.user.openai_user.requests.post")
-def test_image_generation_rest_api(mock_post, mock_openai_user):
+def test_images_generations_rest_api(mock_post, mock_openai_user):
     """Test image generation using REST API."""
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserImageGenerationRequest(
@@ -863,7 +863,7 @@ def test_image_generation_rest_api(mock_post, mock_openai_user):
 
     # This method uses send_request and doesn't return a value
     # Just verify it doesn't raise an exception
-    mock_openai_user.image_generation()
+    mock_openai_user.images_generations()
 
     # Verify REST API was called
     mock_post.assert_called_once_with(
@@ -884,8 +884,8 @@ def test_image_generation_rest_api(mock_post, mock_openai_user):
     )
 
 
-def test_image_generation_wrong_request_type(mock_openai_user):
-    """Test image_generation with wrong request type raises AttributeError."""
+def test_images_generations_wrong_request_type(mock_openai_user):
+    """Test images_generations with wrong request type raises AttributeError."""
     mock_openai_user.on_start()
     # Return wrong request type
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -897,7 +897,7 @@ def test_image_generation_wrong_request_type(mock_openai_user):
     )
 
     with pytest.raises(AttributeError, match="UserImageGenerationRequest"):
-        mock_openai_user.image_generation()
+        mock_openai_user.images_generations()
 
 
 @patch("genai_bench.user.openai_user.requests.post")

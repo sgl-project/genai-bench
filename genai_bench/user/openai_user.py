@@ -33,7 +33,7 @@ class OpenAIUser(BaseUser):
         "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         # Future support can be added here
-        "text-to-image": "image_generation",
+        "text-to-image": "images_generations",
     }
 
     host: Optional[str] = None
@@ -167,7 +167,7 @@ class OpenAIUser(BaseUser):
         self.send_request(False, endpoint, payload, self.parse_embedding_response)
 
     @task
-    def image_generation(self):
+    def images_generations(self):
         endpoint = "/v1/images/generations"
 
         user_request = self.sample()
@@ -176,7 +176,7 @@ class OpenAIUser(BaseUser):
             raise AttributeError(
                 f"user_request should be of type "
                 f"UserImageGenerationRequest for OpenAIUser."
-                f"image_generation, got {type(user_request)}"
+                f"images_generations, got {type(user_request)}"
             )
 
         # Filter keys already set explicitly in the payload
@@ -198,7 +198,7 @@ class OpenAIUser(BaseUser):
         if user_request.quality is not None:
             payload["quality"] = user_request.quality
         self.send_request(
-            False, endpoint, payload, self.parse_image_generation_response
+            False, endpoint, payload, self.parse_images_generations_response
         )
 
     def send_request(
@@ -476,7 +476,7 @@ class OpenAIUser(BaseUser):
         )
 
     @staticmethod
-    def parse_image_generation_response(
+    def parse_images_generations_response(
         response: Response, start_time: float, _: Optional[int], end_time: float
     ) -> UserImageGenerationResponse:
         """
