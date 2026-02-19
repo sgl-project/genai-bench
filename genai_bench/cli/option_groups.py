@@ -323,12 +323,13 @@ def sampling_options(func):
     )(func)
     func = click.option(
         "--prefix-len",
-        type=int,
+        type=click.IntRange(min=0),
         default=None,
         help=(
             "Absolute prefix length in tokens for prefix caching. "
             "Works with any scenario type (D, N, U). "
-            "Must be <= minimum possible input tokens. "
+            "Must be <= the smallest possible input tokens across all scenarios "
+            "(e.g., D: num_input_tokens, N: mean-3*stddev, U: min_input_tokens). "
             "Mutually exclusive with --prefix-ratio."
         ),
     )(func)

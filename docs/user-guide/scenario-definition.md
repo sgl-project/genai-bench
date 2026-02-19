@@ -163,7 +163,7 @@ Prefix caching has the following requirements:
 3. **Prefix length range**: Must be in the range `[0, min_input_tokens]`
    - For multiple scenarios, `prefix_len` must be `<= min(input_tokens)` across all scenarios
    - The separator will be truncated automatically if needed to maintain exact token counts
-4. **Multi-worker consistency**: Currently, the prefix is generated using a fixed random seed so all workers produce the same prefix text. This ensures the server can cache and reuse the KV cache across requests from different workers. Note: This approach may be refined in future versions.
+4. **Multi-worker consistency**: The prefix is generated using a fixed random seed `(42, prefix_len)` so all workers produce the same prefix text. Different prefix lengths produce different prefix text to avoid cross-scenario cache overlap. Note: When using `--prefix-len` with multiple scenarios sharing the same prefix length, the server-side KV cache may already be warm for subsequent scenarios. Use `--warmup-ratio` to mitigate this. Note: This approach may be refined in future versions.
 
 #### Examples
 

@@ -45,7 +45,8 @@ class AWSBedrockUser(BaseUser):
             from botocore.config import Config
         except ImportError as e:
             raise ImportError(
-                "boto3 is required for AWS Bedrock. Install it with: pip install boto3"
+                "boto3 is required for AWS Bedrock. "
+                "Install it with: pip install boto3"
             ) from e
 
         # Get credentials from auth provider

@@ -82,14 +82,12 @@ class TextSampler(Sampler):
             num_input_tokens, num_output_tokens = scenario.sample()
             self.additional_request_params["ignore_eos"] = True
 
-            # Compute effective prefix length based on which option is used
             if self.prefix_ratio is not None:
-                # For --prefix-ratio: compute per-request based on actual input tokens
                 effective_prefix_len = int(num_input_tokens * self.prefix_ratio)
             elif self.prefix_len is not None:
-                # For --prefix-len: use the fixed value
                 effective_prefix_len = self.prefix_len
-                # For non-deterministic scenarios, resample if needed
+                # For non-deterministic scenarios (N, U), rare samples may fall
+                # below prefix_len in the distribution tail. Resample if so.
                 max_resample_attempts = 10
                 for _ in range(max_resample_attempts):
                     if num_input_tokens >= effective_prefix_len:
@@ -216,10 +214,10 @@ class TextSampler(Sampler):
         if not num_input_tokens:
             return random.choice(self.data)
 
-        # Generate shared prefix if needed
-        # Use fixed seed for multi-worker consistency (all workers generate same prefix)
+        # Fixed seed ensures multi-worker consistency; prefix_len in seed
+        # avoids cross-scenario cache overlap when prefix lengths differ.
         if effective_prefix_len is not None:
-            prefix_rng = random.Random(42)
+            prefix_rng = random.Random(hash((42, effective_prefix_len)))
             if self.prefix_len is not None:
                 # --prefix-len mode: generate once and cache
                 if self._shared_prefix is None:
@@ -240,21 +238,11 @@ class TextSampler(Sampler):
         else:
             prefix = None
 
-        # Generate suffix (remaining tokens after prefix)
-        suffix_len = num_input_tokens
-        if effective_prefix_len is not None:
-            suffix_len = num_input_tokens - effective_prefix_len
-
-        # Generate suffix from dataset
-        suffix = self._generate_text_from_dataset(suffix_len) if suffix_len > 0 else ""
-
-        # Combine prefix + separator + suffix
+        # Combine prefix + separator + suffix for prefix caching
         if effective_prefix_len is not None and effective_prefix_len > 0:
+            suffix_len = num_input_tokens - effective_prefix_len
             # Generate a random 4-character hex string as separator
-            # Using secrets.token_hex for cryptographic randomness
-            import secrets
-
-            separator = secrets.token_hex(2)  # 2 bytes = 4 hex chars
+            separator = random.randbytes(2).hex()
             separator_len = self.get_token_length(separator)
 
             # Check if separator fits in available space

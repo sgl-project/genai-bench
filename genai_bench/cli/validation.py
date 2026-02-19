@@ -436,13 +436,6 @@ def validate_prefix_options(
     # Determine which option is being used
     option_name = "--prefix-len" if prefix_len is not None else "--prefix-ratio"
 
-    # Basic validation for prefix_len
-    if prefix_len is not None:
-        if not isinstance(prefix_len, int):
-            raise click.UsageError("--prefix-len must be an integer.")
-        if prefix_len < 0:
-            raise click.UsageError("--prefix-len must be non-negative.")
-
     # Task compatibility
     if task != "text-to-text":
         raise click.UsageError(
