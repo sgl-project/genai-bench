@@ -43,6 +43,7 @@ def api_options(func):
         type=click.Choice(
             [
                 "text-to-text",
+                "text-to-image",
                 "text-to-embeddings",
                 "text-to-rerank",
                 "image-text-to-text",
@@ -54,8 +55,9 @@ def api_options(func):
         prompt=True,
         callback=validate_task,
         help="The task to benchmark: it follows `<input_modality>-to-"
-        "<output_modality>` pattern. Currently we support `text-to-text`,"
-        " `image-text-to-text`, `text-to-embeddings, and `image-to-embeddings`.",
+        "<output_modality>` pattern. Currently we support "
+        "text-to-text`, `text-to-image`, `text-to-embeddings`, "
+        "`image-text-to-text`, and `image-to-embeddings`.",
     )(func)
     func = click.option(
         "--api-key",
@@ -77,6 +79,7 @@ def api_options(func):
         type=click.Choice(
             [
                 "openai",
+                "oci-openai",
                 "oci-cohere",
                 "oci-genai",
                 "cohere",

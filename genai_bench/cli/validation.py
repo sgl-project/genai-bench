@@ -15,6 +15,7 @@ from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.oci_genai_user import OCIGenAIUser
+from genai_bench.user.oci_openai_user import OCIOpenAIUser
 from genai_bench.user.openai_user import OpenAIUser
 from genai_bench.user.together_user import TogetherUser
 
@@ -22,6 +23,7 @@ logger = init_logger(__name__)
 
 API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
+    OCIOpenAIUser.BACKEND_NAME: OCIOpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
@@ -69,9 +71,16 @@ DEFAULT_SCENARIOS_FOR_RERANK = [
     "R(4096,100)",
 ]
 
+DEFAULT_SCENARIOS_FOR_IMAGE_GENERATION = [
+    "I(512,512)",
+    "I(1024,1024)",
+    "I(1024,1792)",
+]
+
 DEFAULT_SCENARIOS_BY_TASK = {
     "text-to-text": DEFAULT_SCENARIOS_FOR_CHAT,
     "text-to-rerank": DEFAULT_SCENARIOS_FOR_RERANK,
+    "text-to-image": DEFAULT_SCENARIOS_FOR_IMAGE_GENERATION,
     "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
     "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,
@@ -262,6 +271,7 @@ def validate_api_key(ctx, param, value):
 
     # Backends that don't use traditional API key
     no_api_key = [
+        OCIOpenAIUser.BACKEND_NAME,
         OCICohereUser.BACKEND_NAME,
         OCIGenAIUser.BACKEND_NAME,
         CohereUser.BACKEND_NAME,
@@ -344,6 +354,11 @@ def validate_additional_request_params(ctx, param, value):
                 "Do you want to reset the ignore_eos to True?", default=False
             ):
                 value["ignore_eos"] = True
+
+        if ctx.params.get("task") == "text-to-image" and "n" in value:
+            raise click.BadParameter(
+                "Set image count via --traffic-scenario I(width,height,num_images)."
+            )
 
         return value
     except json.JSONDecodeError as e:

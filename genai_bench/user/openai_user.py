@@ -17,6 +17,8 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
+    UserImageGenerationResponse,
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
@@ -31,6 +33,7 @@ class OpenAIUser(BaseUser):
         "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         # Future support can be added here
+        "text-to-image": "images_generations",
     }
 
     host: Optional[str] = None
@@ -162,6 +165,41 @@ class OpenAIUser(BaseUser):
             **user_request.additional_request_params,
         }
         self.send_request(False, endpoint, payload, self.parse_embedding_response)
+
+    @task
+    def images_generations(self):
+        endpoint = "/v1/images/generations"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserImageGenerationRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserImageGenerationRequest for OpenAIUser."
+                f"images_generations, got {type(user_request)}"
+            )
+
+        # Filter keys already set explicitly in the payload
+        filtered_params = {
+            k: v
+            for k, v in user_request.additional_request_params.items()
+            if k not in ("model", "prompt", "n", "size", "quality", "response_format")
+        }
+        payload = {
+            "model": user_request.model,
+            "prompt": user_request.prompt,
+            "n": user_request.num_images,
+            "size": user_request.size,
+            "response_format": user_request.additional_request_params.get(
+                "response_format", "url"
+            ),
+            **filtered_params,
+        }
+        if user_request.quality is not None:
+            payload["quality"] = user_request.quality
+        self.send_request(
+            False, endpoint, payload, self.parse_images_generations_response
+        )
 
     def send_request(
         self,
@@ -436,4 +474,40 @@ class OpenAIUser(BaseUser):
             end_time=end_time,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prompt_tokens,
+        )
+
+    @staticmethod
+    def parse_images_generations_response(
+        response: Response, start_time: float, _: Optional[int], end_time: float
+    ) -> UserImageGenerationResponse:
+        """
+        Parses an image generation response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            _ (Optional[int]): Placeholder for an unused var, to keep
+                parse_*_response have the same interface.
+            end_time(float): The time when the request was finished.
+
+        Returns:
+            UserImageGenerationResponse: A response object with generated images.
+        """
+
+        data = response.json()
+        image_data = data.get("data", [])
+        generated_images = [
+            img.get("url") or img.get("b64_json", "") for img in image_data
+        ]
+        revised_prompt = image_data[0].get("revised_prompt") if image_data else None
+
+        return UserImageGenerationResponse(
+            status_code=response.status_code,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            generated_images=generated_images,
+            revised_prompt=revised_prompt,
+            num_prefill_tokens=0,
+            images_generated=len(generated_images),
         )

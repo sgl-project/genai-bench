@@ -185,7 +185,7 @@ def benchmark(
         # or --model-api-key for consistency with multi-cloud
         auth_kwargs["api_key"] = model_api_key or api_key
 
-    elif api_backend in ["oci-cohere", "cohere", "oci-genai"]:
+    elif api_backend in ["oci-cohere", "cohere", "oci-genai", "oci-openai"]:
         # OCI uses its own auth system
         auth_kwargs.update(
             {
@@ -243,6 +243,7 @@ def benchmark(
         "oci-cohere": "oci",
         "cohere": "oci",
         "oci-genai": "oci",
+        "oci-openai": "oci",
         "vllm": "openai",
         "sglang": "openai",
     }
