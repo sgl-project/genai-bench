@@ -12,15 +12,17 @@ from genai_bench.user.oci_openai_user import OCI_AUTH_CLASS_MAP, OCIOpenAIUser
 
 @pytest.fixture
 def mock_oci_openai_user():
+    mock_oci_auth = MagicMock()
+    mock_oci_auth.profile = "DEFAULT"
+    mock_oci_auth.config_path = None
+
     mock_auth = MagicMock()
     mock_auth.get_auth_type.return_value = "oci_security_token"
+    mock_auth.oci_auth = mock_oci_auth
     OCIOpenAIUser.auth_provider = mock_auth
     OCIOpenAIUser.host = (
         "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
     )
-    OCIOpenAIUser.oci_compartment_id = "ocid1.compartment.oc1..test"
-    OCIOpenAIUser.oci_profile = "DEFAULT"
-    OCIOpenAIUser.oci_config_file = None
 
     user = OCIOpenAIUser(environment=MagicMock())
     user.user_requests = [
@@ -49,8 +51,8 @@ def test_on_start_session_auth(mock_openai, mock_oci_openai_user):
 @patch.dict(OCI_AUTH_CLASS_MAP, {"oci_user_principal": MagicMock()})
 def test_on_start_user_principal_auth(mock_openai, mock_oci_openai_user):
     mock_oci_openai_user.auth_provider.get_auth_type.return_value = "oci_user_principal"
-    mock_oci_openai_user.oci_profile = "MY_PROFILE"
-    mock_oci_openai_user.oci_config_file = "/home/user/.oci/config"
+    mock_oci_openai_user.auth_provider.oci_auth.profile = "MY_PROFILE"
+    mock_oci_openai_user.auth_provider.oci_auth.config_path = "/home/user/.oci/config"
 
     mock_oci_openai_user.on_start()
 
@@ -110,7 +112,7 @@ def test_image_generation(mock_openai, mock_oci_openai_user):
         size="1024x1024",
         quality="standard",
         num_images=1,
-        additional_request_params={},
+        additional_request_params={"compartmentId": "ocid1.compartment.oc1..test"},
     )
 
     result = mock_oci_openai_user.image_generation()
@@ -125,6 +127,7 @@ def test_image_generation(mock_openai, mock_oci_openai_user):
         prompt="A test image",
         n=1,
         size="1024x1024",
+        extra_headers={"CompartmentId": "ocid1.compartment.oc1..test"},
     )
 
 
@@ -146,7 +149,7 @@ def test_image_generation_error(mock_openai, mock_oci_openai_user):
         size="1024x1024",
         quality="standard",
         num_images=1,
-        additional_request_params={},
+        additional_request_params={"compartmentId": "ocid1.compartment.oc1..test"},
     )
 
     result = mock_oci_openai_user.image_generation()

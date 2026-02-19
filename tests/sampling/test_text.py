@@ -295,7 +295,7 @@ class TestTextSampler(unittest.TestCase):
         request = image_sampler.sample(None)
 
         self.assertIsInstance(request, UserImageGenerationRequest)
-        self.assertEqual(request.size, "1024x1024")  # Default size
+        self.assertEqual(request.size, "auto")  # Default size
 
     def test_sample_image_generation_request_with_dataset(self):
         """Test image generation request with dataset mode."""
@@ -310,5 +310,5 @@ class TestTextSampler(unittest.TestCase):
         request = image_sampler.sample(scenario)
 
         self.assertIsInstance(request, UserImageGenerationRequest)
-        self.assertEqual(request.size, "1024x1024")  # Default when dataset mode
+        self.assertEqual(request.size, "auto")  # Default when dataset mode
         self.assertIn(request.prompt, self.test_data)

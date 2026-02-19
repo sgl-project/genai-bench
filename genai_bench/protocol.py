@@ -105,10 +105,10 @@ class UserImageGenerationRequest(UserRequest):
 
     prompt: str = Field(..., description="Text prompt for image generation.")
     size: Optional[str] = Field(
-        default="1024x1024", description="The size of the generated image."
+        default="auto", description="The size of the generated image."
     )
     quality: Optional[str] = Field(
-        default=None, description="The quality of the generated image."
+        default="auto", description="The quality of the generated image."
     )
     num_images: Optional[int] = Field(
         default=1, description="Number of images to generate."
@@ -173,9 +173,9 @@ class UserImageGenerationResponse(UserResponse):
         default=None,
         description="The revised prompt used by the model (e.g., DALL-E 3).",
     )
-    tokens_received: Optional[int] = Field(
+    images_generated: Optional[int] = Field(
         default=0,
-        description="Number of images generated (used for metrics compatibility).",
+        description="Number of images generated.",
     )
 
 

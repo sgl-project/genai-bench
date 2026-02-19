@@ -165,10 +165,9 @@ class TextSampler(Sampler):
         Returns:
             UserImageGenerationRequest: A request for image generation.
         """
-        size = "1024x1024"  # Default size
+        size = "auto"  # Default size
         num_images = 1  # Default number of images
 
-        # Parse image size and num_images from scenario if provided
         if scenario is not None and not self._is_dataset_mode(scenario):
             self._validate_scenario(scenario)
             try:
@@ -191,7 +190,7 @@ class TextSampler(Sampler):
             model=self.model,
             prompt=prompt,
             size=size,
-            quality=self.additional_request_params.get("quality"),
+            quality=self.additional_request_params.get("quality", "auto"),
             num_images=num_images,
             additional_request_params=self.additional_request_params,
         )

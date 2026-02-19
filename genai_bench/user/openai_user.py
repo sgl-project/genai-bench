@@ -179,6 +179,12 @@ class OpenAIUser(BaseUser):
                 f"image_generation, got {type(user_request)}"
             )
 
+        # Filter keys already set explicitly in the payload
+        filtered_params = {
+            k: v
+            for k, v in user_request.additional_request_params.items()
+            if k not in ("model", "prompt", "n", "size", "quality", "response_format")
+        }
         payload = {
             "model": user_request.model,
             "prompt": user_request.prompt,
@@ -187,11 +193,7 @@ class OpenAIUser(BaseUser):
             "response_format": user_request.additional_request_params.get(
                 "response_format", "url"
             ),
-            **{
-                k: v
-                for k, v in user_request.additional_request_params.items()
-                if k != "n"
-            },
+            **filtered_params,
         }
         if user_request.quality is not None:
             payload["quality"] = user_request.quality
@@ -499,12 +501,12 @@ class OpenAIUser(BaseUser):
         revised_prompt = image_data[0].get("revised_prompt") if image_data else None
 
         return UserImageGenerationResponse(
-            status_code=200,
+            status_code=response.status_code,
             start_time=start_time,
             end_time=end_time,
             time_at_first_token=end_time,
             generated_images=generated_images,
             revised_prompt=revised_prompt,
             num_prefill_tokens=0,
-            tokens_received=len(generated_images),
+            images_generated=len(generated_images),
         )

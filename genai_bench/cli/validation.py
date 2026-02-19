@@ -15,6 +15,7 @@ from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.oci_genai_user import OCIGenAIUser
+from genai_bench.user.oci_openai_user import OCIOpenAIUser
 from genai_bench.user.openai_user import OpenAIUser
 from genai_bench.user.together_user import TogetherUser
 
@@ -22,6 +23,7 @@ logger = init_logger(__name__)
 
 API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
+    OCIOpenAIUser.BACKEND_NAME: OCIOpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
@@ -269,6 +271,7 @@ def validate_api_key(ctx, param, value):
 
     # Backends that don't use traditional API key
     no_api_key = [
+        OCIOpenAIUser.BACKEND_NAME,
         OCICohereUser.BACKEND_NAME,
         OCIGenAIUser.BACKEND_NAME,
         CohereUser.BACKEND_NAME,

@@ -1,10 +1,10 @@
 """User class for OCI's OpenAI-compatible endpoints."""
 
+from locust import task
+
 import time
-from typing import Optional
 
 import httpx
-from locust import task
 from oci_openai import (
     OciInstancePrincipalAuth,
     OciResourcePrincipalAuth,
@@ -14,10 +14,7 @@ from oci_openai import (
 from openai import OpenAI
 
 from genai_bench.logging import init_logger
-from genai_bench.protocol import (
-    UserImageGenerationRequest,
-    UserImageGenerationResponse,
-)
+from genai_bench.protocol import UserImageGenerationRequest, UserImageGenerationResponse
 from genai_bench.user.openai_user import OpenAIUser
 
 logger = init_logger(__name__)
@@ -31,18 +28,18 @@ OCI_AUTH_CLASS_MAP = {
 
 
 class OCIOpenAIUser(OpenAIUser):
-    """User class for OCI's OpenAI-compatible endpoints.
+    """User class for OCI's OpenAI-compatible endpoints."""
 
-    Overrides authentication (OCI request signing) and image generation.
-    """
-
-    oci_profile: Optional[str] = None
-    oci_config_file: Optional[str] = None
-    oci_compartment_id: Optional[str] = None
+    BACKEND_NAME = "oci-openai"
+    supported_tasks = {
+        "text-to-image": "image_generation",
+    }
 
     def on_start(self):
         if not self.host or not self.auth_provider:
-            raise ValueError("Host and auth_provider must be set for OCIOpenAIUser.")
+            raise ValueError(
+                "Host and Auth is required for OCIOpenAIUser."
+            )  # what's host, what is self.host?
         auth_type = self.auth_provider.get_auth_type()
         auth_cls = OCI_AUTH_CLASS_MAP.get(auth_type)
         if auth_cls is None:
@@ -52,9 +49,11 @@ class OCIOpenAIUser(OpenAIUser):
             )
 
         if auth_type in ("oci_security_token", "oci_user_principal"):
-            kwargs = {"profile_name": self.oci_profile or "DEFAULT"}
-            if self.oci_config_file:
-                kwargs["config_file"] = self.oci_config_file
+            profile = getattr(self.auth_provider.oci_auth, "profile", "DEFAULT")
+            config_file = getattr(self.auth_provider.oci_auth, "config_path", None)
+            kwargs = {"profile_name": profile}
+            if config_file:
+                kwargs["config_file"] = config_file
             oci_auth = auth_cls(**kwargs)
         else:
             oci_auth = auth_cls()
@@ -62,10 +61,7 @@ class OCIOpenAIUser(OpenAIUser):
         self.openai_client = OpenAI(
             api_key="OCI",
             base_url=self.host,
-            http_client=httpx.Client(
-                auth=oci_auth,
-                headers={"CompartmentId": self.oci_compartment_id},
-            ),
+            http_client=httpx.Client(auth=oci_auth),
         )
         self.api_backend = getattr(self, "api_backend", self.BACKEND_NAME)
         super(OpenAIUser, self).on_start()
@@ -81,12 +77,17 @@ class OCIOpenAIUser(OpenAIUser):
                 f"image_generation, got {type(user_request)}"
             )
 
+        compartment_id = user_request.additional_request_params.get("compartmentId")
+        if not compartment_id:
+            raise ValueError("compartmentId missing in additional request params")
+
         start_time = time.monotonic()
         try:
+            # Filter out keys already passed as explicit SDK args
             sdk_params = {
                 k: v
                 for k, v in user_request.additional_request_params.items()
-                if k not in ("compartmentId", "n")
+                if k not in ("compartmentId", "model", "prompt", "n", "size")
             }
 
             response = self.openai_client.images.generate(
@@ -94,6 +95,7 @@ class OCIOpenAIUser(OpenAIUser):
                 prompt=user_request.prompt,
                 n=user_request.num_images,
                 size=user_request.size,
+                extra_headers={"CompartmentId": compartment_id},
                 **sdk_params,
             )
 
@@ -109,7 +111,7 @@ class OCIOpenAIUser(OpenAIUser):
                 generated_images=generated_images,
                 revised_prompt=revised_prompt,
                 num_prefill_tokens=0,
-                tokens_received=len(generated_images),
+                images_generated=len(generated_images),
             )
 
         except Exception as e:
@@ -123,7 +125,7 @@ class OCIOpenAIUser(OpenAIUser):
                 generated_images=[],
                 revised_prompt=None,
                 num_prefill_tokens=0,
-                tokens_received=0,
+                images_generated=0,
             )
 
         self.collect_metrics(metrics_response, "/v1/images/generations")

@@ -16,7 +16,6 @@ from genai_bench.analysis.plot_report import (
     plot_single_scenario_inference_speed_vs_throughput,
 )
 from genai_bench.auth.unified_factory import UnifiedAuthFactory
-from genai_bench.user.oci_openai_user import OCIOpenAIUser
 from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
@@ -108,7 +107,6 @@ def benchmark(
     auth,
     security_token,
     region,
-    compartment_id,
     # Server options
     server_engine,
     server_version,
@@ -187,7 +185,7 @@ def benchmark(
         # or --model-api-key for consistency with multi-cloud
         auth_kwargs["api_key"] = model_api_key or api_key
 
-    elif api_backend in ["oci-cohere", "cohere", "oci-genai"]:
+    elif api_backend in ["oci-cohere", "cohere", "oci-genai", "oci-openai"]:
         # OCI uses its own auth system
         auth_kwargs.update(
             {
@@ -245,23 +243,11 @@ def benchmark(
         "oci-cohere": "oci",
         "cohere": "oci",
         "oci-genai": "oci",
+        "oci-openai": "oci",
         "vllm": "openai",
         "sglang": "openai",
     }
     auth_backend = auth_backend_map.get(api_backend, api_backend)
-
-    # Override auth backend and user class for OCI OpenAI-compatible endpoints.
-    # TODO: Remove task guard when OCIOpenAIUser supports chat/embeddings.
-    if api_backend == "openai" and compartment_id and task == "text-to-image":
-        auth_backend = "oci"
-        auth_kwargs = {
-            "auth_type": auth,
-            "config_path": config_file,
-            "profile": profile,
-            "token": security_token,
-            "region": region,
-        }
-        ctx.obj["user_class"] = OCIOpenAIUser
 
     # Create authentication provider
     auth_provider = UnifiedAuthFactory.create_model_auth(auth_backend, **auth_kwargs)
@@ -286,11 +272,6 @@ def benchmark(
     user_class.auth_provider = auth_provider
     user_class.host = api_base
     user_class.api_backend = api_backend
-
-    if compartment_id:
-        user_class.oci_profile = profile
-        user_class.oci_config_file = config_file
-        user_class.oci_compartment_id = compartment_id
 
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
