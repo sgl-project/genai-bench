@@ -347,7 +347,7 @@ class TogetherUser(BaseUser):
             )
 
         # Reasoning tokens not provided in usage, estimate with tokenizer
-        if reasoning_text and reasoning_tokens is None:
+        if reasoning_text and not reasoning_tokens:
             reasoning_tokens = self.environment.sampler.get_token_length(
                 reasoning_text, add_special_tokens=False
             )
