@@ -329,6 +329,7 @@ class AzureOpenAIUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
+
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
@@ -343,9 +344,9 @@ class AzureOpenAIUser(BaseUser):
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
         num_prompt_tokens = data["usage"].get("prompt_tokens")
-        tokens_received = data["usage"].get("completion_tokens")
+        tokens_received = data["usage"].get("completion_tokens", 0)
         details = data["usage"].get("completion_tokens_details") or {}
-        reasoning_tokens = details.get("reasoning_tokens")
+        reasoning_tokens = details.get("reasoning_tokens", 0)
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens

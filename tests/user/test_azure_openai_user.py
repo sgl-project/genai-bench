@@ -789,24 +789,23 @@ class TestAzureOpenAIUser:
         assert num_prefill == 100  # Uses prompt tokens for vision
         assert num_prompt == 100
         assert tokens_received == 50
-        assert reasoning_tokens is None
+        assert reasoning_tokens == 0
 
     def test_get_usage_info_prefers_server_tokens(self, azure_user):
         """Test _get_usage_info prefers server-reported prompt tokens."""
         data = {"usage": {"prompt_tokens": 100, "completion_tokens": 50}}
 
-        with patch("genai_bench.user.azure_openai_user.logger") as mock_logger:
-            (
-                num_prefill,
-                num_prompt,
-                tokens_received,
-                reasoning_tokens,
-            ) = azure_user._get_usage_info(data, 40)
+        (
+            num_prefill,
+            num_prompt,
+            tokens_received,
+            reasoning_tokens,
+        ) = azure_user._get_usage_info(data, 40)
 
         assert num_prefill == 100  # Prefers server-reported prompt tokens
         assert num_prompt == 100
         assert tokens_received == 50
-        assert reasoning_tokens is None
+        assert reasoning_tokens == 0
 
     def test_parse_streaming_response_with_index_error(self, azure_user):
         """Test parsing streaming response with malformed data causing IndexError."""
