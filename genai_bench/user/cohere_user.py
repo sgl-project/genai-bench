@@ -246,6 +246,8 @@ class CohereUser(BaseUser):
                         generated_text += content
                     if reasoning_content:
                         reasoning_text += reasoning_content
+                        # Also include reasoning content in generated text
+                        generated_text += reasoning_content
                     if not time_at_first_token and (content or reasoning_content):
                         time_at_first_token = time.monotonic()
 

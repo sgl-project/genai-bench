@@ -131,7 +131,7 @@ def test_chat_reasoning_accumulation_and_tokenizer(cohere_user, mock_response):
         response = cohere_user.chat()
     assert isinstance(response, UserChatResponse)
     assert response.status_code == 200
-    assert response.generated_text == "Hi"
+    assert response.generated_text == "ABHi"
     assert response.reasoning_tokens == 2
     cohere_user.environment.sampler.get_token_length.assert_called_once_with(
         "AB", add_special_tokens=False
