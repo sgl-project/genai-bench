@@ -236,6 +236,7 @@ class OCIGenAIUser(BaseUser):
         """
         generated_text = ""
         streaming_events_count = 0
+        reasoning_streaming_events_count = 0
         total_tokens = None
         prompt_tokens = None
         time_at_first_token: Optional[float] = None
@@ -288,9 +289,12 @@ class OCIGenAIUser(BaseUser):
                             )
                         generated_text += reasoning_segment
                         streaming_events_count += 1  # each event contains one token
+                        reasoning_streaming_events_count += 1  # count reasoning tokens
                         logger.debug(
                             f"Reasoning Text: '{reasoning_segment}', "
-                            f"streaming events count: {streaming_events_count}"
+                            f"streaming events count: {streaming_events_count}, "
+                            "reasoning events count: "
+                            f"{reasoning_streaming_events_count}"
                         )
 
                     # Track the previous data for debugging purposes
@@ -335,6 +339,7 @@ class OCIGenAIUser(BaseUser):
             f"Time at first token: {time_at_first_token} \n"
             f"Finish reason: {finish_reason}\n"
             f"Streaming Events Count: {streaming_events_count}\n"
+            f"Reasoning Streaming Events Count: {reasoning_streaming_events_count}\n"
             f"Total Tokens (from usage): {total_tokens}\n"
             f"Prompt Tokens (from usage): {prompt_tokens}\n"
             f"Usage data: {usage_data}\n"
@@ -352,6 +357,7 @@ class OCIGenAIUser(BaseUser):
             status_code=200,
             generated_text=generated_text,
             tokens_received=tokens_received,
+            reasoning_tokens=reasoning_streaming_events_count,  # reasoning tokens count
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,

@@ -98,6 +98,7 @@ def test_chat(mock_client_class, test_cohere_user):
     user_response = args[0]
     assert user_response.status_code == 200
     assert user_response.num_prefill_tokens == 5
+    assert user_response.reasoning_tokens == 0
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
