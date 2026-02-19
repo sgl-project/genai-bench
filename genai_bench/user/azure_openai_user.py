@@ -316,6 +316,7 @@ class AzureOpenAIUser(BaseUser):
             f"Finish reason: {finish_reason}\n"
             f"Prompt Tokens: {num_prompt_tokens} \n"
             f"Completion Tokens: {tokens_received}\n"
+            f"Reasoning Tokens: {reasoning_tokens}\n"
             f"Start Time: {start_time}\n"
             f"End Time: {end_time}"
         )
