@@ -221,11 +221,13 @@ class TogetherUser(BaseUser):
         end_chunk = b"[DONE]"
 
         generated_text = ""
+        reasoning_text = ""
         tokens_received = 0
         time_at_first_token = None
         finish_reason = None
         previous_data = None
         num_prompt_tokens = None
+        reasoning_tokens = None
         for chunk in response.iter_lines(chunk_size=None):
             # Caution: Adding logs here can make debug mode unusable.
             chunk = chunk.strip()
@@ -259,9 +261,12 @@ class TogetherUser(BaseUser):
                 and "usage" in data
                 and data["usage"]
             ):
-                num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                    self._get_usage_info(data, num_prefill_tokens)
-                )
+                (
+                    num_prefill_tokens,
+                    num_prompt_tokens,
+                    tokens_received,
+                    reasoning_tokens,
+                ) = self._get_usage_info(data, num_prefill_tokens)
                 # Additional check for time_at_first_token when the response is
                 # too short
                 if not time_at_first_token:
@@ -279,7 +284,8 @@ class TogetherUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content")
+                content = delta.get("content") or delta.get("reasoning")
+                reasoning_content_chunk = delta.get("reasoning")
                 usage = delta.get("usage")
 
                 if usage:
@@ -294,15 +300,20 @@ class TogetherUser(BaseUser):
                             )
                         time_at_first_token = time.monotonic()
                     generated_text += content
+                if reasoning_content_chunk:
+                    reasoning_text += reasoning_content_chunk
 
                 finish_reason = data["choices"][0].get("finish_reason", None)
 
                 # SGLang v0.4.3 to v0.4.7 has finish_reason and usage
                 # in the last chunk
                 if finish_reason and "usage" in data and data["usage"]:
-                    num_prefill_tokens, num_prompt_tokens, tokens_received = (
-                        self._get_usage_info(data, num_prefill_tokens)
-                    )
+                    (
+                        num_prefill_tokens,
+                        num_prompt_tokens,
+                        tokens_received,
+                        reasoning_tokens,
+                    ) = self._get_usage_info(data, num_prefill_tokens)
                     break
 
             except (IndexError, KeyError) as e:
@@ -334,10 +345,18 @@ class TogetherUser(BaseUser):
                 "server. Estimated tokens_received based on the model "
                 "tokenizer."
             )
+
+        # Reasoning tokens not provided in usage, estimate with tokenizer
+        if reasoning_text and not reasoning_tokens:
+            reasoning_tokens = self.environment.sampler.get_token_length(
+                reasoning_text, add_special_tokens=False
+            )
+
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
             tokens_received=tokens_received,
+            reasoning_tokens=reasoning_tokens,
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
@@ -348,6 +367,8 @@ class TogetherUser(BaseUser):
     def _get_usage_info(data, num_prefill_tokens):
         num_prompt_tokens = data["usage"].get("prompt_tokens")
         tokens_received = data["usage"].get("completion_tokens", 0)
+        details = data["usage"].get("completion_tokens_details") or {}
+        reasoning_tokens = details.get("reasoning_tokens", 0)
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
@@ -356,7 +377,7 @@ class TogetherUser(BaseUser):
         effective_prefill = (
             num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
         )
-        return effective_prefill, num_prompt_tokens, tokens_received
+        return effective_prefill, num_prompt_tokens, tokens_received, reasoning_tokens
 
     @staticmethod
     def parse_embedding_response(
