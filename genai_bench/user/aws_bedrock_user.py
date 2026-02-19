@@ -124,11 +124,7 @@ class AWSBedrockUser(BaseUser):
                     chunk_text = self._extract_chunk_text(chunk, model_id)
                     if chunk_text:
                         full_response += chunk_text
-                    # Extract reasoning tokens if possible
-                    if reasoning_tokens is None:
-                        reasoning_tokens = self._extract_usage_reasoning(
-                            chunk, model_id
-                        )
+                    reasoning_tokens = self._extract_usage_reasoning(chunk, model_id)
                 response_text = full_response
 
             else:
@@ -146,9 +142,10 @@ class AWSBedrockUser(BaseUser):
 
                 # Extract response text based on model type
                 response_text = self._extract_response_text(response_body, model_id)
-                reasoning_tokens = self._extract_usage_reasoning(
-                    response_body, model_id
-                )
+                if reasoning_tokens is None:
+                    reasoning_tokens = self._extract_usage_reasoning(
+                        response_body, model_id
+                    )
 
             end_time = time.monotonic()
             if reasoning_tokens is None:
@@ -395,9 +392,9 @@ class AWSBedrockUser(BaseUser):
             # OpenAI models may include reasoning tokens in usage details
             usage = chunk.get("usage", {})
             details = usage.get("completion_tokens_details", {})
-            return details.get("reasoning_tokens", 0)
+            return details.get("reasoning_tokens")
 
-        return 0
+        return None
 
     def _extract_response_text(self, response: Dict[str, Any], model_id: str) -> str:
         """Extract response text based on model type.
