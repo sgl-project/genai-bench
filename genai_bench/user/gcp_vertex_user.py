@@ -275,6 +275,7 @@ class GCPVertexUser(BaseUser):
         """
         generated_text = ""
         time_at_first_token = None
+        reasoning_tokens = None
 
         for line in response.iter_lines():
             if line:
@@ -294,11 +295,16 @@ class GCPVertexUser(BaseUser):
                             text = part.get("text", "")
                             if text:
                                 generated_text += text
+
+                    if reasoning_tokens is None:
+                        usage_metadata = chunk.get("usageMetadata", {})
+                        reasoning_tokens = usage_metadata.get("thoughtsTokenCount")
+
                 except json.JSONDecodeError:
                     continue
 
         end_time = time.monotonic()
-
+        reasoning_tokens = reasoning_tokens or 0
         # Estimate tokens if not provided
         tokens_received = self.environment.sampler.get_token_length(
             generated_text, add_special_tokens=False
@@ -312,6 +318,7 @@ class GCPVertexUser(BaseUser):
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
             end_time=end_time,
+            reasoning_tokens=reasoning_tokens,
         )
 
     def parse_palm_response(
@@ -346,10 +353,12 @@ class GCPVertexUser(BaseUser):
             response_text, add_special_tokens=False
         )
 
+        # No reasoning tokens for non-gemini models
         return UserChatResponse(
             status_code=200,
             generated_text=response_text,
             tokens_received=tokens_received,
+            reasoning_tokens=0,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
