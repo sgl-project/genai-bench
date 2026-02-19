@@ -95,6 +95,7 @@ class AWSBedrockUser(BaseUser):
         # Track timing
         start_time = time.monotonic()
         first_token_time = None
+        reasoning_tokens = None
 
         try:
             # Determine if streaming
@@ -123,7 +124,7 @@ class AWSBedrockUser(BaseUser):
                     chunk_text = self._extract_chunk_text(chunk, model_id)
                     if chunk_text:
                         full_response += chunk_text
-
+                    reasoning_tokens = self._extract_usage_reasoning(chunk, model_id)
                 response_text = full_response
 
             else:
@@ -141,14 +142,21 @@ class AWSBedrockUser(BaseUser):
 
                 # Extract response text based on model type
                 response_text = self._extract_response_text(response_body, model_id)
+                if reasoning_tokens is None:
+                    reasoning_tokens = self._extract_usage_reasoning(
+                        response_body, model_id
+                    )
 
             end_time = time.monotonic()
+            if reasoning_tokens is None:
+                reasoning_tokens = 0
 
             # Create response
             user_response = UserChatResponse(
                 status_code=200,
                 generated_text=response_text,
                 tokens_received=len(response_text.split()),  # Approximate token count
+                reasoning_tokens=reasoning_tokens,
                 time_at_first_token=first_token_time,
                 num_prefill_tokens=user_request.num_prefill_tokens,
                 start_time=start_time,
@@ -370,6 +378,23 @@ class AWSBedrockUser(BaseUser):
 
         # Try common fields
         return chunk.get("text", chunk.get("output", ""))
+
+    def _extract_usage_reasoning(self, chunk: Dict[str, Any], model_id: str) -> int:
+        """Extract reasoning tokens from streaming chunk if available.
+
+        Args:
+            chunk: Streaming chunk
+            model_id: Model ID
+        Returns:
+            Reasoning tokens count if available, otherwise 0
+        """
+        if "openai" in model_id.lower():
+            # OpenAI models may include reasoning tokens in usage details
+            usage = chunk.get("usage", {})
+            details = usage.get("completion_tokens_details", {})
+            return details.get("reasoning_tokens")
+
+        return None
 
     def _extract_response_text(self, response: Dict[str, Any], model_id: str) -> str:
         """Extract response text based on model type.
