@@ -12,6 +12,21 @@ from genai_bench.protocol import UserChatRequest, UserEmbeddingRequest
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 
 
+def _events(*data_strings):
+    """Build list of event mocks from JSON data strings."""
+    return [MagicMock(data=s) for s in data_strings]
+
+
+def _run_chat_test(mock_client_class, test_genai_user, events, request):
+    """Set up client mock with events, run on_start and chat; return response."""
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = iter(events)
+    test_genai_user.on_start()
+    test_genai_user.sample = lambda: request
+    return test_genai_user.chat()
+
+
 @pytest.fixture
 def test_genai_user():
     OCIGenAIUser.host = "http://example.com"
@@ -33,10 +48,6 @@ def test_genai_user():
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_grok_format(mock_client_class, test_genai_user):
     """Test chat with Grok format streaming response."""
-    # Mock the chat method
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
-    # Prepare test streaming response data
     hello_msg = (
         '{"message": {"role": "ASSISTANT", '
         '"content": [{"type": "TEXT", "text": "Hello"}]}}'
@@ -49,24 +60,18 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         '{"message": {"role": "ASSISTANT", '
         '"content": [{"type": "TEXT", "text": "!"}]}}'
     )
-
     usage_msg = (
         '{"usage": {"totalTokens": 8, "promptTokens": 5, '
         '"completionTokens": 3, "completionTokensDetails": {"reasoningTokens": 0}}}'
     )
-
-    mock_client_instance.chat.return_value.data.events.return_value = iter(
-        [
-            MagicMock(data=hello_msg),
-            MagicMock(data=world_msg),
-            MagicMock(data=exclamation_msg),
-            MagicMock(data='{"finishReason": "stop"}'),
-            MagicMock(data=usage_msg),
-        ]
+    events = _events(
+        hello_msg,
+        world_msg,
+        exclamation_msg,
+        '{"finishReason": "stop"}',
+        usage_msg,
     )
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -76,13 +81,13 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         },
         max_tokens=10,
     )
-
     metrics_collector_mock = MagicMock()
     test_genai_user.collect_metrics = metrics_collector_mock
 
-    test_genai_user.chat()
+    _run_chat_test(mock_client_class, test_genai_user, events, request)
 
     # Verify the correct request was made
+    mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.assert_called_once_with(
         ChatDetails(
             compartment_id="ocid1.compartment.oc1..example",
@@ -119,8 +124,6 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
     """Test chat response includes reasoningContent text."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
     reasoning_msg = (
         '{"message": {"role": "ASSISTANT", ' '"reasoningContent": "Thinking..."}}'
     )
@@ -132,18 +135,13 @@ def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
         '{"usage": {"totalTokens": 7, "promptTokens": 5, '
         '"completionTokens": 2, "completionTokensDetails": {"reasoningTokens": 1}}}'
     )
-
-    mock_client_instance.chat.return_value.data.events.return_value = iter(
-        [
-            MagicMock(data=reasoning_msg),
-            MagicMock(data=content_msg),
-            MagicMock(data='{"finishReason": "stop"}'),
-            MagicMock(data=usage_msg),
-        ]
+    events = _events(
+        reasoning_msg,
+        content_msg,
+        '{"finishReason": "stop"}',
+        usage_msg,
     )
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -154,7 +152,7 @@ def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
         max_tokens=10,
     )
 
-    response = test_genai_user.chat()
+    response = _run_chat_test(mock_client_class, test_genai_user, events, request)
 
     assert response.status_code == 200
     assert response.generated_text == "Thinking... Done"
@@ -165,8 +163,6 @@ def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_reasoning_tokens_multiple_events(mock_client_class, test_genai_user):
     """Multiple reasoningContent events are all counted in reasoning_tokens."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
     reasoning_a = '{"message": {"role": "ASSISTANT", "reasoningContent": "A"}}'
     reasoning_b = '{"message": {"role": "ASSISTANT", "reasoningContent": "B"}}'
     reasoning_c = '{"message": {"role": "ASSISTANT", "reasoningContent": "C"}}'
@@ -177,20 +173,15 @@ def test_chat_reasoning_tokens_multiple_events(mock_client_class, test_genai_use
     usage_msg = (
         '{"usage": {"totalTokens": 10, "promptTokens": 5, ' '"completionTokens": 5}}'
     )
-
-    mock_client_instance.chat.return_value.data.events.return_value = iter(
-        [
-            MagicMock(data=reasoning_a),
-            MagicMock(data=reasoning_b),
-            MagicMock(data=reasoning_c),
-            MagicMock(data=content_msg),
-            MagicMock(data='{"finishReason": "stop"}'),
-            MagicMock(data=usage_msg),
-        ]
+    events = _events(
+        reasoning_a,
+        reasoning_b,
+        reasoning_c,
+        content_msg,
+        '{"finishReason": "stop"}',
+        usage_msg,
     )
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -201,7 +192,7 @@ def test_chat_reasoning_tokens_multiple_events(mock_client_class, test_genai_use
         max_tokens=10,
     )
 
-    response = test_genai_user.chat()
+    response = _run_chat_test(mock_client_class, test_genai_user, events, request)
 
     assert response.status_code == 200
     assert response.reasoning_tokens == 3
@@ -211,8 +202,6 @@ def test_chat_reasoning_tokens_multiple_events(mock_client_class, test_genai_use
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_no_reasoning_content(mock_client_class, test_genai_user):
     """When no event has reasoningContent, reasoning_tokens is 0."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
     hello_msg = (
         '{"message": {"role": "ASSISTANT", '
         '"content": [{"type": "TEXT", "text": "Hello"}]}}'
@@ -224,18 +213,8 @@ def test_chat_no_reasoning_content(mock_client_class, test_genai_user):
     usage_msg = (
         '{"usage": {"totalTokens": 8, "promptTokens": 5, ' '"completionTokens": 3}}'
     )
-
-    mock_client_instance.chat.return_value.data.events.return_value = iter(
-        [
-            MagicMock(data=hello_msg),
-            MagicMock(data=world_msg),
-            MagicMock(data='{"finishReason": "stop"}'),
-            MagicMock(data=usage_msg),
-        ]
-    )
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    events = _events(hello_msg, world_msg, '{"finishReason": "stop"}', usage_msg)
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hi",
         num_prefill_tokens=5,
@@ -246,7 +225,7 @@ def test_chat_no_reasoning_content(mock_client_class, test_genai_user):
         max_tokens=10,
     )
 
-    response = test_genai_user.chat()
+    response = _run_chat_test(mock_client_class, test_genai_user, events, request)
 
     assert response.status_code == 200
     assert response.reasoning_tokens == 0
@@ -256,12 +235,7 @@ def test_chat_no_reasoning_content(mock_client_class, test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_with_system_message(mock_client_class, test_genai_user):
     """Test chat with system message in additional params."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
-    mock_client_instance.chat.return_value.data.events.return_value = []
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -272,9 +246,9 @@ def test_chat_with_system_message(mock_client_class, test_genai_user):
         },
         max_tokens=10,
     )
+    _run_chat_test(mock_client_class, test_genai_user, [], request)
 
-    test_genai_user.chat()
-
+    mock_client_instance = mock_client_class.return_value
     chat_request = mock_client_instance.chat.call_args[0][0].chat_request
     expected_messages = [
         {
@@ -289,16 +263,11 @@ def test_chat_with_system_message(mock_client_class, test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_with_chat_history(mock_client_class, test_genai_user):
     """Test chat with chat history in additional params."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
-    mock_client_instance.chat.return_value.data.events.return_value = []
-
-    test_genai_user.on_start()
     chat_history = [
         {"role": "user", "content": "Previous message"},
         {"role": "assistant", "content": "Previous response"},
     ]
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -309,9 +278,9 @@ def test_chat_with_chat_history(mock_client_class, test_genai_user):
         },
         max_tokens=10,
     )
+    _run_chat_test(mock_client_class, test_genai_user, [], request)
 
-    test_genai_user.chat()
-
+    mock_client_instance = mock_client_class.return_value
     chat_request = mock_client_instance.chat.call_args[0][0].chat_request
     expected_messages = [
         {"role": "USER", "content": [{"text": "Previous message", "type": "TEXT"}]},
@@ -327,12 +296,7 @@ def test_chat_with_chat_history(mock_client_class, test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_dedicated_serving_mode(mock_client_class, test_genai_user):
     """Test chat with DEDICATED serving mode."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
-    mock_client_instance.chat.return_value.data.events.return_value = []
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -343,9 +307,9 @@ def test_chat_dedicated_serving_mode(mock_client_class, test_genai_user):
         },
         max_tokens=10,
     )
+    _run_chat_test(mock_client_class, test_genai_user, [], request)
 
-    test_genai_user.chat()
-
+    mock_client_instance = mock_client_class.return_value
     chat_detail = mock_client_instance.chat.call_args[0][0]
     assert isinstance(chat_detail.serving_mode, DedicatedServingMode)
     assert chat_detail.serving_mode.endpoint_id == "ocid1.endpoint.oc1..example"
@@ -474,9 +438,6 @@ def test_send_request_collects_metrics_on_exception(test_genai_user):
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
 def test_chat_json_decode_error(mock_client_class, test_genai_user):
     """Test handling of JSON decode errors in streaming response."""
-    mock_client_instance = mock_client_class.return_value
-    mock_client_instance.chat.return_value.status = 200
-    # Prepare test data with JSON decode error
     hello_response = (
         '{"message": {"role": "ASSISTANT", '
         '"content": [{"type": "TEXT", "text": "Hello"}]}}'
@@ -485,18 +446,13 @@ def test_chat_json_decode_error(mock_client_class, test_genai_user):
         '{"message": {"role": "ASSISTANT", '
         '"content": [{"type": "TEXT", "text": " world"}]}}'
     )
-
-    mock_client_instance.chat.return_value.data.events.return_value = iter(
-        [
-            MagicMock(data=hello_response),
-            MagicMock(data="invalid json"),  # This should cause JSON decode error
-            MagicMock(data=world_response),
-            MagicMock(data='{"finishReason": "stop"}'),
-        ]
+    events = _events(
+        hello_response,
+        "invalid json",  # causes JSON decode error, chunk is skipped
+        world_response,
+        '{"finishReason": "stop"}',
     )
-
-    test_genai_user.on_start()
-    test_genai_user.sample = lambda: UserChatRequest(
+    request = UserChatRequest(
         model="xai.grok-3-mini-fast",
         prompt="Hello",
         num_prefill_tokens=5,
@@ -506,12 +462,10 @@ def test_chat_json_decode_error(mock_client_class, test_genai_user):
         },
         max_tokens=10,
     )
-
     metrics_collector_mock = MagicMock()
     test_genai_user.collect_metrics = metrics_collector_mock
 
-    # Should handle the JSON error gracefully
-    response = test_genai_user.chat()
+    response = _run_chat_test(mock_client_class, test_genai_user, events, request)
 
     assert response.status_code == 200
     assert "Hello world" in response.generated_text
