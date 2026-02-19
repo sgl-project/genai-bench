@@ -445,8 +445,7 @@ def validate_prefix_options(
     # Dataset mode compatibility
     if (dataset_path or dataset_config) and not traffic_scenario:
         raise click.UsageError(
-            f"{option_name} requires a deterministic traffic scenario "
-            "(e.g., --traffic-scenario 'D(100,50)'). "
+            f"{option_name} requires a traffic scenario. "
             "Not supported with dataset mode."
         )
 
@@ -467,9 +466,9 @@ def validate_prefix_options(
             ]
             if non_deterministic:
                 raise click.UsageError(
-                    "--prefix-ratio requires all traffic scenarios to be "
-                    "deterministic (e.g., 'D(100,50)'). "
-                    f"Non-deterministic scenarios found: {', '.join(non_deterministic)}"
+                    "--prefix-ratio requires all traffic scenarios "
+                    "to be deterministic. Non-deterministic "
+                    f"scenarios found: {', '.join(non_deterministic)}"
                 )
 
         # For --prefix-len, validate against minimum possible input tokens
@@ -497,6 +496,7 @@ def validate_prefix_options(
             if invalid_scenarios:
                 raise click.UsageError(
                     f"--prefix-len ({prefix_len}) must be <= minimum input tokens "
-                    f"for all scenarios. "
+                    f"for all scenarios "
+                    f"(D: num_input_tokens, N: mean-3*stddev, U: min_input_tokens). "
                     f"Invalid scenarios: {', '.join(invalid_scenarios)}"
                 )

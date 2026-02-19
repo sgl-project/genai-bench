@@ -256,16 +256,12 @@ class TextSampler(Sampler):
                     separator, add_special_tokens=False
                 )
                 truncated_separator_ids = separator_token_ids[:max_separator_len]
-                separator = self.tokenizer.decode(
-                    truncated_separator_ids, skip_special_tokens=True
+                separator = str(
+                    self.tokenizer.decode(
+                        truncated_separator_ids, skip_special_tokens=True
+                    )
                 )
                 separator_len = len(truncated_separator_ids)
-
-                logger.debug(
-                    f"Truncated separator from {len(separator_token_ids)} "
-                    f"to {separator_len} tokens to fit within available space "
-                    f"({available_for_separator_and_suffix} tokens)."
-                )
 
             # Adjust suffix to account for separator length (truncated or full)
             adjusted_suffix_len = suffix_len - separator_len
@@ -311,7 +307,7 @@ class TextSampler(Sampler):
 
                 if num_line_tokens > tokens_remaining:
                     # Truncate at token level
-                    truncated_text = self.tokenizer.decode(
+                    truncated_text: str = self.tokenizer.decode(
                         line_tokens[:tokens_remaining], skip_special_tokens=True
                     )
                     text += (" " if text else "") + truncated_text
