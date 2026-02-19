@@ -296,14 +296,15 @@ class GCPVertexUser(BaseUser):
                             if text:
                                 generated_text += text
 
-                    usage_metadata = chunk.get("usageMetadata", {})
-                    reasoning_tokens = usage_metadata.get("thoughtsTokenCount", 0)
+                    if reasoning_tokens is None:
+                        usage_metadata = chunk.get("usageMetadata", {})
+                        reasoning_tokens = usage_metadata.get("thoughtsTokenCount")
 
                 except json.JSONDecodeError:
                     continue
 
         end_time = time.monotonic()
-
+        reasoning_tokens = reasoning_tokens or 0
         # Estimate tokens if not provided
         tokens_received = self.environment.sampler.get_token_length(
             generated_text, add_special_tokens=False
