@@ -531,7 +531,7 @@ class TestGCPVertexUser:
             mock_response, 0.0, 10, 1.0, "gemini-pro"
         )
 
-        assert result.reasoning_tokens is None
+        assert result.reasoning_tokens == 0
         assert result.tokens_received == 50
         assert result.generated_text == "Hi"
 
