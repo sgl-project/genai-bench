@@ -296,13 +296,9 @@ class GCPVertexUser(BaseUser):
                             if text:
                                 generated_text += text
 
-                    usage_metadata = chunk.get("usageMetadata") or chunk.get(
-                        "usage_metadata"
-                    )
+                    usage_metadata = chunk.get("usageMetadata")
                     if isinstance(usage_metadata, dict):
-                        reasoning_tokens = usage_metadata.get(
-                            "thoughtsTokenCount", 0
-                        ) or usage_metadata.get("thoughts_token_count", 0)
+                        reasoning_tokens = usage_metadata.get("thoughtsTokenCount", 0)
 
                 except json.JSONDecodeError:
                     continue

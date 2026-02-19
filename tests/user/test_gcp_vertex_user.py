@@ -556,21 +556,6 @@ class TestGCPVertexUser:
         assert result.tokens_received == 50
         assert result.generated_text == "Hi"
 
-    def test_parse_chat_response_reasoning_tokens_snake_case_fallback(
-        self, vertex_user
-    ):
-        """Reasoning tokens from usage_metadata.thoughts_token_count."""
-        mock_response = MagicMock()
-        mock_response.iter_lines.return_value = [
-            json.dumps({"usage_metadata": {"thoughts_token_count": 4}}).encode(),
-        ]
-
-        result = vertex_user.parse_chat_response(
-            mock_response, 0.0, 10, 1.0, "gemini-pro"
-        )
-
-        assert result.reasoning_tokens == 4
-
     def test_parse_non_streaming_response(self, vertex_user):
         """Test parsing non-streaming response."""
         mock_response = MagicMock()
