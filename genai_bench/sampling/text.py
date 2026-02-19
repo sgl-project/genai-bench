@@ -307,8 +307,11 @@ class TextSampler(Sampler):
 
                 if num_line_tokens > tokens_remaining:
                     # Truncate at token level
-                    truncated_text: str = self.tokenizer.decode(
-                        line_tokens[:tokens_remaining], skip_special_tokens=True
+                    truncated_text = str(
+                        self.tokenizer.decode(
+                            line_tokens[:tokens_remaining],
+                            skip_special_tokens=True,
+                        )
                     )
                     text += (" " if text else "") + truncated_text
                     return text
