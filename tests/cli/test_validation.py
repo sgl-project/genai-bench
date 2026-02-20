@@ -491,3 +491,128 @@ def test_validate_warmup_cooldown_ratio_options():
             "cooldown_ratio": 0.5,
         }
         validate_warmup_cooldown_ratio_options(ctx, param, 0.5)
+
+
+def test_validate_prefix_len_with_dataset_scenario():
+    """Test that prefix_len and prefix_ratio require all scenarios to be
+    deterministic."""
+    from genai_bench.cli.validation import validate_prefix_options
+
+    # Test mutual exclusivity
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=50,
+            prefix_ratio=0.5,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)"],
+        )
+    assert "mutually exclusive" in str(exc.value)
+
+    # Test with dataset in traffic_scenario list
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=50,
+            prefix_ratio=None,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)", "dataset"],
+        )
+    assert "not supported with dataset mode" in str(exc.value)
+
+    # Test with only dataset scenario
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=50,
+            prefix_ratio=None,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["dataset"],
+        )
+    assert "not supported with dataset mode" in str(exc.value)
+
+    # Test --prefix-ratio with mixed deterministic and non-deterministic scenarios
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=None,
+            prefix_ratio=0.5,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)", "N(480,240)/(300,150)"],
+        )
+    assert "all traffic scenarios to be deterministic" in str(exc.value)
+    assert "N(480,240)/(300,150)" in str(exc.value)
+
+    # Test --prefix-ratio with only non-deterministic scenarios
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=None,
+            prefix_ratio=0.5,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["N(480,240)/(300,150)", "U(50,100)/(200,250)"],
+        )
+    assert "all traffic scenarios to be deterministic" in str(exc.value)
+
+    # Test --prefix-len with non-deterministic scenarios (should pass)
+    # prefix_len works with any scenario type as long as min_input_tokens >= prefix_len
+    # N(500,100): min = max(1, 500 - 3*100) = max(1, 200) = 200 >= 50
+    validate_prefix_options(
+        prefix_len=50,
+        prefix_ratio=None,
+        task="text-to-text",
+        dataset_path="path/to/dataset",
+        dataset_config=None,
+        traffic_scenario=["N(500,100)/(300,50)"],
+    )
+
+    # Test --prefix-len with uniform distribution (should pass)
+    validate_prefix_options(
+        prefix_len=50,
+        prefix_ratio=None,
+        task="text-to-text",
+        dataset_path="path/to/dataset",
+        dataset_config=None,
+        traffic_scenario=["U(100,200)/(50,100)"],  # min_input = 100 >= 50
+    )
+
+    # Test with scenario where min_input_tokens < prefix_len (deterministic)
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=150,
+            prefix_ratio=None,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["D(100,50)", "D(200,100)"],
+        )
+    assert "must be <= minimum input tokens" in str(exc.value)
+    assert "D(100,50)" in str(exc.value)
+
+    # Test with scenario where min_input_tokens < prefix_len (uniform)
+    with pytest.raises(click.UsageError) as exc:
+        validate_prefix_options(
+            prefix_len=150,
+            prefix_ratio=None,
+            task="text-to-text",
+            dataset_path="path/to/dataset",
+            dataset_config=None,
+            traffic_scenario=["U(100,200)/(50,100)"],  # min_input = 100 < 150
+        )
+    assert "must be <= minimum input tokens" in str(exc.value)
+    assert "min_input_tokens=100" in str(exc.value)
+
+    # Test with valid deterministic scenarios only (should pass)
+    validate_prefix_options(
+        prefix_len=50,
+        prefix_ratio=None,
+        task="text-to-text",
+        dataset_path="path/to/dataset",
+        dataset_config=None,
+        traffic_scenario=["D(100,50)", "D(200,100)"],
+    )

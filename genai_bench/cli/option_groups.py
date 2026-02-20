@@ -321,6 +321,28 @@ def sampling_options(func):
         "- HuggingFace: squad or meta-llama/Llama-2-7b-hf\n"
         "- Default: Leave empty to use built-in sonnet.txt",
     )(func)
+    func = click.option(
+        "--prefix-len",
+        type=click.IntRange(min=0),
+        default=None,
+        help=(
+            "Absolute prefix length in tokens for prefix caching. "
+            "Works with any scenario type (D, N, U). "
+            "Must be <= the smallest possible input tokens across all scenarios "
+            "(e.g., D: num_input_tokens, N: mean-3*stddev, U: min_input_tokens). "
+            "Mutually exclusive with --prefix-ratio."
+        ),
+    )(func)
+    func = click.option(
+        "--prefix-ratio",
+        type=click.FloatRange(0.0, 1.0),
+        default=None,
+        help=(
+            "Prefix length as ratio of input length for prefix caching. "
+            "Range: [0.0, 1.0]. Requires deterministic scenarios. "
+            "Mutually exclusive with --prefix-len."
+        ),
+    )(func)
     return func
 
 

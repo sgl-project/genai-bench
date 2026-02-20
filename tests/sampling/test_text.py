@@ -8,14 +8,23 @@ from genai_bench.protocol import (
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
-from genai_bench.scenarios.text import ReRankScenario
+from genai_bench.scenarios.text import DeterministicDistribution, ReRankScenario
 
 
 class TestTextSampler(unittest.TestCase):
     def setUp(self):
         # Mock data instead of config
-        self.test_data = ["Test line 1", "Test line 2", "Test line 3"]
+        self.test_data = ["Test line1", "Test line2", "Test line3"]
         self.tokenizer = MagicMock()
+        # Mock tokenizer's get_vocab to some tokens with special tokens
+        self.tokenizer.get_vocab.return_value = {
+            "token1": 0,
+            "token2": 1,
+            "token3": 2,
+            "<special>": 3,
+            "<pad>": 4,
+            "token4": 5,
+        }
         self.model = "mock_model"
         self.output_modality = "text"
         self.sampler = TextSampler(
@@ -257,4 +266,71 @@ class TestTextSampler(unittest.TestCase):
         # Verify decode was called with truncated tokens
         self.tokenizer.decode.assert_called_with(
             line_tokens[:requested_tokens], skip_special_tokens=True
+        )
+
+    def test_prefix_len_feature(self):
+        """Test prefix_len functionality with random hash separators."""
+        prefix_len = 50
+
+        # Create sampler with prefix_len
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            prefix_len=prefix_len,
+        )
+
+        # Check that shared prefix is initially None (generated on first sample)
+        self.assertIsNone(
+            prefix_sampler._shared_prefix,
+            "Expected shared prefix to be None before sampling",
+        )
+
+        # Mock scenario - deterministic with 100 input tokens
+        scenario = DeterministicDistribution(
+            num_input_tokens=100,
+            num_output_tokens=50,
+        )
+
+        # Mock tokenizer to pass through text for better verification
+        def mock_encode(text, add_special_tokens=False):
+            # Return token list with length proportional to text
+            return list(range(len(text.split())))
+
+        def mock_decode(tokens, skip_special_tokens=True):
+            # Return text that preserves the input text structure
+            return " ".join([f"token{i}" for i in tokens])
+
+        self.tokenizer.encode.side_effect = mock_encode
+        self.tokenizer.decode.side_effect = mock_decode
+
+        # Sample first request
+        request1 = prefix_sampler.sample(scenario)
+
+        # Verify first request
+        self.assertIsInstance(request1, UserChatRequest, "Expected UserChatRequest")
+        self.assertEqual(
+            request1.model, "mock_model", "Expected model to be mock_model"
+        )
+        self.assertIsInstance(request1.prompt, str, "Expected prompt to be a string")
+
+        # Check that shared prefix was generated after first sample
+        self.assertIsNotNone(
+            prefix_sampler._shared_prefix,
+            "Expected shared prefix to be generated after first sample",
+        )
+
+        # Sample second request
+        request2 = prefix_sampler.sample(scenario)
+
+        # Verify second request is valid
+        self.assertIsInstance(request2, UserChatRequest)
+        self.assertIsInstance(request2.prompt, str)
+
+        # Verify prompts are different due to random hash separators
+        self.assertNotEqual(
+            request1.prompt,
+            request2.prompt,
+            "Prompts should be different due to random hash separators",
         )

@@ -30,7 +30,7 @@ from genai_bench.cli.option_groups import (
 )
 from genai_bench.cli.report import excel, plot
 from genai_bench.cli.utils import get_experiment_path, get_run_params, manage_run_time
-from genai_bench.cli.validation import validate_tokenizer
+from genai_bench.cli.validation import validate_prefix_options, validate_tokenizer
 from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.factory import DataLoaderFactory
 from genai_bench.distributed.runner import DistributedConfig, DistributedRunner
@@ -121,6 +121,8 @@ def benchmark(
     dataset_config,
     dataset_prompt_column,
     dataset_image_column,
+    prefix_len,
+    prefix_ratio,
     num_workers,
     master_port,
     spawn_rate,
@@ -275,6 +277,16 @@ def benchmark(
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
 
+    # Validate prefix options after all CLI parameters are parsed
+    validate_prefix_options(
+        prefix_len=prefix_len,
+        prefix_ratio=prefix_ratio,
+        task=task,
+        dataset_path=dataset_path,
+        dataset_config=dataset_config,
+        traffic_scenario=traffic_scenario,
+    )
+
     # Handle dataset configuration
     if dataset_config:
         # Load from config file
@@ -298,6 +310,8 @@ def benchmark(
         data=data,
         additional_request_params=additional_request_params,
         dataset_config=dataset_config_obj,
+        prefix_len=prefix_len,
+        prefix_ratio=prefix_ratio,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode
