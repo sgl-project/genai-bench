@@ -199,7 +199,9 @@ class CohereUser(BaseUser):
             UserResponse: A response object with metrics.
         """
         generated_text = ""
+        reasoning_text = ""
         tokens_received = 0
+        reasoning_tokens = None
         time_at_first_token = None
         usage = None
 
@@ -234,10 +236,20 @@ class CohereUser(BaseUser):
                         .get("content", {})
                         .get("text", "")
                     )
+                    reasoning_content = (
+                        data.get("delta", {})
+                        .get("message", {})
+                        .get("content", {})
+                        .get("thinking", "")
+                    )
                     if content:
                         generated_text += content
-                        if not time_at_first_token:
-                            time_at_first_token = time.monotonic()
+                    if reasoning_content:
+                        reasoning_text += reasoning_content
+                        # Also include reasoning content in generated text
+                        generated_text += reasoning_content
+                    if not time_at_first_token and (content or reasoning_content):
+                        time_at_first_token = time.monotonic()
 
                 # Handle message-end event which contains token usage information
                 elif data.get("type") == "message-end":
@@ -269,10 +281,21 @@ class CohereUser(BaseUser):
                 generated_text, add_special_tokens=False
             )
 
+        # Cohere does not return reasoning_tokens, estimate from tokenizer.
+        if reasoning_text:
+            reasoning_tokens = self.environment.sampler.get_token_length(
+                reasoning_text, add_special_tokens=False
+            )
+            logger.warning(
+                "Server did not report reasoning_tokens. Estimated "
+                "reasoning_tokens based on the model tokenizer."
+            )
+
         return UserChatResponse(
             status_code=200,
             generated_text=generated_text,
             tokens_received=tokens_received,
+            reasoning_tokens=reasoning_tokens,
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
