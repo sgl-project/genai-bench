@@ -28,7 +28,7 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     Create custom backends for any API endpoint
 
-    [:octicons-arrow-right-24: Custom Backends Guide](../../examples/README_CUSTOM_BACKENDS.md)
+    [:octicons-arrow-right-24: Custom Backends Guide](run-benchmark.md#custom-backends)
 
 - :material-docker:{ .lg .middle } **Docker Usage Guide**
 
