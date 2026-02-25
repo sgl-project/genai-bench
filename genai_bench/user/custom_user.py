@@ -16,9 +16,6 @@ class CustomUser(BaseUser):
 
     This class allows users to provide their own backend implementations
     by specifying a Python file path containing a BaseUser subclass.
-
-    Similar to how custom datasets can be loaded, this enables extending
-    genai-bench with custom API backends without modifying the core codebase.
     """
 
     BACKEND_NAME = "custom"
