@@ -4,7 +4,7 @@ This guide explains how to create and use custom API backends with genai-bench, 
 
 ## Overview
 
-Custom backends work similarly to custom datasets in genai-bench. You can define your own API backend by creating a Python file with a class that inherits from `BaseUser`, then point genai-bench to that file using the `--custom-backend` parameter.
+You can define your own API backend by creating a Python file with a class that inherits from `BaseUser`, then point genai-bench to that file using the `--custom-backend` parameter. The easiest way to get started is to copy an existing built-in backend (e.g., `genai_bench/user/openai_user.py`) and modify it for your needs.
 
 ## Quick Start
 
@@ -252,7 +252,7 @@ Key features demonstrated:
 
 ## Tips and Best Practices
 
-1. **Start from an example**: Copy `custom_sagemaker_backend.py` and modify it for your needs.
+1. **Start from an existing backend**: Copy `genai_bench/user/openai_user.py` and modify it for your needs. See also `examples/minimal_custom_backend.py` for a stripped-down starting point.
 
 2. **Test incrementally**: Start with a simple non-streaming implementation, then add streaming.
 
@@ -276,21 +276,6 @@ Key features demonstrated:
    ```
 
 6. **Document your backend**: Add a docstring explaining what API it's for and any special requirements.
-
-## Comparison with Built-in Backends
-
-### Built-in Backends
-- Pre-configured for major providers
-- Integrated with genai-bench auth system
-- Maintained by the core team
-- Examples: `openai`, `aws-bedrock`, `azure-openai`
-
-### Custom Backends
-- User-defined, fully flexible
-- Handle their own authentication
-- Easy to prototype and test
-- No need to modify genai-bench code
-- Can be shared across teams
 
 ## Advanced: Class Name Specification
 
@@ -340,7 +325,8 @@ Without the class name suffix (`:MyUser`), the loader will automatically detect 
 
 ## Getting Help
 
-- Check the example: `examples/custom_sagemaker_backend.py`
-- Review built-in backends in `genai_bench/user/`
+- Start from a built-in backend: `genai_bench/user/openai_user.py`
+- Check the minimal example: `examples/minimal_custom_backend.py`
+- Review other built-in backends in `genai_bench/user/`
 - See the BaseUser interface in `genai_bench/user/base_user.py`
 - Open an issue on GitHub for support
