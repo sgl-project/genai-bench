@@ -26,7 +26,9 @@ class CustomUser(BaseUser):
     _custom_module_path: Optional[str] = None
 
     @classmethod
-    def load_custom_class(cls, module_path: str, class_name: Optional[str] = None) -> Type[BaseUser]:
+    def load_custom_class(
+        cls, module_path: str, class_name: Optional[str] = None
+    ) -> Type[BaseUser]:
         """Load a custom user class from a Python file.
 
         Args:

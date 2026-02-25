@@ -5,13 +5,13 @@ from genai_bench.user.custom_user import CustomUser
 
 def test_load_custom_class_valid_file(tmp_path):
     """Test loading a valid custom backend file."""
-    content = '''
+    content = """
 from genai_bench.user.base_user import BaseUser
 class TestUser(BaseUser):
     BACKEND_NAME = "test"
     supported_tasks = {"text-to-text": "chat"}
     def on_start(self): pass
-'''
+"""
     backend_file = tmp_path / "valid_backend.py"
     backend_file.write_text(content)
 
@@ -22,13 +22,13 @@ class TestUser(BaseUser):
 
 def test_load_custom_class_with_explicit_class_name(tmp_path):
     """Test loading with explicit class name."""
-    content = '''
+    content = """
 from genai_bench.user.base_user import BaseUser
 class MyCustomUser(BaseUser):
     BACKEND_NAME = "my-custom"
     supported_tasks = {"text-to-text": "chat"}
     def on_start(self): pass
-'''
+"""
     backend_file = tmp_path / "named_backend.py"
     backend_file.write_text(content)
 
@@ -54,7 +54,7 @@ def test_load_custom_class_no_baseuser_subclass(tmp_path):
 
 def test_load_custom_class_multiple_subclasses_no_name(tmp_path):
     """Test AttributeError when multiple BaseUser subclasses without explicit name."""
-    content = '''
+    content = """
 from genai_bench.user.base_user import BaseUser
 class UserOne(BaseUser):
     BACKEND_NAME = "one"
@@ -64,7 +64,7 @@ class UserTwo(BaseUser):
     BACKEND_NAME = "two"
     supported_tasks = {}
     def on_start(self): pass
-'''
+"""
     backend_file = tmp_path / "multiple_classes.py"
     backend_file.write_text(content)
 
@@ -74,13 +74,13 @@ class UserTwo(BaseUser):
 
 def test_load_custom_class_explicit_class_not_found(tmp_path):
     """Test AttributeError when specified class doesn't exist."""
-    content = '''
+    content = """
 from genai_bench.user.base_user import BaseUser
 class ExistingUser(BaseUser):
     BACKEND_NAME = "existing"
     supported_tasks = {}
     def on_start(self): pass
-'''
+"""
     backend_file = tmp_path / "existing_backend.py"
     backend_file.write_text(content)
 

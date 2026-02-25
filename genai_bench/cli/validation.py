@@ -260,11 +260,15 @@ def validate_api_backend(ctx, param, value):
         class_name = None
         if ":" in custom_backend:
             custom_backend, class_name = custom_backend.rsplit(":", 1)
-            logger.info(f"Parsed custom backend path: {custom_backend}, class: {class_name}")
+            logger.info(
+                f"Parsed custom backend path: {custom_backend}, class: {class_name}"
+            )
 
         # Load the custom user class
         try:
-            user_class = CustomUser.load_custom_class(custom_backend, class_name=class_name)
+            user_class = CustomUser.load_custom_class(
+                custom_backend, class_name=class_name
+            )
             logger.info(f"Successfully loaded custom backend from: {custom_backend}")
         except Exception as e:
             raise click.BadParameter(
