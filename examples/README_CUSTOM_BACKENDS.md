@@ -76,7 +76,7 @@ Your custom backend class must:
 ```python
 from locust import task
 from genai_bench.user.base_user import BaseUser
-from genai_bench.protocol import UserChatRequest, UserChatResponse
+from genai_bench.protocol import UserChatRequest, UserChatResponse, UserResponse
 from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
@@ -188,6 +188,9 @@ This handles both successful and error responses.
 Custom backends handle their own authentication in `on_start()`:
 
 ```python
+import os
+import json
+
 def on_start(self):
     # Option 1: Use environment variables
     api_key = os.environ.get("MY_API_KEY")

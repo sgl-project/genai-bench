@@ -120,14 +120,3 @@ class CustomUser(BaseUser):
         # Create an instance of the actual custom class
         return object.__new__(cls._custom_class)
 
-    def __init__(self, *args, **kwargs):
-        """Initialize using the custom class's __init__."""
-        if self._custom_class is None:
-            raise RuntimeError(
-                "Custom user class has not been loaded. "
-                "Call CustomUser.load_custom_class() first."
-            )
-
-        # The __init__ of the custom class will be called automatically
-        # due to the __new__ override
-        super().__init__(*args, **kwargs)

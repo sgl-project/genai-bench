@@ -31,15 +31,14 @@ from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
-    UserEmbeddingRequest,
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
 
-try:
+import contextlib
+
+with contextlib.suppress(ImportError):
     from botocore.eventstream import EventStream
-except ImportError:
-    pass
 
 logger = init_logger(__name__)
 
@@ -188,7 +187,7 @@ class CustomSagemakerUser(BaseUser):
         Customize this based on your endpoint's response format.
         """
         stream_chunk_prefix = "data: "
-        end_chunk = b"[DONE]"
+        end_chunk = "[DONE]"
 
         generated_text = ""
         tokens_received = 0
@@ -205,9 +204,11 @@ class CustomSagemakerUser(BaseUser):
             if not chunk.endswith("\n\n"):
                 continue
 
-            chunk = chunk[len(stream_chunk_prefix):]
+            chunk = chunk[len(stream_chunk_prefix):].strip()
             if chunk == end_chunk:
                 break
+            if not chunk:
+                continue
 
             data = json.loads(chunk)
 
@@ -222,7 +223,9 @@ class CustomSagemakerUser(BaseUser):
 
             # Process usage info in final chunk
             if not data["choices"] and finish_reason and "usage" in data:
-                num_prompt_tokens = data["usage"].get("prompt_tokens", num_prefill_tokens)
+                num_prompt_tokens = data["usage"].get(
+                    "prompt_tokens", num_prefill_tokens
+                )
                 tokens_received = data["usage"].get("completion_tokens", 0)
                 if not time_at_first_token and tokens_received > 0:
                     time_at_first_token = time.monotonic()
