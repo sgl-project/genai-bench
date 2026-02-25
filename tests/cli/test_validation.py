@@ -112,7 +112,7 @@ def test_validate_api_backend_custom_with_class_name(mock_load):
     ctx.obj = {}
     ctx.params = {"custom_backend": "/path/to/backend.py:MyUser"}
 
-    result = validate_api_backend(ctx, None, "custom")
+    validate_api_backend(ctx, None, "custom")
     mock_load.assert_called_once_with("/path/to/backend.py", class_name="MyUser")
 
 

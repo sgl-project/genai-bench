@@ -1,4 +1,4 @@
-"""Custom user implementation that dynamically loads user classes from external modules."""
+"""Custom user implementation for dynamic backend loading."""
 
 import importlib.util
 import sys
@@ -41,7 +41,8 @@ class CustomUser(BaseUser):
 
         Raises:
             ImportError: If the module cannot be loaded
-            AttributeError: If the specified class doesn't exist or no suitable class is found
+            AttributeError: If the specified class doesn't exist
+                or no suitable class is found
             TypeError: If the class doesn't inherit from BaseUser
         """
         module_path_obj = Path(module_path)

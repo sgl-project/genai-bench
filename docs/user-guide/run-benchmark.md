@@ -154,7 +154,7 @@ If your file contains multiple `BaseUser` subclasses, specify the class explicit
 --custom-backend /path/to/your_backend.py:MyCustomUser
 ```
 
-Custom backends allow benchmarking any API without modifying genai-bench. See the [Custom Backends Guide](../../examples/README_CUSTOM_BACKENDS.md) for details on creating your own backend.
+Custom backends allow benchmarking any API without modifying genai-bench. See the [Custom Backends Guide](https://github.com/sgl-project/genai-bench/blob/main/examples/README_CUSTOM_BACKENDS.md) for details on creating your own backend.
 
 ## Specify a custom benchmark load
 

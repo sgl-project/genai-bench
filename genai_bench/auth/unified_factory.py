@@ -91,14 +91,14 @@ class UnifiedAuthFactory:
             together_auth = TogetherAuth(api_key=api_key)
             return TogetherModelAuthAdapter(together_auth)
         elif provider == "custom":
-            # For custom backends, return None (auth is handled by the custom implementation)
-            # Custom backends can implement their own auth in the on_start() method
+            # Custom backends handle auth in on_start()
             return None  # type: ignore
 
         else:
             raise ValueError(
                 f"Unsupported model provider: {provider}. "
-                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, together, custom"
+                f"Supported: openai, oci, aws-bedrock, "
+                f"azure-openai, gcp-vertex, together, custom"
             )
 
     @staticmethod
