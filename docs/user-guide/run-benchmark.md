@@ -138,20 +138,20 @@ genai-bench benchmark --api-backend oci-cohere \
 
 For APIs not supported by built-in backends, create a custom backend by providing a Python file containing a `BaseUser` subclass:
 
-```bash
+```shell
 genai-bench benchmark \
-    --api-backend custom \
-    --custom-backend /path/to/your_backend.py \
-    --api-base <your-api-endpoint> \
-    --api-model-name <your-model> \
-    --task text-to-text \
-    --model-tokenizer <tokenizer>
+            --api-backend custom \
+            --custom-backend /path/to/your_backend.py \
+            --api-base <your-api-endpoint> \
+            --api-model-name <your-model> \
+            --task text-to-text \
+            --model-tokenizer <tokenizer>
 ```
 
 If your file contains multiple `BaseUser` subclasses, specify the class explicitly using the `path:ClassName` syntax:
 
-```bash
---custom-backend /path/to/your_backend.py:MyCustomUser
+```shell
+            --custom-backend /path/to/your_backend.py:MyCustomUser
 ```
 
 Custom backends allow benchmarking any API without modifying genai-bench. See the [Custom Backends Guide](https://github.com/sgl-project/genai-bench/blob/main/examples/README_CUSTOM_BACKENDS.md) for details on creating your own backend.
