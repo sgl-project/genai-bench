@@ -60,6 +60,9 @@ class DatasetConfig(BaseModel):
     image_column: Optional[str] = Field(
         None, description="Column name containing images"
     )
+    video_column: Optional[str] = Field(
+        None, description="Column name containing videos"
+    )
     prompt_lambda: Optional[str] = Field(
         None,
         description="Lambda expression string, "
@@ -83,6 +86,7 @@ class DatasetConfig(BaseModel):
         dataset_path: Optional[str] = None,
         prompt_column: Optional[str] = None,
         image_column: Optional[str] = None,
+        video_column: Optional[str] = None,
         **kwargs,
     ) -> "DatasetConfig":
         """Create configuration from CLI arguments for backward compatibility."""
@@ -122,6 +126,7 @@ class DatasetConfig(BaseModel):
             source=source_config,
             prompt_column=prompt_column,
             image_column=image_column,
+            video_column=video_column,
             prompt_lambda=None,
             unsafe_allow_large_images=False,
         )

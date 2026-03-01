@@ -47,6 +47,7 @@ def api_options(func):
                 "text-to-rerank",
                 "image-text-to-text",
                 "image-to-embeddings",
+                "video-text-to-text",
             ],
             case_sensitive=False,
         ),
@@ -55,7 +56,8 @@ def api_options(func):
         callback=validate_task,
         help="The task to benchmark: it follows `<input_modality>-to-"
         "<output_modality>` pattern. Currently we support `text-to-text`,"
-        " `image-text-to-text`, `text-to-embeddings, and `image-to-embeddings`.",
+        " `image-text-to-text`, `video-text-to-text`, `text-to-embeddings,"
+        "and `image-to-embeddings`.",
     )(func)
     func = click.option(
         "--api-key",
@@ -295,6 +297,12 @@ def sampling_options(func):
         callback=validate_dataset_config,
         help="Path to JSON configuration file for advanced dataset options. "
         "This allows full control over dataset loading parameters.",
+    )(func)
+    func = click.option(
+        "--dataset-video-column",
+        type=str,
+        default=None,
+        help="Column name containing videos (for multimodal datasets).",
     )(func)
     func = click.option(
         "--dataset-image-column",

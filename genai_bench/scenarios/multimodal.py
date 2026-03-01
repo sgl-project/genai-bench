@@ -66,3 +66,44 @@ class ImageModality(Scenario):
                 num_input_dimension_height=num_input_dimension_height,
                 num_input_images=optional[0],
             )
+
+
+class VideoModality(Scenario):
+    """
+    Video input and text output.
+
+    Examples:
+    - V(10)
+
+    Format: V(num_videos)
+    - num_videos: number of videos (optional, default 1)
+    """
+
+    scenario_type = MultiModality.VIDEO
+    validation_pattern = r"^V\(\d+\)$"
+
+    def __init__(
+        self,
+        num_input_videos: int = 1,
+        max_output_token: Optional[int] = None,
+    ):
+        self.num_input_videos = num_input_videos
+        self.max_output_token = max_output_token
+
+    def sample(self) -> Tuple[int, Optional[int]]:
+        return (
+            self.num_input_videos,
+            self.max_output_token,
+        )
+
+    def to_string(self) -> str:
+        if self.num_input_videos == 1:
+            return "V(1)"
+        return f"V({self.num_input_videos})"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "VideoModality":
+        num_videos = parse_params_str(params_str)[0][0] or 1
+        return cls(
+            num_input_videos=num_videos,
+        )

@@ -5,6 +5,7 @@ from typing import Any, List, Tuple, Union, cast
 from genai_bench.data.config import DatasetConfig
 from genai_bench.data.loaders.image import ImageDatasetLoader
 from genai_bench.data.loaders.text import TextDatasetLoader
+from genai_bench.data.loaders.video import VideoDatasetLoader
 from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
@@ -32,6 +33,8 @@ class DataLoaderFactory:
             return DataLoaderFactory._load_text_data(dataset_config, output_modality)
         elif "image" in input_modality:
             return DataLoaderFactory._load_image_data(dataset_config)
+        elif "video" in input_modality:
+            return DataLoaderFactory._load_video_data(dataset_config)
         else:
             raise ValueError(f"Unsupported input modality: {input_modality}")
 
@@ -54,5 +57,14 @@ class DataLoaderFactory:
     ) -> List[Tuple[str, Any]]:
         """Load image data."""
         loader = ImageDatasetLoader(dataset_config)
+        data = loader.load_request()
+        return data  # type: ignore
+
+    @staticmethod
+    def _load_video_data(
+        dataset_config: DatasetConfig,
+    ) -> List[Tuple[str, Any]]:
+        """Load video data."""
+        loader = VideoDatasetLoader(dataset_config)
         data = loader.load_request()
         return data  # type: ignore
