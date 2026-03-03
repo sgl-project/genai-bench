@@ -40,7 +40,9 @@ class TogetherUser(BaseUser):
     def on_start(self):
         if not self.host or not self.auth_provider:
             raise ValueError("API key and base must be set for TogetherUser.")
-        
+
+        # Together's site says to use base URL https://api.together.xyz/v1
+        # genai-bench does not work if /v1 is present.
         self.host = self.host.rstrip("/")
         if self.host.endswith("/v1"):
             self.host = self.host.split("/v1")[0]
@@ -158,11 +160,12 @@ class TogetherUser(BaseUser):
             UserResponse: A response object containing status and metrics data.
         """
         response = None
+        request_url = f"{self.host}{endpoint}"
 
         try:
             start_time = time.monotonic()
             response = requests.post(
-                url=f"{self.host}{endpoint}",
+                url=request_url,
                 json=payload,
                 stream=stream,
                 headers=self.headers,
@@ -242,6 +245,12 @@ class TogetherUser(BaseUser):
                 break
             data = json.loads(chunk)
 
+            delta = (
+                data.get("choices", [{}])[0].get("delta", {})
+                if data.get("choices")
+                else {}
+            )
+
             # Handle streaming error response as OpenAI API server handles it
             # differently. Some might return 200 first and generate error response
             # later in the chunk
@@ -283,7 +292,11 @@ class TogetherUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                content = delta.get("content") or delta.get("reasoning_content")
+                content = (
+                    delta.get("content")
+                    or delta.get("reasoning_content")
+                    or delta.get("reasoning")
+                )
                 usage = delta.get("usage")
 
                 if usage:

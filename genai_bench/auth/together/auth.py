@@ -17,7 +17,10 @@ class TogetherAuth(AuthProvider):
         Raises:
             ValueError: If no API key is provided or found in environment
         """
-        self.api_key = api_key or os.getenv("TOGETHER_API_KEY")
+        if api_key is not None:
+            self.api_key = api_key
+        else:
+            self.api_key = os.getenv("TOGETHER_API_KEY")
         if not self.api_key or not self.api_key.strip():
             raise ValueError(
                 "Together API key must be provided or set in "
