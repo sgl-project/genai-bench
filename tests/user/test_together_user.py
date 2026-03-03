@@ -45,7 +45,7 @@ def test_on_start_missing_api_key_base():
     TogetherUser.host = "https://api.together.xyz"
     user = TogetherUser(env)
     user.host = None
-    user.auth_signer = None
+    user.auth_provider = None
     with pytest.raises(
         ValueError, match="API key and base must be set for TogetherUser."
     ):
