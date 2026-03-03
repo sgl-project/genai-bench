@@ -45,11 +45,73 @@ def test_on_start_missing_api_key_base():
     TogetherUser.host = "https://api.together.xyz"
     user = TogetherUser(env)
     user.host = None
-    user.auth_signer = None
+    user.auth_provider = None
     with pytest.raises(
         ValueError, match="API key and base must be set for TogetherUser."
     ):
         user.on_start()
+
+
+def test_on_start_headers(mock_together_user):
+    """Test that on_start correctly sets the headers from the auth provider."""
+    mock_together_user.on_start()
+    assert mock_together_user.headers == {
+        "Authorization": "Bearer fake_api_key",
+        "Content-Type": "application/json",
+    }
+
+
+@pytest.mark.parametrize(
+    "input_host, expected_host",
+    [
+        ("https://api.together.ai/v1/", "https://api.together.ai"),
+        ("https://api.together.ai/v1", "https://api.together.ai"),
+        ("https://api.together.ai/", "https://api.together.ai"),
+        ("https://api.together.ai", "https://api.together.ai"),
+        ("https://api.together.xyz/v1/", "https://api.together.xyz"),
+        ("https://api.together.xyz/v1", "https://api.together.xyz"),
+        ("https://api.together.xyz/", "https://api.together.xyz"),
+        ("https://api.together.xyz", "https://api.together.xyz"),
+    ],
+)
+def test_host_normalization(input_host, expected_host):
+    """Test that host is correctly normalized in on_start."""
+    env = MagicMock()
+    mock_auth = MagicMock()
+    mock_auth.get_headers.return_value = {"Authorization": "Bearer fake_api_key"}
+
+    # Set class host to avoid StopTest in __init__
+    TogetherUser.host = input_host
+    user = TogetherUser(env)
+    user.auth_provider = mock_auth
+
+    user.on_start()
+    assert user.host == expected_host
+
+
+@pytest.mark.parametrize(
+    "api_base",
+    [
+        "https://api.together.ai/v1",
+        "https://api.together.ai/v1/",
+    ],
+)
+def test_api_base_variations_normalize_to_correct_host(api_base):
+    """
+    Test that self.host is correct regardless of api-base format.
+    api-base may be passed as https://api.together.ai/v1 or https://api.together.ai/v1/.
+    Both should normalize to https://api.together.ai.
+    """
+    env = MagicMock()
+    mock_auth = MagicMock()
+    mock_auth.get_headers.return_value = {"Authorization": "Bearer fake_api_key"}
+
+    TogetherUser.host = api_base
+    user = TogetherUser(env)
+    user.auth_provider = mock_auth
+
+    user.on_start()
+    assert user.host == "https://api.together.ai"
 
 
 @patch("genai_bench.user.together_user.requests.post")
@@ -790,3 +852,104 @@ def test_chat_with_reasoning_content_and_token_estimation(
     mock_together_user.environment.sampler.get_token_length.assert_called_once_with(
         combined_text, add_special_tokens=False
     )
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_chat_with_reasoning_field_in_delta(mock_post, mock_together_user):
+    """
+    Test streamed content where delta has a 'reasoning' field (e.g. openai/gpt-oss-20b).
+    Reasoning tokens are streamed incrementally and accumulated into generated_text.
+    """
+    mock_together_user.environment.sampler = MagicMock()
+    mock_together_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=True: len(text)
+    )
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="openai/gpt-oss-20b",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=20,
+    )
+
+    # Stream format: delta.reasoning with incremental tokens, content empty
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":null,"delta":{"token_id":null,"role":"assistant","content":"","reasoning":null}}],"model":"openai/gpt-oss-20b"}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":null,"delta":{"token_id":null,"role":"assistant","content":"","reasoning":"The"}}],"model":"openai/gpt-oss-20b","usage":null}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":null,"delta":{"token_id":null,"role":"assistant","content":"","reasoning":" user"}}],"model":"openai/gpt-oss-20b","usage":null}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":null,"delta":{"token_id":null,"role":"assistant","content":"","reasoning":" asks"}}],"model":"openai/gpt-oss-20b","usage":null}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":null,"delta":{"token_id":null,"role":"assistant","content":"","reasoning":":"}}],"model":"openai/gpt-oss-20b","usage":null}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[{"index":0,"text":"","logprobs":null,"finish_reason":"stop","delta":{"token_id":null,"role":"assistant","content":"","reasoning":" \\""}}],"model":"openai/gpt-oss-20b","usage":{"prompt_tokens":5,"total_tokens":11,"completion_tokens":6}}',  # noqa:E501
+            b'data: {"id":"oZYzSz9-6Ng1vN-9d6726e86f748f74","object":"chat.completion.chunk","created":1772525293,"choices":[],"model":"openai/gpt-oss-20b","usage":{"prompt_tokens":5,"total_tokens":11,"completion_tokens":6}}',  # noqa:E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    resp = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/test",
+        payload={"key": "value"},
+        num_prefill_tokens=5,
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert isinstance(resp, UserChatResponse)
+    assert resp.status_code == 200
+    assert resp.time_at_first_token is not None
+    assert resp.generated_text == 'The user asks: "'
+    assert resp.tokens_received == 6
+    assert resp.num_prefill_tokens == 5
+
+
+@patch("genai_bench.user.together_user.requests.post")
+def test_chat_with_reasoning_field_mixed_with_content(mock_post, mock_together_user):
+    """
+    Test streamed content where delta has both 'reasoning' and 'content' fields.
+    Reasoning comes first, then content. Both should be accumulated.
+    """
+    mock_together_user.environment.sampler = MagicMock()
+    mock_together_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=True: len(text)
+    )
+    mock_together_user.on_start()
+    mock_together_user.sample = lambda: UserChatRequest(
+        model="openai/gpt-oss-20b",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=20,
+    )
+
+    # Stream: reasoning tokens first, then content tokens
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"reasoning":"Think"},"finish_reason":null}]}',
+            b'data: {"choices":[{"delta":{"reasoning":"ing..."},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"choices":[{"delta":{"content":"The answer"},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"choices":[{"delta":{"content":" is 42"},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"total_tokens":15,"completion_tokens":10}}',  # noqa:E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    resp = mock_together_user.send_request(
+        stream=True,
+        endpoint="/v1/test",
+        payload={"key": "value"},
+        num_prefill_tokens=5,
+        parse_strategy=mock_together_user.parse_chat_response,
+    )
+
+    assert isinstance(resp, UserChatResponse)
+    assert resp.status_code == 200
+    assert resp.time_at_first_token is not None
+    assert resp.generated_text == "Thinking...The answer is 42"
+    assert resp.tokens_received == 10
+    assert resp.num_prefill_tokens == 5
