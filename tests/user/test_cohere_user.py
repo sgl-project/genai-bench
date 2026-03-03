@@ -100,7 +100,7 @@ def test_chat_success(cohere_user, mock_response):
         assert response.status_code == 200
         assert response.generated_text == "Hello world"
         assert response.tokens_received == 22
-        assert response.num_prefill_tokens == 5
+        assert response.num_prefill_tokens == 68  # Prefers server-reported input tokens
         assert response.time_at_first_token is not None
 
 

@@ -28,12 +28,12 @@ class RequestMetricsCollector:
             response (UserResponse): The customized UserResponse object
                 containing the response data needed to calculate metrics.
         """
-        assert (
-            response.num_prefill_tokens is not None
-        ), "response.num_prefill_tokens is None"
-        assert (
-            response.time_at_first_token is not None
-        ), "response.time_at_first_token is None"
+        assert response.num_prefill_tokens is not None, (
+            "response.num_prefill_tokens is None"
+        )
+        assert response.time_at_first_token is not None, (
+            "response.time_at_first_token is None"
+        )
         assert response.start_time is not None, "response.start_time is None"
         assert response.end_time is not None, "response.end_time is None"
 
@@ -64,6 +64,7 @@ class RequestMetricsCollector:
         """
         assert response.tokens_received is not None, "response.tokens_received is None"
         self.metrics.num_output_tokens = response.tokens_received
+        self.metrics.num_reasoning_tokens = response.reasoning_tokens or 0
         self.metrics.total_tokens += self.metrics.num_output_tokens
         self.metrics.output_latency = self.metrics.e2e_latency - self.metrics.ttft
 

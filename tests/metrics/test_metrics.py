@@ -37,6 +37,7 @@ def test_request_level_metrics_calculation_with_chat_response():
     mock_response.start_time = 1722986631
     mock_response.end_time = 1722986741
     mock_response.num_prefill_tokens = 10
+    mock_response.reasoning_tokens = None
 
     # Initialize and calculate request metrics
     request_metrics_collector = RequestMetricsCollector()
@@ -46,6 +47,25 @@ def test_request_level_metrics_calculation_with_chat_response():
     assert request_metrics_collector.metrics.ttft == 100
     assert request_metrics_collector.metrics.e2e_latency == 110
     assert request_metrics_collector.metrics.num_input_tokens == 10
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 0
+
+
+def test_request_level_metrics_calculation_with_reasoning_tokens():
+    mock_response = MagicMock(spec=UserChatResponse)
+    mock_response.status_code = 200
+    mock_response.generated_text = "and and and and"
+    mock_response.tokens_received = 4
+    mock_response.time_at_first_token = 1722986731
+    mock_response.start_time = 1722986631
+    mock_response.end_time = 1722986741
+    mock_response.num_prefill_tokens = 10
+    mock_response.reasoning_tokens = 5
+
+    # Initialize and calculate request metrics
+    request_metrics_collector = RequestMetricsCollector()
+    request_metrics_collector.calculate_metrics(mock_response)
+
+    assert request_metrics_collector.metrics.num_reasoning_tokens == 5
 
 
 def test_request_level_metrics_calculation_with_embeddings_response():
@@ -91,6 +111,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         num_output_tokens=10,
         output_inference_speed=5,
         total_tokens=12,
+        num_reasoning_tokens=0,
     )
 
     metrics2 = RequestLevelMetrics(
@@ -104,6 +125,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
         num_output_tokens=11,
         output_inference_speed=3.3,
         total_tokens=14,
+        num_reasoning_tokens=0,
     )
 
     metrics3 = RequestLevelMetrics(
@@ -260,6 +282,7 @@ def test_filter_warmup_and_cooldown_metrics(aggregated_metrics_collector):
             num_output_tokens=10,
             output_inference_speed=5,
             total_tokens=12,
+            num_reasoning_tokens=3,
         )
         for _ in range(10)
     ]
@@ -297,6 +320,7 @@ def test_save_metrics(aggregated_metrics_collector, tmp_path):
         num_output_tokens=10,
         output_inference_speed=5,
         total_tokens=12,
+        num_reasoning_tokens=0,
     )
     aggregated_metrics_collector.add_single_request_metrics(metrics)
     aggregated_metrics_collector.aggregate_metrics_data(0, 1, 0.0, 0.0)

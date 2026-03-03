@@ -246,18 +246,10 @@ class CohereUser(BaseUser):
                         tokens_received = usage.get("tokens", {}).get(
                             "output_tokens", 0
                         )
-                        num_input_tokens = usage.get("tokens", {}).get(
-                            "input_tokens", num_prefill_tokens
-                        )
-                        if abs(num_input_tokens - num_prefill_tokens) >= 50:
-                            logger.warning(
-                                f"Significant difference detected in input tokens: "
-                                f"The number of input tokens processed by the model "
-                                f"server ({num_input_tokens}) differs from the number "
-                                f"of prefill tokens returned by the sampler "
-                                f"({num_prefill_tokens}) by "
-                                f"{abs(num_input_tokens - num_prefill_tokens)} tokens."
-                            )
+                        num_input_tokens = usage.get("tokens", {}).get("input_tokens")
+                        # Prefer server-reported input token count
+                        if num_input_tokens is not None:
+                            num_prefill_tokens = num_input_tokens
 
             except json.JSONDecodeError:
                 logger.warning(f"Failed to decode JSON line: {output_line}")

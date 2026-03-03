@@ -46,8 +46,7 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
         '"content": [{"type": "TEXT", "text": " world"}]}}'
     )
     exclamation_msg = (
-        '{"message": {"role": "ASSISTANT", '
-        '"content": [{"type": "TEXT", "text": "!"}]}}'
+        '{"message": {"role": "ASSISTANT", "content": [{"type": "TEXT", "text": "!"}]}}'
     )
 
     usage_msg = (
@@ -113,6 +112,51 @@ def test_chat_grok_format(mock_client_class, test_genai_user):
     assert user_response.num_prefill_tokens == 5
     assert user_response.generated_text == "Hello world!"
     assert user_response.tokens_received == 3  # totalTokens (8) - promptTokens (5)
+
+
+@patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")
+def test_chat_with_reasoning_content(mock_client_class, test_genai_user):
+    """Test chat response includes reasoningContent text."""
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    reasoning_msg = (
+        '{"message": {"role": "ASSISTANT", "reasoningContent": "Thinking..."}}'
+    )
+    content_msg = (
+        '{"message": {"role": "ASSISTANT", '
+        '"content": [{"type": "TEXT", "text": " Done"}]}}'
+    )
+    usage_msg = (
+        '{"usage": {"totalTokens": 7, "promptTokens": 5, '
+        '"completionTokens": 2, "completionTokensDetails": {"reasoningTokens": 1}}}'
+    )
+
+    mock_client_instance.chat.return_value.data.events.return_value = iter(
+        [
+            MagicMock(data=reasoning_msg),
+            MagicMock(data=content_msg),
+            MagicMock(data='{"finishReason": "stop"}'),
+            MagicMock(data=usage_msg),
+        ]
+    )
+
+    test_genai_user.on_start()
+    test_genai_user.sample = lambda: UserChatRequest(
+        model="xai.grok-3-mini-fast",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+        },
+        max_tokens=10,
+    )
+
+    response = test_genai_user.chat()
+
+    assert response.status_code == 200
+    assert response.generated_text == "Thinking... Done"
+    assert response.tokens_received == 2
 
 
 @patch("genai_bench.user.oci_genai_user.GenerativeAiInferenceClient")

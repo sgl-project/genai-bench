@@ -208,8 +208,8 @@ class TestTextSampler(unittest.TestCase):
 
         self.tokenizer.encode.side_effect = mock_encode
         # Decode returns a string with same number of words as tokens
-        self.tokenizer.decode.side_effect = (
-            lambda tokens, skip_special_tokens=True: " ".join(["word"] * len(tokens))
+        self.tokenizer.decode.side_effect = lambda tokens, skip_special_tokens=True: (
+            " ".join(["word"] * len(tokens))
         )
 
         # Test requesting exact token counts

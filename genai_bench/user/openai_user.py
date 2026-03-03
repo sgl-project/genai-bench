@@ -251,7 +251,6 @@ class OpenAIUser(BaseUser):
         Returns:
             UserChatResponse: A response object with metrics and generated text.
         """
-        stream_chunk_prefix = "data: "
         end_chunk = b"[DONE]"
 
         generated_text = ""
@@ -267,9 +266,16 @@ class OpenAIUser(BaseUser):
             if not chunk:
                 continue
 
-            chunk = chunk[len(stream_chunk_prefix) :]
+            if chunk.startswith(b"data: "):
+                chunk = chunk[6:]
+            elif chunk.startswith(b"data:"):
+                chunk = chunk[5:]
+            else:
+                continue
+
             if chunk == end_chunk:
                 break
+
             data = json.loads(chunk)
 
             # Handle streaming error response as OpenAI API server handles it
@@ -308,7 +314,18 @@ class OpenAIUser(BaseUser):
                         )
                         time_at_first_token = time.monotonic()
                     else:
-                        raise Exception("Invalid Response")
+                        raise Exception(
+                            "Invalid streaming response: "
+                            "received final usage chunk "
+                            "with completion_tokens="
+                            f"{tokens_received}, but no "
+                            "content was delivered during "
+                            "streaming (time_at_first_token"
+                            " was never set). This typically"
+                            " means the model returned an "
+                            "empty response. Raw usage "
+                            f"data: {data.get('usage')}"
+                        )
                 break
 
             try:
@@ -380,22 +397,17 @@ class OpenAIUser(BaseUser):
 
     @staticmethod
     def _get_usage_info(data, num_prefill_tokens):
-        num_prompt_tokens = data["usage"]["prompt_tokens"]
-        tokens_received = data["usage"]["completion_tokens"]
+        num_prompt_tokens = data["usage"].get("prompt_tokens")
+        tokens_received = data["usage"].get("completion_tokens", 0)
         # For vision task
         if num_prefill_tokens is None:
             # use num_prompt_tokens as prefill to cover image tokens
             num_prefill_tokens = num_prompt_tokens
-        if abs(num_prompt_tokens - num_prefill_tokens) >= 50:
-            logger.warning(
-                f"Significant difference detected in prompt tokens: "
-                f"The number of prompt tokens processed by the model "
-                f"server ({num_prompt_tokens}) differs from the number "
-                f"of prefill tokens returned by the sampler "
-                f"({num_prefill_tokens}) by "
-                f"{abs(num_prompt_tokens - num_prefill_tokens)} tokens."
-            )
-        return num_prefill_tokens, num_prompt_tokens, tokens_received
+        # Prefer server-reported prompt token count, fall back to local
+        effective_prefill = (
+            num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
+        )
+        return effective_prefill, num_prompt_tokens, tokens_received
 
     @staticmethod
     def parse_embedding_response(

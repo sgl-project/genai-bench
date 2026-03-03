@@ -552,6 +552,7 @@ class PlotConfigManager:
             "output_inference_speed",
             "num_input_tokens",
             "num_output_tokens",
+            "num_reasoning_tokens",
             "total_tokens",
             "input_throughput",
             "output_throughput",
