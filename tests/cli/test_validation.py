@@ -124,6 +124,33 @@ def test_validate_task():
         validate_task(ctx, param, "text-to-text")
     assert "API backend is not set" in str(excinfo.value)
 
+    # Case 5: text-to-rerank with allowed backend (vllm)
+    class MockReRankUserClass:
+        supported_tasks = {
+            "text-to-rerank": "rerank",
+        }
+
+        @staticmethod
+        def is_task_supported(task):
+            return task in MockReRankUserClass.supported_tasks
+
+        def rerank(self):
+            pass
+
+    ctx = click.Context(click.Command("test"))
+    ctx.params = {"api_backend": "vllm"}
+    ctx.obj = {"user_class": MockReRankUserClass}
+    result = validate_task(ctx, param, "text-to-rerank")
+    assert result == "text-to-rerank"
+
+    # Case 6: text-to-rerank with disallowed backend (openai)
+    ctx = click.Context(click.Command("test"))
+    ctx.params = {"api_backend": "openai"}
+    ctx.obj = {"user_class": MockReRankUserClass}
+    with pytest.raises(click.BadParameter) as excinfo:
+        validate_task(ctx, param, "text-to-rerank")
+    assert "not supported by the 'openai' backend" in str(excinfo.value)
+
 
 def test_validate_tokenizer_with_local_path(mock_tokenizer_path):
     tokenizer = validate_tokenizer(mock_tokenizer_path)
