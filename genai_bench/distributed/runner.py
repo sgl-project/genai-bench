@@ -331,6 +331,11 @@ class DistributedRunner:
         if not msg:
             raise RuntimeError("Received empty scenario message")
         environment.scenario = Scenario.from_string(msg.data)  # type: ignore[attr-defined]
+        # Reset prefix cache when switching scenarios
+        if hasattr(environment, "sampler") and hasattr(
+            environment.sampler, "reset_prefix_cache"
+        ):
+            environment.sampler.reset_prefix_cache()
 
     def cleanup(self) -> None:
         """Clean up resources"""

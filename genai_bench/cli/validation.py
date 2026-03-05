@@ -389,3 +389,114 @@ def validate_warmup_cooldown_ratio_options(ctx, param, value):
             param_hint=["--warmup-ratio", "--cooldown-ratio"],
         )
     return value
+
+
+def _get_min_input_tokens(scenario: Scenario) -> int | None:
+    """
+    Get the minimum possible input tokens for a scenario.
+
+    Returns:
+        Minimum input tokens, or None if cannot be determined.
+    """
+    # Deterministic: exact value
+    if hasattr(scenario, "num_input_tokens"):
+        return scenario.num_input_tokens
+
+    # Normal distribution: mean - 3*stddev (practical lower bound, ~99.7% of samples)
+    if hasattr(scenario, "mean_input_tokens") and hasattr(
+        scenario, "stddev_input_tokens"
+    ):
+        return max(1, scenario.mean_input_tokens - 3 * scenario.stddev_input_tokens)
+
+    # Uniform distribution: min_input_tokens or 1
+    if hasattr(scenario, "min_input_tokens"):
+        return scenario.min_input_tokens or 1
+
+    return None
+
+
+def validate_prefix_options(
+    prefix_len, prefix_ratio, task, dataset_path, dataset_config, traffic_scenario
+):
+    """
+    Validate --prefix-len and --prefix-ratio options after CLI parsing completes.
+
+    All validation (basic and contextual) happens here in one place.
+    """
+    # Check mutual exclusivity
+    if prefix_len is not None and prefix_ratio is not None:
+        raise click.UsageError(
+            "--prefix-len and --prefix-ratio are mutually exclusive. Use only one."
+        )
+
+    # If neither is set, nothing to validate
+    if prefix_len is None and prefix_ratio is None:
+        return
+
+    # Determine which option is being used
+    option_name = "--prefix-len" if prefix_len is not None else "--prefix-ratio"
+
+    # Task compatibility
+    if task != "text-to-text":
+        raise click.UsageError(
+            f"{option_name} is only supported for text-to-text tasks, not '{task}'."
+        )
+
+    # Dataset mode compatibility
+    if (dataset_path or dataset_config) and not traffic_scenario:
+        raise click.UsageError(
+            f"{option_name} requires a traffic scenario. "
+            "Not supported with dataset mode."
+        )
+
+    # Validate traffic scenarios
+    if traffic_scenario:
+        # Reject if any scenario is "dataset"
+        if "dataset" in traffic_scenario:
+            raise click.UsageError(
+                f"{option_name} is not supported with dataset mode. "
+                f"Remove 'dataset' from --traffic-scenario or remove {option_name}."
+            )
+
+        # --prefix-ratio requires deterministic scenarios (ratio adapts per-request)
+        # --prefix-len works with any scenario type (fixed prefix, variable suffix)
+        if prefix_ratio is not None:
+            non_deterministic = [
+                s for s in traffic_scenario if not s.strip().startswith("D(")
+            ]
+            if non_deterministic:
+                raise click.UsageError(
+                    "--prefix-ratio requires all traffic scenarios "
+                    "to be deterministic. Non-deterministic "
+                    f"scenarios found: {', '.join(non_deterministic)}"
+                )
+
+        # For --prefix-len, validate against minimum possible input tokens
+        # Supported: D(n,m), N(mean,std)/(m,s), U(min,max)/(m,n)
+        # Unsupported: I(), E(), R()
+        if prefix_len is not None:
+            unsupported_scenarios = []
+            invalid_scenarios = []
+            for scenario_str in traffic_scenario:
+                scenario = Scenario.from_string(scenario_str)
+                min_input_tokens = _get_min_input_tokens(scenario)
+                if min_input_tokens is None:
+                    unsupported_scenarios.append(scenario_str)
+                elif min_input_tokens < prefix_len:
+                    invalid_scenarios.append(
+                        f"{scenario_str} (min_input_tokens={min_input_tokens})"
+                    )
+
+            if unsupported_scenarios:
+                raise click.UsageError(
+                    "--prefix-len only supports text scenarios (D, N, U). "
+                    f"Unsupported scenarios: {', '.join(unsupported_scenarios)}"
+                )
+
+            if invalid_scenarios:
+                raise click.UsageError(
+                    f"--prefix-len ({prefix_len}) must be <= minimum input tokens "
+                    f"for all scenarios "
+                    f"(D: num_input_tokens, N: mean-3*stddev, U: min_input_tokens). "
+                    f"Invalid scenarios: {', '.join(invalid_scenarios)}"
+                )
