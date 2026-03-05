@@ -375,6 +375,7 @@ class OCICohereUser(BaseUser):
             status_code=200,
             generated_text=generated_text,
             tokens_received=tokens_received,
+            reasoning_tokens=0,  # OCI Cohere v1 API does not support reasoning
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
