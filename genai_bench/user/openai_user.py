@@ -513,7 +513,7 @@ class OpenAIUser(BaseUser):
         data = response.json()
 
         if "usage" in data and data["usage"]:
-            num_prefill_tokens, _, _ = OpenAIUser._get_usage_info(
+            num_prefill_tokens, _, _, _ = OpenAIUser._get_usage_info(
                 data, num_prefill_tokens
             )
 
