@@ -34,7 +34,7 @@ class UnifiedAuthFactory:
 
         Args:
             provider: Provider type ('openai', 'oci', 'aws-bedrock',
-                'azure-openai', 'gcp-vertex', 'together')
+                'azure-openai', 'gcp-vertex', 'together', 'custom')
             **kwargs: Provider-specific arguments
 
         Returns:
@@ -90,12 +90,15 @@ class UnifiedAuthFactory:
             api_key = kwargs.get("api_key")
             together_auth = TogetherAuth(api_key=api_key)
             return TogetherModelAuthAdapter(together_auth)
+        elif provider == "custom":
+            # Custom backends handle auth in on_start()
+            return None  # type: ignore
 
         else:
             raise ValueError(
                 f"Unsupported model provider: {provider}. "
-                f"Supported: openai, oci, aws-bedrock, azure-openai, gcp-vertex, "
-                "together"
+                f"Supported: openai, oci, aws-bedrock, "
+                f"azure-openai, gcp-vertex, together, custom"
             )
 
     @staticmethod
