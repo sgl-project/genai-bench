@@ -170,7 +170,7 @@ def test_chat_reasoning_tokens_multiple_events(mock_client_class, test_genai_use
         '"content": [{"type": "TEXT", "text": " Done"}]}}'
     )
     usage_msg = (
-        '{"usage": {"totalTokens": 10, "promptTokens": 5, ' '"completionTokens": 5}}'
+        '{"usage": {"totalTokens": 10, "promptTokens": 5, "completionTokens": 5}}'
     )
     events = _events(
         reasoning_a,
@@ -210,7 +210,7 @@ def test_chat_no_reasoning_content(mock_client_class, test_genai_user):
         '"content": [{"type": "TEXT", "text": " world"}]}}'
     )
     usage_msg = (
-        '{"usage": {"totalTokens": 8, "promptTokens": 5, ' '"completionTokens": 3}}'
+        '{"usage": {"totalTokens": 8, "promptTokens": 5, "completionTokens": 3}}'
     )
     events = _events(hello_msg, world_msg, '{"finishReason": "stop"}', usage_msg)
     request = UserChatRequest(
