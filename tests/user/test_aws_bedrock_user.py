@@ -253,6 +253,7 @@ class TestAWSBedrockUser:
 
         response = bedrock_user.collect_metrics.call_args[0][0]
         assert response.generated_text == "Hello world!"
+        assert response.reasoning_tokens == 0
 
     @patch("boto3.Session")
     def test_chat_titan_model(self, mock_session, bedrock_user):
@@ -563,6 +564,7 @@ class TestAWSBedrockUser:
 
         response = bedrock_user.collect_metrics.call_args[0][0]
         assert response.generated_text == "Non-streaming response"
+        assert response.reasoning_tokens == 0
 
     @patch("boto3.Session")
     def test_chat_llama_with_temperature_top_p(self, mock_session, bedrock_user):
@@ -763,3 +765,75 @@ class TestAWSBedrockUser:
 
         assert body["top_p"] == 0.9
         assert "temperature" not in body
+
+    @patch("boto3.Session")
+    def test_chat_streaming_reasoning_tokens_from_usage_openai_model(
+        self, mock_session, bedrock_user
+    ):
+        """Streaming with OpenAI model: reasoning_tokens from usage chunk."""
+        bedrock_user.on_start()
+        mock_client = bedrock_user.runtime_client
+
+        chunk_payload = {
+            "text": "OK",
+            "usage": {
+                "completion_tokens_details": {"reasoning_tokens": 5},
+            },
+        }
+        mock_event = {
+            "chunk": {"bytes": json.dumps(chunk_payload).encode()},
+        }
+        mock_response = {"body": [mock_event]}
+        mock_client.invoke_model_with_response_stream.return_value = mock_response
+
+        request = UserChatRequest(
+            prompt="Think",
+            model="openai.gpt-oss-120b",
+            max_tokens=50,
+            additional_request_params={"stream": True},
+            num_prefill_tokens=10,
+        )
+        bedrock_user.sample = MagicMock(return_value=request)
+        bedrock_user.collect_metrics = MagicMock()
+
+        bedrock_user.chat()
+
+        response = bedrock_user.collect_metrics.call_args[0][0]
+        assert response.generated_text == "OK"
+        assert response.reasoning_tokens == 5
+
+    @patch("boto3.Session")
+    def test_chat_non_streaming_reasoning_tokens_from_usage_openai_model(
+        self, mock_session, bedrock_user
+    ):
+        """Non-streaming with OpenAI model: reasoning_tokens from response body."""
+        bedrock_user.on_start()
+        mock_client = bedrock_user.runtime_client
+
+        response_body = {
+            "text": "Done",
+            "usage": {
+                "completion_tokens_details": {"reasoning_tokens": 3},
+            },
+        }
+        mock_response = {
+            "body": MagicMock(read=lambda: json.dumps(response_body).encode()),
+        }
+        mock_client.invoke_model.return_value = mock_response
+
+        request = UserChatRequest(
+            prompt="Think",
+            model="openai.gpt-oss-120b",
+            max_tokens=50,
+            additional_request_params={"stream": False},
+            num_prefill_tokens=10,
+        )
+        bedrock_user.sample = MagicMock(return_value=request)
+        bedrock_user.collect_metrics = MagicMock()
+
+        bedrock_user.chat()
+
+        mock_client.invoke_model.assert_called_once()
+        response = bedrock_user.collect_metrics.call_args[0][0]
+        assert response.generated_text == "Done"
+        assert response.reasoning_tokens == 3
