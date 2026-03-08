@@ -16,45 +16,32 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Update pip and install uv
-        run: |
-          python -m pip install -U pip hatchling
-          python -m pip install -U uv
-
-      - name: Check uv version
-        run: python -m uv version
-
       - name: Install dependencies
-        run: |
-          python -m uv pip install --system .
-          python -m uv pip install --system ".[dev,multi-cloud]"
+        run: uv sync --extra dev --extra multi-cloud
 
       - name: Run tests with coverage
         run: |
-          python -m pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
+          uv run pytest tests --cov --cov-report=xml --cov-config=.coveragerc -v -s
 
       - name: Check coverage threshold
         run: |
-          python -m coverage report --show-missing --fail-under=93
+          uv run coverage report --show-missing --fail-under=93
 
       # Optional: If you want to see coverage in CI logs
       - name: Display coverage
         run: |
-          python -m coverage report
+          uv run coverage report
 
       - name: Generate and display coverage info
         if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
         run: |
           # Extract coverage percentage
-          COVERAGE=$(python -m coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+          COVERAGE=$(uv run coverage report | grep TOTAL | awk '{print $NF}' | sed 's/%//')
           echo "Coverage: $COVERAGE%"
           echo "Update README badge with: https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
 
@@ -64,35 +51,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.11"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Update pip and install uv
-        run: |
-          python -m pip install -U pip hatchling
-          python -m pip install -U uv
-
       - name: Install dependencies
-        run: |
-          python -m uv pip install --system .
-          python -m uv pip install --system ".[dev,multi-cloud]"
+        run: uv sync --extra dev --extra multi-cloud
 
       - name: Check formatting with ruff
         run: |
-          python -m ruff format --diff genai_bench tests
+          uv run ruff format --diff genai_bench tests
 
       - name: Lint with ruff
         run: |
-          python -m ruff check genai_bench tests
+          uv run ruff check genai_bench tests
 
       - name: Type check with mypy
         run: |
-          python -m mypy genai_bench --config-file=mypy.ini
+          uv run mypy genai_bench --config-file=mypy.ini
 
   build:
     runs-on: ubuntu-latest
@@ -101,24 +78,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.11"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Update pip and install uv
-        run: |
-          python -m pip install -U pip hatchling
-          python -m pip install -U uv
-
       - name: Install dependencies
-        run: |
-          python -m uv pip install --no-color -vvv .
-          python -m uv pip install ".[dev,multi-cloud]"
+        run: uv sync --extra dev --extra multi-cloud
 
       - name: Build package
         run: |
-          python -m uv build -vvv
+          uv build -vvv
