@@ -20,7 +20,7 @@ from genai_bench.protocol import (
     UserReRankRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -50,6 +50,7 @@ class OpenAIUser(BaseUser):
         super().on_start()
 
     @task
+    @rate_limited
     def chat(self):
         endpoint = "/v1/chat/completions"
         user_request = self.sample()
@@ -141,6 +142,7 @@ class OpenAIUser(BaseUser):
         return messages
 
     @task
+    @rate_limited
     def embeddings(self):
         endpoint = "/v1/embeddings"
 

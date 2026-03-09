@@ -18,7 +18,7 @@ from genai_bench.protocol import (
     UserImageChatRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -65,6 +65,7 @@ class AzureOpenAIUser(BaseUser):
         super().on_start()
 
     @task
+    @rate_limited
     def chat(self):
         """Perform a chat request to Azure OpenAI."""
         # Get request using sample method
@@ -98,6 +99,7 @@ class AzureOpenAIUser(BaseUser):
         )
 
     @task
+    @rate_limited
     def embeddings(self):
         """Perform an embeddings request to Azure OpenAI."""
         # Get request using sample method

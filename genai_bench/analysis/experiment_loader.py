@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Set, Tuple
 
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import AggregatedMetrics, RequestLevelMetrics
-from genai_bench.protocol import ExperimentMetadata
+from genai_bench.protocol import ExperimentMetadata, IterationType
 
 logger = init_logger(__name__)
 
@@ -82,7 +82,8 @@ def load_one_experiment(
     for file_name in sorted(os.listdir(folder_name)):
         file_path = os.path.join(folder_name, file_name)
         if re.match(
-            r"^.+_.+_(?:concurrency|batch_size)_\d+_time_\d+s\.json$", file_name
+            r"^.+_.+_(?:concurrency|batch_size|request_rate)_\d+_time_\d+s\.json$",
+            file_name,
         ):
             load_run_data(file_path, run_data, filter_criteria)
 
@@ -220,11 +221,19 @@ def load_run_data(
 
         # Get the iteration type and value
         iteration_type = aggregated_metrics.iteration_type
-        iteration_value = (
-            aggregated_metrics.batch_size
-            if iteration_type == "batch_size"
-            else aggregated_metrics.num_concurrency
+        iteration_type_enum = IterationType(iteration_type)
+        iteration_value: Optional[int] = getattr(
+            aggregated_metrics, iteration_type_enum.value
         )
+
+        # Skip file if iteration_value is None
+        # This can happen since request_rate is optional in AggregatedMetrics
+        if iteration_value is None:
+            logger.warning(
+                f"Skipping file {file_path}: iteration_value is None for "
+                f"iteration_type={iteration_type}."
+            )
+            return
 
         # Store iteration values in scenario data
         iteration_key = f"{iteration_type}_levels"
