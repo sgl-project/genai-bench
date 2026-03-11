@@ -86,14 +86,27 @@ def api_options(func):
                 "together",
                 "vllm",
                 "sglang",
+                "custom",
             ],
             case_sensitive=False,
         ),
         required=True,
         prompt=True,
         callback=validate_api_backend,
-        help="The API backend to use. Supports major cloud providers and "
-        "open-source servers.",
+        help="The API backend to use. Supports major cloud providers, "
+        "open-source servers, and 'custom' for user-defined backends. "
+        "Use 'custom' with --custom-backend to load your own implementation.",
+    )(func)
+    func = click.option(
+        "--custom-backend",
+        type=str,
+        default=None,
+        is_eager=True,
+        help="Path to a Python file containing a custom API backend implementation. "
+        "Required when --api-backend is 'custom'. The file should contain a class "
+        "that inherits from BaseUser. Format: 'path/to/file.py' or "
+        "'path/to/file.py:ClassName' to specify a specific class when multiple "
+        "BaseUser subclasses exist in the file.",
     )(func)
     return func
 
