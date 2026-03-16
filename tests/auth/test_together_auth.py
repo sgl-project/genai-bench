@@ -40,8 +40,9 @@ class TestTogetherAuth:
         with pytest.raises(ValueError):
             TogetherAuth()
 
-    def test_init_empty_key(self):
+    def test_init_empty_key(self, monkeypatch):
         """Test initialization with empty API key."""
+        monkeypatch.delenv("TOGETHER_API_KEY", raising=False)
         with pytest.raises(ValueError):
             TogetherAuth(api_key="")
 
