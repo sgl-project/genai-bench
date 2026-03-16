@@ -46,7 +46,7 @@ class TogetherUser(BaseUser):
         self.host = self.host.rstrip("/")
         if self.host.endswith("/v1"):
             self.host = self.host.split("/v1")[0]
-            
+
         auth_headers = self.auth_provider.get_headers()
         self.headers = {
             **auth_headers,

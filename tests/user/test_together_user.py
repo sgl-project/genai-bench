@@ -51,6 +51,7 @@ def test_on_start_missing_api_key_base():
     ):
         user.on_start()
 
+
 def test_on_start_headers(mock_together_user):
     """Test that on_start correctly sets the headers from the auth provider."""
     mock_together_user.on_start()
@@ -86,6 +87,7 @@ def test_host_normalization(input_host, expected_host):
 
     user.on_start()
     assert user.host == expected_host
+
 
 @patch("genai_bench.user.together_user.requests.post")
 def test_chat(mock_post, mock_together_user):
