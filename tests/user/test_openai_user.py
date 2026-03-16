@@ -1431,3 +1431,76 @@ def test_send_request_rerank_response_no_usage(mock_post, mock_openai_user):
     # Should use the provided num_prefill_tokens when no usage info
     assert user_response.num_prefill_tokens == 15
     mock_post.assert_called_once()
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_chat_with_vllm_reasoning_field(mock_post, mock_openai_user, caplog):
+    """
+    Test that vLLM Harmony protocol's "reasoning" field (as opposed to
+    "reasoning_content") correctly triggers TTFT and accumulates reasoning text.
+    vLLM sends reasoning tokens as {"delta": {"reasoning": "..."}} which must
+    be recognized by genai-bench.
+    """
+    mock_openai_user.api_backend = "vllm"
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-oss-20b",
+        prompt="What is RAG?",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=50,
+    )
+
+    reasoning_text = "User asks about RAG..."
+    final_text = "RAG stands for Retrieval-Augmented Generation"
+    combined_text = reasoning_text + final_text
+
+    mock_openai_user.environment.sampler = MagicMock()
+    mock_openai_user.environment.sampler.get_token_length.side_effect = [
+        len(combined_text),
+        len(reasoning_text),
+    ]
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            # vLLM Harmony uses "reasoning" field, not "reasoning_content"
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": '
+                b'{"reasoning": "User asks about RAG..."}, "index": 0}], '
+                b'"model": "gpt-oss-20b"}'
+            ),
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": '
+                b'{"content": "RAG stands for Retrieval-Augmented Generation"}, '
+                b'"index": 0}], "model": "gpt-oss-20b"}'
+            ),
+            (
+                b'data: {"id": "chat-xxx", "choices": [{"delta": {}, '
+                b'"finish_reason": "stop"}]}'
+            ),
+            b"data: [DONE]",
+        ]
+    )
+
+    mock_post.return_value = response_mock
+
+    with caplog.at_level(logging.WARNING):
+        resp = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+
+    assert isinstance(resp, UserChatResponse)
+    assert resp.status_code == 200
+    # TTFT must be set from the "reasoning" chunk
+    assert resp.time_at_first_token is not None
+    # generated_text should include reasoning + content
+    assert resp.generated_text == combined_text
+    # reasoning_tokens backfilled from reasoning text
+    assert resp.reasoning_tokens == len(reasoning_text)
+    assert resp.tokens_received == len(combined_text)

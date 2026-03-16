@@ -34,6 +34,13 @@ class OpenAIUser(BaseUser):
         "text-to-rerank": "rerank",
     }
 
+    # Maps backend name to its reasoning content field in SSE delta.
+    # Default field "reasoning_content" is always checked;
+    # this dict adds backend-specific alternatives.
+    BACKEND_REASONING_FIELD = {
+        "vllm": "reasoning",
+    }
+
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
@@ -364,8 +371,14 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
+                reasoning_field = self.BACKEND_REASONING_FIELD.get(self.api_backend)
                 content = delta.get("content") or delta.get("reasoning_content")
                 reasoning_content_chunk = delta.get("reasoning_content")
+                if reasoning_field:
+                    content = content or delta.get(reasoning_field)
+                    reasoning_content_chunk = reasoning_content_chunk or delta.get(
+                        reasoning_field
+                    )
                 usage = delta.get("usage")
 
                 if usage:
