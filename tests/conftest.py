@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from transformers import AutoTokenizer
 
+import genai_bench.logging as genai_logging
 from genai_bench.user.openai_user import OpenAIUser
 
 
@@ -22,6 +23,16 @@ def reset_openai_user_attrs():
     # Reset the class attributes after the test
     OpenAIUser.host = original_host
     OpenAIUser.auth_provider = original_auth_provider
+
+
+@pytest.fixture(autouse=True)
+def reset_warning_once_cache():
+    """
+    Clear `warning_once` state of logger between tests.
+
+    """
+    genai_logging._warning_once_keys.clear()
+    yield
 
 
 @pytest.fixture()

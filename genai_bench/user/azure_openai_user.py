@@ -10,7 +10,7 @@ import requests
 from requests import Response
 
 from genai_bench.auth.auth_provider import AuthProvider
-from genai_bench.logging import init_logger
+from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
@@ -325,10 +325,12 @@ class AzureOpenAIUser(BaseUser):
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False
             )
-            logger.warning(
+            warning_once(
+                logger,
+                "tokens_received_estimated",
                 "There is no usage info returned from the model "
                 "server. Estimated tokens_received based on the model "
-                "tokenizer."
+                "tokenizer.",
             )
 
         return UserChatResponse(
