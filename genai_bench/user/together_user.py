@@ -40,6 +40,13 @@ class TogetherUser(BaseUser):
     def on_start(self):
         if not self.host or not self.auth_provider:
             raise ValueError("API key and base must be set for TogetherUser.")
+
+        # Together's site says to use base URL https://api.together.xyz/v1
+        # genai-bench does not work if /v1 is present.
+        self.host = self.host.rstrip("/")
+        if self.host.endswith("/v1"):
+            self.host = self.host.split("/v1")[0]
+
         auth_headers = self.auth_provider.get_headers()
         self.headers = {
             **auth_headers,
