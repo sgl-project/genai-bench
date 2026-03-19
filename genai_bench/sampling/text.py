@@ -2,7 +2,7 @@ import random
 from typing import Any, Dict, List, Optional
 
 from genai_bench.data.config import DatasetConfig
-from genai_bench.logging import init_logger
+from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
@@ -341,11 +341,13 @@ class TextSampler(Sampler):
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
         if discrepancy > threshold * num_input_tokens:
-            logger.warning(
+            warning_once(
+                logger,
+                f"sampling_discrepancy_threshold_{threshold}",
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
                 f"num_prefill_tokens={num_prefill_tokens}, "
-                f"discrepancy={discrepancy}"
+                f"discrepancy={discrepancy}",
             )
 
     def _get_prefill_token_count(self, prompt: str) -> int:

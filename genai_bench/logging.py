@@ -298,13 +298,12 @@ def warning_once(logger: logging.Logger, key: str, msg: str, *args, **kwargs) ->
     """
     Log a warning message only once per process for a given logger/key pair.
 
-    This is intended for expected-but-noisy warnings (for example, when we
-    estimate token usage via the tokenizer because the backend does not
-    return usage information, or when prompt-token mismatches are expected
-    due to chat templates).
+    This is intended for expected-but-noisy warnings, such as for estimating
+    token counts when the model server doesn't provide usage info.
     """
     cache_key = (logger.name, key)
     if cache_key in _warning_once_keys:
+        logger.debug(f"Suppressed duplicate msg: {msg}")
         return
     _warning_once_keys.add(cache_key)
     logger.warning(msg, *args, **kwargs)
