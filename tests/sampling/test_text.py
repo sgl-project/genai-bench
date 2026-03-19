@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
@@ -36,11 +37,15 @@ class TestTextSampler(unittest.TestCase):
 
     def test_check_discrepancy(self):
         """Test that _check_discrepancy logs warnings for large discrepancies."""
+        genai_logging._warning_once_keys.clear()
         with self.assertLogs("genai_bench.sampling.text", level="WARNING") as log:
             # Test case with large discrepancy that should trigger warning
             # discrepancy = |100 - 50| = 50, which is > 10% of 100 and > 10 tokens
             self.sampler._check_discrepancy(100, 50, threshold=0.1)
+            self.sampler._check_discrepancy(100, 50, threshold=0.1)
 
+            # warning_once should suppress the second identical warning
+            self.assertEqual(len(log.output), 1)
             self.assertIn("Sampling discrepancy detected", log.output[0])
             self.assertIn("num_input_tokens=100", log.output[0])
             self.assertIn("num_prefill_tokens=50", log.output[0])
@@ -48,6 +53,7 @@ class TestTextSampler(unittest.TestCase):
 
     def test_check_discrepancy_no_warning(self):
         """Test that _check_discrepancy doesn't log for small discrepancies."""
+        genai_logging._warning_once_keys.clear()
         # Test case with small discrepancy that should NOT trigger warning
         # discrepancy = |100 - 95| = 5, which is < 10% of 100
         # We'll capture logs and verify none are produced

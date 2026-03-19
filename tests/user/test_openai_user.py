@@ -4,6 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 import requests
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
@@ -315,6 +316,7 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
 
 @patch("genai_bench.user.openai_user.requests.post")
 def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
+    genai_logging._warning_once_keys.clear()
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
         lambda text, add_special_tokens=True: len(text)
@@ -351,8 +353,19 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
     )
     mock_post.return_value = response_mock
 
+    warning_substring = (
+        "There is no usage info returned from the model server. Estimated "
+        "tokens_received based on the model tokenizer."
+    )
     with caplog.at_level(logging.WARNING):
-        user_response = mock_openai_user.send_request(
+        user_response_1 = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+        user_response_2 = mock_openai_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -360,11 +373,13 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
             parse_strategy=mock_openai_user.parse_chat_response,
         )
 
-    assert (
-        "There is no usage info returned from the model server. Estimated "
-        "tokens_received based on the model tokenizer." in caplog.text
+    assert user_response_1.tokens_received == len(user_response_1.generated_text)
+    assert user_response_2.tokens_received == len(user_response_2.generated_text)
+
+    warning_count = sum(
+        warning_substring in record.getMessage() for record in caplog.records
     )
-    assert user_response.tokens_received == len(user_response.generated_text)
+    assert warning_count == 1
 
 
 @patch("genai_bench.user.openai_user.requests.post")
@@ -800,6 +815,7 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
     mock_post, mock_openai_user, caplog
 ):
     """Backfill when usage has reasoning_tokens=0 and stream has reasoning_content."""  # noqa: E501
+    genai_logging._warning_once_keys.clear()
     mock_openai_user.on_start()
     mock_openai_user.sample = lambda: UserChatRequest(
         model="gpt-3",
@@ -824,8 +840,19 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
     )
     mock_post.return_value = response_mock
 
+    warning_substring = (
+        "Server did not report reasoning_tokens. Estimated reasoning_tokens "
+        "based on the model tokenizer"
+    )
     with caplog.at_level(logging.WARNING):
-        response = mock_openai_user.send_request(
+        response_1 = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+        response_2 = mock_openai_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -833,17 +860,27 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
             parse_strategy=mock_openai_user.parse_chat_response,
         )
 
-    assert response.status_code == 200
-    assert response.generated_text == "Think.Done."
-    assert response.reasoning_tokens == 6
-    assert response.tokens_received == 2
-    mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
-        reasoning_only, add_special_tokens=False
+    assert response_1.status_code == 200
+    assert response_1.generated_text == "Think.Done."
+    assert response_1.reasoning_tokens == 6
+    assert response_1.tokens_received == 2
+
+    assert response_2.status_code == 200
+    assert response_2.generated_text == "Think.Done."
+    assert response_2.reasoning_tokens == 6
+    assert response_2.tokens_received == 2
+
+    assert mock_openai_user.environment.sampler.get_token_length.call_count == 2
+    for (
+        call_args
+    ) in mock_openai_user.environment.sampler.get_token_length.call_args_list:
+        assert call_args.args == (reasoning_only,)
+        assert call_args.kwargs == {"add_special_tokens": False}
+
+    warning_count = sum(
+        warning_substring in record.getMessage() for record in caplog.records
     )
-    assert (
-        "Server did not report reasoning_tokens. Estimated reasoning_tokens "
-        "based on the model tokenizer" in caplog.text
-    )
+    assert warning_count == 1
 
 
 @patch("genai_bench.user.openai_user.requests.post")

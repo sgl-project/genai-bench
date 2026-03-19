@@ -4,6 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 import requests
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
@@ -353,6 +354,7 @@ def test_send_request_chat_response(mock_post, mock_together_user):
 
 @patch("genai_bench.user.together_user.requests.post")
 def test_chat_no_usage_info(mock_post, mock_together_user, caplog):
+    genai_logging._warning_once_keys.clear()
     mock_together_user.environment.sampler = MagicMock()
     mock_together_user.environment.sampler.get_token_length = (
         lambda text, add_special_tokens=True: len(text)
@@ -389,8 +391,19 @@ def test_chat_no_usage_info(mock_post, mock_together_user, caplog):
     )
     mock_post.return_value = response_mock
 
+    warning_substring = (
+        "There is no usage info returned from the model server. Estimated "
+        "tokens_received based on the model tokenizer."
+    )
     with caplog.at_level(logging.WARNING):
-        user_response = mock_together_user.send_request(
+        user_response_1 = mock_together_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_together_user.parse_chat_response,
+        )
+        user_response_2 = mock_together_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -398,11 +411,13 @@ def test_chat_no_usage_info(mock_post, mock_together_user, caplog):
             parse_strategy=mock_together_user.parse_chat_response,
         )
 
-    assert (
-        "There is no usage info returned from the model server. Estimated "
-        "tokens_received based on the model tokenizer." in caplog.text
+    assert user_response_1.tokens_received == len(user_response_1.generated_text)
+    assert user_response_2.tokens_received == len(user_response_2.generated_text)
+
+    warning_count = sum(
+        warning_substring in record.getMessage() for record in caplog.records
     )
-    assert user_response.tokens_received == len(user_response.generated_text)
+    assert warning_count == 1
 
 
 @patch("genai_bench.user.together_user.requests.post")
@@ -757,6 +772,7 @@ def test_chat_with_reasoning_content_and_token_estimation(
     generated_text excludes it, and token estimation includes both
     reasoning_content + content when usage is missing.
     """
+    genai_logging._warning_once_keys.clear()
     mock_together_user.on_start()
     mock_together_user.sample = lambda: UserChatRequest(
         model="gpt-oss-20b-h100-chat",
@@ -775,8 +791,10 @@ def test_chat_with_reasoning_content_and_token_estimation(
     # second for reasoning_tokens (reasoning_text)
     mock_together_user.environment.sampler = MagicMock()
     mock_together_user.environment.sampler.get_token_length.side_effect = [
-        len(combined_text),  # tokens_received
-        3,  # reasoning_tokens for "Thinking..."
+        len(combined_text),  # tokens_received (call 1)
+        3,  # reasoning_tokens for "Thinking..." (call 1)
+        len(combined_text),  # tokens_received (call 2)
+        3,  # reasoning_tokens for "Thinking..." (call 2)
     ]
 
     # Stream: first reasoning_content, then content,
@@ -806,8 +824,14 @@ def test_chat_with_reasoning_content_and_token_estimation(
     mock_post.return_value = response_mock
 
     with caplog.at_level(logging.WARNING):
-        # Call send_request directly to get a UserChatResponse
-        resp = mock_together_user.send_request(
+        resp_1 = mock_together_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_together_user.parse_chat_response,
+        )
+        resp_2 = mock_together_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -816,23 +840,41 @@ def test_chat_with_reasoning_content_and_token_estimation(
         )
 
     # Assertions: got a UserChatResponse
-    assert isinstance(resp, UserChatResponse)
-    assert resp.status_code == 200
-    assert resp.time_at_first_token is not None
+    assert isinstance(resp_1, UserChatResponse)
+    assert resp_1.status_code == 200
+    assert resp_1.time_at_first_token is not None
 
     # generated_text should include reasoning_content
-    assert resp.generated_text == combined_text
+    assert resp_1.generated_text == combined_text
 
     # Warning about missing usage must be present
-    assert "There is no usage info returned from the model server" in caplog.text
+    tokens_warning = (
+        "There is no usage info returned from the model server. Estimated "
+        "tokens_received based on the model tokenizer."
+    )
+    reasoning_warning = (
+        "Server did not report reasoning_tokens. Estimated reasoning_tokens "
+        "based on the model tokenizer"
+    )
+    tokens_warning_count = sum(
+        tokens_warning in record.getMessage() for record in caplog.records
+    )
+    reasoning_warning_count = sum(
+        reasoning_warning in record.getMessage() for record in caplog.records
+    )
+    assert tokens_warning_count == 1
+    assert reasoning_warning_count == 1
 
     # Token estimation: tokens_received from combined_text,
     # reasoning_tokens from reasoning_text
-    assert resp.tokens_received == len(combined_text)
-    assert resp.reasoning_tokens is not None
-    assert resp.reasoning_tokens == 3
+    assert resp_1.tokens_received == len(combined_text)
+    assert resp_1.reasoning_tokens is not None
+    assert resp_1.reasoning_tokens == 3
+    assert resp_2.tokens_received == len(combined_text)
+    assert resp_2.reasoning_tokens == 3
     get_token_length = mock_together_user.environment.sampler.get_token_length
-    assert get_token_length.call_count == 2
+    # Each warning path calls token estimation twice per request.
+    assert get_token_length.call_count == 4
     get_token_length.assert_any_call(combined_text, add_special_tokens=False)
     get_token_length.assert_any_call(reasoning_text, add_special_tokens=False)
 
