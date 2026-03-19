@@ -12,6 +12,7 @@ from genai_bench.scenarios.base import Scenario
 from genai_bench.user.aws_bedrock_user import AWSBedrockUser
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
+from genai_bench.user.fast_openai_user import FastOpenAIUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.oci_genai_user import OCIGenAIUser
@@ -22,6 +23,7 @@ logger = init_logger(__name__)
 
 API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
+    FastOpenAIUser.BACKEND_NAME: FastOpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
@@ -246,6 +248,7 @@ def validate_api_backend(ctx, param, value):
     if ctx.obj is None:
         ctx.obj = {}
     ctx.obj["user_class"] = user_class
+    return api_backend
 
     return api_backend
 
@@ -258,7 +261,12 @@ def validate_api_key(ctx, param, value):
         raise click.BadParameter("api_backend must be specified before api_key")
 
     # Backends that require API key
-    api_key_required = [OpenAIUser.BACKEND_NAME, "vllm", "sglang"]
+    api_key_required = [
+        OpenAIUser.BACKEND_NAME,
+        FastOpenAIUser.BACKEND_NAME,
+        "vllm",
+        "sglang",
+    ]
 
     # Backends that don't use traditional API key
     no_api_key = [
