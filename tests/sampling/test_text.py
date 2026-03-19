@@ -41,6 +41,8 @@ class TestTextSampler(unittest.TestCase):
         with self.assertLogs("genai_bench.sampling.text", level="WARNING") as log:
             # Test case with large discrepancy that should trigger warning
             # discrepancy = |100 - 50| = 50, which is > 10% of 100 and > 10 tokens
+
+            # Call twice to check that warning_once suppresses duplicate warnings
             self.sampler._check_discrepancy(100, 50, threshold=0.1)
             self.sampler._check_discrepancy(100, 50, threshold=0.1)
 
