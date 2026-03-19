@@ -72,6 +72,7 @@ GenAI Bench supports multiple benchmark types:
 - [Traffic Scenarios](user-guide/scenario-definition.md) - Understanding traffic scenario syntax
 - [Multi-Cloud Authentication & Storage](user-guide/multi-cloud-auth-storage.md) - Comprehensive guide for cloud provider authentication
 - [Multi-Cloud Quick Reference](user-guide/multi-cloud-quick-reference.md) - Quick examples for common scenarios
+- [Custom Backends](user-guide/run-benchmark.md#custom-backends) - Creating custom API backends
 - [Docker Usage Guide](user-guide/run-benchmark-using-docker.md) - Docker-based benchmarking
 - [Excel Reports](user-guide/generate-excel-sheet.md) - Creating Excel reports
 - [Visualizations](user-guide/generate-plot.md) - Creating visualizations

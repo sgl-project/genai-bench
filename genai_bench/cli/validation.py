@@ -12,6 +12,7 @@ from genai_bench.scenarios.base import Scenario
 from genai_bench.user.aws_bedrock_user import AWSBedrockUser
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
+from genai_bench.user.custom_user import CustomUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
 from genai_bench.user.oci_genai_user import OCIGenAIUser
@@ -29,6 +30,7 @@ API_BACKEND_USER_MAP = {
     AzureOpenAIUser.BACKEND_NAME: AzureOpenAIUser,
     GCPVertexUser.BACKEND_NAME: GCPVertexUser,
     TogetherUser.BACKEND_NAME: TogetherUser,
+    CustomUser.BACKEND_NAME: CustomUser,
     "vllm": OpenAIUser,  # vLLM uses OpenAI-compatible API
     "sglang": OpenAIUser,  # SGLang uses OpenAI-compatible API
 }
@@ -237,11 +239,41 @@ def validate_iteration_params(ctx, param, value) -> str:
 def validate_api_backend(ctx, param, value):
     """
     Validate the selected API backend and set the corresponding user class.
+    For custom backends, loads the user class from the specified path.
     """
     api_backend = value.lower()
     user_class = API_BACKEND_USER_MAP.get(api_backend)
     if not user_class:
         raise click.BadParameter(f"{value} is not a supported API backend.")
+
+    # Handle custom backend
+    if api_backend == "custom":
+        custom_backend = ctx.params.get("custom_backend")
+        if not custom_backend:
+            raise click.BadParameter(
+                "When using 'custom' backend, you must provide --custom-backend "
+                "pointing to a Python file with your custom backend implementation."
+            )
+
+        # Parse the path and optional class name
+        # Format: path/to/file.py or path/to/file.py:ClassName
+        class_name = None
+        if ":" in custom_backend:
+            custom_backend, class_name = custom_backend.rsplit(":", 1)
+            logger.info(
+                f"Parsed custom backend path: {custom_backend}, class: {class_name}"
+            )
+
+        # Load the custom user class
+        try:
+            user_class = CustomUser.load_custom_class(
+                custom_backend, class_name=class_name
+            )
+            logger.info(f"Successfully loaded custom backend from: {custom_backend}")
+        except Exception as e:
+            raise click.BadParameter(
+                f"Failed to load custom backend from {custom_backend}: {str(e)}"
+            ) from e
 
     if ctx.obj is None:
         ctx.obj = {}

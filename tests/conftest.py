@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from transformers import AutoTokenizer
 
+from genai_bench.user.custom_user import CustomUser
 from genai_bench.user.openai_user import OpenAIUser
 
 
@@ -22,6 +23,23 @@ def reset_openai_user_attrs():
     # Reset the class attributes after the test
     OpenAIUser.host = original_host
     OpenAIUser.auth_provider = original_auth_provider
+
+
+@pytest.fixture(autouse=True)
+def reset_custom_user_state():
+    """
+    Automatically resets CustomUser class attributes after each test to
+    prevent state leakage.
+    """
+    original_custom_class = CustomUser._custom_class
+    original_module_path = CustomUser._custom_module_path
+    original_supported_tasks = CustomUser.supported_tasks.copy()
+
+    yield
+
+    CustomUser._custom_class = original_custom_class
+    CustomUser._custom_module_path = original_module_path
+    CustomUser.supported_tasks = original_supported_tasks
 
 
 @pytest.fixture()

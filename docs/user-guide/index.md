@@ -22,6 +22,14 @@ This guide covers everything you need to know to effectively use GenAI Bench for
 
     [:octicons-arrow-right-24: Multi-Cloud Guide](multi-cloud-auth-storage.md)
 
+- :material-puzzle:{ .lg .middle } **Custom Backends**
+
+    ---
+
+    Create custom backends for any API endpoint
+
+    [:octicons-arrow-right-24: Custom Backends Guide](run-benchmark.md#custom-backends)
+
 - :material-docker:{ .lg .middle } **Docker Usage Guide**
 
     ---
