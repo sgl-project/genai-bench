@@ -343,7 +343,7 @@ class TextSampler(Sampler):
         if discrepancy > threshold * num_input_tokens:
             warning_once(
                 logger,
-                f"sampling_discrepancy_threshold_{threshold}",
+                "sampling_discrepancy_detected",
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
                 f"num_prefill_tokens={num_prefill_tokens}, "
