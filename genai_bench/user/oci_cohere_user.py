@@ -572,11 +572,12 @@ class OCICohereUser(BaseUser):
         num_prefill_tokens: Optional[int],
         _: float,
     ) -> UserResponse:
-        generated_parts: List[str] = []
-        reasoning_parts: List[str] = []
+        generated_text = ""
+        reasoning_text = ""
         time_at_first_token: Optional[float] = None
         usage_payload: Optional[Dict[str, Any]] = None
         previous_data: Optional[Any] = None
+        finish_reason: Optional[str] = None
 
         for event in response.data.events():
             raw_data = event.data
@@ -587,10 +588,6 @@ class OCICohereUser(BaseUser):
             event_data = raw_data.strip()
             if not event_data:
                 continue
-            if event_data.startswith("data:"):
-                event_data = event_data[len("data:") :].strip()
-            if event_data == "[DONE]":
-                break
 
             try:
                 parsed_data = json.loads(event_data)
@@ -604,35 +601,20 @@ class OCICohereUser(BaseUser):
                 continue
 
             previous_data = parsed_data
-            event_type = parsed_data.get("type")
-            delta = parsed_data.get("delta")
 
-            if isinstance(delta, dict):
-                text_chunk, reasoning_chunk = self._extract_text_from_delta(delta)
-                if text_chunk:
-                    generated_parts.append(text_chunk)
-                if reasoning_chunk:
-                    reasoning_parts.append(reasoning_chunk)
-                if (text_chunk or reasoning_chunk) and time_at_first_token is None:
-                    time_at_first_token = time.monotonic()
-                if event_type == "message-end":
-                    usage_payload = delta.get("usage")
-                    break
-            elif event_type == "message-end":
+            message = parsed_data.get("message", {}) or {}
+            text_chunk, reasoning_chunk = self._extract_text_from_message(message)
+            if (text_chunk or reasoning_chunk) and time_at_first_token is None:
+                time_at_first_token = time.monotonic()
+            generated_text += text_chunk
+            reasoning_text += reasoning_chunk
+
+            finish_reason = finish_reason or parsed_data.get("finishReason")
+            if finish_reason:
                 usage_payload = parsed_data.get("usage")
-                message = parsed_data.get("message", {})
-                text_chunk, reasoning_chunk = self._extract_text_from_delta(message)
-                if text_chunk:
-                    generated_parts.append(text_chunk)
-                if reasoning_chunk:
-                    reasoning_parts.append(reasoning_chunk)
-                if (text_chunk or reasoning_chunk) and time_at_first_token is None:
-                    time_at_first_token = time.monotonic()
                 break
 
         end_time = time.monotonic()
-        generated_text = "".join(generated_parts)
-        reasoning_text = "".join(reasoning_parts)
         combined_text = generated_text + reasoning_text
 
         tokens_received = 0
@@ -675,47 +657,29 @@ class OCICohereUser(BaseUser):
             end_time=end_time,
         )
 
-    def _extract_text_from_delta(self, delta: Dict[str, Any]) -> tuple[str, str]:
-        if not isinstance(delta, dict):
+    def _extract_text_from_message(self, message: Dict[str, Any]) -> tuple[str, str]:
+        if not isinstance(message, dict):
             return "", ""
 
         text_parts: List[str] = []
         reasoning_parts: List[str] = []
 
-        content_blocks: List[Any] = []
-        if isinstance(delta.get("content"), list):
-            content_blocks.extend(delta["content"])
-
-        message = delta.get("message")
-        if isinstance(message, dict):
-            if isinstance(message.get("content"), list):
-                content_blocks.extend(message["content"])
-            if isinstance(message.get("reasoningContent"), list):
-                content_blocks.extend(message["reasoningContent"])
-
-        for block in content_blocks:
+        for block in message.get("content", []):
             if isinstance(block, str):
                 text_parts.append(block)
                 continue
             if not isinstance(block, dict):
                 continue
-            block_type = str(block.get("type", "")).lower()
-            if block_type in {"text", "output_text", "output_text_delta"}:
+
+            block_type = str(block.get("type", "TEXT")).upper()
+            if block_type in {"TEXT", "OUTPUT_TEXT"}:
                 value = block.get("text") or block.get("data")
                 if value:
                     text_parts.append(str(value))
-            elif block_type == "thinking":
+            elif block_type == "THINKING":
                 value = block.get("thinking") or block.get("text")
                 if value:
                     reasoning_parts.append(str(value))
-
-        thinking_payload = delta.get("thinking")
-        if isinstance(thinking_payload, str):
-            reasoning_parts.append(thinking_payload)
-        elif isinstance(thinking_payload, dict):
-            value = thinking_payload.get("text") or thinking_payload.get("thinking")
-            if value:
-                reasoning_parts.append(str(value))
 
         return "".join(text_parts), "".join(reasoning_parts)
 

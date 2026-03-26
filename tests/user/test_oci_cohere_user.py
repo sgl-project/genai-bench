@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -56,18 +57,45 @@ def test_chat_v2_text(mock_client_class, test_cohere_user):
     mock_client_instance.chat.return_value.data.events.return_value = iter(
         [
             MagicMock(
-                data=b'{"type":"content-delta","delta":{"message":{"content":[{"type":"text","text":"Hello"}]}}}'
+                data=json.dumps(
+                    {
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "Hello"}],
+                        }
+                    }
+                ).encode("utf-8")
             ),
             MagicMock(
-                data=b'{"type":"content-delta","delta":{"message":{"content":'
-                b'[{"type":"thinking","thinking":" Reason"}]}}}'
+                data=json.dumps(
+                    {
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [
+                                {"type": "THINKING", "thinking": " Reason"},
+                            ],
+                        }
+                    }
+                ).encode("utf-8")
             ),
             MagicMock(
-                data=b'{"type":"message-end","delta":{"message":{"content":'
-                b'[{"type":"text","text":"!"}]}, "usage":{"tokens":'
-                b'{"input_tokens":5,"output_tokens":3,"reasoning_tokens":2}}}}'
+                data=json.dumps(
+                    {
+                        "finishReason": "COMPLETE",
+                        "usage": {
+                            "tokens": {
+                                "input_tokens": 5,
+                                "output_tokens": 3,
+                                "reasoning_tokens": 2,
+                            }
+                        },
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "!"}],
+                        },
+                    }
+                ).encode("utf-8")
             ),
-            MagicMock(data=b"data: [DONE]"),
         ]
     )
 
@@ -121,13 +149,26 @@ def test_chat_v2_vision(mock_client_class, test_cohere_user):
     mock_client_instance.chat.return_value.data.events.return_value = iter(
         [
             MagicMock(
-                data=b'{"type":"content-delta","delta":{"message":{"content":[{"type":"text","text":"Analyzing"}]}}}'
+                data=json.dumps(
+                    {
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "Analyzing"}],
+                        }
+                    }
+                ).encode("utf-8")
             ),
             MagicMock(
-                data=b'{"type":"message-end","delta":{"message":{"content":'
-                b'[{"type":"text","text":" image"}]}}}'
+                data=json.dumps(
+                    {
+                        "finishReason": "COMPLETE",
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": " image"}],
+                        },
+                    }
+                ).encode("utf-8")
             ),
-            MagicMock(data=b"data: [DONE]"),
         ]
     )
 
