@@ -83,11 +83,11 @@ def test_chat_v2_text(mock_client_class, test_cohere_user):
                     {
                         "finishReason": "COMPLETE",
                         "usage": {
-                            "tokens": {
-                                "input_tokens": 5,
-                                "output_tokens": 3,
-                                "reasoning_tokens": 2,
-                            }
+                            "promptTokens": 5,
+                            "completionTokens": 3,
+                            "completionTokensDetails": {
+                                "reasoningTokens": 2,
+                            },
                         },
                         "message": {
                             "role": "ASSISTANT",
@@ -140,6 +140,68 @@ def test_chat_v2_text(mock_client_class, test_cohere_user):
     assert user_response.reasoning_tokens == 2
     assert user_response.num_prefill_tokens == 5
     assert user_response.status_code == 200
+
+
+@patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
+def test_chat_v2_text_snake_case_usage(mock_client_class, test_cohere_user):
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = iter(
+        [
+            MagicMock(
+                data=json.dumps(
+                    {
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "Hi"}],
+                        }
+                    }
+                ).encode("utf-8")
+            ),
+            MagicMock(
+                data=json.dumps(
+                    {
+                        "finishReason": "COMPLETE",
+                        "usage": {
+                            "tokens": {
+                                "input_tokens": 4,
+                                "output_tokens": 2,
+                                "reasoning_tokens": 1,
+                            }
+                        },
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": " there"}],
+                        },
+                    }
+                ).encode("utf-8")
+            ),
+        ]
+    )
+
+    test_cohere_user.api_version = "v2"
+    test_cohere_user.on_start()
+    test_cohere_user.sample = lambda: UserChatRequest(
+        model="cohere-command-a",
+        prompt="Hi?",
+        num_prefill_tokens=None,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+        },
+        max_tokens=32,
+    )
+
+    metrics_collector_mock = MagicMock()
+    test_cohere_user.collect_metrics = metrics_collector_mock
+
+    test_cohere_user.chat()
+
+    metrics_collector_mock.assert_called_once()
+    user_response = metrics_collector_mock.call_args[0][0]
+    assert user_response.tokens_received == 2
+    assert user_response.reasoning_tokens == 1
+    assert user_response.num_prefill_tokens == 4
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")

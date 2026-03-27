@@ -2,7 +2,7 @@ from locust import task
 
 import json
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from oci.generative_ai_inference import GenerativeAiInferenceClient
 from oci.generative_ai_inference.models import (
@@ -619,19 +619,43 @@ class OCICohereUser(BaseUser):
 
         tokens_received = 0
         reasoning_tokens = 0
+        usage_prompt_tokens: Optional[int] = None
+        usage_completion_tokens: Optional[int] = None
+        usage_reasoning_tokens: Optional[int] = None
 
         if isinstance(usage_payload, dict):
-            tokens_block = usage_payload.get("tokens", {})
-            if isinstance(tokens_block, dict):
-                tokens_received = tokens_block.get("output_tokens") or 0
-                reasoning_tokens = tokens_block.get("reasoning_tokens") or 0
-                prompt_tokens = tokens_block.get("input_tokens")
+            (
+                usage_prompt_tokens,
+                usage_completion_tokens,
+                usage_reasoning_tokens,
+            ) = self._extract_usage_tokens(usage_payload)
+
+        if usage_completion_tokens is not None:
+            tokens_received = usage_completion_tokens
+
+        if usage_reasoning_tokens is not None:
+            reasoning_tokens = usage_reasoning_tokens
+
+        if usage_prompt_tokens is not None:
+            num_prefill_tokens = usage_prompt_tokens
+
+        if num_prefill_tokens is None:
+            prompt_text = self._gather_prompt_text(request)
+            if prompt_text:
+                num_prefill_tokens = self.environment.sampler.get_token_length(
+                    prompt_text, add_special_tokens=False
+                )
+                logger.warning(
+                    "OCI Cohere V2 response omitted prompt token usage; "
+                    "estimated prefill tokens from textual prompt."
+                )
             else:
-                tokens_received = usage_payload.get("completion_tokens") or 0
-                reasoning_tokens = usage_payload.get("reasoning_tokens") or 0
-                prompt_tokens = usage_payload.get("prompt_tokens")
-            if prompt_tokens is not None:
-                num_prefill_tokens = prompt_tokens
+                num_prefill_tokens = 0
+                logger.warning(
+                    "OCI Cohere V2 response omitted prompt token usage and prompt text "
+                    "could not be inferred (likely vision-only); "
+                    "prefill tokens default to 0."
+                )
 
         if not tokens_received and combined_text:
             tokens_received = self.environment.sampler.get_token_length(
@@ -656,6 +680,84 @@ class OCICohereUser(BaseUser):
             start_time=start_time,
             end_time=end_time,
         )
+
+    def _extract_usage_tokens(
+        self, usage_payload: Dict[str, Any]
+    ) -> Tuple[Optional[int], Optional[int], Optional[int]]:
+        prompt_tokens: Optional[int] = None
+        completion_tokens: Optional[int] = None
+        reasoning_tokens: Optional[int] = None
+
+        if not isinstance(usage_payload, dict):
+            return prompt_tokens, completion_tokens, reasoning_tokens
+
+        tokens_block = usage_payload.get("tokens")
+        if isinstance(tokens_block, dict):
+            prompt_tokens = (
+                tokens_block.get("input_tokens")
+                or tokens_block.get("prompt_tokens")
+                or tokens_block.get("inputTokens")
+                or tokens_block.get("promptTokens")
+            )
+            completion_tokens = (
+                tokens_block.get("output_tokens")
+                or tokens_block.get("completion_tokens")
+                or tokens_block.get("outputTokens")
+                or tokens_block.get("completionTokens")
+            )
+            reasoning_tokens = tokens_block.get("reasoning_tokens") or tokens_block.get(
+                "reasoningTokens"
+            )
+
+        prompt_tokens = (
+            prompt_tokens
+            if prompt_tokens is not None
+            else usage_payload.get("promptTokens") or usage_payload.get("prompt_tokens")
+        )
+
+        completion_tokens = (
+            completion_tokens
+            if completion_tokens is not None
+            else usage_payload.get("completionTokens")
+            or usage_payload.get("completion_tokens")
+        )
+
+        reasoning_tokens = (
+            reasoning_tokens
+            if reasoning_tokens is not None
+            else usage_payload.get("reasoningTokens")
+            or usage_payload.get("reasoning_tokens")
+        )
+
+        if reasoning_tokens is None:
+            completion_details = usage_payload.get(
+                "completionTokensDetails"
+            ) or usage_payload.get("completion_tokens_details")
+            if isinstance(completion_details, dict):
+                reasoning_tokens = completion_details.get(
+                    "reasoningTokens"
+                ) or completion_details.get("reasoning_tokens")
+
+        return prompt_tokens, completion_tokens, reasoning_tokens
+
+    def _gather_prompt_text(self, request: ChatDetails) -> str:
+        chat_request = getattr(request, "chat_request", None)
+        if not chat_request:
+            return ""
+        messages = getattr(chat_request, "messages", None)
+        if not messages:
+            return ""
+
+        text_segments: List[str] = []
+        for message in messages:
+            content_list = getattr(message, "content", None)
+            if not content_list:
+                continue
+            for item in content_list:
+                text_value = getattr(item, "text", None)
+                if text_value:
+                    text_segments.append(str(text_value))
+        return "".join(text_segments)
 
     def _extract_text_from_message(self, message: Dict[str, Any]) -> tuple[str, str]:
         if not isinstance(message, dict):
