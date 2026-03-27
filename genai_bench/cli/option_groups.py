@@ -43,6 +43,7 @@ def api_options(func):
         type=click.Choice(["v1", "v2"], case_sensitive=False),
         default="v1",
         show_default=True,
+        is_eager=True,
         help="Select the Cohere API version when using the oci-cohere backend. "
         "Use v2 for Command-A reasoning/vision models. Defaults to v1.",
     )(func)
