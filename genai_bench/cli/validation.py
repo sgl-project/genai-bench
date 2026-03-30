@@ -336,16 +336,22 @@ def validate_task(ctx, param, value):
 
     # Guard against unsupported OCI Cohere V2 combinations
     oci_cohere_version = ctx.params.get("oci_cohere_api_version", "v1")
-    if (
-        api_backend == OCICohereUser.BACKEND_NAME
-        and str(oci_cohere_version).lower() == "v2"
-        and task not in {"text-to-text", "image-text-to-text"}
-    ):
-        raise click.BadParameter(
-            "OCI Cohere API version v2 currently supports chat benchmarks only. "
-            "Use task 'text-to-text' or 'image-text-to-text', or set "
-            "--oci-cohere-api-version v1."
-        )
+    if api_backend == OCICohereUser.BACKEND_NAME:
+        normalized_version = str(oci_cohere_version).lower()
+        if normalized_version == "v2" and task not in {
+            "text-to-text",
+            "image-text-to-text",
+        }:
+            raise click.BadParameter(
+                "OCI Cohere API version v2 currently supports chat benchmarks only. "
+                "Use task 'text-to-text' or 'image-text-to-text', or set "
+                "--oci-cohere-api-version v1."
+            )
+        if normalized_version != "v2" and task == "image-text-to-text":
+            raise click.BadParameter(
+                "Command-A vision benchmarks require --oci-cohere-api-version v2. "
+                "Re-run with '--oci-cohere-api-version v2'."
+            )
 
     # Store the user task function in the context
     ctx.obj["user_task"] = getattr(user_class, user_class.supported_tasks[task])
