@@ -1354,7 +1354,9 @@ def test_speech(mock_post, mock_openai_user):
 
     response_mock = MagicMock()
     response_mock.status_code = 200
-    response_mock.content = b"\x00" * 24000  # fake audio bytes
+    response_mock.iter_content = MagicMock(
+        return_value=[b"\x00" * 1024, b"\x00" * 1024]
+    )
     mock_post.return_value = response_mock
 
     mock_openai_user.speech()
@@ -1366,7 +1368,7 @@ def test_speech(mock_post, mock_openai_user):
             "input": "Hello world, this is a test.",
             "voice": "alloy",
         },
-        stream=False,
+        stream=True,
         headers={
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
@@ -1391,7 +1393,7 @@ def test_speech_with_additional_params(mock_post, mock_openai_user):
 
     response_mock = MagicMock()
     response_mock.status_code = 200
-    response_mock.content = b"\x00" * 12000
+    response_mock.iter_content = MagicMock(return_value=[b"\x00" * 1024])
     mock_post.return_value = response_mock
 
     mock_openai_user.speech()
@@ -1415,14 +1417,15 @@ def test_speech_response_parsing(mock_post, mock_openai_user):
         voice="alloy",
     )
 
-    audio_content = b"\x00" * 48000
     response_mock = MagicMock()
     response_mock.status_code = 200
-    response_mock.content = audio_content
+    response_mock.iter_content = MagicMock(
+        return_value=[b"\x00" * 1024, b"\x00" * 1024, b"\x00" * 1024]
+    )
     mock_post.return_value = response_mock
 
     user_response = mock_openai_user.send_request(
-        stream=False,
+        stream=True,
         endpoint="/v1/audio/speech",
         payload={"model": "tts-1", "input": "Hello", "voice": "alloy"},
         parse_strategy=mock_openai_user.parse_speech_response,
@@ -1431,7 +1434,7 @@ def test_speech_response_parsing(mock_post, mock_openai_user):
     assert isinstance(user_response, UserTTSResponse)
     assert user_response.status_code == 200
     assert user_response.num_prefill_tokens == 0
-    assert user_response.time_at_first_token == user_response.end_time
+    assert user_response.time_at_first_token <= user_response.end_time
 
 
 def test_speech_with_wrong_request_type(mock_openai_user):

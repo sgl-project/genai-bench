@@ -158,17 +158,28 @@ class OCIOpenAIUser(OpenAIUser):
 
         start_time = time.monotonic()
         try:
-            response = self.openai_client.audio.speech.create(
+            with self.openai_client.audio.speech.with_streaming_response.create(
                 model=user_request.model,
                 voice=user_request.voice,
                 input=user_request.input_text,
                 extra_headers={"CompartmentId": compartment_id},
                 **filtered_params,
-            )
+            ) as response:
+                time_at_first_token = None
+                total_bytes = 0
+                for chunk in response.iter_bytes(1024):
+                    if time_at_first_token is None:
+                        time_at_first_token = time.monotonic()
+                    total_bytes += len(chunk)
+                end_time = time.monotonic()
 
-            end_time = time.monotonic()
+            if time_at_first_token is None:
+                logger.warning("TTS response returned 200 but empty audio body")
+                time_at_first_token = end_time
+
             logger.debug(
-                f"TTS response: audio_bytes={len(response.content)}, "
+                f"TTS response: audio_bytes={total_bytes}, "
+                f"ttft={time_at_first_token - start_time:.3f}s, "
                 f"e2e_latency={end_time - start_time:.3f}s"
             )
 
@@ -176,7 +187,7 @@ class OCIOpenAIUser(OpenAIUser):
                 status_code=200,
                 start_time=start_time,
                 end_time=end_time,
-                time_at_first_token=end_time,
+                time_at_first_token=time_at_first_token,
                 num_prefill_tokens=0,
             )
 
