@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
@@ -165,6 +166,69 @@ def test_chat_without_usage(cohere_user, mock_response):
             assert response.tokens_received == 22
             assert response.num_prefill_tokens == 5
             assert response.time_at_first_token is not None
+
+
+def test_chat_no_usage_info_warning_once(cohere_user):
+    genai_logging._warning_once_keys.clear()
+
+    # tokenizer-based estimation for tokens_received
+    cohere_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=False: len(text)
+    )
+
+    chat_events = [
+        'event: message-start\ndata: {"type":"message-start","delta":{"message":{"role":"assistant","content":[]}}}\n\n',  # noqa: E501
+        'event: content-start\ndata: {"type":"content-start","index":0,"delta":{"message":{"content":{"type":"text","text":""}}}}\n\n',  # noqa: E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"Hello"}}}}\n\n',  # noqa: E501
+        'event: content-end\ndata: {"type":"content-end","index":0}\n\n',
+        # No message-end event -> usage remains None and triggers warning_once
+        "data: [DONE]\n\n",
+    ]
+
+    mock_response = MagicMock()
+    mock_response.iter_lines.return_value = [line.encode() for line in chat_events]
+
+    with patch("genai_bench.user.cohere_user.logger.warning") as mock_warning:
+        resp_1 = cohere_user.parse_chat_response(mock_response, 0.0, 5, 1.0)
+        resp_2 = cohere_user.parse_chat_response(mock_response, 0.0, 5, 1.0)
+
+    assert mock_warning.call_count == 1
+    assert resp_1.tokens_received == len(resp_1.generated_text)
+    assert resp_2.tokens_received == len(resp_2.generated_text)
+    assert resp_1.reasoning_tokens is None
+
+
+def test_chat_reasoning_tokens_estimated_warning_once(cohere_user):
+    genai_logging._warning_once_keys.clear()
+
+    reasoning_text = "Thinking..."
+    cohere_user.environment.sampler.get_token_length = (
+        lambda text, add_special_tokens=False: len(text)
+    )
+
+    chat_events = [
+        'event: message-start\ndata: {"type":"message-start","delta":{"message":{"role":"assistant","content":[]}}}\n\n',  # noqa: E501
+        'event: content-start\ndata: {"type":"content-start","index":0,"delta":{"message":{"content":{"type":"text","text":""}}}}\n\n',  # noqa: E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"thinking":"Thinking..."}}}}\n\n',  # noqa: E501
+        'event: content-delta\ndata: {"type":"content-delta","index":0,"delta":{"message":{"content":{"text":"Hi"}}}}\n\n',  # noqa: E501
+        'event: content-end\ndata: {"type":"content-end","index":0}\n\n',
+        'event: message-end\ndata: {"type":"message-end","delta":{"finish_reason":"COMPLETE","usage":{"tokens":{"input_tokens":68,"output_tokens":22}}}}\n\n',  # noqa: E501
+        "data: [DONE]\n\n",
+    ]
+
+    mock_response = MagicMock()
+    mock_response.iter_lines.return_value = [line.encode() for line in chat_events]
+
+    with patch("genai_bench.user.cohere_user.logger.warning") as mock_warning:
+        resp_1 = cohere_user.parse_chat_response(mock_response, 0.0, 5, 1.0)
+        resp_2 = cohere_user.parse_chat_response(mock_response, 0.0, 5, 1.0)
+
+    # tokens_received comes from usage, so only reasoning_tokens_estimated should warn
+    assert mock_warning.call_count == 1
+    assert resp_1.tokens_received == 22
+    assert resp_2.tokens_received == 22
+    assert resp_1.reasoning_tokens == len(reasoning_text)
+    assert resp_2.reasoning_tokens == len(reasoning_text)
 
 
 def test_embeddings_text_success(cohere_user, mock_response):

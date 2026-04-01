@@ -8,7 +8,7 @@ import requests
 from requests import Response
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
-from genai_bench.logging import init_logger
+from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
@@ -273,9 +273,11 @@ class CohereUser(BaseUser):
         end_time = time.monotonic()
 
         if not tokens_received and usage is None:
-            logger.warning(
+            warning_once(
+                logger,
+                "tokens_received_estimated",
                 "🚨🚨🚨 No usage info returned from the model server. "
-                "Estimating tokens_received based on the model tokenizer."
+                "Estimating tokens_received based on the model tokenizer.",
             )
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False
@@ -286,9 +288,11 @@ class CohereUser(BaseUser):
             reasoning_tokens = self.environment.sampler.get_token_length(
                 reasoning_text, add_special_tokens=False
             )
-            logger.warning(
+            warning_once(
+                logger,
+                "reasoning_tokens_estimated",
                 "Server did not report reasoning_tokens. Estimated "
-                "reasoning_tokens based on the model tokenizer."
+                "reasoning_tokens based on the model tokenizer.",
             )
 
         return UserChatResponse(

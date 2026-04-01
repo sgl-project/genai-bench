@@ -11,12 +11,14 @@ import requests
 from requests import Response
 
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
-from genai_bench.logging import init_logger
+from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
+    UserImageGenerationResponse,
     UserReRankRequest,
     UserResponse,
 )
@@ -32,6 +34,7 @@ class OpenAIUser(BaseUser):
         "image-text-to-text": "chat",
         "text-to-embeddings": "embeddings",
         "text-to-rerank": "rerank",
+        "text-to-image": "images_generations",
     }
 
     # Maps backend name to its reasoning content field in SSE delta.
@@ -196,6 +199,39 @@ class OpenAIUser(BaseUser):
             payload,
             self.parse_rerank_response,
             user_request.num_prefill_tokens,
+        )
+
+    @task
+    def images_generations(self):
+        endpoint = "/v1/images/generations"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserImageGenerationRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserImageGenerationRequest for OpenAIUser."
+                f"images_generations, got {type(user_request)}"
+            )
+
+        # Filter keys already set explicitly in the payload
+        filtered_params = {
+            k: v
+            for k, v in user_request.additional_request_params.items()
+            if k not in ("model", "prompt", "n", "size", "quality")
+        }
+        payload = {
+            "model": user_request.model,
+            "prompt": user_request.prompt,
+            "n": user_request.num_images,
+            **filtered_params,
+        }
+        if user_request.size is not None:
+            payload["size"] = user_request.size
+        if user_request.quality is not None:
+            payload["quality"] = user_request.quality
+        self.send_request(
+            False, endpoint, payload, self.parse_images_generations_response
         )
 
     def send_request(
@@ -430,10 +466,12 @@ class OpenAIUser(BaseUser):
             tokens_received = self.environment.sampler.get_token_length(
                 generated_text, add_special_tokens=False
             )
-            logger.warning(
+            warning_once(
+                logger,
+                "tokens_received_estimated",
                 "🚨🚨🚨 There is no usage info returned from the model "
                 "server. Estimated tokens_received based on the model "
-                "tokenizer."
+                "tokenizer.",
             )
         # If reasoning_tokens is not provided by the server,
         # fall back to estimating it from reasoning_content.
@@ -441,9 +479,11 @@ class OpenAIUser(BaseUser):
             reasoning_tokens = self.environment.sampler.get_token_length(
                 reasoning_text, add_special_tokens=False
             )
-            logger.warning(
+            warning_once(
+                logger,
+                "reasoning_tokens_estimated",
                 "🚨🚨🚨 Server did not report reasoning_tokens. Estimated "
-                "reasoning_tokens based on the model tokenizer."
+                "reasoning_tokens based on the model tokenizer.",
             )
         return UserChatResponse(
             status_code=200,
@@ -533,4 +573,40 @@ class OpenAIUser(BaseUser):
             end_time=end_time,
             time_at_first_token=end_time,
             num_prefill_tokens=num_prefill_tokens or 0,
+        )
+
+    @staticmethod
+    def parse_images_generations_response(
+        response: Response, start_time: float, _: Optional[int], end_time: float
+    ) -> UserImageGenerationResponse:
+        """
+        Parses an image generation response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            _ (Optional[int]): Placeholder for an unused var, to keep
+                parse_*_response have the same interface.
+            end_time(float): The time when the request was finished.
+
+        Returns:
+            UserImageGenerationResponse: A response object with generated images.
+        """
+
+        data = response.json()
+        image_data = data.get("data", [])
+        generated_images = [
+            img.get("url") or img.get("b64_json", "") for img in image_data
+        ]
+        revised_prompt = image_data[0].get("revised_prompt") if image_data else None
+
+        return UserImageGenerationResponse(
+            status_code=response.status_code,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            generated_images=generated_images,
+            revised_prompt=revised_prompt,
+            num_prefill_tokens=0,
+            images_generated=len(generated_images),
         )

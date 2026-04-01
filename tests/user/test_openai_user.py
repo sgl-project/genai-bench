@@ -4,11 +4,13 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 import requests
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserChatResponse,
     UserEmbeddingRequest,
     UserImageChatRequest,
+    UserImageGenerationRequest,
     UserReRankRequest,
     UserResponse,
 )
@@ -315,6 +317,7 @@ def test_send_request_chat_response(mock_post, mock_openai_user):
 
 @patch("genai_bench.user.openai_user.requests.post")
 def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
+    genai_logging._warning_once_keys.clear()
     mock_openai_user.environment.sampler = MagicMock()
     mock_openai_user.environment.sampler.get_token_length = (
         lambda text, add_special_tokens=True: len(text)
@@ -351,8 +354,19 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
     )
     mock_post.return_value = response_mock
 
+    warning_substring = (
+        "There is no usage info returned from the model server. Estimated "
+        "tokens_received based on the model tokenizer."
+    )
     with caplog.at_level(logging.WARNING):
-        user_response = mock_openai_user.send_request(
+        user_response_1 = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+        user_response_2 = mock_openai_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -360,11 +374,13 @@ def test_chat_no_usage_info(mock_post, mock_openai_user, caplog):
             parse_strategy=mock_openai_user.parse_chat_response,
         )
 
-    assert (
-        "There is no usage info returned from the model server. Estimated "
-        "tokens_received based on the model tokenizer." in caplog.text
+    assert user_response_1.tokens_received == len(user_response_1.generated_text)
+    assert user_response_2.tokens_received == len(user_response_2.generated_text)
+
+    warning_count = sum(
+        warning_substring in record.getMessage() for record in caplog.records
     )
-    assert user_response.tokens_received == len(user_response.generated_text)
+    assert warning_count == 1
 
 
 @patch("genai_bench.user.openai_user.requests.post")
@@ -811,7 +827,8 @@ def test_chat_with_reasoning_content_and_token_estimation(
 def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
     mock_post, mock_openai_user, caplog, backend, reasoning_key
 ):
-    """Backfill when usage has reasoning_tokens=0 and stream has reasoning content."""
+    """Backfill when usage has reasoning_tokens=0 and stream has reasoning_content."""  # noqa: E501
+    genai_logging._warning_once_keys.clear()
     mock_openai_user.on_start()
     mock_openai_user.api_backend = backend
     mock_openai_user.sample = lambda: UserChatRequest(
@@ -842,8 +859,19 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
     )
     mock_post.return_value = response_mock
 
+    warning_substring = (
+        "Server did not report reasoning_tokens. Estimated reasoning_tokens "
+        "based on the model tokenizer"
+    )
     with caplog.at_level(logging.WARNING):
-        response = mock_openai_user.send_request(
+        response_1 = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+        response_2 = mock_openai_user.send_request(
             stream=True,
             endpoint="/v1/test",
             payload={"key": "value"},
@@ -851,17 +879,27 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
             parse_strategy=mock_openai_user.parse_chat_response,
         )
 
-    assert response.status_code == 200
-    assert response.generated_text == "Think.Done."
-    assert response.reasoning_tokens == 6
-    assert response.tokens_received == 2
-    mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
-        reasoning_only, add_special_tokens=False
+    assert response_1.status_code == 200
+    assert response_1.generated_text == "Think.Done."
+    assert response_1.reasoning_tokens == 6
+    assert response_1.tokens_received == 2
+
+    assert response_2.status_code == 200
+    assert response_2.generated_text == "Think.Done."
+    assert response_2.reasoning_tokens == 6
+    assert response_2.tokens_received == 2
+
+    assert mock_openai_user.environment.sampler.get_token_length.call_count == 2
+    for (
+        call_args
+    ) in mock_openai_user.environment.sampler.get_token_length.call_args_list:
+        assert call_args.args == (reasoning_only,)
+        assert call_args.kwargs == {"add_special_tokens": False}
+
+    warning_count = sum(
+        warning_substring in record.getMessage() for record in caplog.records
     )
-    assert (
-        "Server did not report reasoning_tokens. Estimated reasoning_tokens "
-        "based on the model tokenizer" in caplog.text
-    )
+    assert warning_count == 1
 
 
 @pytest.mark.parametrize(
@@ -1241,6 +1279,65 @@ def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
     call_args = mock_post.call_args
     payload = call_args.kwargs["json"]
     assert "ignore_eos" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_images_generations_rest_api(mock_post, mock_openai_user):
+    """Test image generation using REST API."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserImageGenerationRequest(
+        model="dall-e-3",
+        prompt="A test image",
+        size="1024x1024",
+        quality="standard",
+        num_images=1,
+        additional_request_params={},
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.json.return_value = {
+        "created": 1589478378,
+        "data": [{"url": "https://example.com/image.png"}],
+    }
+    mock_post.return_value = response_mock
+
+    # This method uses send_request and doesn't return a value
+    # Just verify it doesn't raise an exception
+    mock_openai_user.images_generations()
+
+    # Verify REST API was called
+    mock_post.assert_called_once_with(
+        url="http://example.com/v1/images/generations",
+        json={
+            "model": "dall-e-3",
+            "prompt": "A test image",
+            "n": 1,
+            "size": "1024x1024",
+            "quality": "standard",
+        },
+        stream=False,
+        headers={
+            "Authorization": "Bearer fake_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_images_generations_wrong_request_type(mock_openai_user):
+    """Test images_generations with wrong request type raises AttributeError."""
+    mock_openai_user.on_start()
+    # Return wrong request type
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+
+    with pytest.raises(AttributeError, match="UserImageGenerationRequest"):
+        mock_openai_user.images_generations()
 
 
 @patch("genai_bench.user.openai_user.requests.post")

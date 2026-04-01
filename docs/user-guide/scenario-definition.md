@@ -59,6 +59,9 @@ Behavior by task in dataset mode:
 - text-to-rerank
       - Samples a query and `batch_size` documents from your dataset
       - No token shaping is applied
+- text-to-image
+      - Picks a single line from your dataset as the image generation prompt
+      - Size and quality use server defaults (not sent in request)
 - image-text-to-text and image-to-embeddings
       - Samples images from your dataset (defaults to 1 image per request in dataset mode)
 

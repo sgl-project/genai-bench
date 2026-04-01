@@ -134,6 +134,76 @@ genai-bench benchmark --api-backend oci-cohere \
             --num-workers 4
 ```
 
+### Start a text-to-image benchmark
+
+Below is a sample command to trigger an image generation benchmark task. This works with any model serving the OpenAI-compatible `/v1/images/generations` endpoint, including OpenAI models (`dall-e-2`, `dall-e-3`, `gpt-image-1`) and self-hosted models via vLLM-Omni (e.g., `Qwen/Qwen-Image`).
+
+* **Prompt Datasets**: A simple text file with one prompt per line. Each line should describe the image to generate.
+
+**OpenAI DALL-E 3:**
+
+```shell
+genai-bench benchmark --api-backend openai \
+            --api-base "https://api.openai.com" \
+            --api-key "your-openai-api-key" \
+            --api-model-name "dall-e-3" \
+            --model-tokenizer "gpt2" \
+            --task text-to-image \
+            --traffic-scenario "I(1024,1024)" \
+            --num-concurrency 1 \
+            --max-time-per-run 60 \
+            --max-requests-per-run 10 \
+            --dataset-path /path/to/image_prompts.txt
+```
+
+**OpenAI GPT Image 1:**
+
+```shell
+genai-bench benchmark --api-backend openai \
+            --api-base "https://api.openai.com" \
+            --api-key "your-openai-api-key" \
+            --api-model-name "gpt-image-1" \
+            --model-tokenizer "gpt2" \
+            --task text-to-image \
+            --traffic-scenario "I(1024,1024)" \
+            --num-concurrency 1 \
+            --max-time-per-run 120 \
+            --max-requests-per-run 10 \
+            --dataset-path /path/to/image_prompts.txt
+```
+
+**vLLM-Omni (e.g., Qwen/Qwen-Image):**
+
+```shell
+# Start vLLM-Omni server:
+# vllm serve Qwen/Qwen-Image --omni --port 8091
+
+genai-bench benchmark --api-backend openai \
+            --api-base "http://localhost:8091" \
+            --api-key "dummy" \
+            --api-model-name "Qwen/Qwen-Image" \
+            --model-tokenizer "gpt2" \
+            --task text-to-image \
+            --traffic-scenario "I(1024,1024)" \
+            --num-concurrency 1 \
+            --max-time-per-run 120 \
+            --max-requests-per-run 10 \
+            --dataset-path /path/to/image_prompts.txt
+```
+
+Model-specific parameters like `quality`, `response_format`, `output_format`, or `num_inference_steps` can be passed via `--additional-request-params`:
+
+```shell
+# For DALL-E 3: set quality to "hd" and response format
+--additional-request-params '{"quality": "hd", "response_format": "url"}'
+
+# For GPT Image 1: set quality and output format
+--additional-request-params '{"quality": "high", "output_format": "png"}'
+
+# For vLLM-Omni diffusion models: set inference steps and negative prompt
+--additional-request-params '{"num_inference_steps": 50, "negative_prompt": "blurry, low quality"}'
+```
+
 ## Specify a custom benchmark load
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.
@@ -234,7 +304,7 @@ To prevent this, use the `--spawn-rate` option to control how quickly users are 
 
 ## Selecting datasets
 
-By default, genai-bench samples tokens to benchmark from [sonnet.txt](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/data/sonnet.txt) for `text-to-text` or `text-to-embeddings` tasks. Image tasks do not have a default dataset. To select a dataset to benchmark from, genai-bench supports flexible dataset configurations through two approaches:
+By default, genai-bench samples tokens to benchmark from [sonnet.txt](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/data/sonnet.txt) for `text-to-text` or `text-to-embeddings` tasks. For `text-to-image` tasks, a built-in [image_prompts.txt](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/data/image_prompts.txt) is included with 50 prompts curated from [PartiPrompts](https://huggingface.co/datasets/nateraw/parti-prompts), covering 12 categories and 10 challenge levels. To select a dataset to benchmark from, genai-bench supports flexible dataset configurations through two approaches:
 
 ### Simple CLI Usage (for basic datasets)
 

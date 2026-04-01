@@ -51,6 +51,7 @@ Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/get
 
 1. **Run a benchmark** against your model:
    ```bash
+   # Text generation (chat completions)
    genai-bench benchmark --api-backend "your-backend" \
      --api-base "http://localhost:8080" \
      --api-key "your-api-key" \
@@ -58,6 +59,18 @@ Alternatively, check [Installation Guide](https://docs.sglang.ai/genai-bench/get
      --task text-to-text \
      --max-time-per-run 5 \
      --max-requests-per-run 100
+
+   # Image generation (OpenAI-compatible /v1/images/generations)
+   genai-bench benchmark --api-backend openai \
+     --api-base "http://localhost:8080" \
+     --api-key "your-api-key" \
+     --api-model-name "your-model" \
+     --model-tokenizer "gpt2" \
+     --task text-to-image \
+     --traffic-scenario "I(1024,1024)" \
+     --max-time-per-run 60 \
+     --max-requests-per-run 10 \
+     --dataset-path /path/to/image_prompts.txt
    ```
 
 2. **Generate Excel reports** from your results:

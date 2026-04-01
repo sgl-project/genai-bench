@@ -15,6 +15,7 @@ Here are the currently supported tasks:
 | Task Name             | Description                                                                                 |
 |-----------------------|---------------------------------------------------------------------------------------------|
 | `text-to-text`        | Benchmarks generating text output from text input, such as chat or QA tasks.                |
+| `text-to-image`       | Benchmarks generating images from text prompts.                                            |
 | `text-to-embeddings`  | Benchmarks generating embeddings from text input, often for semantic search.                |
 | `image-text-to-text`  | Benchmarks generating text from images and text prompts, such as visual question answering. |
 | `image-to-embeddings` | Benchmarks generating embeddings from images, often for image similarity.                   |
@@ -33,6 +34,12 @@ When you specify a task, the appropriate sampler (`TextSampler` or `ImageSampler
 
     ```bash
     genai-bench benchmark --task text-to-text ...
+    ```
+
+* For a **text-to-image** task (e.g., generating images from text prompts):
+
+    ```bash
+    genai-bench benchmark --task text-to-image ...
     ```
 
 * For an **image-text-to-text** task (e.g., generating a response for an image and text interleave message):

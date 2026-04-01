@@ -2,15 +2,21 @@ import random
 from typing import Any, Dict, List, Optional
 
 from genai_bench.data.config import DatasetConfig
-from genai_bench.logging import init_logger
+from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
+    UserImageGenerationRequest,
     UserRequest,
     UserReRankRequest,
 )
 from genai_bench.sampling.base import Sampler
-from genai_bench.scenarios.base import EmbeddingDistribution, Scenario, TextDistribution
+from genai_bench.scenarios.base import (
+    EmbeddingDistribution,
+    MultiModality,
+    Scenario,
+    TextDistribution,
+)
 
 logger = init_logger(__name__)
 
@@ -23,7 +29,12 @@ class TextSampler(Sampler):
     """
 
     input_modality = "text"
-    supported_tasks = {"text-to-text", "text-to-embeddings", "text-to-rerank"}
+    supported_tasks = {
+        "text-to-text",
+        "text-to-embeddings",
+        "text-to-rerank",
+        "text-to-image",
+    }
 
     def __init__(
         self,
@@ -66,6 +77,8 @@ class TextSampler(Sampler):
             return self._sample_embedding_request(scenario)
         elif self.output_modality == "rerank":
             return self._sample_rerank_request(scenario)
+        elif self.output_modality == "image":
+            return self._sample_image_generation_request(scenario)
         else:
             raise ValueError(f"Unsupported output modality: {self.output_modality}")
 
@@ -166,6 +179,43 @@ class TextSampler(Sampler):
             additional_request_params=self.additional_request_params,
         )
 
+    def _sample_image_generation_request(
+        self, scenario: Optional[Scenario]
+    ) -> UserImageGenerationRequest:
+        """
+        Samples an image generation request based on the scenario.
+
+        Args:
+            scenario (Scenario, optional): Reuses I() scenario format:
+                I(width,height) or I(width,height,num_images).
+                e.g., I(1024,1024), I(1024,1024,2).
+
+        Returns:
+            UserImageGenerationRequest: A request for image generation.
+        """
+        size = None
+        num_images = 1
+
+        if scenario is not None and not self._is_dataset_mode(scenario):
+            self._validate_scenario(scenario)
+            # ImageModality.sample() -> ((w, h), num_input_images, ...)
+            # For text-to-image, num_input_images maps to API "n" param.
+            sample_result = scenario.sample()
+            width, height = sample_result[0]
+            size = f"{width}x{height}"
+            num_images = sample_result[1]
+
+        prompt = self._sample_text(None)
+
+        return UserImageGenerationRequest(
+            model=self.model,
+            prompt=prompt,
+            size=size,
+            quality=self.additional_request_params.get("quality", None),
+            num_images=num_images,
+            additional_request_params=self.additional_request_params,
+        )
+
     def _validate_scenario(self, scenario: Optional[Scenario]) -> None:
         """
         Validates that a scenario is provided and is of the correct type
@@ -190,6 +240,13 @@ class TextSampler(Sampler):
         ):
             raise ValueError(
                 f"Expected EmbeddingDistribution for embeddings output, got "
+                f"{type(scenario.scenario_type)}"
+            )
+        elif self.output_modality == "image" and not isinstance(
+            scenario.scenario_type, MultiModality
+        ):
+            raise ValueError(
+                f"Expected MultiModality (I) for image output, got "
                 f"{type(scenario.scenario_type)}"
             )
 
@@ -341,11 +398,13 @@ class TextSampler(Sampler):
         """
         discrepancy = abs(num_input_tokens - num_prefill_tokens)
         if discrepancy > threshold * num_input_tokens:
-            logger.warning(
+            warning_once(
+                logger,
+                "sampling_discrepancy_detected",
                 f"🚨 Sampling discrepancy detected: "
                 f"num_input_tokens={num_input_tokens}, "
                 f"num_prefill_tokens={num_prefill_tokens}, "
-                f"discrepancy={discrepancy}"
+                f"discrepancy={discrepancy}",
             )
 
     def _get_prefill_token_count(self, prompt: str) -> int:

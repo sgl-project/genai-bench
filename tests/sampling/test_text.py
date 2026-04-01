@@ -1,13 +1,16 @@
 import unittest
 from unittest.mock import MagicMock
 
+import genai_bench.logging as genai_logging
 from genai_bench.protocol import (
     UserChatRequest,
     UserEmbeddingRequest,
+    UserImageGenerationRequest,
     UserReRankRequest,
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
+from genai_bench.scenarios.multimodal import ImageModality
 from genai_bench.scenarios.text import DeterministicDistribution, ReRankScenario
 
 
@@ -36,11 +39,17 @@ class TestTextSampler(unittest.TestCase):
 
     def test_check_discrepancy(self):
         """Test that _check_discrepancy logs warnings for large discrepancies."""
+        genai_logging._warning_once_keys.clear()
         with self.assertLogs("genai_bench.sampling.text", level="WARNING") as log:
             # Test case with large discrepancy that should trigger warning
             # discrepancy = |100 - 50| = 50, which is > 10% of 100 and > 10 tokens
+
+            # Call twice to check that warning_once suppresses duplicate warnings
+            self.sampler._check_discrepancy(100, 50, threshold=0.1)
             self.sampler._check_discrepancy(100, 50, threshold=0.1)
 
+            # warning_once should suppress the second identical warning
+            self.assertEqual(len(log.output), 1)
             self.assertIn("Sampling discrepancy detected", log.output[0])
             self.assertIn("num_input_tokens=100", log.output[0])
             self.assertIn("num_prefill_tokens=50", log.output[0])
@@ -48,6 +57,7 @@ class TestTextSampler(unittest.TestCase):
 
     def test_check_discrepancy_no_warning(self):
         """Test that _check_discrepancy doesn't log for small discrepancies."""
+        genai_logging._warning_once_keys.clear()
         # Test case with small discrepancy that should NOT trigger warning
         # discrepancy = |100 - 95| = 5, which is < 10% of 100
         # We'll capture logs and verify none are produced
@@ -334,3 +344,55 @@ class TestTextSampler(unittest.TestCase):
             request2.prompt,
             "Prompts should be different due to random hash separators",
         )
+
+    def test_sample_image_generation_request(self):
+        """Test image generation request sampling."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+        scenario = ImageModality(
+            num_input_dimension_width=512,
+            num_input_dimension_height=512,
+            num_input_images=1,
+        )
+
+        request = image_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertEqual(request.model, "mock_model")
+        self.assertEqual(request.size, "512x512")
+        self.assertIsInstance(request.prompt, str)
+        self.assertEqual(request.num_images, 1)
+
+    def test_sample_image_generation_request_default_size(self):
+        """Test image generation with default size when no scenario."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+
+        request = image_sampler.sample(None)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertIsNone(request.size)  # Default size
+
+    def test_sample_image_generation_request_with_dataset(self):
+        """Test image generation request with dataset mode."""
+        image_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="image",
+            data=self.test_data,
+        )
+        scenario = DatasetScenario()
+
+        request = image_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserImageGenerationRequest)
+        self.assertIsNone(request.size)  # Default when dataset mode
+        self.assertIn(request.prompt, self.test_data)

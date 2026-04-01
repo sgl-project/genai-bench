@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+import genai_bench.logging as genai_logging
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.protocol import (
     UserChatRequest,
@@ -837,6 +838,7 @@ class TestAzureOpenAIUser:
 
     def test_parse_streaming_response_no_tokens_received(self, azure_user):
         """Test parsing streaming response with no token count."""
+        genai_logging._warning_once_keys.clear()
         mock_response = MagicMock()
         mock_response.iter_lines.return_value = [
             b'data: {"choices":[{"delta":{"content":"Hello world"}}]}',
@@ -844,14 +846,17 @@ class TestAzureOpenAIUser:
         ]
 
         with patch("genai_bench.user.azure_openai_user.logger") as mock_logger:
-            result = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+            result_1 = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
+            result_2 = azure_user.parse_chat_response(mock_response, 0.0, 10, 1.0)
 
-            # Check warning was logged about missing usage info
-            mock_logger.warning.assert_called()
+            # warning_once should suppress the second identical warning
+            assert mock_logger.warning.call_count == 1
             assert "no usage info returned" in mock_logger.warning.call_args[0][0]
 
-        assert result.generated_text == "Hello world"
-        assert result.tokens_received == 50  # From mock sampler
+        assert result_1.generated_text == "Hello world"
+        assert result_1.tokens_received == 50  # From mock sampler
+        assert result_2.generated_text == "Hello world"
+        assert result_2.tokens_received == 50  # From mock sampler
 
     @patch("requests.post")
     def test_embeddings_connection_error(self, mock_post, azure_user):
