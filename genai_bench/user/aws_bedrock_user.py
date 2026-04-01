@@ -14,7 +14,7 @@ from genai_bench.protocol import (
     UserImageChatRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -76,6 +76,7 @@ class AWSBedrockUser(BaseUser):
         logger.info(f"Initialized AWS Bedrock client in region {region}")
 
     @task
+    @rate_limited
     def chat(self):
         """Perform a chat request to AWS Bedrock."""
         # Get request using sample method
@@ -174,6 +175,7 @@ class AWSBedrockUser(BaseUser):
             self.collect_metrics(user_response, "/bedrock/chat")
 
     @task
+    @rate_limited
     def embeddings(self):
         """Perform an embeddings request to AWS Bedrock."""
         # Get request using sample method

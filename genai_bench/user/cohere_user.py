@@ -16,7 +16,7 @@ from genai_bench.protocol import (
     UserImageEmbeddingRequest,
     UserResponse,
 )
-from genai_bench.user.base_user import BaseUser
+from genai_bench.user.base_user import BaseUser, rate_limited
 
 logger = init_logger(__name__)
 
@@ -49,6 +49,7 @@ class CohereUser(BaseUser):
         super().on_start()
 
     @task
+    @rate_limited
     def chat(self):
         """Handles the chat task by sending a streaming request to Cohere's chat API."""
         endpoint = "/v2/chat"
@@ -81,6 +82,7 @@ class CohereUser(BaseUser):
         )
 
     @task
+    @rate_limited
     def embeddings(self):
         """Handles the embeddings task by sending a request to Cohere's embed API."""
         endpoint = "/v2/embed"

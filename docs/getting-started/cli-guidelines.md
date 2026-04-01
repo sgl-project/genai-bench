@@ -49,7 +49,9 @@ genai-bench benchmark --api-backend sglang \
 - `--max-requests-per-run` - Maximum requests to send each run **(required)**
 - `--max-time-per-run` - Maximum duration for each run in minutes **(required)**
 - `--model-tokenizer` - Path to the model tokenizer **(required)**
-- `--num-concurrency` - Number of concurrent requests to send (multiple values supported in different runs)
+- `--num-concurrency` - Number of concurrent requests to send (multiple values supported in different runs). Mutually exclusive with `--request-rate`.
+- `--request-rate` - Target request rates (requests/second) to test. Uses token bucket rate limiting for precise rate control. Mutually exclusive with `--num-concurrency`. Multiple values supported.
+- `--max-concurrency` - Maximum concurrency for request rate runs. Only used when `--request-rate` is specified. Defaults to 5000.
 - `--batch-size` - Batch sizes for embeddings/rerank tasks
 - `--traffic-scenario` - Define input/output token distributions, more info in [Traffic Scenarios](../user-guide/scenario-definition.md)
 
