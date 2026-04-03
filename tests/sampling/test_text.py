@@ -6,7 +6,7 @@ from genai_bench.protocol import (
     UserEmbeddingRequest,
     UserImageGenerationRequest,
     UserReRankRequest,
-    UserTTSRequest,
+    UserTextToSpeechRequest,
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
@@ -405,7 +405,7 @@ class TestTextSampler(unittest.TestCase):
         scenario = AudioModality(num_input_chars=20)
         request = tts_sampler.sample(scenario)
 
-        self.assertIsInstance(request, UserTTSRequest)
+        self.assertIsInstance(request, UserTextToSpeechRequest)
         self.assertEqual(request.model, "mock_model")
         self.assertEqual(len(request.input_text), 20)
         self.assertEqual(request.voice, "alloy")
@@ -422,7 +422,7 @@ class TestTextSampler(unittest.TestCase):
         scenario = DatasetScenario()
         request = tts_sampler.sample(scenario)
 
-        self.assertIsInstance(request, UserTTSRequest)
+        self.assertIsInstance(request, UserTextToSpeechRequest)
         self.assertEqual(request.model, "mock_model")
         self.assertIn(request.input_text, self.test_data)
         self.assertEqual(request.voice, "alloy")
@@ -440,7 +440,7 @@ class TestTextSampler(unittest.TestCase):
         scenario = DatasetScenario()
         request = tts_sampler.sample(scenario)
 
-        self.assertIsInstance(request, UserTTSRequest)
+        self.assertIsInstance(request, UserTextToSpeechRequest)
         self.assertEqual(request.voice, "nova")
 
     def test_generate_text_by_chars(self):

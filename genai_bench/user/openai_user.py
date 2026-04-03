@@ -21,8 +21,8 @@ from genai_bench.protocol import (
     UserImageGenerationResponse,
     UserReRankRequest,
     UserResponse,
-    UserTTSRequest,
-    UserTTSResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
 )
 from genai_bench.user.base_user import BaseUser
 
@@ -236,10 +236,10 @@ class OpenAIUser(BaseUser):
         endpoint = "/v1/audio/speech"
         user_request = self.sample()
 
-        if not isinstance(user_request, UserTTSRequest):
+        if not isinstance(user_request, UserTextToSpeechRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserTTSRequest for OpenAIUser.speech, got "
+                f"UserTextToSpeechRequest for OpenAIUser.speech, got "
                 f"{type(user_request)}"
             )
 
@@ -264,7 +264,7 @@ class OpenAIUser(BaseUser):
         start_time: float,
         _: Optional[int],
         __: float,
-    ) -> UserTTSResponse:
+    ) -> UserTextToSpeechResponse:
         time_at_first_token = None
         total_bytes = 0
         for chunk in response.iter_content(chunk_size=1024):
@@ -283,12 +283,13 @@ class OpenAIUser(BaseUser):
             f"ttft={time_at_first_token - start_time:.3f}s, "
             f"e2e_latency={end_time - start_time:.3f}s"
         )
-        return UserTTSResponse(
+        return UserTextToSpeechResponse(
             status_code=200,
             start_time=start_time,
             end_time=end_time,
             time_at_first_token=time_at_first_token,
             num_prefill_tokens=0,
+            audio_bytes=total_bytes,
         )
 
     def send_request(

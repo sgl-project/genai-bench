@@ -12,8 +12,8 @@ from genai_bench.protocol import (
     UserImageGenerationRequest,
     UserReRankRequest,
     UserResponse,
-    UserTTSRequest,
-    UserTTSResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -1346,7 +1346,7 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
 def test_speech(mock_post, mock_openai_user):
     """Test text-to-speech request."""
     mock_openai_user.on_start()
-    mock_openai_user.sample = lambda: UserTTSRequest(
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
         model="tts-1",
         input_text="Hello world, this is a test.",
         voice="alloy",
@@ -1380,7 +1380,7 @@ def test_speech(mock_post, mock_openai_user):
 def test_speech_with_additional_params(mock_post, mock_openai_user):
     """Test TTS request with additional params like speed and response_format."""
     mock_openai_user.on_start()
-    mock_openai_user.sample = lambda: UserTTSRequest(
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
         model="tts-1-hd",
         input_text="Test input.",
         voice="nova",
@@ -1409,9 +1409,9 @@ def test_speech_with_additional_params(mock_post, mock_openai_user):
 
 @patch("genai_bench.user.openai_user.requests.post")
 def test_speech_response_parsing(mock_post, mock_openai_user):
-    """Test that parse_speech_response returns correct UserTTSResponse."""
+    """Test that parse_speech_response returns correct UserTextToSpeechResponse."""
     mock_openai_user.on_start()
-    mock_openai_user.sample = lambda: UserTTSRequest(
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
         model="tts-1",
         input_text="Hello",
         voice="alloy",
@@ -1431,7 +1431,7 @@ def test_speech_response_parsing(mock_post, mock_openai_user):
         parse_strategy=mock_openai_user.parse_speech_response,
     )
 
-    assert isinstance(user_response, UserTTSResponse)
+    assert isinstance(user_response, UserTextToSpeechResponse)
     assert user_response.status_code == 200
     assert user_response.num_prefill_tokens == 0
     assert user_response.time_at_first_token <= user_response.end_time
@@ -1444,7 +1444,8 @@ def test_speech_with_wrong_request_type(mock_openai_user):
 
     with pytest.raises(
         AttributeError,
-        match="user_request should be of type UserTTSRequest for OpenAIUser.speech",
+        match="user_request should be of type UserTextToSpeechRequest for "
+        "OpenAIUser.speech",
     ):
         mock_openai_user.speech()
 

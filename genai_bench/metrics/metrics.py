@@ -32,6 +32,9 @@ class RequestLevelMetrics(BaseModel):
     output_throughput: Optional[float] = Field(
         None, description="Output throughput in tokens/s"
     )
+    audio_throughput: Optional[float] = Field(
+        0, description="Audio throughput in bytes/s"
+    )
     error_code: Optional[int] = Field(None, description="Error code")
     error_message: Optional[str] = Field(None, description="Error message")
 
@@ -105,6 +108,7 @@ class MetricStats(BaseModel):
     total_tokens: StatField = Field(default_factory=StatField)
     input_throughput: StatField = Field(default_factory=StatField)
     output_throughput: StatField = Field(default_factory=StatField)
+    audio_throughput: StatField = Field(default_factory=StatField)
 
     def to_dict(self) -> Dict[str, Dict[str, float]]:
         """Convert to dictionary format for serialization."""

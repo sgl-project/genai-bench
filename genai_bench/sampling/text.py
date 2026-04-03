@@ -9,7 +9,7 @@ from genai_bench.protocol import (
     UserImageGenerationRequest,
     UserRequest,
     UserReRankRequest,
-    UserTTSRequest,
+    UserTextToSpeechRequest,
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import (
@@ -220,7 +220,9 @@ class TextSampler(Sampler):
             additional_request_params=self.additional_request_params,
         )
 
-    def _sample_tts_request(self, scenario: Optional[Scenario]) -> UserTTSRequest:
+    def _sample_tts_request(
+        self, scenario: Optional[Scenario]
+    ) -> UserTextToSpeechRequest:
         """Samples a TTS request based on the scenario."""
         if self._is_dataset_mode(scenario):
             input_text = random.choice(self.data)
@@ -231,7 +233,7 @@ class TextSampler(Sampler):
 
         voice = self.additional_request_params.get("voice", "alloy")
 
-        return UserTTSRequest(
+        return UserTextToSpeechRequest(
             model=self.model,
             input_text=input_text,
             voice=voice,

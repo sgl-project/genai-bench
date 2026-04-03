@@ -17,8 +17,8 @@ from genai_bench.logging import init_logger
 from genai_bench.protocol import (
     UserImageGenerationRequest,
     UserImageGenerationResponse,
-    UserTTSRequest,
-    UserTTSResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -139,10 +139,10 @@ class OCIOpenAIUser(OpenAIUser):
     def speech(self):
         user_request = self.sample()
 
-        if not isinstance(user_request, UserTTSRequest):
+        if not isinstance(user_request, UserTextToSpeechRequest):
             raise AttributeError(
                 f"user_request should be of type "
-                f"UserTTSRequest for OCIOpenAIUser.speech, got "
+                f"UserTextToSpeechRequest for OCIOpenAIUser.speech, got "
                 f"{type(user_request)}"
             )
 
@@ -183,17 +183,18 @@ class OCIOpenAIUser(OpenAIUser):
                 f"e2e_latency={end_time - start_time:.3f}s"
             )
 
-            metrics_response = UserTTSResponse(
+            metrics_response = UserTextToSpeechResponse(
                 status_code=200,
                 start_time=start_time,
                 end_time=end_time,
                 time_at_first_token=time_at_first_token,
                 num_prefill_tokens=0,
+                audio_bytes=total_bytes,
             )
 
         except Exception as e:
             logger.error(f"OCI TTS failed: {e}")
-            metrics_response = UserTTSResponse(
+            metrics_response = UserTextToSpeechResponse(
                 status_code=getattr(e, "status_code", 500),
                 error_message=str(e),
             )

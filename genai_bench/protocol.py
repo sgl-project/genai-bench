@@ -80,7 +80,7 @@ class UserReRankRequest(UserRequest):
     )
 
 
-class UserTTSRequest(UserRequest):
+class UserTextToSpeechRequest(UserRequest):
     """
     A class to encapsulate the details related to text-to-speech request tasks.
     """
@@ -155,12 +155,14 @@ class UserResponse(BaseModel):
     )
 
 
-class UserTTSResponse(UserResponse):
+class UserTextToSpeechResponse(UserResponse):
     """
     A class to encapsulate the response details from text-to-speech tasks.
     """
 
-    pass
+    audio_bytes: Optional[int] = Field(
+        default=0, description="Size of the generated audio in bytes."
+    )
 
 
 class UserChatResponse(UserResponse):
