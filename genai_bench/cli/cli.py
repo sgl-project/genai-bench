@@ -12,6 +12,7 @@ import gevent
 from genai_bench.analysis.excel_report import create_workbook
 from genai_bench.analysis.experiment_loader import load_one_experiment
 from genai_bench.analysis.flexible_plot_report import plot_experiment_data_flexible
+from genai_bench.analysis.plot_config import PlotConfigManager
 from genai_bench.analysis.plot_report import (
     plot_single_scenario_inference_speed_vs_throughput,
 )
@@ -546,12 +547,18 @@ def benchmark(
         percentile="mean",
         metrics_time_unit=metrics_time_unit,
     )
+    tts_config = (
+        PlotConfigManager.load_preset("2x4_tts", metrics_time_unit)
+        if task == "text-to-speech"
+        else None
+    )
     plot_experiment_data_flexible(
         [
             (experiment_metadata, run_data),
         ],
         group_key="traffic_scenario",
         experiment_folder=experiment_folder_abs_path,
+        plot_config=tts_config,
         metrics_time_unit=metrics_time_unit,
     )
     logger.info(

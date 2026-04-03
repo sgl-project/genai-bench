@@ -24,7 +24,7 @@ class AudioModality(Scenario):
 
     @classmethod
     def parse(cls, params_str: str) -> "AudioModality":
-        num_input_chars, *_ = parse_params_str(params_str)[0]
+        (num_input_chars,) = parse_params_str(params_str)[0]
         return cls(num_input_chars=num_input_chars)
 
 

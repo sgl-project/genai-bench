@@ -25,12 +25,23 @@ SCENARIO_MAP = {
 }
 
 
+def _rename_headers(wb: Workbook, rename_map: dict) -> None:
+    """Rename header cells (row 1) across all sheets via substring replace."""
+    for sheet in wb:
+        for cell in sheet[1]:
+            if cell.value:
+                for old, new in rename_map.items():
+                    if old in str(cell.value):
+                        cell.value = str(cell.value).replace(old, new)
+
+
 def create_workbook(
     experiment_metadata: ExperimentMetadata,
     run_data: ExperimentMetrics,
     output_file: PathLike | str,
     percentile: str = "mean",
     metrics_time_unit: str = "s",
+    task: str = "",
 ):
     # Extract time unit from experiment metadata
     source_time_unit = experiment_metadata.metrics_time_unit
@@ -88,6 +99,9 @@ def create_workbook(
     create_single_request_metrics_sheet(
         wb, run_data, experiment_metadata, metrics_time_unit=metrics_time_unit
     )
+
+    if task == "text-to-speech":
+        _rename_headers(wb, {"TTFT": "TTFB", "ttft": "ttfb"})
 
     # Remove the default sheet
     del wb[wb.sheetnames[0]]

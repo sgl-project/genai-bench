@@ -47,7 +47,6 @@ class RequestMetricsCollector:
         self.metrics.ttft = response.time_at_first_token - response.start_time
         self.metrics.e2e_latency = response.end_time - response.start_time
         self.metrics.total_tokens = self.metrics.num_input_tokens
-        self.metrics.audio_throughput = 0
 
         # Calculate prefill throughput
         self.metrics.input_throughput = (

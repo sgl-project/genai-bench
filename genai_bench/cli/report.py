@@ -92,7 +92,13 @@ def excel(ctx, experiment_folder, excel_name, metric_percentile, metrics_time_un
 @click.option(
     "--preset",
     type=click.Choice(
-        ["2x4_default", "simple_2x2", "multi_line_latency", "single_scenario_analysis"]
+        [
+            "2x4_default",
+            "2x4_tts",
+            "simple_2x2",
+            "multi_line_latency",
+            "single_scenario_analysis",
+        ]
     ),
     default=None,
     help="Use a built-in plot preset. Overrides --plot-config if both are provided.",
