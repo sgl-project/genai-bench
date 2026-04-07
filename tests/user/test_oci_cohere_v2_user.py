@@ -126,6 +126,57 @@ def test_chat_v2_text(mock_client_class, test_cohere_v2_user):
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
+def test_chat_v2_supports_camelcase_history(mock_client_class, test_cohere_v2_user):
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = iter(
+        [
+            MagicMock(
+                data=json.dumps(
+                    {
+                        "finishReason": "COMPLETE",
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "done"}],
+                        },
+                    }
+                ).encode("utf-8")
+            )
+        ]
+    )
+
+    test_cohere_v2_user.on_start()
+    history = [{"role": "user", "content": "Previous turn"}]
+    test_cohere_v2_user.sample = lambda: UserChatRequest(
+        model="cohere-command-a",
+        prompt="Hello",
+        num_prefill_tokens=None,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+            "chatHistory": history,
+        },
+        max_tokens=16,
+    )
+
+    metrics_collector_mock = MagicMock()
+    test_cohere_v2_user.collect_metrics = metrics_collector_mock
+
+    test_cohere_v2_user.chat()
+
+    chat_detail = mock_client_instance.chat.call_args[0][0]
+    messages = chat_detail.chat_request.messages
+    assert any(
+        getattr(message, "role", "").upper() == "USER"
+        and message.content
+        and getattr(message.content[0], "text", "") == "Previous turn"
+        for message in messages
+    ), "chatHistory entries should be preserved for backwards compatibility"
+
+    metrics_collector_mock.assert_called_once()
+
+
+@patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
 def test_chat_v2_text_snake_case_usage(mock_client_class, test_cohere_v2_user):
     mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.return_value.status = 200

@@ -275,6 +275,7 @@ def validate_api_key(ctx, param, value):
     no_api_key = [
         OCIOpenAIUser.BACKEND_NAME,
         OCICohereUser.BACKEND_NAME,
+        OCICohereV2User.BACKEND_NAME,
         OCIGenAIUser.BACKEND_NAME,
         CohereUser.BACKEND_NAME,
         AWSBedrockUser.BACKEND_NAME,

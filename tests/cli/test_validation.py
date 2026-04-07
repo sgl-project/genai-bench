@@ -491,6 +491,17 @@ def test_validate_api_key_cohere_warning(mock_confirm):
 
 
 @patch("click.confirm")
+def test_validate_api_key_cohere_v2_warning(mock_confirm):
+    """Test API key validation for Cohere V2 backend with warning."""
+    ctx = MagicMock()
+    param = MagicMock()
+    ctx.params = {"api_backend": "oci-cohere-v2"}
+
+    result = validate_api_key(ctx, param, "test-key")
+    assert result is None
+
+
+@patch("click.confirm")
 @patch("click.prompt")
 def test_validate_additional_request_params_warnings(mock_prompt, mock_confirm):
     """Test warnings in additional request params validation."""

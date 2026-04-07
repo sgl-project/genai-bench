@@ -185,6 +185,19 @@ class TestMultiCloudValidation:
         mock_echo.assert_called_once()
         assert "API key is not used for oci-cohere backend" in str(mock_echo.call_args)
 
+    @patch("click.echo")
+    def test_validate_api_key_oci_cohere_v2_warns(self, mock_echo):
+        """Test API key warning for OCI Cohere V2."""
+        self.ctx.params["api_backend"] = "oci-cohere-v2"
+
+        result = validate_api_key(self.ctx, self.param, "some-key")
+
+        assert result is None
+        mock_echo.assert_called_once()
+        assert "API key is not used for oci-cohere-v2 backend" in str(
+            mock_echo.call_args
+        )
+
     def test_validate_api_key_no_backend(self):
         """Test API key validation without backend specified."""
         # No api_backend in params

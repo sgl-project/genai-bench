@@ -201,7 +201,7 @@ class OCICohereV2User(OCICohereUser):
                 )
             )
 
-        chat_history = params.pop("chat_history", None)
+        chat_history = params.pop("chat_history", params.pop("chatHistory", None))
         if chat_history:
             logger.info(
                 "Chat history provided with %s items for Cohere V2 request.",
