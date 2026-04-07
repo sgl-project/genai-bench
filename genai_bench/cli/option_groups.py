@@ -39,15 +39,6 @@ def api_options(func):
         help="The model to use for the backend server request body.",
     )(func)
     func = click.option(
-        "--oci-cohere-api-version",
-        type=click.Choice(["v1", "v2"], case_sensitive=False),
-        default="v1",
-        show_default=True,
-        is_eager=True,
-        help="Select the Cohere API version when using the oci-cohere backend. "
-        "Use v2 for Command-A reasoning/vision models. Defaults to v1.",
-    )(func)
-    func = click.option(
         "--task",
         type=click.Choice(
             [
@@ -90,6 +81,7 @@ def api_options(func):
                 "openai",
                 "oci-openai",
                 "oci-cohere",
+                "oci-cohere-v2",
                 "oci-genai",
                 "cohere",
                 "aws-bedrock",

@@ -14,6 +14,7 @@ from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
+from genai_bench.user.oci_cohere_v2_user import OCICohereV2User
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 from genai_bench.user.oci_openai_user import OCIOpenAIUser
 from genai_bench.user.openai_user import OpenAIUser
@@ -25,6 +26,7 @@ API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
     OCIOpenAIUser.BACKEND_NAME: OCIOpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
+    OCICohereV2User.BACKEND_NAME: OCICohereV2User,
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
     AWSBedrockUser.BACKEND_NAME: AWSBedrockUser,
@@ -333,25 +335,6 @@ def validate_task(ctx, param, value):
             f"Task '{task}' is not supported by the '{api_backend}' backend. "
             f"Supported backends for this task: {', '.join(sorted(allowed_backends))}."
         )
-
-    # Guard against unsupported OCI Cohere V2 combinations
-    oci_cohere_version = ctx.params.get("oci_cohere_api_version", "v1")
-    if api_backend == OCICohereUser.BACKEND_NAME:
-        normalized_version = str(oci_cohere_version).lower()
-        if normalized_version == "v2" and task not in {
-            "text-to-text",
-            "image-text-to-text",
-        }:
-            raise click.BadParameter(
-                "OCI Cohere API version v2 currently supports chat benchmarks only. "
-                "Use task 'text-to-text' or 'image-text-to-text', or set "
-                "--oci-cohere-api-version v1."
-            )
-        if normalized_version != "v2" and task == "image-text-to-text":
-            raise click.BadParameter(
-                "Command-A vision benchmarks require --oci-cohere-api-version v2. "
-                "Re-run with '--oci-cohere-api-version v2'."
-            )
 
     # Store the user task function in the context
     ctx.obj["user_task"] = getattr(user_class, user_class.supported_tasks[task])

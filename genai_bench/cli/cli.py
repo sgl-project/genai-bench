@@ -76,7 +76,6 @@ def benchmark(
     api_base,
     api_key,
     api_model_name,
-    oci_cohere_api_version,
     model,
     model_tokenizer,
     task,
@@ -188,7 +187,13 @@ def benchmark(
         # or --model-api-key for consistency with multi-cloud
         auth_kwargs["api_key"] = model_api_key or api_key
 
-    elif api_backend in ["oci-cohere", "cohere", "oci-genai", "oci-openai"]:
+    elif api_backend in [
+        "oci-cohere",
+        "oci-cohere-v2",
+        "cohere",
+        "oci-genai",
+        "oci-openai",
+    ]:
         # OCI uses its own auth system
         auth_kwargs.update(
             {
@@ -244,6 +249,7 @@ def benchmark(
     # Map backend names for auth factory
     auth_backend_map = {
         "oci-cohere": "oci",
+        "oci-cohere-v2": "oci",
         "cohere": "oci",
         "oci-genai": "oci",
         "oci-openai": "oci",
@@ -275,12 +281,6 @@ def benchmark(
     user_class.auth_provider = auth_provider
     user_class.host = api_base
     user_class.api_backend = api_backend
-    if api_backend == "oci-cohere" and hasattr(user_class, "api_version"):
-        user_class.api_version = oci_cohere_api_version
-        logger.debug(
-            "Configured OCICohereUser API version to %s.", oci_cohere_api_version
-        )
-
     # Load the tokenizer
     tokenizer = validate_tokenizer(model_tokenizer)
 

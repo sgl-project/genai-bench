@@ -25,6 +25,7 @@ from genai_bench.cli.validation import (
     validate_warmup_cooldown_ratio_options,
 )
 from genai_bench.user.oci_cohere_user import OCICohereUser
+from genai_bench.user.oci_cohere_v2_user import OCICohereV2User
 
 
 def test_validate_scenario_callback():
@@ -155,21 +156,31 @@ def test_validate_task():
 
 def test_validate_task_oci_cohere_v2_invalid_task():
     ctx = click.Context(click.Command("test"))
-    ctx.params = {"api_backend": "oci-cohere", "oci_cohere_api_version": "v2"}
-    ctx.obj = {"user_class": OCICohereUser}
+    ctx.params = {"api_backend": "oci-cohere-v2"}
+    ctx.obj = {"user_class": OCICohereV2User}
 
     with pytest.raises(click.BadParameter) as excinfo:
         validate_task(ctx, None, "text-to-embeddings")
-    assert "supports chat benchmarks only" in str(excinfo.value)
+    assert "not supported by the selected API backend" in str(excinfo.value)
 
 
 def test_validate_task_oci_cohere_v2_allows_chat():
     ctx = click.Context(click.Command("test"))
-    ctx.params = {"api_backend": "oci-cohere", "oci_cohere_api_version": "v2"}
-    ctx.obj = {"user_class": OCICohereUser}
+    ctx.params = {"api_backend": "oci-cohere-v2"}
+    ctx.obj = {"user_class": OCICohereV2User}
 
     result = validate_task(ctx, None, "text-to-text")
     assert result == "text-to-text"
+
+
+def test_validate_task_oci_cohere_v1_rejects_image_chat():
+    ctx = click.Context(click.Command("test"))
+    ctx.params = {"api_backend": "oci-cohere"}
+    ctx.obj = {"user_class": OCICohereUser}
+
+    with pytest.raises(click.BadParameter) as excinfo:
+        validate_task(ctx, None, "image-text-to-text")
+    assert "not supported by the selected API backend" in str(excinfo.value)
 
 
 def test_validate_tokenizer_with_local_path(mock_tokenizer_path):
