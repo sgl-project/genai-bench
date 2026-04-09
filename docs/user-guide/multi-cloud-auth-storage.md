@@ -77,7 +77,7 @@ OCI supports multiple authentication methods.
 
 **Required parameters:**
 
-- `--api-backend oci-cohere` (Cohere V1) or `--api-backend oci-cohere-v2` (Command-A V2) or `--api-backend cohere`
+- `--api-backend oci-cohere` or `--api-backend cohere`
 - `--auth`: Authentication type (default: user_principal)
 
 **User Principal example:**

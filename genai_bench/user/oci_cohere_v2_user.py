@@ -23,7 +23,10 @@ from genai_bench.user.oci_cohere_user import OCICohereUser, logger
 
 
 class OCICohereV2User(OCICohereUser):
-    """Cohere Command-A (V2) user leveraging OCI authentication."""
+    """
+    User class for Cohere v2 API with OCI authentication.
+    The v2 API is required for command-A vision or command-A reasoning.
+    """
 
     BACKEND_NAME = "oci-cohere-v2"
     supported_tasks = {
@@ -33,43 +36,56 @@ class OCICohereV2User(OCICohereUser):
 
     def _build_chat_request(self, user_request: UserChatRequest) -> CohereChatRequestV2:
         params: Dict[str, Any] = dict(user_request.additional_request_params or {})
+
         messages = self._build_v2_messages(user_request, params)
 
-        request_kwargs: Dict[str, Any] = {
-            "messages": messages,
-            "max_tokens": user_request.max_tokens,
-            "is_stream": True,
-            "stream_options": StreamOptions(is_include_usage=True),
-        }
+        stream_options_value = params.get("streamOptions")
+        if isinstance(stream_options_value, dict):
+            stream_options_value = StreamOptions(**stream_options_value)
+        if stream_options_value is None:
+            stream_options_value = StreamOptions(is_include_usage=True)
 
-        allowed_params = {
-            "temperature",
-            "top_p",
-            "top_k",
-            "presence_penalty",
-            "frequency_penalty",
-            "stop_sequences",
-            "seed",
-            "priority",
-            "safety_mode",
-            "is_search_queries_only",
-            "is_log_probs_enabled",
-            "is_strict_tools_enabled",
-            "is_raw_prompting",
-            "thinking",
-            "documents",
-            "tools",
-            "tools_choice",
-            "response_format",
-        }
-        for key in allowed_params:
-            if key in params:
-                request_kwargs[key] = params[key]
-        # Remove None values to avoid overriding server defaults
-        request_kwargs = {k: v for k, v in request_kwargs.items() if v is not None}
+        is_stream_value = params.get("isStream")
+        if is_stream_value is None:
+            is_stream_value = True
+        if isinstance(is_stream_value, str):
+            is_stream_value = is_stream_value.lower() == "true"
 
-        logger.debug("Prepared CohereChatRequestV2 payload: %s", request_kwargs.keys())
-        return CohereChatRequestV2(**request_kwargs)
+        chat_request = CohereChatRequestV2(
+            api_format=CohereChatRequestV2.API_FORMAT_COHEREV2,
+            messages=messages,
+            max_tokens=user_request.max_tokens,
+            is_stream=is_stream_value,
+            stream_options=stream_options_value,
+            temperature=params.get("temperature", 0.1),
+            top_k=params.get("topK", 0),
+            top_p=params.get("topP", 0),
+            frequency_penalty=params.get("frequencyPenalty", 0),
+            presence_penalty=params.get("presencePenalty", 0),
+            seed=params.get("seed"),
+            stop_sequences=params.get("stopSequences"),
+            priority=params.get("priority"),
+            is_raw_prompting=params.get("isRawPrompting"),
+            safety_mode=params.get("safetyMode"),
+            is_search_queries_only=params.get("isSearchQueriesOnly"),
+            is_log_probs_enabled=params.get("isLogProbsEnabled"),
+            is_strict_tools_enabled=params.get("isStrictToolsEnabled"),
+            thinking=params.get("thinking"),
+            documents=params.get("documents"),
+            citation_options=params.get("citationOptions"),
+            tools_choice=params.get("toolsChoice"),
+            tools=params.get("tools"),
+            response_format=params.get("responseFormat"),
+        )
+
+        if chat_request.documents:
+            logger.info(
+                "Documents provided with %s items for Cohere V2 request.",
+                len(chat_request.documents),
+            )
+
+        logger.debug("Prepared CohereChatRequestV2 payload: %s", chat_request)
+        return chat_request
 
     def _parse_chat_response(
         self,
@@ -189,11 +205,13 @@ class OCICohereV2User(OCICohereUser):
         )
 
     def _build_v2_messages(
-        self, user_request: UserChatRequest, params: Dict[str, Any]
+        self,
+        user_request: UserChatRequest,
+        params: Dict[str, Any],
     ) -> List[CohereMessageV2]:
         messages: List[CohereMessageV2] = []
 
-        system_message = params.pop("system_message", None)
+        system_message = params.get("systemMessage")
         if system_message:
             messages.append(
                 CohereSystemMessageV2(
@@ -201,7 +219,7 @@ class OCICohereV2User(OCICohereUser):
                 )
             )
 
-        chat_history = params.pop("chat_history", params.pop("chatHistory", None))
+        chat_history = params.get("chatHistory")
         if chat_history:
             logger.info(
                 "Chat history provided with %s items for Cohere V2 request.",
@@ -393,11 +411,11 @@ class OCICohereV2User(OCICohereUser):
                 continue
 
             block_type = str(block.get("type", "TEXT")).upper()
-            if block_type in {"TEXT", "OUTPUT_TEXT"}:
+            if block_type in {"TEXT", "OUTPUT_TEXT", "OUTPUT_TEXT_DELTA"}:
                 value = block.get("text") or block.get("data")
                 if value:
                     text_parts.append(str(value))
-            elif block_type == "THINKING":
+            elif block_type in {"THINKING", "THINKING_DELTA"}:
                 value = block.get("thinking") or block.get("text")
                 if value:
                     reasoning_parts.append(str(value))

@@ -300,7 +300,7 @@ class OCICohereUser(BaseUser):
         request: ChatDetails,
         response: ChatResult,
         start_time: float,
-        num_prefill_tokens: Optional[int],
+        num_prefill_tokens: int,
         _: float,
     ) -> UserResponse:
         """
@@ -378,7 +378,7 @@ class OCICohereUser(BaseUser):
             tokens_received=tokens_received,
             reasoning_tokens=0,  # OCI Cohere v1 API does not support reasoning
             time_at_first_token=time_at_first_token,
-            num_prefill_tokens=num_prefill_tokens or 0,
+            num_prefill_tokens=num_prefill_tokens,
             start_time=start_time,
             end_time=end_time,
         )

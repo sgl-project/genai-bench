@@ -45,7 +45,7 @@ def test_chat_v2_text(mock_client_class, test_cohere_v2_user):
                     {
                         "message": {
                             "role": "ASSISTANT",
-                            "content": [{"type": "TEXT", "text": "Hello"}],
+                            "content": [{"type": "OUTPUT_TEXT_DELTA", "text": "Hello"}],
                         }
                     }
                 ).encode("utf-8")
@@ -56,7 +56,7 @@ def test_chat_v2_text(mock_client_class, test_cohere_v2_user):
                         "message": {
                             "role": "ASSISTANT",
                             "content": [
-                                {"type": "THINKING", "thinking": " Reason"},
+                                {"type": "THINKING_DELTA", "thinking": " Reason"},
                             ],
                         }
                     }
@@ -93,10 +93,10 @@ def test_chat_v2_text(mock_client_class, test_cohere_v2_user):
         additional_request_params={
             "compartmentId": "ocid1.compartment.oc1..example",
             "servingType": "ON_DEMAND",
-            "system_message": "Be concise",
-            "chat_history": history,
+            "systemMessage": "Be concise",
+            "chatHistory": history,
             "documents": documents,
-            "top_p": 0.9,
+            "topP": 0.9,
             "temperature": 0.3,
         },
         max_tokens=64,
@@ -122,11 +122,12 @@ def test_chat_v2_text(mock_client_class, test_cohere_v2_user):
     assert user_response.tokens_received == 3
     assert user_response.reasoning_tokens == 2
     assert user_response.num_prefill_tokens == 5
+    assert user_response.generated_text.startswith("Hello")
     assert user_response.status_code == 200
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
-def test_chat_v2_supports_camelcase_history(mock_client_class, test_cohere_v2_user):
+def test_chat_v2_with_chat_history(mock_client_class, test_cohere_v2_user):
     mock_client_instance = mock_client_class.return_value
     mock_client_instance.chat.return_value.status = 200
     mock_client_instance.chat.return_value.data.events.return_value = iter(
@@ -171,7 +172,7 @@ def test_chat_v2_supports_camelcase_history(mock_client_class, test_cohere_v2_us
         and message.content
         and getattr(message.content[0], "text", "") == "Previous turn"
         for message in messages
-    ), "chatHistory entries should be preserved for backwards compatibility"
+    ), "chatHistory entries should appear as messages in the request"
 
     metrics_collector_mock.assert_called_once()
 
@@ -320,6 +321,121 @@ def test_chat_v2_vision_multiple_images_error(mock_client_class, test_cohere_v2_
 
     with pytest.raises(ValueError, match="only a single image"):
         test_cohere_v2_user.chat()
+
+
+def _simple_complete_stream():
+    """Return a minimal streaming response that finishes immediately."""
+    return iter(
+        [
+            MagicMock(
+                data=json.dumps(
+                    {
+                        "finishReason": "COMPLETE",
+                        "message": {
+                            "role": "ASSISTANT",
+                            "content": [{"type": "TEXT", "text": "ok"}],
+                        },
+                    }
+                ).encode("utf-8")
+            )
+        ]
+    )
+
+
+@patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
+def test_chat_v2_documents_passed_to_request(mock_client_class, test_cohere_v2_user):
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = (
+        _simple_complete_stream()
+    )
+
+    test_cohere_v2_user.on_start()
+    documents = [{"text": "Reference doc 1"}, {"text": "Reference doc 2"}]
+    test_cohere_v2_user.sample = lambda: UserChatRequest(
+        model="cohere-command-a",
+        prompt="Summarize the docs",
+        num_prefill_tokens=None,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+            "documents": documents,
+        },
+        max_tokens=32,
+    )
+    test_cohere_v2_user.collect_metrics = MagicMock()
+
+    test_cohere_v2_user.chat()
+
+    chat_request = mock_client_instance.chat.call_args[0][0].chat_request
+    assert chat_request.documents == documents
+    assert len(chat_request.messages) == 1, "Only user message, no system or history"
+    assert chat_request.messages[0].role == "USER"
+
+
+@patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
+def test_chat_v2_system_message(mock_client_class, test_cohere_v2_user):
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = (
+        _simple_complete_stream()
+    )
+
+    test_cohere_v2_user.on_start()
+    test_cohere_v2_user.sample = lambda: UserChatRequest(
+        model="cohere-command-a",
+        prompt="Hello",
+        num_prefill_tokens=None,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+            "systemMessage": "You are a helpful assistant",
+        },
+        max_tokens=16,
+    )
+    test_cohere_v2_user.collect_metrics = MagicMock()
+
+    test_cohere_v2_user.chat()
+
+    chat_request = mock_client_instance.chat.call_args[0][0].chat_request
+    assert len(chat_request.messages) == 2
+    assert chat_request.messages[0].role == "SYSTEM"
+    assert chat_request.messages[0].content[0].text == "You are a helpful assistant"
+    assert chat_request.messages[1].role == "USER"
+
+
+@patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")
+def test_chat_v2_no_optional_params(mock_client_class, test_cohere_v2_user):
+    mock_client_instance = mock_client_class.return_value
+    mock_client_instance.chat.return_value.status = 200
+    mock_client_instance.chat.return_value.data.events.return_value = (
+        _simple_complete_stream()
+    )
+
+    test_cohere_v2_user.on_start()
+    test_cohere_v2_user.sample = lambda: UserChatRequest(
+        model="cohere-command-a",
+        prompt="Hi",
+        num_prefill_tokens=None,
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+        },
+        max_tokens=16,
+    )
+    test_cohere_v2_user.collect_metrics = MagicMock()
+
+    test_cohere_v2_user.chat()
+
+    chat_request = mock_client_instance.chat.call_args[0][0].chat_request
+    assert chat_request.documents is None
+    assert len(chat_request.messages) == 1
+    assert chat_request.messages[0].role == "USER"
+    assert chat_request.temperature == 0.1
+    assert chat_request.top_k == 0
+    assert chat_request.top_p == 0
+    assert chat_request.frequency_penalty == 0
+    assert chat_request.presence_penalty == 0
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")

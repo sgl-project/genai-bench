@@ -114,12 +114,10 @@ genai-bench benchmark --api-backend oci-cohere \
 
 ### Start a benchmark against OCI Cohere
 
-Below is a sample command to trigger a benchmark against Cohere chat API.
-
-> **Command-A models**: Use `--api-backend oci-cohere-v2` when targeting Cohere Command-A reasoning or vision deployments on OCI. The V2 API unlocks reasoning traces and multimodal prompts.
+Below is a sample command to trigger a benchmark against cohere chat API.
 
 ```shell
-genai-bench benchmark --api-backend oci-cohere-v2 \
+genai-bench benchmark --api-backend oci-cohere \
             --config-file /home/ubuntu/.oci/config \
             --api-base "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com" \
             --api-model-name "c4ai-command-r-08-2024" \
@@ -204,23 +202,6 @@ Model-specific parameters like `quality`, `response_format`, `output_format`, or
 
 # For vLLM-Omni diffusion models: set inference steps and negative prompt
 --additional-request-params '{"num_inference_steps": 50, "negative_prompt": "blurry, low quality"}'
-### Benchmark a Command-A vision model on OCI Cohere
-
-```shell
-genai-bench benchmark --api-backend oci-cohere-v2 \
-            --config-file /home/ubuntu/.oci/config \
-            --api-base "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com" \
-            --api-model-name "cohere.command-a-vision" \
-            --model-tokenizer "/home/ubuntu/cohere-command-a-tokenizer" \
-            --task image-text-to-text \
-            --dataset-path /home/ubuntu/datasets/vision.jsonl \
-            --num-concurrency 1 \
-            --server-gpu-type A100-80G \
-            --server-version "command_a_vision_v1" \
-            --server-gpu-count 4 \
-            --max-time-per-run 10 \
-            --max-requests-per-run 50 \
-            --additional-request-params '{"compartmentId": "COMPARTMENTID", "servingType": "ON_DEMAND"}'
 ```
 
 ## Specify a custom benchmark load
