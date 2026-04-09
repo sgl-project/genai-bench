@@ -103,12 +103,7 @@ class OCICohereV2User(OCICohereUser):
         finish_reason: Optional[str] = None
 
         for event in response.data.events():
-            raw_data = event.data
-            if isinstance(raw_data, bytes):
-                raw_data = raw_data.decode("utf-8", errors="ignore")
-            if not isinstance(raw_data, str):
-                continue
-            event_data = raw_data.strip()
+            event_data = event.data.strip()
             if not event_data:
                 continue
 
