@@ -45,17 +45,11 @@ class OCICohereV2User(OCICohereUser):
         if stream_options_value is None:
             stream_options_value = StreamOptions(is_include_usage=True)
 
-        is_stream_value = params.get("isStream")
-        if is_stream_value is None:
-            is_stream_value = True
-        if isinstance(is_stream_value, str):
-            is_stream_value = is_stream_value.lower() == "true"
-
         chat_request = CohereChatRequestV2(
             api_format=CohereChatRequestV2.API_FORMAT_COHEREV2,
             messages=messages,
             max_tokens=user_request.max_tokens,
-            is_stream=is_stream_value,
+            is_stream=True,
             stream_options=stream_options_value,
             temperature=params.get("temperature", 0.1),
             top_k=params.get("topK", 0),
