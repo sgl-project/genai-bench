@@ -33,12 +33,12 @@ class RequestLevelMetrics(BaseModel):
         None, description="Output throughput in tokens/s"
     )
     audio_throughput: Optional[float] = Field(
-        0, description="Audio throughput in bytes/s"
+        None, description="Audio throughput in bytes/s"
     )
     error_code: Optional[int] = Field(None, description="Error code")
     error_message: Optional[str] = Field(None, description="Error message")
 
-    # Class-level dictionaries to map output metrics to output fields
+    # Class-level sets to map task-specific metrics to fields
     OUTPUT_METRICS_FIELDS: ClassVar[set[str]] = {
         "tpot",
         "output_latency",
@@ -46,6 +46,9 @@ class RequestLevelMetrics(BaseModel):
         "num_output_tokens",
         "output_throughput",
         "num_reasoning_tokens",
+    }
+    AUDIO_METRICS_FIELDS: ClassVar[set[str]] = {
+        "audio_throughput",
     }
 
     @model_validator(mode="before")
@@ -61,7 +64,8 @@ class RequestLevelMetrics(BaseModel):
             # Validate all metric fields
             for field_name, field_value in values.items():
                 if (
-                    field_name not in {"error_code", "error_message"}
+                    field_name
+                    not in ({"error_code", "error_message"} | cls.AUDIO_METRICS_FIELDS)
                     and field_value is None
                 ):
                     raise ValueError(

@@ -207,6 +207,8 @@ class AggregatedMetricsCollector:
 
             # Validate that all values are valid for processing
             if not values:
+                if key in RequestLevelMetrics.AUDIO_METRICS_FIELDS:
+                    continue
                 raise ValueError(
                     f"No values found for metric '{key}'. This should never happen!"
                 )

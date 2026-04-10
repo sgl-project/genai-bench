@@ -546,6 +546,7 @@ def benchmark(
         ),
         percentile="mean",
         metrics_time_unit=metrics_time_unit,
+        task=task,
     )
     tts_config = (
         PlotConfigManager.load_preset("2x4_tts", metrics_time_unit)
