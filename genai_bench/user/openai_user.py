@@ -3,6 +3,7 @@
 from locust import task
 
 import json
+import mimetypes
 import random
 import time
 from typing import Any, Callable, Dict, Optional
@@ -250,11 +251,12 @@ class OpenAIUser(BaseUser):
                 f"got {type(user_request)}"
             )
 
+        mime_type, _ = mimetypes.guess_type(user_request.audio_filename)
         files = {
             "file": (
                 user_request.audio_filename,
                 user_request.audio_content,
-                "audio/wav",
+                mime_type or "application/octet-stream",
             )
         }
         data = {
