@@ -328,6 +328,47 @@ class PlotConfigManager:
                 },
             ],
         },
+        "audio_to_text": {
+            "layout": {"rows": 2, "cols": 2, "figsize": [20, 12]},
+            "plots": [
+                {
+                    "title": "Avg Latency per Sample vs Processed Audio Throughput",
+                    "x_field": "mean_input_throughput_tokens_per_s",
+                    "y_field": "stats.e2e_latency.mean",
+                    "x_label": "Processed Audio Length (audio-cs/s)",
+                    "y_label": "Avg Latency per Sample (s)",
+                    "plot_type": "line",
+                    "position": [0, 0],
+                },
+                {
+                    "title": "Real-Time Factor Mean vs Processed Audio Throughput",
+                    "x_field": "mean_input_throughput_tokens_per_s",
+                    "y_field": "stats.output_inference_speed.mean",
+                    "x_label": "Processed Audio Length (audio-cs/s)",
+                    "y_label": "Real-Time Factor mean",
+                    "plot_type": "line",
+                    "position": [0, 1],
+                },
+                {
+                    "title": "Real-Time Factor P99 vs Processed Audio Throughput",
+                    "x_field": "mean_input_throughput_tokens_per_s",
+                    "y_field": "stats.output_inference_speed.p99",
+                    "x_label": "Processed Audio Length (audio-cs/s)",
+                    "y_label": "Real-Time Factor P99",
+                    "plot_type": "line",
+                    "position": [1, 0],
+                },
+                {
+                    "title": "Error Rates by HTTP Status vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "error_rate",
+                    "x_label": "Concurrency",
+                    "y_label": "Error Rate",
+                    "plot_type": "bar",
+                    "position": [1, 1],
+                },
+            ],
+        },
         "single_scenario_analysis": {
             "layout": {"rows": 2, "cols": 2, "figsize": [16, 12]},
             "plots": [

@@ -101,8 +101,17 @@ class RequestMetricsCollector:
         """
         Helper function to calculate output metrics for audio transcription.
 
-        Uses transcribed character count as a proxy for output tokens, so that
-        throughput and speed plots are populated meaningfully rather than all-zero.
+        - output_inference_speed stores Real-Time Factor (RTF):
+            RTF = audio_duration_s / e2e_latency
+          Higher RTF = faster than real-time. This matches Ming's benchmark graphs.
+        - num_prefill_tokens (set in parse_transcription_response) stores
+          audio duration in centiseconds (1 audio-s = 100 units), so
+          mean_input_throughput_tokens_per_s = audio centiseconds processed per
+          wall second. Divide by 100 to convert to audio-seconds/wall-second.
+        - output_throughput stores audio-seconds/wall-second (RTF equivalent
+          at the server level), computed as sum(audio_duration_s) / run_duration
+          via num_input_tokens sum / 100 / run_duration — but here we store the
+          per-request value for aggregation.
         """
         char_count = len(response.transcribed_text or "")
         self.metrics.num_output_tokens = char_count
@@ -110,18 +119,17 @@ class RequestMetricsCollector:
         self.metrics.total_tokens += char_count
         self.metrics.output_latency = self.metrics.e2e_latency
 
-        if char_count > 1:
-            self.metrics.tpot = self.metrics.output_latency / (char_count - 1)
-            self.metrics.output_inference_speed = 1 / self.metrics.tpot
-            self.metrics.output_throughput = (
-                (char_count - 1) / self.metrics.output_latency
-                if self.metrics.output_latency
-                else 0
-            )
+        # Real-Time Factor: how many seconds of audio processed per second of wall time
+        audio_duration_s = response.audio_duration_s or 0.0
+        if self.metrics.e2e_latency and self.metrics.e2e_latency > 0:
+            rtf = audio_duration_s / self.metrics.e2e_latency
         else:
-            self.metrics.tpot = 0
-            self.metrics.output_inference_speed = 0
-            self.metrics.output_throughput = 0
+            rtf = 0.0
+
+        self.metrics.output_inference_speed = rtf
+        # tpot and output_throughput are not meaningful for audio; set to 0
+        self.metrics.tpot = 0
+        self.metrics.output_throughput = 0
 
     def _reset_output_metrics(self):
         """Helper function to reset all output-related metrics to 0."""
