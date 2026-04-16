@@ -11,6 +11,7 @@ from genai_bench.logging import init_logger
 from genai_bench.protocol import UserAudioTranscriptionRequest, UserRequest
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import Scenario
+from genai_bench.scenarios.multimodal import AudioScenario
 
 logger = init_logger(__name__)
 
@@ -22,8 +23,13 @@ class AudioSampler(Sampler):
     Expects data to be a list of (audio_bytes, duration_s, filename) tuples
     as returned by AudioDatasetLoader.
 
-    Supports optional clip_duration_s to truncate audio to a fixed length,
-    which is useful for benchmarking at controlled audio lengths.
+    Scenario-driven mode: pass A(mean_s,std_s) as --traffic-scenario.
+    Each request samples a duration from N(mean_s, std_s) and truncates the
+    clip accordingly. This allows multiple scenarios to be benchmarked in one
+    run and plotted on the same graph (same as text-to-text N(...) scenarios).
+
+    Fixed-duration fallback: set clip_duration_s in --additional-request-params
+    to truncate all requests to a fixed length (used when --traffic-scenario dataset).
     """
 
     input_modality = "audio"
@@ -52,7 +58,12 @@ class AudioSampler(Sampler):
         """Sample a random audio clip and return a UserAudioTranscriptionRequest."""
         audio_bytes, duration_s, filename = random.choice(self.data)
 
-        clip_duration_s = self.additional_request_params.get("clip_duration_s")
+        # Scenario-driven: A(mean_s,std_s) samples duration from Gaussian distribution
+        if isinstance(scenario, AudioScenario):
+            clip_duration_s = scenario.sample()
+        else:
+            clip_duration_s = self.additional_request_params.get("clip_duration_s")
+
         if clip_duration_s is not None and filename.endswith(".wav"):
             audio_bytes, duration_s = _truncate_wav(audio_bytes, float(clip_duration_s))
 

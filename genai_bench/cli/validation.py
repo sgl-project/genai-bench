@@ -84,7 +84,7 @@ DEFAULT_SCENARIOS_BY_TASK = {
     "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
     "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,
-    "audio-to-text": ["dataset"],
+    "audio-to-text": ["A(10,5)", "A(30,15)", "A(60,30)", "A(120,60)"],
     # add other tasks and default scenarios as needed
 }
 
