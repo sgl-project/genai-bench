@@ -97,9 +97,7 @@ class RequestMetricsCollector:
                 f" your server and request!"
             )
 
-    def _calculate_audio_output_metrics(
-        self, response: UserAudioTranscriptionResponse
-    ):
+    def _calculate_audio_output_metrics(self, response: UserAudioTranscriptionResponse):
         """
         Helper function to calculate output metrics for audio transcription.
 
