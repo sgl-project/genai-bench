@@ -13,6 +13,8 @@ from requests import Response
 from genai_bench.auth.model_auth_provider import ModelAuthProvider
 from genai_bench.logging import init_logger, warning_once
 from genai_bench.protocol import (
+    UserAudioTranscriptionRequest,
+    UserAudioTranscriptionResponse,
     UserChatRequest,
     UserChatResponse,
     UserEmbeddingRequest,
@@ -35,6 +37,7 @@ class OpenAIUser(BaseUser):
         "text-to-embeddings": "embeddings",
         "text-to-rerank": "rerank",
         "text-to-image": "images_generations",
+        "audio-to-text": "transcribe",
     }
 
     # Maps backend name to its reasoning content field in SSE delta.
@@ -233,6 +236,99 @@ class OpenAIUser(BaseUser):
         self.send_request(
             False, endpoint, payload, self.parse_images_generations_response
         )
+
+    @task
+    def transcribe(self):
+        endpoint = "/v1/audio/transcriptions"
+
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserAudioTranscriptionRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserAudioTranscriptionRequest for OpenAIUser.transcribe, "
+                f"got {type(user_request)}"
+            )
+
+        files = {
+            "file": (
+                user_request.audio_filename,
+                user_request.audio_content,
+                "audio/wav",
+            )
+        }
+        data = {
+            "model": user_request.model,
+            "response_format": user_request.response_format,
+        }
+        if user_request.language:
+            data["language"] = user_request.language
+
+        self.send_audio_request(
+            endpoint,
+            data,
+            files,
+            self.parse_transcription_response,
+            audio_duration_s=user_request.audio_duration_s,
+        )
+
+    def send_audio_request(
+        self,
+        endpoint: str,
+        data: Dict[str, Any],
+        files: Dict[str, Any],
+        parse_strategy: Callable[..., UserResponse],
+        audio_duration_s: Optional[float] = None,
+    ) -> UserResponse:
+        """Send a multipart/form-data request for audio transcription."""
+        response = None
+        # Strip Content-Type so requests sets multipart boundary correctly
+        base_headers: Dict[str, str] = self.headers or {}
+        audio_headers = {
+            k: v for k, v in base_headers.items() if k.lower() != "content-type"
+        }
+        try:
+            start_time = time.monotonic()
+            response = requests.post(
+                url=f"{self.host}{endpoint}",
+                data=data,
+                files=files,
+                headers=audio_headers,
+            )
+            end_time = time.monotonic()
+
+            if response.status_code == 200:
+                metrics_response = parse_strategy(
+                    response,
+                    start_time,
+                    None,
+                    end_time,
+                    audio_duration_s=audio_duration_s,
+                )
+            else:
+                metrics_response = UserResponse(
+                    status_code=response.status_code,
+                    error_message=response.text,
+                )
+        except requests.exceptions.ConnectionError as e:
+            metrics_response = UserResponse(
+                status_code=503, error_message=f"Connection error: {e}"
+            )
+        except requests.exceptions.Timeout as e:
+            metrics_response = UserResponse(
+                status_code=408, error_message=f"Request timed out: {e}"
+            )
+        except requests.exceptions.RequestException as e:
+            metrics_response = UserResponse(
+                status_code=500,
+                error_message=str(e),
+            )
+        finally:
+            if response is not None:
+                response.close()
+
+        self.collect_metrics(metrics_response, endpoint)
+        return metrics_response
 
     def send_request(
         self,
@@ -511,6 +607,47 @@ class OpenAIUser(BaseUser):
             num_prompt_tokens if num_prompt_tokens is not None else num_prefill_tokens
         )
         return effective_prefill, num_prompt_tokens, tokens_received, reasoning_tokens
+
+    @staticmethod
+    def parse_transcription_response(
+        response: Response,
+        start_time: float,
+        _: Optional[int],
+        end_time: float,
+        audio_duration_s: Optional[float] = None,
+    ) -> UserAudioTranscriptionResponse:
+        """
+        Parses a non-streaming audio transcription response.
+
+        Args:
+            response (Response): The response object.
+            start_time (float): The time when the request was started.
+            _ (Optional[int]): Unused placeholder (num_prefill_tokens).
+            end_time (float): The time when the request was finished.
+            audio_duration_s (Optional[float]): Duration of the audio input.
+
+        Returns:
+            UserAudioTranscriptionResponse: A response object with transcription.
+        """
+        content_type = response.headers.get("Content-Type", "")
+        if "application/json" in content_type or "json" in content_type:
+            data = response.json()
+            transcribed_text = data.get("text", "")
+            # verbose_json may include duration
+            if audio_duration_s is None:
+                audio_duration_s = data.get("duration")
+        else:
+            # text / srt / vtt formats return plain text
+            transcribed_text = response.text
+        return UserAudioTranscriptionResponse(
+            status_code=200,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=end_time,
+            transcribed_text=transcribed_text,
+            audio_duration_s=audio_duration_s,
+            num_prefill_tokens=0,
+        )
 
     @staticmethod
     def parse_embedding_response(

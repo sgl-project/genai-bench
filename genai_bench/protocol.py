@@ -115,6 +115,29 @@ class UserImageGenerationRequest(UserRequest):
     )
 
 
+class UserAudioTranscriptionRequest(UserRequest):
+    """
+    A class to encapsulate the details related to audio transcription request tasks.
+    Used for audio-to-text (speech-to-text) transcription via
+    /v1/audio/transcriptions.
+    """
+
+    audio_content: bytes = Field(..., description="Raw audio bytes to transcribe.")
+    audio_filename: str = Field(
+        default="audio.wav", description="Filename hint for the multipart upload."
+    )
+    language: Optional[str] = Field(
+        default=None, description="BCP-47 language code hint (e.g. 'en')."
+    )
+    response_format: str = Field(
+        default="json",
+        description="Response format: json, text, verbose_json, srt, vtt.",
+    )
+    audio_duration_s: Optional[float] = Field(
+        default=None, description="Duration of the audio clip in seconds."
+    )
+
+
 class UserResponse(BaseModel):
     """
     A class to encapsulate the most common response details from user tasks.
@@ -180,6 +203,20 @@ class UserImageGenerationResponse(UserResponse):
     images_generated: Optional[int] = Field(
         default=0,
         description="Number of images generated.",
+    )
+
+
+class UserAudioTranscriptionResponse(UserResponse):
+    """
+    A class to encapsulate the response details from audio transcription tasks.
+    """
+
+    transcribed_text: Optional[str] = Field(
+        default="", description="The transcribed text returned by the API."
+    )
+    audio_duration_s: Optional[float] = Field(
+        default=None,
+        description="Duration of the audio processed, in seconds.",
     )
 
 
