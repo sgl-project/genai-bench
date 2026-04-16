@@ -48,6 +48,7 @@ def api_options(func):
                 "text-to-rerank",
                 "image-text-to-text",
                 "image-to-embeddings",
+                "audio-to-text",
             ],
             case_sensitive=False,
         ),

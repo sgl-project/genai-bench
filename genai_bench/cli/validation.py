@@ -84,6 +84,7 @@ DEFAULT_SCENARIOS_BY_TASK = {
     "image-text-to-text": DEFAULT_SCENARIOS_FOR_VISION,
     "text-to-embeddings": DEFAULT_SCENARIOS_FOR_EMBEDDING,
     "image-to-embeddings": DEFAULT_SCENARIOS_FOR_VISION,
+    "audio-to-text": ["dataset"],
     # add other tasks and default scenarios as needed
 }
 
@@ -113,6 +114,11 @@ def validate_dataset_path_callback(ctx, param, value):
                 "Using dataset configuration file for image task. "
                 "Ensure your config file specifies the correct image dataset source."
             )
+    if input_modality == "audio" and value is None:
+        raise click.BadParameter(
+            "--dataset-path is required for audio-to-text task. "
+            "Provide a text file listing one audio file path per line."
+        )
     return value
 
 
