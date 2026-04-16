@@ -266,13 +266,31 @@ class OpenAIUser(BaseUser):
         if user_request.language:
             data["language"] = user_request.language
 
-        self.send_audio_request(
+        metrics_response = self.send_audio_request(
             endpoint,
             data,
             files,
             self.parse_transcription_response,
             audio_duration_s=user_request.audio_duration_s,
         )
+
+        # Fall back to tokenizer if server did not return usage.completion_tokens
+        if (
+            isinstance(metrics_response, UserAudioTranscriptionResponse)
+            and metrics_response.tokens_received is None
+            and metrics_response.transcribed_text
+        ):
+            metrics_response.tokens_received = (
+                self.environment.sampler.get_token_length(
+                    metrics_response.transcribed_text, add_special_tokens=False
+                )
+            )
+            warning_once(
+                logger,
+                "audio_tokens_received_estimated",
+                "🚨🚨🚨 No usage info in transcription response. "
+                "Estimated tokens_received from tokenizer.",
+            )
 
     def send_audio_request(
         self,
@@ -632,12 +650,17 @@ class OpenAIUser(BaseUser):
             UserAudioTranscriptionResponse: A response object with transcription.
         """
         content_type = response.headers.get("Content-Type", "")
+        tokens_received = None
         if "application/json" in content_type or "json" in content_type:
             data = response.json()
             transcribed_text = data.get("text", "")
             # verbose_json may include duration
             if audio_duration_s is None:
                 audio_duration_s = data.get("duration")
+            # Use server-reported token counts when available
+            usage = data.get("usage")
+            if usage:
+                tokens_received = usage.get("completion_tokens")
         else:
             # text / srt / vtt formats return plain text
             transcribed_text = response.text
@@ -656,6 +679,7 @@ class OpenAIUser(BaseUser):
             transcribed_text=transcribed_text,
             audio_duration_s=audio_duration_s,
             num_prefill_tokens=input_units,
+            tokens_received=tokens_received,
         )
 
     @staticmethod

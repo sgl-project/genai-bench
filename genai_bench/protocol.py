@@ -218,6 +218,10 @@ class UserAudioTranscriptionResponse(UserResponse):
         default=None,
         description="Duration of the audio processed, in seconds.",
     )
+    tokens_received: Optional[int] = Field(
+        default=None,
+        description="Number of output tokens in the transcription.",
+    )
 
 
 class APIAuthConfig(BaseModel):

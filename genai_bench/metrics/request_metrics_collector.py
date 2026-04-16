@@ -113,23 +113,31 @@ class RequestMetricsCollector:
           via num_input_tokens sum / 100 / run_duration — but here we store the
           per-request value for aggregation.
         """
-        char_count = len(response.transcribed_text or "")
-        self.metrics.num_output_tokens = char_count
+        token_count = response.tokens_received or 0
+        self.metrics.num_output_tokens = token_count
         self.metrics.num_reasoning_tokens = 0
-        self.metrics.total_tokens += char_count
+        self.metrics.total_tokens += token_count
         self.metrics.output_latency = self.metrics.e2e_latency
 
-        # Real-Time Factor: how many seconds of audio processed per second of wall time
+        # Real-Time Factor: audio seconds processed per wall second
         audio_duration_s = response.audio_duration_s or 0.0
         if self.metrics.e2e_latency and self.metrics.e2e_latency > 0:
             rtf = audio_duration_s / self.metrics.e2e_latency
         else:
             rtf = 0.0
-
         self.metrics.output_inference_speed = rtf
-        # tpot and output_throughput are not meaningful for audio; set to 0
-        self.metrics.tpot = 0
-        self.metrics.output_throughput = 0
+
+        # TPOT and output throughput from real token counts
+        if token_count > 1:
+            self.metrics.tpot = self.metrics.output_latency / (token_count - 1)
+            self.metrics.output_throughput = (
+                (token_count - 1) / self.metrics.output_latency
+                if self.metrics.output_latency
+                else 0
+            )
+        else:
+            self.metrics.tpot = 0
+            self.metrics.output_throughput = 0
 
     def _reset_output_metrics(self):
         """Helper function to reset all output-related metrics to 0."""

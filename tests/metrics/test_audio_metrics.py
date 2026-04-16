@@ -8,7 +8,11 @@ from genai_bench.metrics.request_metrics_collector import RequestMetricsCollecto
 from genai_bench.protocol import UserAudioTranscriptionResponse
 
 
-def _make_audio_response(transcribed_text: str, duration_s: float = 10.0):
+def _make_audio_response(
+    transcribed_text: str,
+    duration_s: float = 10.0,
+    tokens_received: int = None,
+):
     """Create a mock UserAudioTranscriptionResponse."""
     mock = MagicMock(spec=UserAudioTranscriptionResponse)
     mock.status_code = 200
@@ -18,30 +22,29 @@ def _make_audio_response(transcribed_text: str, duration_s: float = 10.0):
     mock.time_at_first_token = 1000.5
     mock.start_time = 1000.0
     mock.end_time = 1000.5
+    mock.tokens_received = tokens_received
     return mock
 
 
-def test_audio_metrics_with_transcription():
-    """output_inference_speed stores RTF = audio_duration_s / e2e_latency."""
-    # duration=5.0s, e2e_latency = end-start = 1000.5-1000.0 = 0.5s
-    # RTF = 5.0 / 0.5 = 10.0
-    response = _make_audio_response("Hello world", duration_s=5.0)
+def test_audio_metrics_with_tokens():
+    """TPOT and output_throughput computed from real token count."""
+    # duration=5.0s, e2e_latency=0.5s, RTF=10.0, tokens=4
+    response = _make_audio_response("Hello world", duration_s=5.0, tokens_received=4)
     collector = RequestMetricsCollector()
     collector.calculate_metrics(response)
 
     assert collector.metrics.num_input_tokens == 500  # 5.0 * 100
     assert collector.metrics.e2e_latency == pytest.approx(0.5)
-    assert collector.metrics.num_output_tokens == len("Hello world")
-    assert collector.metrics.output_latency == collector.metrics.e2e_latency
+    assert collector.metrics.num_output_tokens == 4
     assert collector.metrics.output_inference_speed == pytest.approx(10.0)  # RTF
-    assert collector.metrics.tpot == 0
-    assert collector.metrics.output_throughput == 0
+    assert collector.metrics.tpot == pytest.approx(0.5 / 3)  # latency / (tokens-1)
+    assert collector.metrics.output_throughput == pytest.approx(3 / 0.5)
     assert collector.metrics.num_reasoning_tokens == 0
 
 
-def test_audio_metrics_empty_transcription():
-    """Empty transcription: output_tokens=0, RTF still computed from duration."""
-    response = _make_audio_response("", duration_s=3.0)
+def test_audio_metrics_zero_tokens():
+    """Zero tokens: RTF still computed, TPOT and throughput are 0."""
+    response = _make_audio_response("", duration_s=3.0, tokens_received=0)
     collector = RequestMetricsCollector()
     collector.calculate_metrics(response)
 
@@ -52,10 +55,9 @@ def test_audio_metrics_empty_transcription():
     assert collector.metrics.output_inference_speed == pytest.approx(6.0)
 
 
-def test_audio_metrics_none_transcription():
-    """None transcribed_text treated as empty string; RTF still computed."""
-    response = _make_audio_response("", duration_s=4.0)
-    response.transcribed_text = None
+def test_audio_metrics_none_tokens_falls_to_zero():
+    """None tokens_received treated as 0."""
+    response = _make_audio_response("Hello", duration_s=4.0, tokens_received=None)
     collector = RequestMetricsCollector()
     collector.calculate_metrics(response)
 
@@ -66,7 +68,7 @@ def test_audio_metrics_none_transcription():
 
 def test_audio_metrics_zero_duration():
     """Zero audio duration gives RTF=0."""
-    response = _make_audio_response("Hello", duration_s=0.0)
+    response = _make_audio_response("Hello", duration_s=0.0, tokens_received=2)
     response.audio_duration_s = 0.0
     collector = RequestMetricsCollector()
     collector.calculate_metrics(response)
@@ -75,10 +77,9 @@ def test_audio_metrics_zero_duration():
 
 
 def test_audio_metrics_total_tokens():
-    """total_tokens = input tokens + output (char) tokens."""
-    text = "abcdefghij"  # 10 chars
-    response = _make_audio_response(text, duration_s=5.0)
+    """total_tokens = input tokens + output tokens."""
+    response = _make_audio_response("Hello world", duration_s=5.0, tokens_received=3)
     collector = RequestMetricsCollector()
     collector.calculate_metrics(response)
 
-    assert collector.metrics.total_tokens == 500 + 10
+    assert collector.metrics.total_tokens == 500 + 3
