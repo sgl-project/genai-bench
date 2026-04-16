@@ -1,6 +1,7 @@
 from genai_bench.logging import init_logger
 from genai_bench.metrics.metrics import RequestLevelMetrics
 from genai_bench.protocol import (
+    UserAudioTranscriptionResponse,
     UserChatResponse,
     UserImageGenerationResponse,
     UserResponse,
@@ -32,12 +33,12 @@ class RequestMetricsCollector:
             response (UserResponse): The customized UserResponse object
                 containing the response data needed to calculate metrics.
         """
-        assert response.num_prefill_tokens is not None, (
-            "response.num_prefill_tokens is None"
-        )
-        assert response.time_at_first_token is not None, (
-            "response.time_at_first_token is None"
-        )
+        assert (
+            response.num_prefill_tokens is not None
+        ), "response.num_prefill_tokens is None"
+        assert (
+            response.time_at_first_token is not None
+        ), "response.time_at_first_token is None"
         assert response.start_time is not None, "response.start_time is None"
         assert response.end_time is not None, "response.end_time is None"
 
@@ -57,6 +58,8 @@ class RequestMetricsCollector:
         # Check if the response is a UserChatResponse for output metrics
         if isinstance(response, UserChatResponse):
             self._calculate_output_metrics(response)
+        elif isinstance(response, UserAudioTranscriptionResponse):
+            self._calculate_audio_output_metrics(response)
         elif isinstance(response, UserImageGenerationResponse):
             # For image generation (non-streaming), use same approach as embeddings
             # to avoid filter_metrics setting tpot/output_inference_speed to None
@@ -93,6 +96,34 @@ class RequestMetricsCollector:
                 f"{self.metrics.num_output_tokens} is <= 1. Please check"
                 f" your server and request!"
             )
+
+    def _calculate_audio_output_metrics(
+        self, response: UserAudioTranscriptionResponse
+    ):
+        """
+        Helper function to calculate output metrics for audio transcription.
+
+        Uses transcribed character count as a proxy for output tokens, so that
+        throughput and speed plots are populated meaningfully rather than all-zero.
+        """
+        char_count = len(response.transcribed_text or "")
+        self.metrics.num_output_tokens = char_count
+        self.metrics.num_reasoning_tokens = 0
+        self.metrics.total_tokens += char_count
+        self.metrics.output_latency = self.metrics.e2e_latency
+
+        if char_count > 1:
+            self.metrics.tpot = self.metrics.output_latency / (char_count - 1)
+            self.metrics.output_inference_speed = 1 / self.metrics.tpot
+            self.metrics.output_throughput = (
+                (char_count - 1) / self.metrics.output_latency
+                if self.metrics.output_latency
+                else 0
+            )
+        else:
+            self.metrics.tpot = 0
+            self.metrics.output_inference_speed = 0
+            self.metrics.output_throughput = 0
 
     def _reset_output_metrics(self):
         """Helper function to reset all output-related metrics to 0."""

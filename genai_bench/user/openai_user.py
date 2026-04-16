@@ -641,6 +641,13 @@ class OpenAIUser(BaseUser):
         else:
             # text / srt / vtt formats return plain text
             transcribed_text = response.text
+
+        # Map audio duration to num_prefill_tokens so the metrics pipeline has
+        # a meaningful "input size" value for plots (unit: centiseconds of audio).
+        # 1 audio-second = 100 "tokens" keeps the numbers in a similar range to
+        # text benchmarks and makes axis labels interpretable.
+        input_units = int((audio_duration_s or 0.0) * 100)
+
         return UserAudioTranscriptionResponse(
             status_code=200,
             start_time=start_time,
@@ -648,7 +655,7 @@ class OpenAIUser(BaseUser):
             time_at_first_token=end_time,
             transcribed_text=transcribed_text,
             audio_duration_s=audio_duration_s,
-            num_prefill_tokens=0,
+            num_prefill_tokens=input_units,
         )
 
     @staticmethod
