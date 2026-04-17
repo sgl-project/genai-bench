@@ -657,10 +657,14 @@ class OpenAIUser(BaseUser):
             # verbose_json may include duration
             if audio_duration_s is None:
                 audio_duration_s = data.get("duration")
-            # Use server-reported token counts when available
+            # Use server-reported token counts when available.
+            # vLLM returns {"type": "duration", "seconds": N} for audio, which
+            # carries no token count — extract audio duration from it instead.
             usage = data.get("usage")
             if usage:
                 tokens_received = usage.get("completion_tokens")
+                if audio_duration_s is None and usage.get("type") == "duration":
+                    audio_duration_s = usage.get("seconds")
         else:
             # text / srt / vtt formats return plain text
             transcribed_text = response.text
