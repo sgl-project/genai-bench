@@ -25,6 +25,53 @@ SCENARIO_MAP = {
 }
 
 
+def _group_empty_columns(wb: Workbook) -> None:
+    """Group and collapse columns where all data cells are 0, None, or all-zero JSON."""
+    target_sheets = {
+        "Aggregated Metrics for Each Run",
+        "Individual Request Metrics",
+    }
+    for sheet in wb:
+        if sheet.title not in target_sheets or sheet.max_row <= 1:
+            continue
+        empty_cols = []
+        for col_idx in range(1, sheet.max_column + 1):
+            all_empty = True
+            for row_idx in range(2, sheet.max_row + 1):
+                value = sheet.cell(row=row_idx, column=col_idx).value
+                if value is None or value == 0 or value == 0.0:
+                    continue
+                if isinstance(value, str) and value.startswith("{"):
+                    parsed = json.loads(value)
+                    if parsed and all(v is None or v == 0 for v in parsed.values()):
+                        continue
+                all_empty = False
+                break
+            if all_empty:
+                empty_cols.append(col_idx)
+
+        # Group contiguous ranges and hide each column
+        if not empty_cols:
+            continue
+        ranges = []
+        start = empty_cols[0]
+        prev = empty_cols[0]
+        for col_idx in empty_cols[1:]:
+            if col_idx == prev + 1:
+                prev = col_idx
+            else:
+                ranges.append((start, prev))
+                start = col_idx
+                prev = col_idx
+        ranges.append((start, prev))
+
+        for range_start, range_end in ranges:
+            for col_idx in range(range_start, range_end + 1):
+                col_letter = get_column_letter(col_idx)
+                sheet.column_dimensions[col_letter].outlineLevel = 1
+                sheet.column_dimensions[col_letter].hidden = True
+
+
 def _rename_headers(wb: Workbook, rename_map: dict) -> None:
     """Rename header cells (row 1) across all sheets via substring replace."""
     for sheet in wb:
@@ -103,6 +150,8 @@ def create_workbook(
     if task == "text-to-speech":
         _rename_headers(wb, {"TTFT": "TTFB", "ttft": "ttfb"})
 
+    _group_empty_columns(wb)
+
     # Remove the default sheet
     del wb[wb.sheetnames[0]]
 
@@ -144,9 +193,10 @@ def _create_summary_sheet_common(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     is_embedding: bool = False,
+    is_tts: bool = False,
     percentile: str = "mean",
 ) -> None:
-    """Creates summary sheet with common logic for both chat and embedding."""
+    """Creates summary sheet with common logic for chat, embedding, and TTS."""
     summary_iteration_header_map = {
         "batch_size": "Batch Size at target throughput (>{} tokens/s)",
         "num_concurrency": "Concurrency at target speed (>{} tokens/s)",
@@ -154,14 +204,22 @@ def _create_summary_sheet_common(
 
     threshold = 100 if is_embedding else 10
 
-    headers = [
-        "GPU Type",
-        "Use Case",
-        summary_iteration_header_map[experiment_metadata.iteration_type].format(
-            threshold
-        ),
-        "Total Throughput (tokens/min)",
-    ]
+    if is_tts:
+        headers = [
+            "GPU Type",
+            "Use Case",
+            "Concurrency at max audio throughput",
+            "Max Audio Throughput (bytes/s)",
+        ]
+    else:
+        headers = [
+            "GPU Type",
+            "Use Case",
+            summary_iteration_header_map[experiment_metadata.iteration_type].format(
+                threshold
+            ),
+            "Total Throughput (tokens/min)",
+        ]
 
     gpu_type_value = (
         f"{experiment_metadata.server_gpu_count}x{experiment_metadata.server_gpu_type}"
@@ -174,57 +232,78 @@ def _create_summary_sheet_common(
     rows = []
 
     for scenario in merged_scenarios:
-        summary_value = -1
-        summary_total_tokens_per_minute = 0.0
-        display_summary_value: Union[str, int]
-        display_total_tokens_per_minute: Union[str, float]
-
-        iteration_key = experiment_metadata.iteration_type
-
-        for iteration in sorted(run_data.get(scenario, [])):
-            metrics: AggregatedMetrics = run_data[scenario][iteration][
-                "aggregated_metrics"
-            ]
-            metric_value = (
-                metrics.mean_total_tokens_throughput_tokens_per_s
-                if is_embedding
-                else metrics.stats.output_inference_speed[percentile]
+        if is_tts:
+            best_concurrency = None
+            best_audio_throughput = 0.0
+            for iteration in sorted(run_data.get(scenario, [])):
+                metrics: AggregatedMetrics = run_data[scenario][iteration][
+                    "aggregated_metrics"
+                ]
+                audio_tp = metrics.stats.audio_throughput[percentile]
+                if audio_tp is not None and audio_tp > best_audio_throughput:
+                    best_audio_throughput = audio_tp
+                    best_concurrency = getattr(
+                        metrics, experiment_metadata.iteration_type
+                    )
+            rows.append(
+                [
+                    gpu_type_value,
+                    SCENARIO_MAP.get(scenario, scenario),
+                    best_concurrency if best_concurrency else "N/A",
+                    best_audio_throughput,
+                ]
             )
-            if metric_value is not None and metric_value > threshold:
-                if (
-                    summary_value != -1
-                    and getattr(metrics, iteration_key) > summary_value
-                ):
-                    prev_metrics = run_data[scenario][summary_value][
-                        "aggregated_metrics"
-                    ]
-                    if is_within_relative_difference(metrics, prev_metrics):
-                        break
-
-                summary_value = max(summary_value, getattr(metrics, iteration_key))
-                summary_total_tokens_per_minute = (
-                    metrics.mean_total_tokens_throughput_tokens_per_s * 60
-                )
-
-        if summary_value == -1:
-            logger.warning(
-                f"For scenario '{scenario}', couldn't find a concurrency that meets "
-                f"the minimum output inference speed requirement: {threshold} tokens/s."
-                f" Please add lower concurrency test cases."
-            )
-            display_summary_value = "N/A"
-            display_total_tokens_per_minute = "N/A"
         else:
-            display_summary_value = summary_value
-            display_total_tokens_per_minute = summary_total_tokens_per_minute
-        rows.append(
-            [
-                gpu_type_value,
-                SCENARIO_MAP.get(scenario, scenario),
-                display_summary_value,
-                display_total_tokens_per_minute,
-            ]
-        )
+            summary_value = -1
+            summary_total_tokens_per_minute = 0.0
+            display_summary_value: Union[str, int]
+            display_total_tokens_per_minute: Union[str, float]
+
+            iteration_key = experiment_metadata.iteration_type
+
+            for iteration in sorted(run_data.get(scenario, [])):
+                metrics = run_data[scenario][iteration]["aggregated_metrics"]
+                metric_value = (
+                    metrics.mean_total_tokens_throughput_tokens_per_s
+                    if is_embedding
+                    else metrics.stats.output_inference_speed[percentile]
+                )
+                if metric_value is not None and metric_value > threshold:
+                    if (
+                        summary_value != -1
+                        and getattr(metrics, iteration_key) > summary_value
+                    ):
+                        prev_metrics = run_data[scenario][summary_value][
+                            "aggregated_metrics"
+                        ]
+                        if is_within_relative_difference(metrics, prev_metrics):
+                            break
+
+                    summary_value = max(summary_value, getattr(metrics, iteration_key))
+                    summary_total_tokens_per_minute = (
+                        metrics.mean_total_tokens_throughput_tokens_per_s * 60
+                    )
+
+            if summary_value == -1:
+                logger.warning(
+                    f"For scenario '{scenario}', couldn't find a concurrency "
+                    f"that meets the minimum output inference speed requirement:"
+                    f" {threshold} tokens/s."
+                    f" Please add lower concurrency test cases."
+                )
+                display_summary_value = "N/A"
+                display_total_tokens_per_minute = "N/A"
+            else:
+                display_summary_value = summary_value
+                display_total_tokens_per_minute = summary_total_tokens_per_minute
+            rows.append(
+                [
+                    gpu_type_value,
+                    SCENARIO_MAP.get(scenario, scenario),
+                    display_summary_value,
+                    display_total_tokens_per_minute,
+                ]
+            )
 
     _create_sheet_with_common_layout(
         wb=wb,
@@ -240,22 +319,34 @@ def _create_appendix_sheet_common(
     experiment_metadata: ExperimentMetadata,
     run_data: dict,
     is_embedding: bool = False,
+    is_tts: bool = False,
     percentile: str = "mean",
     metrics_time_unit: str = "s",
 ) -> None:
-    """Creates appendix sheet with common logic for both chat and embedding."""
+    """Creates appendix sheet with common logic for chat, embedding, and TTS."""
     iteration_header_map = {
         "batch_size": "Batch Size",
         "num_concurrency": "Concurrency",
     }
+    ttft_label = "TTFB (s)" if is_tts else "TTFT (s)"
     headers = [
         "GPU Type",
         "Use Case",
         iteration_header_map[experiment_metadata.iteration_type],
-        TimeUnitConverter.get_unit_label("TTFT (s)", metrics_time_unit),
+        TimeUnitConverter.get_unit_label(ttft_label, metrics_time_unit),
     ]
 
-    if is_embedding:
+    if is_tts:
+        headers.extend(
+            [
+                "Audio Throughput per Request (bytes/s)",
+                TimeUnitConverter.get_unit_label(
+                    "End-to-End Latency per Request (s)", metrics_time_unit
+                ),
+                "Request Throughput (RPS)",
+            ]
+        )
+    elif is_embedding:
         headers.extend(
             [
                 TimeUnitConverter.get_unit_label(
@@ -304,7 +395,15 @@ def _create_appendix_sheet_common(
                 metrics.stats.ttft[percentile],
             ]
 
-            if is_embedding:
+            if is_tts:
+                row.extend(
+                    [
+                        metrics.stats.audio_throughput[percentile],
+                        metrics.stats.e2e_latency[percentile],
+                        metrics.requests_per_second,
+                    ]
+                )
+            elif is_embedding:
                 row.extend(
                     [
                         metrics.stats.e2e_latency[percentile],
@@ -360,8 +459,9 @@ def create_summary_sheet(
     metrics_time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
+    is_tts = experiment_metadata.task == "text-to-speech"
     _create_summary_sheet_common(
-        wb, experiment_metadata, run_data, is_embedding, percentile
+        wb, experiment_metadata, run_data, is_embedding, is_tts, percentile
     )
 
 
@@ -373,8 +473,15 @@ def create_appendix_sheet(
     metrics_time_unit: str = "s",
 ) -> None:
     is_embedding = experiment_metadata.task.endswith("-to-embeddings")
+    is_tts = experiment_metadata.task == "text-to-speech"
     _create_appendix_sheet_common(
-        wb, experiment_metadata, run_data, is_embedding, percentile, metrics_time_unit
+        wb,
+        experiment_metadata,
+        run_data,
+        is_embedding,
+        is_tts,
+        percentile,
+        metrics_time_unit,
     )
 
 
