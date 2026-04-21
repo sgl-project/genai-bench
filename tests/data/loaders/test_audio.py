@@ -6,7 +6,7 @@ import wave
 import pytest
 
 from genai_bench.data.config import DatasetConfig, DatasetSourceConfig
-from genai_bench.data.loaders.audio import AudioDatasetLoader, _get_wav_duration
+from genai_bench.data.loaders.audio import AudioDatasetLoader, _get_audio_duration
 
 
 def _make_wav_bytes(duration_s: float = 1.0, framerate: int = 16000) -> bytes:
@@ -32,13 +32,13 @@ def dataset_config(tmp_path):
     )
 
 
-def test_get_wav_duration_valid():
+def test_get_audio_duration_wav_valid():
     wav = _make_wav_bytes(duration_s=3.0, framerate=16000)
-    assert _get_wav_duration(wav) == pytest.approx(3.0, rel=1e-3)
+    assert _get_audio_duration(wav, ".wav") == pytest.approx(3.0, rel=1e-3)
 
 
-def test_get_wav_duration_invalid():
-    assert _get_wav_duration(b"not a wav file") == 0.0
+def test_get_audio_duration_wav_invalid():
+    assert _get_audio_duration(b"not a wav file", ".wav") is None
 
 
 def test_load_wav_files(dataset_config, tmp_path):
