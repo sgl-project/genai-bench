@@ -262,6 +262,9 @@ class OpenAIUser(BaseUser):
         data = {
             "model": user_request.model,
             "response_format": user_request.response_format,
+            "temperature": user_request.additional_request_params.get(
+                "temperature", 0.0
+            ),
         }
         if user_request.language:
             data["language"] = user_request.language
