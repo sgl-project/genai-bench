@@ -4,7 +4,7 @@ import io
 import struct
 import wave
 from pathlib import Path
-from typing import Any, List, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from genai_bench.data.loaders.base import DatasetFormat, DatasetLoader
 from genai_bench.logging import init_logger
@@ -51,11 +51,7 @@ class AudioDatasetLoader(DatasetLoader):
                 )
                 continue
             audio_bytes = path.read_bytes()
-            duration_s = (
-                _get_wav_duration(audio_bytes)
-                if path.suffix.lower() == ".wav"
-                else None
-            )
+            duration_s = _get_audio_duration(audio_bytes, path.suffix.lower())
             results.append((audio_bytes, duration_s, path.name))
 
         if not results:
@@ -66,10 +62,16 @@ class AudioDatasetLoader(DatasetLoader):
         return results
 
 
-def _get_wav_duration(audio_bytes: bytes) -> float:
-    """Return duration in seconds for a WAV file, or 0.0 on parse error."""
+def _get_audio_duration(audio_bytes: bytes, suffix: str) -> Optional[float]:
+    """Return duration in seconds for an audio file, or None on parse error."""
     try:
-        with wave.open(io.BytesIO(audio_bytes)) as wf:
-            return wf.getnframes() / wf.getframerate()
-    except (wave.Error, struct.error, EOFError):
-        return 0.0
+        if suffix == ".wav":
+            with wave.open(io.BytesIO(audio_bytes)) as wf:
+                return wf.getnframes() / wf.getframerate()
+        else:
+            import soundfile as sf
+
+            with sf.SoundFile(io.BytesIO(audio_bytes)) as f:
+                return f.frames / f.samplerate
+    except Exception:
+        return None
