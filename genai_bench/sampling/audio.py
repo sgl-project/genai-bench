@@ -6,6 +6,8 @@ import struct
 import wave
 from typing import Any, List, Optional, Tuple
 
+import soundfile as sf
+
 from genai_bench.data.config import DatasetConfig
 from genai_bench.logging import init_logger
 from genai_bench.protocol import UserAudioTranscriptionRequest, UserRequest
@@ -64,8 +66,12 @@ class AudioSampler(Sampler):
         else:
             clip_duration_s = self.additional_request_params.get("clip_duration_s")
 
-        if clip_duration_s is not None and filename.endswith(".wav"):
-            audio_bytes, duration_s = _truncate_wav(audio_bytes, float(clip_duration_s))
+        if clip_duration_s is not None:
+            suffix = filename.rsplit(".", 1)[-1].lower()
+            if suffix == "wav":
+                audio_bytes, duration_s = _truncate_wav(audio_bytes, float(clip_duration_s))
+            elif suffix == "flac":
+                audio_bytes, duration_s = _truncate_flac(audio_bytes, float(clip_duration_s))
 
         return UserAudioTranscriptionRequest(
             model=self.model,
@@ -82,6 +88,30 @@ class AudioSampler(Sampler):
                 if k not in ("language", "response_format", "clip_duration_s")
             },
         )
+
+
+def _truncate_flac(audio_bytes: bytes, max_duration_s: float) -> Tuple[bytes, float]:
+    """Truncate a FLAC file to at most max_duration_s seconds.
+
+    Returns (truncated_bytes, actual_duration_s).
+    If the file is already shorter than max_duration_s, returns it unchanged.
+    Returns the original bytes unchanged on parse error.
+    """
+    try:
+        with sf.SoundFile(io.BytesIO(audio_bytes)) as f:
+            samplerate = f.samplerate
+            total_frames = f.frames
+            max_frames = int(max_duration_s * samplerate)
+            if total_frames <= max_frames:
+                return audio_bytes, total_frames / samplerate
+            samples = f.read(max_frames, dtype="int16", always_2d=True)
+
+        buf = io.BytesIO()
+        sf.write(buf, samples, samplerate, format="flac", subtype="PCM_16")
+        return buf.getvalue(), max_duration_s
+    except Exception as e:
+        logger.warning("Could not truncate FLAC, using original: %s", e)
+        return audio_bytes, 0.0
 
 
 def _truncate_wav(audio_bytes: bytes, max_duration_s: float) -> Tuple[bytes, float]:
