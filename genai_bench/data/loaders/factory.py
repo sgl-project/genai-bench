@@ -3,6 +3,7 @@
 from typing import Any, List, Tuple, Union, cast
 
 from genai_bench.data.config import DatasetConfig
+from genai_bench.data.loaders.audio import AudioDatasetLoader
 from genai_bench.data.loaders.image import ImageDatasetLoader
 from genai_bench.data.loaders.text import TextDatasetLoader
 from genai_bench.logging import init_logger
@@ -16,7 +17,7 @@ class DataLoaderFactory:
     @staticmethod
     def load_data_for_task(
         task: str, dataset_config: DatasetConfig
-    ) -> Union[List[str], List[Tuple[str, Any]]]:
+    ) -> Union[List[str], List[Tuple[Any, ...]]]:
         """Load data for a specific task.
 
         Args:
@@ -32,6 +33,8 @@ class DataLoaderFactory:
             return DataLoaderFactory._load_text_data(dataset_config, output_modality)
         elif "image" in input_modality:
             return DataLoaderFactory._load_image_data(dataset_config)
+        elif input_modality == "audio":
+            return DataLoaderFactory._load_audio_data(dataset_config)
         else:
             raise ValueError(f"Unsupported input modality: {input_modality}")
 
@@ -54,5 +57,14 @@ class DataLoaderFactory:
     ) -> List[Tuple[str, Any]]:
         """Load image data."""
         loader = ImageDatasetLoader(dataset_config)
+        data = loader.load_request()
+        return data  # type: ignore
+
+    @staticmethod
+    def _load_audio_data(
+        dataset_config: DatasetConfig,
+    ) -> List[Tuple[Any, ...]]:
+        """Load audio data as (audio_bytes, duration_s, filename) tuples."""
+        loader = AudioDatasetLoader(dataset_config)
         data = loader.load_request()
         return data  # type: ignore

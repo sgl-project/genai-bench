@@ -64,7 +64,7 @@ class DatasetLoader(ABC):
                     f"{self.media_type} loader."
                 )
 
-    def load_request(self) -> Union[List[str], List[Tuple[str, Any]]]:
+    def load_request(self) -> Union[List[str], List[Tuple[Any, ...]]]:
         """Load data from the dataset source."""
         self._disable_pillow_decompresion_check()
         data = self.dataset_source.load()
@@ -73,7 +73,7 @@ class DatasetLoader(ABC):
     @abstractmethod
     def _process_loaded_data(
         self, data: Any
-    ) -> Union[List[str], List[Tuple[str, Any]]]:
+    ) -> Union[List[str], List[Tuple[Any, ...]]]:
         """
         Process data loaded from dataset source. Must be implemented by subclasses.
         """

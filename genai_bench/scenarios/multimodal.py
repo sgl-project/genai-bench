@@ -1,3 +1,4 @@
+import random
 from typing import Optional, Tuple
 
 from genai_bench.scenarios.base import MultiModality, Scenario, parse_params_str
@@ -66,3 +67,40 @@ class ImageModality(Scenario):
                 num_input_dimension_height=num_input_dimension_height,
                 num_input_images=optional[0],
             )
+
+
+class AudioScenario(Scenario):
+    """
+    Audio input scenario with Gaussian-distributed clip duration.
+
+    Format: A(mean_s,std_s)
+    e.g. A(10,5) — mean 10s, std 5s (matching Ming's N(10,5) convention)
+         A(30,15) — mean 30s, std 15s
+         A(60,30) — mean 60s, std 30s
+
+    sample() returns a clip duration in seconds, clamped to [1, mean+3*std].
+    """
+
+    scenario_type = MultiModality.AUDIO
+    validation_pattern = r"^A\(\d+,\d+\)$"
+
+    def __init__(self, mean_s: int, std_s: int):
+        self.mean_s = mean_s
+        self.std_s = std_s
+
+    def sample(self) -> float:
+        """Sample a clip duration in seconds from N(mean_s, std_s).
+
+        Clamped to [1s, mean+3*std].
+        """
+        duration = random.gauss(self.mean_s, self.std_s)
+        max_duration = self.mean_s + 3 * self.std_s
+        return max(1.0, min(duration, float(max_duration)))
+
+    def to_string(self) -> str:
+        return f"A({self.mean_s},{self.std_s})"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "AudioScenario":
+        mean_s, std_s = parse_params_str(params_str)[0]
+        return cls(mean_s=mean_s, std_s=std_s)
