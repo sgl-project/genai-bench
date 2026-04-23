@@ -5,7 +5,7 @@ This section puts together the standard metrics required for LLM serving perform
 **NOTE**:
 
 - Each single-request metric includes standard statistics: **percentile**, **min**, **max**, **stddev**, and **mean**.
-- The following metrics cover **input**, **output**, and **end-to-end (e2e)** stages. For *chat* tasks, all stages are relevant for evaluation. For *embedding* tasks, where there is no output stage, output metrics will be set to 0. For details about output metrics collection, please check out `OUTPUT_METRICS_FIELDS` in [metrics.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/metrics/metrics.py).
+- The following metrics cover **input**, **output**, and **end-to-end (e2e)** stages. For *chat* tasks, all stages are relevant for evaluation. For *embedding* tasks, where there is no output stage, output metrics will be set to 0. For *text-to-speech* tasks, TTFT is reported as **TTFB (Time to First Byte)** — the time until the first audio chunk arrives — and **Audio Throughput** (bytes/s) replaces token-based output metrics. For details about output metrics collection, please check out `OUTPUT_METRICS_FIELDS` in [metrics.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/metrics/metrics.py).
 
 ## Single Request Level Metrics
 
@@ -24,6 +24,7 @@ The following metrics capture token-level performance for a single request, prov
 Num of Reasoning Tokens  | Number of reasoning tokens outputted. Always less than or equal to output tokens.    | `num_reasoning_tokens = completion_token_details.reasoning_tokens`    | tokens    |
 | Input Throughput       | The overall throughput of input (input process).                                                                                                          | `input_throughput = num_input_tokens / TTFT`                   | tokens/second |
 | Output Throughput      | The throughput of output (output generation) for a single request.                                                                                        | `output_throughput = (num_output_tokens - 1) / output_latency` | tokens/second |
+| Audio Throughput       | The rate of audio data generated per second (text-to-speech only). Measures streaming audio delivery speed after the first byte arrives.                   | `audio_throughput = audio_bytes / (e2e_latency - TTFB)`        | bytes/second  |
 
 ## Aggregated Metrics
 
