@@ -35,7 +35,7 @@ genai-bench benchmark --api-backend sglang \
 ### Options
 
 #### **API Configuration** (Required)
-- `--api-backend` - Choose your model provider (openai, oci-cohere, aws-bedrock, azure-openai, gcp-vertex, vllm, sglang) **(required)**
+- `--api-backend` - Choose your model provider (openai, oci-cohere, oci-cohere-v2, aws-bedrock, azure-openai, gcp-vertex, vllm, sglang) **(required)**
 - `--api-base` - API endpoint URL **(required)**
 - `--api-model-name` - Model name for the request body **(required)**
 - `--task` - Task type (text-to-text, text-to-embeddings, image-text-to-text, etc.) **(required)**

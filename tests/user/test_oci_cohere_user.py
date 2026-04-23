@@ -34,7 +34,54 @@ def test_cohere_user():
     OCICohereUser.auth_provider = mock_auth
 
     user = OCICohereUser(environment=MagicMock())
-    return user
+    yield user
+
+
+def test_supported_tasks_exclude_vision_chat():
+    assert "image-text-to-text" not in OCICohereUser.supported_tasks
+
+
+def test_embeddings_use_legacy_parse(test_cohere_user):
+    mock_send = MagicMock()
+    test_cohere_user.send_request = mock_send
+    test_cohere_user.sample = lambda: UserEmbeddingRequest(
+        documents=["text"],
+        num_prefill_tokens=4,
+        model="cohere-embed-v3",
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+        },
+    )
+
+    test_cohere_user.embeddings()
+
+    assert (
+        mock_send.call_args.kwargs["parse_strategy"]
+        == test_cohere_user.parse_embedding_response
+    )
+
+
+def test_rerank_use_legacy_parse(test_cohere_user):
+    mock_send = MagicMock()
+    test_cohere_user.send_request = mock_send
+    test_cohere_user.sample = lambda: UserReRankRequest(
+        documents=["doc"],
+        query="question",
+        num_prefill_tokens=2,
+        model="cohere-rerank",
+        additional_request_params={
+            "compartmentId": "ocid1.compartment.oc1..example",
+            "servingType": "ON_DEMAND",
+        },
+    )
+
+    test_cohere_user.rerank()
+
+    assert (
+        mock_send.call_args.kwargs["parse_strategy"]
+        == test_cohere_user.parse_rerank_response
+    )
 
 
 @patch("genai_bench.user.oci_cohere_user.GenerativeAiInferenceClient")

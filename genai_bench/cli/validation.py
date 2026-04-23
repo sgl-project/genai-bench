@@ -14,6 +14,7 @@ from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.cohere_user import CohereUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
+from genai_bench.user.oci_cohere_v2_user import OCICohereV2User
 from genai_bench.user.oci_genai_user import OCIGenAIUser
 from genai_bench.user.oci_openai_user import OCIOpenAIUser
 from genai_bench.user.openai_user import OpenAIUser
@@ -25,6 +26,7 @@ API_BACKEND_USER_MAP = {
     OpenAIUser.BACKEND_NAME: OpenAIUser,
     OCIOpenAIUser.BACKEND_NAME: OCIOpenAIUser,
     OCICohereUser.BACKEND_NAME: OCICohereUser,
+    OCICohereV2User.BACKEND_NAME: OCICohereV2User,
     OCIGenAIUser.BACKEND_NAME: OCIGenAIUser,
     CohereUser.BACKEND_NAME: CohereUser,
     AWSBedrockUser.BACKEND_NAME: AWSBedrockUser,
@@ -273,6 +275,7 @@ def validate_api_key(ctx, param, value):
     no_api_key = [
         OCIOpenAIUser.BACKEND_NAME,
         OCICohereUser.BACKEND_NAME,
+        OCICohereV2User.BACKEND_NAME,
         OCIGenAIUser.BACKEND_NAME,
         CohereUser.BACKEND_NAME,
         AWSBedrockUser.BACKEND_NAME,

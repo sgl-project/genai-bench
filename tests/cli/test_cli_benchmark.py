@@ -378,6 +378,97 @@ def test_benchmark_command_with_cohere(cli_runner, default_options):
     "mock_http_requests",
     "mock_experiment_path",
 )
+def test_benchmark_cohere_v2_rejects_embeddings_task(cli_runner, default_options):
+    """V2 + text-to-embeddings must be rejected regardless of CLI arg order."""
+    with (
+        tempfile.NamedTemporaryFile() as config_file,
+        tempfile.NamedTemporaryFile() as key_file,
+    ):
+        key_file.write(b"key")
+        key_file.flush()
+        config = f"""[DEFAULT]
+    user=ocid1.user.oc1..example
+    fingerprint=8c:4c:01:71:6e:4a:e8:11:ab:c9:c2:63:fb:36:f5:ec
+    tenancy=ocid1.tenancy.oc1..example
+    region=us-ashburn-1
+    key_file={key_file.name}"""
+        config_file.write(config.encode("utf-8"))
+        config_file.flush()
+
+        options = [
+            opt if opt != "openai" else "oci-cohere-v2" for opt in default_options
+        ]
+        options = [
+            opt if opt != "text-to-text" else "text-to-embeddings" for opt in options
+        ]
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *options,
+                "--config-file",
+                config_file.name,
+            ],
+        )
+    assert result.exit_code != 0, (
+        "Expected failure for v2 + text-to-embeddings but command succeeded"
+    )
+    assert "Task 'text-to-embeddings' is not supported" in result.output
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_command_with_cohere_v2(cli_runner, default_options):
+    with (
+        tempfile.NamedTemporaryFile() as config_file,
+        tempfile.NamedTemporaryFile() as key_file,
+    ):
+        key_file.write(b"key")
+        key_file.flush()
+        config = f"""[DEFAULT]
+user=ocid1.user.oc1..example
+fingerprint=8c:4c:01:71:6e:4a:e8:11:ab:c9:c2:63:fb:36:f5:ec
+tenancy=ocid1.tenancy.oc1..example
+region=us-ashburn-1
+key_file={key_file.name}"""
+        config_file.write(config.encode("utf-8"))
+        config_file.flush()
+
+        options = [
+            opt if opt != "openai" else "oci-cohere-v2" for opt in default_options
+        ]
+
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *options,
+                "--config-file",
+                config_file.name,
+            ],
+        )
+    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
 def test_benchmark_command_with_multiple_workers(
     cli_runner, default_options, mock_runner_stats
 ):

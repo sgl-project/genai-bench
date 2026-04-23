@@ -15,6 +15,7 @@ from genai_bench.user.aws_bedrock_user import AWSBedrockUser
 from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
 from genai_bench.user.oci_cohere_user import OCICohereUser
+from genai_bench.user.oci_cohere_v2_user import OCICohereV2User
 from genai_bench.user.openai_user import OpenAIUser
 
 
@@ -64,6 +65,13 @@ class TestMultiCloudValidation:
 
         assert result == "oci-cohere"
         assert self.ctx.obj["user_class"] == OCICohereUser
+
+    def test_validate_oci_cohere_v2_backend(self):
+        """Test OCI Cohere V2 backend validation."""
+        result = validate_api_backend(self.ctx, self.param, "oci-cohere-v2")
+
+        assert result == "oci-cohere-v2"
+        assert self.ctx.obj["user_class"] == OCICohereV2User
 
     def test_validate_vllm_backend(self):
         """Test vLLM backend validation (uses OpenAI user)."""
@@ -176,6 +184,19 @@ class TestMultiCloudValidation:
         assert result is None
         mock_echo.assert_called_once()
         assert "API key is not used for oci-cohere backend" in str(mock_echo.call_args)
+
+    @patch("click.echo")
+    def test_validate_api_key_oci_cohere_v2_warns(self, mock_echo):
+        """Test API key warning for OCI Cohere V2."""
+        self.ctx.params["api_backend"] = "oci-cohere-v2"
+
+        result = validate_api_key(self.ctx, self.param, "some-key")
+
+        assert result is None
+        mock_echo.assert_called_once()
+        assert "API key is not used for oci-cohere-v2 backend" in str(
+            mock_echo.call_args
+        )
 
     def test_validate_api_key_no_backend(self):
         """Test API key validation without backend specified."""
@@ -328,6 +349,7 @@ class TestMultiCloudValidation:
         expected_backends = [
             "openai",
             "oci-cohere",
+            "oci-cohere-v2",
             "cohere",
             "aws-bedrock",
             "azure-openai",

@@ -113,8 +113,22 @@ class OCICohereUser(BaseUser):
 
         compartment_id = self.get_compartment_id(user_request)
         serving_mode = self.get_serving_mode(user_request)
+        chat_request = self._build_chat_request(user_request)
 
-        # Construct chat request
+        chat_detail = ChatDetails(
+            compartment_id=compartment_id,
+            serving_mode=serving_mode,
+            chat_request=chat_request,
+        )
+        return self.send_request(
+            make_request=lambda: self.client.chat(chat_detail),
+            endpoint="chat",
+            payload=chat_detail,
+            parse_strategy=self._parse_chat_response,
+            num_prefill_tokens=user_request.num_prefill_tokens,
+        )
+
+    def _build_chat_request(self, user_request: UserChatRequest) -> CohereChatRequest:
         chat_request = CohereChatRequest(
             api_format="COHERE",
             message=user_request.prompt,
@@ -131,7 +145,6 @@ class OCICohereUser(BaseUser):
             ),
         )
 
-        # Add chat history and documents if provided
         if "chatHistory" in user_request.additional_request_params:
             chat_request.chat_history = user_request.additional_request_params[
                 "chatHistory"
@@ -144,19 +157,7 @@ class OCICohereUser(BaseUser):
             chat_request.documents = user_request.additional_request_params["documents"]
             logger.info(f"Documents provided with {len(chat_request.documents)} items.")
 
-        # Define payload with compartment ID and serving mode
-        chat_detail = ChatDetails(
-            compartment_id=compartment_id,
-            serving_mode=serving_mode,
-            chat_request=chat_request,
-        )
-        return self.send_request(
-            make_request=lambda: self.client.chat(chat_detail),
-            endpoint="chat",
-            payload=chat_detail,
-            parse_strategy=self.parse_chat_response,
-            num_prefill_tokens=user_request.num_prefill_tokens,
-        )
+        return chat_request
 
     @task
     def embeddings(self):
@@ -294,7 +295,7 @@ class OCICohereUser(BaseUser):
             )
             return OnDemandServingMode(model_id=model_id)
 
-    def parse_chat_response(
+    def _parse_chat_response(
         self,
         request: ChatDetails,
         response: ChatResult,
