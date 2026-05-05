@@ -204,6 +204,45 @@ Model-specific parameters like `quality`, `response_format`, `output_format`, or
 --additional-request-params '{"num_inference_steps": 50, "negative_prompt": "blurry, low quality"}'
 ```
 
+### Start a text-to-speech benchmark
+
+Below is a sample command to benchmark text-to-speech against the OpenAI API. The `A(num_input_chars)` scenario controls the character length of the input text sent to the TTS endpoint. The default voice is `alloy`; override with `--additional-request-params '{"voice": "nova"}'`.
+
+```shell
+genai-bench benchmark --api-backend openai \
+            --api-base "https://api.openai.com" \
+            --api-key "$OPENAI_API_KEY" \
+            --api-model-name "tts-1" \
+            --model-tokenizer gpt2 \
+            --task text-to-speech \
+            --traffic-scenario "A(100)" \
+            --traffic-scenario "A(500)" \
+            --traffic-scenario "A(1000)" \
+            --num-concurrency 1 \
+            --max-time-per-run 5 \
+            --max-requests-per-run 10
+```
+
+### Start a text-to-speech benchmark against OCI OpenAI
+
+Below is a sample command to benchmark text-to-speech against an OCI OpenAI-compatible endpoint. A `compartmentId` is required in `--additional-request-params`.
+
+```shell
+genai-bench benchmark --api-backend oci-openai \
+            --api-base "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/openai/v1" \
+            --api-model-name "openai.gpt-4o-mini-tts" \
+            --model-tokenizer gpt2 \
+            --task text-to-speech \
+            --auth security_token \
+            --profile BoatOc1 \
+            --traffic-scenario "A(100)" \
+            --traffic-scenario "A(500)" \
+            --num-concurrency 1 \
+            --max-time-per-run 5 \
+            --max-requests-per-run 10 \
+            --additional-request-params '{"compartmentId": "ocid1.compartment.oc1..your-compartment-ocid"}'
+```
+
 ## Specify a custom benchmark load
 
 **IMPORTANT**: logs in genai-bench are all useful. Please keep an eye on WARNING logs when you finish one benchmark.

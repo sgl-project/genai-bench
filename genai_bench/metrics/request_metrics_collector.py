@@ -4,6 +4,7 @@ from genai_bench.protocol import (
     UserChatResponse,
     UserImageGenerationResponse,
     UserResponse,
+    UserTextToSpeechResponse,
 )
 
 logger = init_logger(__name__)
@@ -57,6 +58,11 @@ class RequestMetricsCollector:
         # Check if the response is a UserChatResponse for output metrics
         if isinstance(response, UserChatResponse):
             self._calculate_output_metrics(response)
+        elif isinstance(response, UserTextToSpeechResponse):
+            self._reset_output_metrics()
+            output_latency = self.metrics.e2e_latency - self.metrics.ttft
+            if output_latency > 0 and response.audio_bytes > 0:
+                self.metrics.audio_throughput = response.audio_bytes / output_latency
         elif isinstance(response, UserImageGenerationResponse):
             # For image generation (non-streaming), use same approach as embeddings
             # to avoid filter_metrics setting tpot/output_inference_speed to None

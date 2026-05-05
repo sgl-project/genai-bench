@@ -7,10 +7,11 @@ from genai_bench.protocol import (
     UserEmbeddingRequest,
     UserImageGenerationRequest,
     UserReRankRequest,
+    UserTextToSpeechRequest,
 )
 from genai_bench.sampling.text import TextSampler
 from genai_bench.scenarios import DatasetScenario, EmbeddingScenario, NormalDistribution
-from genai_bench.scenarios.multimodal import ImageModality
+from genai_bench.scenarios.multimodal import AudioModality, ImageModality
 from genai_bench.scenarios.text import DeterministicDistribution, ReRankScenario
 
 
@@ -396,3 +397,73 @@ class TestTextSampler(unittest.TestCase):
         self.assertIsInstance(request, UserImageGenerationRequest)
         self.assertIsNone(request.size)  # Default when dataset mode
         self.assertIn(request.prompt, self.test_data)
+
+    def test_sample_tts_request_with_scenario(self):
+        """Test TTS sampling with A(num_chars) scenario."""
+        tts_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="speech",
+            data=[
+                "Hello world this is a test line for TTS synthesis.",
+                "Another line.",
+            ],
+        )
+
+        scenario = AudioModality(num_input_chars=20)
+        request = tts_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserTextToSpeechRequest)
+        self.assertEqual(request.model, "mock_model")
+        self.assertEqual(len(request.input_text), 20)
+        self.assertEqual(request.voice, "alloy")
+
+    def test_sample_tts_request_with_dataset(self):
+        """Test TTS sampling in dataset mode."""
+        tts_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="speech",
+            data=self.test_data,
+        )
+
+        scenario = DatasetScenario()
+        request = tts_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserTextToSpeechRequest)
+        self.assertEqual(request.model, "mock_model")
+        self.assertIn(request.input_text, self.test_data)
+        self.assertEqual(request.voice, "alloy")
+
+    def test_sample_tts_request_custom_voice(self):
+        """Test TTS sampling with custom voice via additional_request_params."""
+        tts_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="speech",
+            data=self.test_data,
+            additional_request_params={"voice": "nova"},
+        )
+
+        scenario = DatasetScenario()
+        request = tts_sampler.sample(scenario)
+
+        self.assertIsInstance(request, UserTextToSpeechRequest)
+        self.assertEqual(request.voice, "nova")
+
+    def test_generate_text_by_chars(self):
+        """Test _generate_text_by_chars returns exactly num_chars characters."""
+        tts_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality="speech",
+            data=["Hello world.", "Another line of text.", "Short."],
+        )
+
+        for num_chars in [5, 10, 30, 50]:
+            result = tts_sampler._generate_text_by_chars(num_chars)
+            self.assertEqual(
+                len(result),
+                num_chars,
+                f"Expected {num_chars} chars, got {len(result)}",
+            )

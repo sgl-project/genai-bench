@@ -13,6 +13,8 @@ from genai_bench.protocol import (
     UserImageGenerationRequest,
     UserReRankRequest,
     UserResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
 
@@ -1438,6 +1440,114 @@ def test_chat_with_system_message_and_vision(mock_post, mock_openai_user):
 
     # Verify system_message is not in the payload (it's been filtered out)
     assert "system_message" not in payload
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_speech(mock_post, mock_openai_user):
+    """Test text-to-speech request."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
+        model="tts-1",
+        input_text="Hello world, this is a test.",
+        voice="alloy",
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_content = MagicMock(
+        return_value=[b"\x00" * 1024, b"\x00" * 1024]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.speech()
+
+    mock_post.assert_called_once_with(
+        url="http://example.com/v1/audio/speech",
+        json={
+            "model": "tts-1",
+            "input": "Hello world, this is a test.",
+            "voice": "alloy",
+        },
+        stream=True,
+        headers={
+            "Authorization": "Bearer fake_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_speech_with_additional_params(mock_post, mock_openai_user):
+    """Test TTS request with additional params like speed and response_format."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
+        model="tts-1-hd",
+        input_text="Test input.",
+        voice="nova",
+        additional_request_params={
+            "voice": "nova",
+            "speed": 1.5,
+            "response_format": "pcm",
+        },
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_content = MagicMock(return_value=[b"\x00" * 1024])
+    mock_post.return_value = response_mock
+
+    mock_openai_user.speech()
+
+    call_args = mock_post.call_args
+    payload = call_args.kwargs["json"]
+    assert payload["model"] == "tts-1-hd"
+    assert payload["input"] == "Test input."
+    assert payload["voice"] == "nova"
+    assert payload["speed"] == 1.5
+    assert payload["response_format"] == "pcm"
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_speech_response_parsing(mock_post, mock_openai_user):
+    """Test that parse_speech_response returns correct UserTextToSpeechResponse."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: UserTextToSpeechRequest(
+        model="tts-1",
+        input_text="Hello",
+        voice="alloy",
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_content = MagicMock(
+        return_value=[b"\x00" * 1024, b"\x00" * 1024, b"\x00" * 1024]
+    )
+    mock_post.return_value = response_mock
+
+    user_response = mock_openai_user.send_request(
+        stream=True,
+        endpoint="/v1/audio/speech",
+        payload={"model": "tts-1", "input": "Hello", "voice": "alloy"},
+        parse_strategy=mock_openai_user.parse_speech_response,
+    )
+
+    assert isinstance(user_response, UserTextToSpeechResponse)
+    assert user_response.status_code == 200
+    assert user_response.num_prefill_tokens == 0
+    assert user_response.time_at_first_token <= user_response.end_time
+
+
+def test_speech_with_wrong_request_type(mock_openai_user):
+    """Test speech with wrong request type raises error."""
+    mock_openai_user.on_start()
+    mock_openai_user.sample = lambda: "InvalidRequestType"
+
+    with pytest.raises(
+        AttributeError,
+        match="user_request should be of type UserTextToSpeechRequest for "
+        "OpenAIUser.speech",
+    ):
+        mock_openai_user.speech()
 
 
 @pytest.mark.parametrize(

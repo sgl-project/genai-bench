@@ -32,10 +32,13 @@ class RequestLevelMetrics(BaseModel):
     output_throughput: Optional[float] = Field(
         None, description="Output throughput in tokens/s"
     )
+    audio_throughput: Optional[float] = Field(
+        None, description="Audio throughput in bytes/s"
+    )
     error_code: Optional[int] = Field(None, description="Error code")
     error_message: Optional[str] = Field(None, description="Error message")
 
-    # Class-level dictionaries to map output metrics to output fields
+    # Class-level sets to map task-specific metrics to fields
     OUTPUT_METRICS_FIELDS: ClassVar[set[str]] = {
         "tpot",
         "output_latency",
@@ -43,6 +46,9 @@ class RequestLevelMetrics(BaseModel):
         "num_output_tokens",
         "output_throughput",
         "num_reasoning_tokens",
+    }
+    AUDIO_METRICS_FIELDS: ClassVar[set[str]] = {
+        "audio_throughput",
     }
 
     @model_validator(mode="before")
@@ -58,7 +64,8 @@ class RequestLevelMetrics(BaseModel):
             # Validate all metric fields
             for field_name, field_value in values.items():
                 if (
-                    field_name not in {"error_code", "error_message"}
+                    field_name
+                    not in ({"error_code", "error_message"} | cls.AUDIO_METRICS_FIELDS)
                     and field_value is None
                 ):
                     raise ValueError(
@@ -105,6 +112,7 @@ class MetricStats(BaseModel):
     total_tokens: StatField = Field(default_factory=StatField)
     input_throughput: StatField = Field(default_factory=StatField)
     output_throughput: StatField = Field(default_factory=StatField)
+    audio_throughput: StatField = Field(default_factory=StatField)
 
     def to_dict(self) -> Dict[str, Dict[str, float]]:
         """Convert to dictionary format for serialization."""

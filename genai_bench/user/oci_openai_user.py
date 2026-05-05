@@ -14,7 +14,12 @@ from oci_openai import (
 from openai import OpenAI
 
 from genai_bench.logging import init_logger
-from genai_bench.protocol import UserImageGenerationRequest, UserImageGenerationResponse
+from genai_bench.protocol import (
+    UserImageGenerationRequest,
+    UserImageGenerationResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
+)
 from genai_bench.user.openai_user import OpenAIUser
 
 logger = init_logger(__name__)
@@ -33,6 +38,7 @@ class OCIOpenAIUser(OpenAIUser):
     BACKEND_NAME = "oci-openai"
     supported_tasks = {
         "text-to-image": "images_generations",
+        "text-to-speech": "speech",
     }
 
     def on_start(self):
@@ -127,4 +133,71 @@ class OCIOpenAIUser(OpenAIUser):
             )
 
         self.collect_metrics(metrics_response, "/v1/images/generations")
+        return metrics_response
+
+    @task
+    def speech(self):
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserTextToSpeechRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserTextToSpeechRequest for OCIOpenAIUser.speech, got "
+                f"{type(user_request)}"
+            )
+
+        compartment_id = user_request.additional_request_params.get("compartmentId")
+        if not compartment_id:
+            raise ValueError("compartmentId missing in additional request params")
+
+        filtered_params = {
+            k: v
+            for k, v in user_request.additional_request_params.items()
+            if k not in ("compartmentId", "model", "input", "voice")
+        }
+
+        start_time = time.monotonic()
+        try:
+            with self.openai_client.audio.speech.with_streaming_response.create(
+                model=user_request.model,
+                voice=user_request.voice,
+                input=user_request.input_text,
+                extra_headers={"CompartmentId": compartment_id},
+                **filtered_params,
+            ) as response:
+                time_at_first_token = None
+                total_bytes = 0
+                for chunk in response.iter_bytes(1024):
+                    if time_at_first_token is None:
+                        time_at_first_token = time.monotonic()
+                    total_bytes += len(chunk)
+                end_time = time.monotonic()
+
+            if time_at_first_token is None:
+                logger.warning("TTS response returned 200 but empty audio body")
+                time_at_first_token = end_time
+
+            logger.debug(
+                f"TTS response: audio_bytes={total_bytes}, "
+                f"ttft={time_at_first_token - start_time:.3f}s, "
+                f"e2e_latency={end_time - start_time:.3f}s"
+            )
+
+            metrics_response = UserTextToSpeechResponse(
+                status_code=200,
+                start_time=start_time,
+                end_time=end_time,
+                time_at_first_token=time_at_first_token,
+                num_prefill_tokens=0,
+                audio_bytes=total_bytes,
+            )
+
+        except Exception as e:
+            logger.error(f"OCI TTS failed: {e}")
+            metrics_response = UserTextToSpeechResponse(
+                status_code=getattr(e, "status_code", 500),
+                error_message=str(e),
+            )
+
+        self.collect_metrics(metrics_response, "/v1/audio/speech")
         return metrics_response

@@ -214,6 +214,87 @@ class PlotConfigManager:
                 },
             ],
         },
+        "2x4_tts": {
+            "layout": {"rows": 2, "cols": 4, "figsize": [32, 12]},
+            "plots": [
+                {
+                    "title": "Audio Throughput per Request vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_field": "stats.audio_throughput.mean",
+                    "x_label": "RPS (req/s)",
+                    "y_label": "Audio Throughput per Request (bytes/s)",
+                    "plot_type": "line",
+                    "position": [0, 0],
+                },
+                {
+                    # TTS uses ttft field internally;
+                    # displayed as TTFB (Time to First Byte)
+                    "title": "TTFB vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_field": "stats.ttft.mean",
+                    "x_label": "RPS (req/s)",
+                    "y_label": "TTFB (s)",
+                    "plot_type": "line",
+                    "position": [0, 1],
+                },
+                {
+                    "title": "Mean E2E Latency per Request vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_field": "stats.e2e_latency.mean",
+                    "x_label": "RPS (req/s)",
+                    "y_label": "Mean E2E Latency per Request (s)",
+                    "plot_type": "line",
+                    "position": [0, 2],
+                },
+                {
+                    "title": "Error Rates by HTTP Status vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "error_rate",
+                    "x_label": "Concurrency",
+                    "y_label": "Error Rate",
+                    "plot_type": "bar",
+                    "position": [0, 3],
+                },
+                {
+                    "title": "Audio Throughput per Request vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "stats.audio_throughput.mean",
+                    "x_label": "Concurrency",
+                    "y_label": "Audio Throughput per Request (bytes/s)",
+                    "plot_type": "line",
+                    "position": [1, 0],
+                },
+                {
+                    # TTS uses ttft field internally;
+                    # displayed as TTFB (Time to First Byte)
+                    "title": "TTFB vs Concurrency",
+                    "x_field": "num_concurrency",
+                    "y_field": "stats.ttft.mean",
+                    "x_label": "Concurrency",
+                    "y_label": "TTFB (s)",
+                    "plot_type": "line",
+                    "position": [1, 1],
+                },
+                {
+                    "title": "P90 E2E Latency per Request vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_field": "stats.e2e_latency.p90",
+                    "x_label": "RPS (req/s)",
+                    "y_label": "P90 E2E Latency per Request (s)",
+                    "plot_type": "line",
+                    "position": [1, 2],
+                },
+                {
+                    "title": "P99 E2E Latency per Request vs RPS",
+                    "x_field": "requests_per_second",
+                    "y_field": "stats.e2e_latency.p99",
+                    "x_label": "RPS (req/s)",
+                    "y_label": "P99 E2E Latency per Request (s)",
+                    "plot_type": "line",
+                    "position": [1, 3],
+                },
+            ],
+        },
         "simple_2x2": {
             "layout": {"rows": 2, "cols": 2, "figsize": [16, 12]},
             "plots": [

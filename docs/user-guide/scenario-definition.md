@@ -32,6 +32,10 @@ Scenarios are optional. If you don’t provide any and you supply a dataset, gen
     - ReRank: `R(tokens_per_document,tokens_per_query)`
     - Example: `R(1024,100)`
 
+- Audio
+    - Audio: `A(num_input_chars)`
+    - Example: `A(500)`
+
 - Image multi-modality
     - Image: `I(width,height)` or `I(width,height,num_images)`
     - Examples: `I(512,512)`, `I(2048,2048,2)`
@@ -62,6 +66,9 @@ Behavior by task in dataset mode:
 - text-to-image
       - Picks a single line from your dataset as the image generation prompt
       - Size and quality use server defaults (not sent in request)
+- text-to-speech
+      - Picks a single line from your dataset as the input text
+      - No character-length shaping is applied; use `A(num_input_chars)` scenarios for controlled input lengths
 - image-text-to-text and image-to-embeddings
       - Samples images from your dataset (defaults to 1 image per request in dataset mode)
 

@@ -46,6 +46,7 @@ def api_options(func):
                 "text-to-image",
                 "text-to-embeddings",
                 "text-to-rerank",
+                "text-to-speech",
                 "image-text-to-text",
                 "image-to-embeddings",
             ],
@@ -57,7 +58,8 @@ def api_options(func):
         help="The task to benchmark: it follows `<input_modality>-to-"
         "<output_modality>` pattern. Currently we support "
         "`text-to-text`, `text-to-image`, `text-to-embeddings`, "
-        "`text-to-rerank`, `image-text-to-text`, and `image-to-embeddings`.",
+        "`text-to-rerank`, `text-to-speech`, `image-text-to-text`, "
+        "and `image-to-embeddings`.",
     )(func)
     func = click.option(
         "--api-key",
@@ -499,6 +501,11 @@ def experiment_options(func):
                    - Example: I(256,256)
 
                 \b
+                2.  **Audio (A)**: Text input for speech synthesis.
+                   - Format: A(num_input_chars)
+                   - Examples: A(500)
+
+                \b
                 Supported embeddings are:
 
                 \b
@@ -545,6 +552,14 @@ def experiment_options(func):
                 1. I(512,512)
                 2. I(1024,512)
                 3. I(2048,2048)
+
+                \b
+                For speech:
+                1. A(100)
+                2. A(500)
+                3. A(1000)
+                4. A(2000)
+                5. A(4000)
 
                 \b
                 Example to input multiple values:

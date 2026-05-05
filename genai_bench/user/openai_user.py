@@ -21,6 +21,8 @@ from genai_bench.protocol import (
     UserImageGenerationResponse,
     UserReRankRequest,
     UserResponse,
+    UserTextToSpeechRequest,
+    UserTextToSpeechResponse,
 )
 from genai_bench.user.base_user import BaseUser
 
@@ -35,6 +37,7 @@ class OpenAIUser(BaseUser):
         "text-to-embeddings": "embeddings",
         "text-to-rerank": "rerank",
         "text-to-image": "images_generations",
+        "text-to-speech": "speech",
     }
 
     # Maps backend name to its reasoning content field in SSE delta.
@@ -232,6 +235,67 @@ class OpenAIUser(BaseUser):
             payload["quality"] = user_request.quality
         self.send_request(
             False, endpoint, payload, self.parse_images_generations_response
+        )
+
+    @task
+    def speech(self):
+        endpoint = "/v1/audio/speech"
+        user_request = self.sample()
+
+        if not isinstance(user_request, UserTextToSpeechRequest):
+            raise AttributeError(
+                f"user_request should be of type "
+                f"UserTextToSpeechRequest for OpenAIUser.speech, got "
+                f"{type(user_request)}"
+            )
+
+        filtered_params = {
+            k: v
+            for k, v in user_request.additional_request_params.items()
+            if k not in ("model", "input", "voice")
+        }
+
+        payload = {
+            "model": user_request.model,
+            "input": user_request.input_text,
+            "voice": user_request.voice,
+            **filtered_params,
+        }
+
+        self.send_request(True, endpoint, payload, self.parse_speech_response)
+
+    @staticmethod
+    def parse_speech_response(
+        response: Response,
+        start_time: float,
+        _: Optional[int],
+        __: float,
+    ) -> UserTextToSpeechResponse:
+        time_at_first_token = None
+        total_bytes = 0
+        for chunk in response.iter_content(chunk_size=1024):
+            if time_at_first_token is None:
+                time_at_first_token = time.monotonic()
+            total_bytes += len(chunk)
+        end_time = time.monotonic()
+
+        if time_at_first_token is None:
+            logger.warning("TTS response returned 200 but empty audio body")
+            time_at_first_token = end_time
+
+        logger.debug(
+            f"TTS response: audio_bytes={total_bytes}, "
+            f"content_type={response.headers.get('content-type')}, "
+            f"ttft={time_at_first_token - start_time:.3f}s, "
+            f"e2e_latency={end_time - start_time:.3f}s"
+        )
+        return UserTextToSpeechResponse(
+            status_code=200,
+            start_time=start_time,
+            end_time=end_time,
+            time_at_first_token=time_at_first_token,
+            num_prefill_tokens=0,
+            audio_bytes=total_bytes,
         )
 
     def send_request(

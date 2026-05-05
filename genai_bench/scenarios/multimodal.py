@@ -3,6 +3,31 @@ from typing import Optional, Tuple
 from genai_bench.scenarios.base import MultiModality, Scenario, parse_params_str
 
 
+class AudioModality(Scenario):
+    """
+    Audio output scenario for text-to-speech.
+    A(num_input_chars)
+    Example: A(500) — synthesize exactly 500 characters of text
+    """
+
+    scenario_type = MultiModality.AUDIO
+    validation_pattern = r"^A\(\d+\)$"
+
+    def __init__(self, num_input_chars: int):
+        self.num_input_chars = num_input_chars
+
+    def sample(self) -> int:
+        return self.num_input_chars
+
+    def to_string(self) -> str:
+        return f"A({self.num_input_chars})"
+
+    @classmethod
+    def parse(cls, params_str: str) -> "AudioModality":
+        (num_input_chars,) = parse_params_str(params_str)[0]
+        return cls(num_input_chars=num_input_chars)
+
+
 class ImageModality(Scenario):
     """
     Image input and text output

@@ -9,6 +9,7 @@ from genai_bench.protocol import (
     UserImageGenerationRequest,
     UserRequest,
     UserReRankRequest,
+    UserTextToSpeechRequest,
 )
 from genai_bench.sampling.base import Sampler
 from genai_bench.scenarios.base import (
@@ -34,6 +35,7 @@ class TextSampler(Sampler):
         "text-to-embeddings",
         "text-to-rerank",
         "text-to-image",
+        "text-to-speech",
     }
 
     def __init__(
@@ -79,6 +81,8 @@ class TextSampler(Sampler):
             return self._sample_rerank_request(scenario)
         elif self.output_modality == "image":
             return self._sample_image_generation_request(scenario)
+        elif self.output_modality == "speech":
+            return self._sample_tts_request(scenario)
         else:
             raise ValueError(f"Unsupported output modality: {self.output_modality}")
 
@@ -216,6 +220,43 @@ class TextSampler(Sampler):
             additional_request_params=self.additional_request_params,
         )
 
+    def _sample_tts_request(
+        self, scenario: Optional[Scenario]
+    ) -> UserTextToSpeechRequest:
+        """Samples a TTS request based on the scenario."""
+        if self._is_dataset_mode(scenario):
+            input_text = random.choice(self.data)
+        else:
+            self._validate_scenario(scenario)
+            num_input_chars = scenario.sample()
+            input_text = self._generate_text_by_chars(num_input_chars)
+
+        voice = self.additional_request_params.get("voice", "alloy")
+
+        return UserTextToSpeechRequest(
+            model=self.model,
+            input_text=input_text,
+            voice=voice,
+            additional_request_params=self.additional_request_params,
+        )
+
+    def _generate_text_by_chars(self, num_chars: int) -> str:
+        """Generate text from the dataset with exactly num_chars characters."""
+        text = ""
+        data_copy = self.data.copy()
+        while len(text) < num_chars:
+            random.shuffle(data_copy)
+            for line in data_copy:
+                clean_line = line.strip()
+                if not clean_line:
+                    continue
+                if len(text) + len(clean_line) >= num_chars:
+                    remaining = num_chars - len(text)
+                    text += clean_line[:remaining]
+                    return text
+                text += clean_line
+        return text[:num_chars]
+
     def _validate_scenario(self, scenario: Optional[Scenario]) -> None:
         """
         Validates that a scenario is provided and is of the correct type
@@ -248,6 +289,14 @@ class TextSampler(Sampler):
             raise ValueError(
                 f"Expected MultiModality (I) for image output, got "
                 f"{type(scenario.scenario_type)}"
+            )
+        elif (
+            self.output_modality == "speech"
+            and scenario.scenario_type != MultiModality.AUDIO
+        ):
+            raise ValueError(
+                f"Expected MultiModality.AUDIO for speech output, got "
+                f"{scenario.scenario_type}"
             )
 
     def _sample_text(
