@@ -37,12 +37,6 @@ class OpenAIUser(BaseUser):
         "text-to-image": "images_generations",
     }
 
-    # Maps backend name to its reasoning content field in SSE delta.
-    BACKEND_REASONING_FIELD = {
-        "vllm": "reasoning",
-        "sglang": "reasoning_content",
-    }
-
     host: Optional[str] = None
     auth_provider: Optional[ModelAuthProvider] = None
     headers = None
@@ -148,6 +142,22 @@ class OpenAIUser(BaseUser):
         )
 
         return messages
+
+    @staticmethod
+    def _get_reasoning_content_chunk(delta: Dict[str, Any]) -> Optional[str]:
+        reasoning = delta.get("reasoning")
+        reasoning_content = delta.get("reasoning_content")
+
+        if reasoning and reasoning_content and reasoning != reasoning_content:
+            warning_once(
+                logger,
+                "conflicting_reasoning_fields",
+                "Streaming chunk included both reasoning and reasoning_content "
+                "with different values. Using reasoning and ignoring "
+                "reasoning_content to avoid double counting.",
+            )
+
+        return reasoning or reasoning_content
 
     @task
     def embeddings(self):
@@ -406,11 +416,8 @@ class OpenAIUser(BaseUser):
 
             try:
                 delta = data["choices"][0]["delta"]
-                reasoning_field = self.BACKEND_REASONING_FIELD.get(self.api_backend)
                 content = delta.get("content")
-                reasoning_content_chunk = (
-                    delta.get(reasoning_field) if reasoning_field else None
-                )
+                reasoning_content_chunk = self._get_reasoning_content_chunk(delta)
                 content = content or reasoning_content_chunk
                 usage = delta.get("usage")
 

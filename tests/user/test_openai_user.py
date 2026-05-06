@@ -17,6 +17,17 @@ from genai_bench.protocol import (
 from genai_bench.user.openai_user import OpenAIUser
 
 
+def reasoning_delta_cases():
+    return [
+        ("openai", "reasoning"),
+        ("openai", "reasoning_content"),
+        ("sglang", "reasoning"),
+        ("sglang", "reasoning_content"),
+        ("vllm", "reasoning"),
+        ("vllm", "reasoning_content"),
+    ]
+
+
 @pytest.fixture
 def mock_openai_user():
     # Set up mock auth provider
@@ -720,7 +731,7 @@ def test_sgl_model_format(mock_post, mock_openai_user):
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_chat_with_reasoning_content_and_token_estimation(
@@ -731,7 +742,7 @@ def test_chat_with_reasoning_content_and_token_estimation(
     reasoning_key,
 ):
     """
-    Ensure TTFT is triggered by the backend-specific reasoning field,
+    Ensure TTFT is triggered by either reasoning field,
     generated_text includes it, and token estimation includes both
     reasoning + content when usage is missing.
     """
@@ -821,7 +832,7 @@ def test_chat_with_reasoning_content_and_token_estimation(
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
@@ -904,7 +915,7 @@ def test_reasoning_tokens_backfill_when_usage_zero_and_reasoning_content(
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_reasoning_tokens_backfill_usage_in_final_chunk(
@@ -966,7 +977,7 @@ def test_reasoning_tokens_backfill_usage_in_final_chunk(
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_reasoning_tokens_from_usage_not_overwritten_by_reasoning_content(
@@ -1020,7 +1031,7 @@ def test_reasoning_tokens_from_usage_not_overwritten_by_reasoning_content(
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_reasoning_content_accumulated_across_chunks(
@@ -1127,7 +1138,7 @@ def test_no_reasoning_tokens_backfill_when_no_reasoning_content(
 
 @pytest.mark.parametrize(
     "backend,reasoning_key",
-    [("sglang", "reasoning_content"), ("vllm", "reasoning")],
+    reasoning_delta_cases(),
 )
 @patch("genai_bench.user.openai_user.requests.post")
 def test_delta_with_both_content_and_reasoning_content(
@@ -1181,6 +1192,107 @@ def test_delta_with_both_content_and_reasoning_content(
         "Server did not report reasoning_tokens. Estimated reasoning_tokens "
         "based on the model tokenizer" in caplog.text
     )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_duplicate_reasoning_fields_same_value_appended_once(
+    mock_post, mock_openai_user, caplog
+):
+    """Identical reasoning aliases are treated as one reasoning chunk."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "openai"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Think",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+    mock_openai_user.environment.sampler = MagicMock()
+    mock_openai_user.environment.sampler.get_token_length.return_value = 1
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"reasoning":"R","reasoning_content":"R"},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6,"completion_tokens_details":{"reasoning_tokens":0}}}',  # noqa:E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    with caplog.at_level(logging.WARNING):
+        response = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+
+    assert response.status_code == 200
+    assert response.generated_text == "R"
+    assert response.reasoning_tokens == 1
+    mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
+        "R", add_special_tokens=False
+    )
+    assert (
+        "both reasoning and reasoning_content with different values" not in caplog.text
+    )
+
+
+@patch("genai_bench.user.openai_user.requests.post")
+def test_duplicate_reasoning_fields_different_values_prefers_reasoning_once(
+    mock_post, mock_openai_user, caplog
+):
+    """Conflicting reasoning aliases prefer reasoning and warn only once."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "openai"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Think",
+        num_prefill_tokens=5,
+        additional_request_params={},
+        max_tokens=10,
+    )
+    mock_openai_user.environment.sampler = MagicMock()
+    mock_openai_user.environment.sampler.get_token_length.return_value = 4
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"reasoning":"R1","reasoning_content":"RC1"},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"choices":[{"delta":{"reasoning":"R2","reasoning_content":"RC2"},"finish_reason":null}]}',  # noqa:E501
+            b'data: {"choices":[{"delta":{"content":"Answer"},"finish_reason":null}]}',
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":3,"total_tokens":8,"completion_tokens_details":{"reasoning_tokens":0}}}',  # noqa:E501
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    with caplog.at_level(logging.WARNING):
+        response = mock_openai_user.send_request(
+            stream=True,
+            endpoint="/v1/test",
+            payload={"key": "value"},
+            num_prefill_tokens=5,
+            parse_strategy=mock_openai_user.parse_chat_response,
+        )
+
+    assert response.status_code == 200
+    assert response.generated_text == "R1R2Answer"
+    assert response.reasoning_tokens == 4
+    mock_openai_user.environment.sampler.get_token_length.assert_called_once_with(
+        "R1R2", add_special_tokens=False
+    )
+    warning_count = sum(
+        "both reasoning and reasoning_content with different values"
+        in record.getMessage()
+        for record in caplog.records
+    )
+    assert warning_count == 1
 
 
 @patch("genai_bench.user.openai_user.requests.post")
