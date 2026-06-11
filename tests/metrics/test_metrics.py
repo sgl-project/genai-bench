@@ -158,7 +158,10 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     assert output_throughput == 14.0
 
 
-def test_filter_metrics(aggregated_metrics_collector):
+def test_null_unreliable_output_metrics_keeps_request(aggregated_metrics_collector):
+    # A response too short to measure per-token timing yields an implausibly
+    # high inference speed. The request must be KEPT (its ttft / e2e / token
+    # counts are still valid), with only the unreliable per-token metrics nulled.
     metrics1 = RequestLevelMetrics(
         ttft=0.1,
         tpot=0.0000002,
@@ -168,12 +171,22 @@ def test_filter_metrics(aggregated_metrics_collector):
         output_throughput=11.111,
         num_input_tokens=2,
         num_output_tokens=10,
-        output_inference_speed=1 / 0.0000002,
+        output_inference_speed=1 / 0.0000002,  # 5,000,000 tokens/s
         total_tokens=12,
     )
 
     aggregated_metrics_collector.add_single_request_metrics(metrics1)
-    assert metrics1 not in aggregated_metrics_collector.all_request_metrics
+
+    assert metrics1 in aggregated_metrics_collector.all_request_metrics
+    # Unreliable per-token metrics are nulled...
+    assert metrics1.tpot is None
+    assert metrics1.output_inference_speed is None
+    assert metrics1.output_throughput is None
+    # ...while the directly-measured fields are preserved.
+    assert metrics1.ttft == 0.1
+    assert metrics1.e2e_latency == 1.0
+    assert metrics1.num_output_tokens == 10
+    assert metrics1.input_throughput == 20.0
 
     embedding_metrics = RequestLevelMetrics(
         ttft=0.1,
@@ -184,6 +197,48 @@ def test_filter_metrics(aggregated_metrics_collector):
 
     aggregated_metrics_collector.add_single_request_metrics(embedding_metrics)
     assert embedding_metrics in aggregated_metrics_collector.all_request_metrics
+
+
+def test_aggregate_short_output_run_does_not_crash(
+    aggregated_metrics_collector, caplog
+):
+    """Regression: a short-output run where every response is too brief to
+    measure per-token timing must not crash aggregation.
+
+    Previously the fast requests were dropped for "abnormal inference speed",
+    leaving only degenerate samples, so the tpot value list was empty and
+    aggregate_metrics_data raised "No values found for metric 'tpot'. This
+    should never happen!", aborting the whole benchmark.
+    """
+    # Five fast, short responses: 10 output tokens in ~5 ms => ~1800 tokens/s,
+    # above MAX_PLAUSIBLE_OUTPUT_INFERENCE_SPEED.
+    for _ in range(5):
+        m = RequestLevelMetrics(
+            ttft=0.10,
+            tpot=0.005 / 9,
+            e2e_latency=0.105,
+            output_latency=0.005,
+            input_throughput=24620.0,
+            output_throughput=9 / 0.005,
+            num_input_tokens=2462,
+            num_output_tokens=10,
+            output_inference_speed=9 / 0.005,  # 1800 tokens/s
+            total_tokens=2472,
+        )
+        aggregated_metrics_collector.add_single_request_metrics(m)
+
+    with caplog.at_level(logging.WARNING):
+        aggregated_metrics_collector.aggregate_metrics_data(0.0, 10.0, 4.0, None, None)
+
+    agg = aggregated_metrics_collector.aggregated_metrics
+    # No crash; the run is still counted and the reliable metrics aggregate.
+    assert agg.num_requests == 5
+    assert agg.stats.ttft.mean == pytest.approx(0.10)
+    assert agg.stats.num_output_tokens.mean == pytest.approx(10)
+    # The unmeasurable per-token metrics are left unset rather than fabricated.
+    assert agg.stats.tpot.mean is None
+    assert agg.stats.output_inference_speed.mean is None
+    assert "No values found for metric 'tpot'" in caplog.text
 
 
 def test_update_live_metrics(aggregated_metrics_collector):

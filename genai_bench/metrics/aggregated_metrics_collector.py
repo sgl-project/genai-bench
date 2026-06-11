@@ -37,8 +37,7 @@ class AggregatedMetricsCollector:
 
     def add_single_request_metrics(self, metrics: RequestLevelMetrics):
         """Adds metrics from a single request to the aggregated metrics."""
-        if self._should_filter_metrics(metrics):
-            return
+        self._null_unreliable_output_metrics(metrics)
 
         # Store individual request metrics
         self.all_request_metrics.append(metrics)
@@ -68,17 +67,41 @@ class AggregatedMetricsCollector:
             # Update live metrics aggregation
             self._update_live_metrics()
 
-    @staticmethod
-    def _should_filter_metrics(metrics: RequestLevelMetrics) -> bool:
-        """Filters metrics based on out of range TPOT/inference speed."""
-        inference_speed = metrics.output_inference_speed
-        if inference_speed is not None and inference_speed > 1000:
+    # Above this, the per-token output metrics are treated as unmeasurable
+    # rather than real. A short response that streams back in one (or very few)
+    # chunks collapses output_latency toward zero, so the derived per-token
+    # rates explode; genuine decode speeds for current models stay well under
+    # this bound.
+    MAX_PLAUSIBLE_OUTPUT_INFERENCE_SPEED = 1000  # tokens/s
+
+    @classmethod
+    def _null_unreliable_output_metrics(cls, metrics: RequestLevelMetrics) -> None:
+        """Null per-token output metrics that could not be measured reliably.
+
+        When a response is too short to observe inter-token timing (e.g. it
+        arrives in a single streaming chunk), ``output_latency`` collapses
+        toward zero and the derived per-token metrics — ``tpot``,
+        ``output_inference_speed`` and ``output_throughput`` — blow up to
+        implausible values. Such a request used to be dropped wholesale, which
+        (a) discarded its still-valid ttft / e2e / token-count data and (b)
+        could leave the run with zero usable ``tpot`` samples, crashing
+        aggregation. Instead we null only the unreliable derived fields and keep
+        the request; aggregation then simply has fewer (or zero) samples for
+        those metrics, which it now tolerates.
+        """
+        speed = metrics.output_inference_speed
+        if speed is not None and speed > cls.MAX_PLAUSIBLE_OUTPUT_INFERENCE_SPEED:
             logger.warning(
-                f"Metric has abnormal inference speed: {inference_speed} tokens/s."
-                " Filtering it out."
+                f"Output inference speed {speed:.1f} tokens/s exceeds the "
+                f"plausible maximum ({cls.MAX_PLAUSIBLE_OUTPUT_INFERENCE_SPEED} "
+                f"tokens/s); the response was likely too short to measure "
+                f"per-token timing. Nulling tpot, output_inference_speed and "
+                f"output_throughput for this request (ttft, e2e latency and "
+                f"token counts are kept)."
             )
-            return True
-        return False
+            metrics.tpot = None
+            metrics.output_inference_speed = None
+            metrics.output_throughput = None
 
     def _update_live_metrics(self):
         """Calculates live metrics like avg, max, min, and percentiles."""
@@ -171,11 +194,19 @@ class AggregatedMetricsCollector:
                 if warmup_number <= i < len(self.all_request_metrics) - cooldown_number:
                     values.append(value)
 
-            # Validate that all values are valid for processing
+            # A metric can legitimately have zero samples — e.g. tpot,
+            # output_inference_speed or output_throughput on a short-output run
+            # where every response was too brief to measure per-token timing
+            # (see _null_unreliable_output_metrics). Leave its aggregate stats
+            # unset (None) and carry on rather than aborting the whole run and
+            # discarding every other metric.
             if not values:
-                raise ValueError(
-                    f"No values found for metric '{key}'. This should never happen!"
+                logger.warning(
+                    f"No values found for metric '{key}' across "
+                    f"{len(self.all_request_metrics)} request(s); leaving its "
+                    f"aggregate stats unset."
                 )
+                continue
 
             percentiles = np.percentile(values, [25, 50, 75, 90, 95, 99])
             stat_field = getattr(self.aggregated_metrics.stats, key)
