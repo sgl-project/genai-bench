@@ -1,5 +1,3 @@
-import os
-
 from genai_bench.utils import get_requests_verify
 
 
