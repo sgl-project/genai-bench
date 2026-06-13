@@ -16,6 +16,7 @@ from genai_bench.protocol import (
     UserResponse,
 )
 from genai_bench.user.gcp_vertex_user import GCPVertexUser
+from genai_bench.utils import get_requests_verify
 
 
 class TestGCPVertexUser:
@@ -455,6 +456,7 @@ class TestGCPVertexUser:
                 headers=vertex_user.headers,
                 json={"test": "data"},
                 stream=False,
+                verify=get_requests_verify(),
             )
 
     def test_send_request_error(self, vertex_user):
