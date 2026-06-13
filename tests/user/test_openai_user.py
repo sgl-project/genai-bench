@@ -17,6 +17,7 @@ from genai_bench.protocol import (
     UserTextToSpeechResponse,
 )
 from genai_bench.user.openai_user import OpenAIUser
+from genai_bench.utils import get_requests_verify
 
 
 def reasoning_delta_cases():
@@ -121,6 +122,7 @@ def test_chat(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -183,6 +185,7 @@ def test_vision(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -212,6 +215,7 @@ def test_embeddings(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -1435,6 +1439,7 @@ def test_images_generations_rest_api(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -1585,6 +1590,7 @@ def test_speech(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -1741,6 +1747,7 @@ def test_rerank(mock_post, mock_openai_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
