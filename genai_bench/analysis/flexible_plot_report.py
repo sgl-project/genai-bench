@@ -473,7 +473,7 @@ class FlexiblePlotGenerator:
     ) -> None:
         """Plot multiple lines on the same subplot."""
         # Get colors from tab10 colormap
-        cmap = plt.cm.get_cmap("tab10")
+        cmap = plt.get_cmap("tab10")
         colors = [cmap(i) for i in range(10)]  # Get first 10 colors
         linestyles = ["-", "--", "-.", ":"]
 
