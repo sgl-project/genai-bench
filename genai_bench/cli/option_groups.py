@@ -349,6 +349,22 @@ def sampling_options(func):
             "Mutually exclusive with --prefix-len."
         ),
     )(func)
+    func = click.option(
+        "--prefix-pool-size",
+        type=click.IntRange(min=1),
+        default=1,
+        help=(
+            "Number of deterministic shared prefixes to rotate through. "
+            "Values greater than 1 require --prefix-len and local execution "
+            "(--num-workers 0)."
+        ),
+    )(func)
+    func = click.option(
+        "--prefix-seed",
+        type=int,
+        default=42,
+        help="Stable seed used to generate shared prefixes.",
+    )(func)
     return func
 
 
