@@ -346,6 +346,40 @@ class TestTextSampler(unittest.TestCase):
             "Prompts should be different due to random hash separators",
         )
 
+    def test_prefix_pool_cycles_deterministically(self):
+        prefix_sampler = TextSampler(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            output_modality=self.output_modality,
+            data=self.test_data,
+            prefix_len=20,
+            prefix_pool_size=3,
+            prefix_seed=7,
+        )
+        self.tokenizer.encode.side_effect = lambda text, **_: list(text.split())
+        self.tokenizer.decode.side_effect = lambda tokens, **_: " ".join(tokens)
+
+        prefixes = [prefix_sampler._get_shared_prefix(20) for _ in range(4)]
+
+        self.assertIn("GENAI_BENCH_PREFIX_7_20_0000", prefixes[0])
+        self.assertIn("GENAI_BENCH_PREFIX_7_20_0001", prefixes[1])
+        self.assertIn("GENAI_BENCH_PREFIX_7_20_0002", prefixes[2])
+        self.assertEqual(prefixes[0], prefixes[3])
+        self.assertEqual(len(set(prefixes[:3])), 3)
+        # Each prefix carries its unique marker plus a non-empty body. The exact
+        # re-encoded token count is only approximate (the dataset generator sums
+        # per-line token counts and joins lines without separators, so counting
+        # is not exact across the boundary), so assert the length stays within
+        # the requested budget rather than an exact match.
+        for prefix in prefixes:
+            self.assertTrue(prefix.startswith("[GENAI_BENCH_PREFIX_7_20_"))
+            token_len = len(self.tokenizer.encode(prefix))
+            self.assertGreater(token_len, 0)
+            self.assertLessEqual(token_len, 20)
+
+        prefix_sampler.reset_prefix_cache()
+        self.assertEqual(prefix_sampler._get_shared_prefix(20), prefixes[0])
+
     def test_sample_image_generation_request(self):
         """Test image generation request sampling."""
         image_sampler = TextSampler(

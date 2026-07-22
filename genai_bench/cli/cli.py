@@ -124,6 +124,8 @@ def benchmark(
     dataset_image_column,
     prefix_len,
     prefix_ratio,
+    prefix_pool_size,
+    prefix_seed,
     num_workers,
     master_port,
     spawn_rate,
@@ -293,6 +295,8 @@ def benchmark(
         dataset_path=dataset_path,
         dataset_config=dataset_config,
         traffic_scenario=traffic_scenario,
+        prefix_pool_size=prefix_pool_size,
+        num_workers=num_workers,
     )
 
     # Handle dataset configuration
@@ -320,6 +324,8 @@ def benchmark(
         dataset_config=dataset_config_obj,
         prefix_len=prefix_len,
         prefix_ratio=prefix_ratio,
+        prefix_pool_size=prefix_pool_size,
+        prefix_seed=prefix_seed,
     )
 
     # If user did not provide scenarios but provided a dataset, default to dataset mode

@@ -851,3 +851,41 @@ def test_prefix_len_option_in_help(cli_runner):
     assert result.exit_code == 0
     assert "--prefix-len" in result.output
     assert "prefix caching" in result.output
+    assert "--prefix-pool-size" in result.output
+    assert "--prefix-seed" in result.output
+
+
+@pytest.mark.usefixtures(
+    "mock_env_variables",
+    "mock_dashboard",
+    "mock_validate_tokenizer",
+    "mock_time_sleep",
+    "mock_makedirs",
+    "mock_file_system",
+    "mock_report_and_plot",
+    "mock_http_requests",
+    "mock_experiment_path",
+)
+def test_benchmark_command_with_prefix_pool(cli_runner, default_options):
+    with patch("genai_bench.cli.cli.Sampler.create") as mock_sampler_create:
+        result = cli_runner.invoke(
+            benchmark,
+            [
+                *default_options,
+                "--traffic-scenario",
+                "D(100,100)",
+                "--prefix-len",
+                "50",
+                "--prefix-pool-size",
+                "3",
+                "--prefix-seed",
+                "7",
+                "--num-workers",
+                "0",
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        call_kwargs = mock_sampler_create.call_args.kwargs
+        assert call_kwargs["prefix_pool_size"] == 3
+        assert call_kwargs["prefix_seed"] == 7
