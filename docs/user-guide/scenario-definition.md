@@ -140,6 +140,11 @@ Choose one of two mutually exclusive options:
    - Prefix length computed per-request as `int(num_input_tokens * ratio)`
    - Requires deterministic scenarios like `D(input_tokens,output_tokens)`
 
+To benchmark a bounded KV-cache working set instead of one shared prefix, use
+`--prefix-pool-size` together with `--prefix-len`. The sampler deterministically
+rotates through that many distinct shared prefixes. Use `--prefix-seed` to make
+the generated pool reproducible across runs and targets.
+
 #### Request format
 
 Each request follows this format:
@@ -174,6 +179,9 @@ Prefix caching has the following requirements:
    - For multiple scenarios, `prefix_len` must be `<= min(input_tokens)` across all scenarios
    - The separator will be truncated automatically if needed to maintain exact token counts
 4. **Multi-worker consistency**: The prefix is generated using a fixed random seed `(42, prefix_len)` so all workers produce the same prefix text. Different prefix lengths produce different prefix text to avoid cross-scenario cache overlap. Note: When using `--prefix-len` with multiple scenarios sharing the same prefix length, the server-side KV cache may already be warm for subsequent scenarios. Use `--warmup-ratio` to mitigate this. Note: This approach may be refined in future versions.
+5. **Prefix pools**: `--prefix-pool-size` values greater than one require
+   `--prefix-len` and local execution with `--num-workers 0`. This preserves one
+   deterministic global rotation order.
 
 #### Examples
 
@@ -227,6 +235,27 @@ genai-bench benchmark \
 ```
 
 This tests scenarios with different cache ratios (80%, 40%, 20%) while keeping the same 800-token prefix.
+
+**Using a deterministic prefix pool**:
+
+```bash
+genai-bench benchmark \
+  --task text-to-text \
+  --traffic-scenario "D(3200,16)" \
+  --prefix-len 3072 \
+  --prefix-pool-size 20 \
+  --prefix-seed 20260715 \
+  --num-workers 0 \
+  --num-concurrency 8 \
+  --api-backend sglang \
+  --api-base http://localhost:8000 \
+  --api-model-name my-model \
+  --model-tokenizer my-model
+```
+
+This rotates through 20 distinct 3,072-token prefixes, creating an aggregate
+shared-prefix working set of 61,440 tokens. Concurrency controls how many
+requests are in flight; it does not change the deterministic prefix order.
 
 **Using --prefix-ratio with multiple scenarios** (same ratio, different absolute lengths):
 

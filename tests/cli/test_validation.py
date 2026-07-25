@@ -685,3 +685,38 @@ def test_validate_prefix_len_with_dataset_scenario():
         dataset_config=None,
         traffic_scenario=["D(100,50)", "D(200,100)"],
     )
+
+
+def test_validate_prefix_pool_options():
+    from genai_bench.cli.validation import validate_prefix_options
+
+    common = {
+        "prefix_ratio": None,
+        "task": "text-to-text",
+        "dataset_path": None,
+        "dataset_config": None,
+        "traffic_scenario": ["D(100,50)"],
+    }
+
+    with pytest.raises(click.UsageError, match="requires --prefix-len"):
+        validate_prefix_options(
+            prefix_len=None,
+            prefix_pool_size=2,
+            num_workers=0,
+            **common,
+        )
+
+    with pytest.raises(click.UsageError, match="requires --num-workers 0"):
+        validate_prefix_options(
+            prefix_len=50,
+            prefix_pool_size=2,
+            num_workers=1,
+            **common,
+        )
+
+    validate_prefix_options(
+        prefix_len=50,
+        prefix_pool_size=2,
+        num_workers=0,
+        **common,
+    )

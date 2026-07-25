@@ -48,6 +48,8 @@ class TextSampler(Sampler):
         dataset_config: Optional[DatasetConfig] = None,
         prefix_len: Optional[int] = None,
         prefix_ratio: Optional[float] = None,
+        prefix_pool_size: int = 1,
+        prefix_seed: int = 42,
         **kwargs,
     ):
         super().__init__(
@@ -58,9 +60,15 @@ class TextSampler(Sampler):
         self.batch_size = 1  # Default batch size
         self.prefix_len = prefix_len
         self.prefix_ratio = prefix_ratio
+        if prefix_pool_size < 1:
+            raise ValueError("prefix_pool_size must be at least 1")
+        self.prefix_pool_size = prefix_pool_size
+        self.prefix_seed = prefix_seed
         # Globally shared prefix (generated once for --prefix-len,
         # per-request for --prefix-ratio)
         self._shared_prefix: Optional[str] = None
+        self._shared_prefixes: Optional[List[str]] = None
+        self._next_prefix_index = 0
 
     def sample(self, scenario: Optional[Scenario]) -> UserRequest:
         """
@@ -320,24 +328,14 @@ class TextSampler(Sampler):
         if not num_input_tokens:
             return random.choice(self.data)
 
-        # Fixed seed ensures multi-worker consistency; prefix_len in seed
-        # avoids cross-scenario cache overlap when prefix lengths differ.
         if effective_prefix_len is not None:
-            prefix_rng = random.Random(hash((42, effective_prefix_len)))
             if self.prefix_len is not None:
-                # --prefix-len mode: generate once and cache
-                if self._shared_prefix is None:
-                    self._shared_prefix = self._generate_text_from_dataset(
-                        effective_prefix_len, rng=prefix_rng
-                    )
-                    logger.info(
-                        f"Generated shared prefix ({effective_prefix_len} tokens) "
-                        f"from dataset for prefix caching. "
-                        f"This prefix will be reused across all requests."
-                    )
-                prefix = self._shared_prefix
+                prefix = self._get_shared_prefix(effective_prefix_len)
             else:
                 # --prefix-ratio mode: generate fresh prefix per-request
+                # Fixed seed ensures multi-worker consistency; prefix length in
+                # the seed avoids cross-scenario cache overlap.
+                prefix_rng = random.Random(hash((42, effective_prefix_len)))
                 prefix = self._generate_text_from_dataset(
                     effective_prefix_len, rng=prefix_rng
                 )
@@ -380,6 +378,57 @@ class TextSampler(Sampler):
         else:
             # No prefix caching - just return the full prompt
             return self._generate_text_from_dataset(num_input_tokens)
+
+    def _get_shared_prefix(self, prefix_len: int) -> str:
+        if self.prefix_pool_size == 1:
+            if self._shared_prefix is None:
+                # Preserve the existing single-prefix sequence when the default
+                # seed is used, while allowing callers to select another stable
+                # prefix explicitly.
+                prefix_rng = random.Random(hash((self.prefix_seed, prefix_len)))
+                self._shared_prefix = self._generate_text_from_dataset(
+                    prefix_len, rng=prefix_rng
+                )
+                logger.info(
+                    f"Generated shared prefix ({prefix_len} tokens) from dataset "
+                    "for prefix caching. This prefix will be reused across all "
+                    "requests."
+                )
+            return self._shared_prefix
+
+        if self._shared_prefixes is None:
+            self._shared_prefixes = [
+                self._generate_pool_prefix(prefix_len, index)
+                for index in range(self.prefix_pool_size)
+            ]
+            logger.info(
+                f"Generated {self.prefix_pool_size} shared prefixes "
+                f"({prefix_len} tokens each) for cyclic prefix caching."
+            )
+
+        prefix = self._shared_prefixes[
+            self._next_prefix_index % self.prefix_pool_size
+        ]
+        self._next_prefix_index += 1
+        return prefix
+
+    def _generate_pool_prefix(self, prefix_len: int, prefix_index: int) -> str:
+        marker = (
+            f"[GENAI_BENCH_PREFIX_{self.prefix_seed}_{prefix_len}_"
+            f"{prefix_index:04d}] "
+        )
+        marker_len = self.get_token_length(marker)
+        if marker_len >= prefix_len:
+            raise ValueError(
+                f"prefix_len ({prefix_len}) must exceed marker length "
+                f"({marker_len}) for multi-prefix sampling"
+            )
+
+        body = self._generate_text_from_dataset(
+            prefix_len - marker_len,
+            rng=random.Random(f"{self.prefix_seed}:{prefix_len}:{prefix_index}"),
+        )
+        return f"{marker}{body}"
 
     def _generate_text_from_dataset(
         self, num_tokens: int, rng: random.Random | None = None
@@ -430,6 +479,8 @@ class TextSampler(Sampler):
     def reset_prefix_cache(self):
         """Reset the prefix cache when switching to a new scenario."""
         self._shared_prefix = None
+        self._shared_prefixes = None
+        self._next_prefix_index = 0
 
     def _check_discrepancy(
         self, num_input_tokens: int, num_prefill_tokens: int, threshold: float = 0.1

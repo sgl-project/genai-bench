@@ -457,7 +457,14 @@ def _get_min_input_tokens(scenario: Scenario) -> int | None:
 
 
 def validate_prefix_options(
-    prefix_len, prefix_ratio, task, dataset_path, dataset_config, traffic_scenario
+    prefix_len,
+    prefix_ratio,
+    task,
+    dataset_path,
+    dataset_config,
+    traffic_scenario,
+    prefix_pool_size=1,
+    num_workers=0,
 ):
     """
     Validate --prefix-len and --prefix-ratio options after CLI parsing completes.
@@ -468,6 +475,17 @@ def validate_prefix_options(
     if prefix_len is not None and prefix_ratio is not None:
         raise click.UsageError(
             "--prefix-len and --prefix-ratio are mutually exclusive. Use only one."
+        )
+
+    if prefix_pool_size > 1 and prefix_len is None:
+        raise click.UsageError(
+            "--prefix-pool-size greater than 1 requires --prefix-len."
+        )
+
+    if prefix_pool_size > 1 and num_workers > 0:
+        raise click.UsageError(
+            "--prefix-pool-size greater than 1 requires --num-workers 0 "
+            "to preserve a deterministic global prefix order."
         )
 
     # If neither is set, nothing to validate
