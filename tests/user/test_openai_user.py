@@ -1364,6 +1364,37 @@ def test_ignore_eos_sglang_backend_explicit_false(mock_post, mock_openai_user):
 
 
 @patch("genai_bench.user.openai_user.requests.post")
+def test_ignore_eos_oci_openai_backend_explicit_true(mock_post, mock_openai_user):
+    """Test that explicit ignore_eos=True is preserved for OCI OpenAI."""
+    mock_openai_user.on_start()
+    mock_openai_user.api_backend = "oci-openai"
+    mock_openai_user.sample = lambda: UserChatRequest(
+        model="gpt-3",
+        prompt="Hello",
+        num_prefill_tokens=5,
+        additional_request_params={"ignore_eos": True},
+        max_tokens=10,
+    )
+
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.iter_lines = MagicMock(
+        return_value=[
+            b'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
+            b'data: {"choices":[{"delta":{},"finish_reason":"length"}],'
+            b'"usage":{"prompt_tokens":5,"completion_tokens":10,"total_tokens":15}}',
+            b"data: [DONE]",
+        ]
+    )
+    mock_post.return_value = response_mock
+
+    mock_openai_user.chat()
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["ignore_eos"] is True
+
+
+@patch("genai_bench.user.openai_user.requests.post")
 def test_ignore_eos_openai_backend_removed(mock_post, mock_openai_user):
     """Test that ignore_eos is removed for OpenAI backend."""
     mock_openai_user.on_start()

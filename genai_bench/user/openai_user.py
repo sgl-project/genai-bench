@@ -107,11 +107,13 @@ class OpenAIUser(BaseUser):
             **filtered_params,
         }
 
-        # Conditionally add ignore_eos for vLLM and SGLang backends
+        # Conditionally add ignore_eos for vLLM and SGLang backends.
         if self.api_backend in ["vllm", "sglang"]:
             payload.setdefault("ignore_eos", bool(user_request.max_tokens))
-        else:
-            # Remove ignore_eos for OpenAI backend, as it is not supported
+        elif self.api_backend != "oci-openai":
+            # OCI's OpenAI-compatible endpoint can pass explicit vLLM extension
+            # parameters through to the serving runtime. Other OpenAI-compatible
+            # providers may reject this non-standard field.
             payload.pop("ignore_eos", None)
 
         self.send_request(
