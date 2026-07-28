@@ -13,6 +13,7 @@ from genai_bench.protocol import (
     UserResponse,
 )
 from genai_bench.user.together_user import TogetherUser
+from genai_bench.utils import get_requests_verify
 
 
 @pytest.fixture
@@ -144,6 +145,7 @@ def test_chat(mock_post, mock_together_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -207,6 +209,7 @@ def test_vision(mock_post, mock_together_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 
@@ -236,6 +239,7 @@ def test_embeddings(mock_post, mock_together_user):
             "Authorization": "Bearer fake_api_key",
             "Content-Type": "application/json",
         },
+        verify=get_requests_verify(),
     )
 
 

@@ -25,6 +25,7 @@ from genai_bench.protocol import (
     UserTextToSpeechResponse,
 )
 from genai_bench.user.base_user import BaseUser
+from genai_bench.utils import get_requests_verify
 
 logger = init_logger(__name__)
 
@@ -341,6 +342,7 @@ class OpenAIUser(BaseUser):
                 json=payload,
                 stream=stream,
                 headers=self.headers,
+                verify=get_requests_verify(),
             )
             non_stream_post_end_time = time.monotonic()
 

@@ -17,6 +17,7 @@ from genai_bench.protocol import (
     UserResponse,
 )
 from genai_bench.user.base_user import BaseUser
+from genai_bench.utils import get_requests_verify
 
 logger = init_logger(__name__)
 
@@ -148,6 +149,7 @@ class CohereUser(BaseUser):
                 headers=self.headers,
                 json=payload,
                 stream=stream,
+                verify=get_requests_verify(),
             )
             response.raise_for_status()
             logger.debug(

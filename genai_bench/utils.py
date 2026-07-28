@@ -1,9 +1,33 @@
 import os
 import re
+from typing import Union
 
 from genai_bench.logging import init_logger
 
 logger = init_logger(__name__)
+
+_SSL_VERIFY_ENV_VARS = (
+    "GENAI_BENCH_SSL_CA_BUNDLE",
+    "REQUESTS_CA_BUNDLE",
+    "SSL_CERT_FILE",
+)
+
+
+def get_requests_verify() -> Union[bool, str]:
+    """Return the SSL verify setting for requests under gevent.
+
+    Gevent monkey-patches ssl before requests runs, so relying on implicit
+    CA discovery is unreliable for private CAs. Pass this value as ``verify=``
+    on every ``requests`` call.
+
+    Reads, in order: GENAI_BENCH_SSL_CA_BUNDLE, REQUESTS_CA_BUNDLE,
+    SSL_CERT_FILE. Falls back to True (default certifi bundle) when unset.
+    """
+    for env_var in _SSL_VERIFY_ENV_VARS:
+        ca_bundle = os.environ.get(env_var)
+        if ca_bundle:
+            return ca_bundle
+    return True
 
 
 def sanitize_string(input_str: str):
