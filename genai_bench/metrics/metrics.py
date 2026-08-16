@@ -77,6 +77,14 @@ class RequestLevelMetrics(BaseModel):
 class StatField(BaseModel):
     """Statistics for a single metric field."""
 
+    count: Optional[int] = None
+    """How many request values these statistics were computed over.
+
+    Not every request contributes to every metric. `filter_metrics` sets `tpot` and
+    `output_inference_speed` to None on very short outputs, and any metric a request
+    did not report is skipped during aggregation. Without this field a run where most
+    values were dropped is indistinguishable from one where none were.
+    """
     min: Optional[float] = None
     max: Optional[float] = None
     mean: Optional[float] = None

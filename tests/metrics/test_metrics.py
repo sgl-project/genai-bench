@@ -218,6 +218,51 @@ def test_filter_metrics(aggregated_metrics_collector):
     assert embedding_metrics in aggregated_metrics_collector.all_request_metrics
 
 
+def test_stat_field_count_reports_the_denominator(aggregated_metrics_collector):
+    """`count` must record how many values each statistic was computed over.
+
+    `filter_metrics` nulls `tpot` and `output_inference_speed` on very short
+    outputs, so those statistics are computed over a subset of the run while
+    `ttft` is computed over all of it. Without a per-field count, a run where
+    most values were dropped looks identical to one where none were.
+    """
+
+    def request(output_latency, inference_speed):
+        return RequestLevelMetrics(
+            ttft=0.1,
+            tpot=0.02,
+            e2e_latency=1.0,
+            output_latency=output_latency,
+            output_inference_speed=inference_speed,
+            num_input_tokens=10,
+            num_output_tokens=20,
+            num_reasoning_tokens=0,
+            total_tokens=30,
+            input_throughput=100.0,
+            output_throughput=50.0,
+        )
+
+    for _ in range(6):
+        aggregated_metrics_collector.add_single_request_metrics(request(1.0, 50.0))
+    # output_latency < 0.001 so filter_metrics nulls tpot and inference speed
+    for _ in range(4):
+        aggregated_metrics_collector.add_single_request_metrics(
+            request(0.0005, 99999.0)
+        )
+
+    aggregated_metrics_collector.aggregate_metrics_data(
+        start_time=0.0, end_time=10.0, warmup_ratio=None, cooldown_ratio=None
+    )
+
+    stats = aggregated_metrics_collector.aggregated_metrics.stats
+    assert len(aggregated_metrics_collector.all_request_metrics) == 10
+    assert stats.ttft.count == 10
+    assert stats.tpot.count == 6
+    assert stats.output_inference_speed.count == 6
+    # the statistics themselves are unchanged by this
+    assert stats.tpot.mean == pytest.approx(0.02)
+
+
 def test_update_live_metrics(aggregated_metrics_collector):
     # Create sample request metrics
     metrics1 = RequestLevelMetrics(

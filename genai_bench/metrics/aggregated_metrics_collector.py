@@ -215,6 +215,7 @@ class AggregatedMetricsCollector:
 
             percentiles = np.percentile(values, [25, 50, 75, 90, 95, 99])
             stat_field = getattr(self.aggregated_metrics.stats, key)
+            stat_field.count = len(values)
             stat_field.min = np.min(values).item()
             stat_field.max = np.max(values).item()
             stat_field.mean = np.mean(values).item()
