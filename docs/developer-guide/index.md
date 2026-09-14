@@ -19,7 +19,7 @@ Welcome and thank you for your interest in contributing to genai-bench! This sec
 
 ## Coding Style Guide
 
-genai-bench uses Python 3.10-3.13, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
+genai-bench uses Python 3.10-3.12, and we adhere to [Google Python style guide](https://google.github.io/styleguide/pyguide.html).
 
 For code formatting, linting, and other development tasks, see the [Makefile](https://github.com/sgl-project/genai-bench/blob/main/Makefile).
 
@@ -35,7 +35,7 @@ For code formatting, linting, and other development tasks, see the [Makefile](ht
 
 ### Prerequisites
 
-- Python 3.10-3.13
+- Python 3.10-3.12
 - Git
 - Make (optional but recommended)
 
@@ -58,7 +58,7 @@ you can ask our GenerativeAI's chatbot about how to install it in your system.
 #### `uv`
 
 Install uv with `make uv` or install it from the [official website](https://docs.astral.sh/uv/).
-If installing from the website, create a project venv with `uv venv -p python3.11` (or another Python version 3.10-3.13).
+If installing from the website, create a project venv with `uv venv -p python3.11` (or another Python version 3.10-3.12).
 
 Once you have `make` and `uv` installed, you can follow the command below to build genai-bench wheel:
 
