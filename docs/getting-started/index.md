@@ -48,7 +48,7 @@ GenAI Bench is a powerful benchmark tool designed for comprehensive token-level 
 
 Before you begin, ensure you have:
 
-- Python 3.10-3.13
+- Python 3.10-3.12
 - Access to at least one supported LLM endpoint
 - (Optional) Cloud storage credentials for result upload
 
