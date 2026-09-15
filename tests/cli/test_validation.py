@@ -1,9 +1,12 @@
+import copy
 import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import click
 import pytest
+from click.core import ParameterSource
+from click.testing import CliRunner
 from transformers import BertTokenizerFast
 
 from genai_bench.cli.validation import (
@@ -373,70 +376,258 @@ def test_validate_traffic_scenarios():
     assert result == ["dataset"]
 
 
+def _iteration_ctx(task, num_concurrency, batch_size, explicit=()):
+    """Build a Context for validate_iteration_params with known param sources."""
+    ctx = click.Context(click.Command("test"))
+    ctx.params = {
+        "task": task,
+        "num_concurrency": num_concurrency,
+        "batch_size": batch_size,
+    }
+    for name in ("task", "num_concurrency", "batch_size", "iteration_type"):
+        ctx.set_parameter_source(
+            name,
+            ParameterSource.COMMANDLINE
+            if name in explicit
+            else ParameterSource.DEFAULT,
+        )
+    return ctx
+
+
 def test_validate_iteration_params():
     """Test validation of iteration parameters for different tasks."""
-    ctx = click.Context(click.Command("test"))
     param = None
 
-    # Test embedding task (should use batch_size)
-    ctx.params = {
-        "task": "text-to-embeddings",
-        "num_concurrency": [1, 2, 4],
-        "batch_size": [8, 16, 32],
-    }
-    result = validate_iteration_params(ctx, param, "num_concurrency")
-    assert result == "batch_size"
-    assert ctx.params["batch_size"] == [8, 16, 32]
-    assert ctx.params["num_concurrency"] == [1]
+    # Pooling tasks keep iterating over batch_size when --iteration-type is
+    # left at its default
+    for task in ("text-to-embeddings", "text-to-rerank"):
+        ctx = _iteration_ctx(task, [1, 2, 4], [8, 16, 32])
+        result = validate_iteration_params(ctx, param, "num_concurrency")
+        assert result == "batch_size"
+        assert ctx.params["batch_size"] == [8, 16, 32]
+        assert ctx.params["num_concurrency"] == [1]
 
     # Test chat task (should use num_concurrency)
-    ctx.params = {
-        "task": "text-to-text",
-        "num_concurrency": [1, 2, 4],
-        "batch_size": [8, 16, 32],
-    }
+    ctx = _iteration_ctx("text-to-text", [1, 2, 4], [8, 16, 32])
     result = validate_iteration_params(ctx, param, "batch_size")
     assert result == "num_concurrency"
     assert ctx.params["batch_size"] == [1]
     assert ctx.params["num_concurrency"] == [1, 2, 4]
 
 
+def test_validate_iteration_params_honors_explicit_concurrency_for_pooling():
+    """An explicit --iteration-type wins for embeddings and rerank."""
+    param = None
+
+    for task in ("text-to-embeddings", "text-to-rerank"):
+        ctx = _iteration_ctx(
+            task,
+            [1, 2, 4],
+            [8, 16, 32],
+            explicit=("iteration_type", "num_concurrency"),
+        )
+        result = validate_iteration_params(ctx, param, "num_concurrency")
+        assert result == "num_concurrency"
+        assert ctx.params["num_concurrency"] == [1, 2, 4]
+        assert ctx.params["batch_size"] == [1]
+
+
+def test_validate_iteration_params_explicit_concurrency_uses_defaults():
+    """--iteration-type num_concurrency without --num-concurrency defaults."""
+    ctx = _iteration_ctx("text-to-embeddings", [], [], explicit=("iteration_type",))
+    result = validate_iteration_params(ctx, None, "num_concurrency")
+    assert result == "num_concurrency"
+    assert ctx.params["num_concurrency"] == DEFAULT_NUM_CONCURRENCIES
+    assert ctx.params["batch_size"] == [1]
+
+
+def test_validate_iteration_params_honors_explicit_batch_size_for_pooling():
+    """--iteration-type batch_size stays on the batch_size axis."""
+    ctx = _iteration_ctx(
+        "text-to-embeddings", [1], [8, 16], explicit=("iteration_type", "batch_size")
+    )
+    result = validate_iteration_params(ctx, None, "batch_size")
+    assert result == "batch_size"
+    assert ctx.params["batch_size"] == [8, 16]
+    assert ctx.params["num_concurrency"] == [1]
+
+
+def test_validate_iteration_params_warns_on_dropped_concurrency():
+    """--num-concurrency is reported as ignored instead of dropped silently."""
+    ctx = _iteration_ctx(
+        "text-to-embeddings", [4, 8], [8, 16], explicit=("num_concurrency",)
+    )
+    with patch("genai_bench.cli.validation.logger") as mock_logger:
+        result = validate_iteration_params(ctx, None, "num_concurrency")
+
+    assert result == "batch_size"
+    assert ctx.params["num_concurrency"] == [1]
+    warning = " ".join(call.args[0] for call in mock_logger.warning.call_args_list)
+    assert "--num-concurrency" in warning
+    assert "--iteration-type num_concurrency" in warning
+
+
+def test_validate_iteration_params_warns_on_dropped_batch_size():
+    """--batch-size is reported as ignored when iterating over concurrency."""
+    ctx = _iteration_ctx("text-to-text", [4, 8], [8, 16], explicit=("batch_size",))
+    with patch("genai_bench.cli.validation.logger") as mock_logger:
+        result = validate_iteration_params(ctx, None, "num_concurrency")
+
+    assert result == "num_concurrency"
+    assert ctx.params["batch_size"] == [1]
+    warning = " ".join(call.args[0] for call in mock_logger.warning.call_args_list)
+    assert "--batch-size" in warning
+
+
+def test_validate_iteration_params_rejects_batch_size_for_generative_task():
+    """batch_size iteration is only implemented for pooling tasks."""
+    ctx = _iteration_ctx("text-to-text", [1, 2], [8, 16], explicit=("iteration_type",))
+    with patch("genai_bench.cli.validation.logger") as mock_logger:
+        result = validate_iteration_params(ctx, None, "batch_size")
+
+    assert result == "num_concurrency"
+    assert ctx.params["num_concurrency"] == [1, 2]
+    assert ctx.params["batch_size"] == [1]
+    warning = " ".join(call.args[0] for call in mock_logger.warning.call_args_list)
+    assert "not supported for text-to-text" in warning
+
+
 def test_validate_iteration_params_with_defaults():
     """Test validate_iteration_params with default values."""
-    ctx = click.Context(click.Command("test"))
     param = None
 
     # Test with default values for text-to-text
-    with patch("click.echo") as mock_echo:
-        ctx.params = {
-            "task": "text-to-text",
-            "num_concurrency": [],
-            "batch_size": [],
-        }
+    ctx = _iteration_ctx("text-to-text", [], [])
+    with patch("genai_bench.cli.validation.logger") as mock_logger:
         result = validate_iteration_params(ctx, param, "batch_size")
-        mock_echo.assert_called_once_with(
-            "Note: Using num_concurrency iteration for text-to-text task"
-        )
+        mock_logger.warning.assert_called_once()
 
-        assert result == "num_concurrency"
-        assert ctx.params["batch_size"] == [1]
-        assert ctx.params["num_concurrency"] == DEFAULT_NUM_CONCURRENCIES
+    assert result == "num_concurrency"
+    assert ctx.params["batch_size"] == [1]
+    assert ctx.params["num_concurrency"] == DEFAULT_NUM_CONCURRENCIES
 
     # Test with default values for text-to-embeddings
-    with patch("click.echo") as mock_echo:
-        ctx.params = {
-            "task": "text-to-embeddings",
-            "num_concurrency": [],
-            "batch_size": [],
-        }
+    ctx = _iteration_ctx("text-to-embeddings", [], [])
+    with patch("genai_bench.cli.validation.logger") as mock_logger:
         result = validate_iteration_params(ctx, param, "num_concurrency")
-        mock_echo.assert_called_once_with(
-            "Note: Using batch_size iteration for text-to-embeddings task"
+        mock_logger.info.assert_called_once()
+
+    assert result == "batch_size"
+    assert ctx.params["batch_size"] == DEFAULT_BATCH_SIZES
+    assert ctx.params["num_concurrency"] == [1]
+
+
+def test_validate_iteration_params_without_parameter_source():
+    """A bare context without param sources falls back to legacy behavior."""
+    ctx = click.Context(click.Command("test"))
+    ctx.params = {
+        "task": "text-to-embeddings",
+        "num_concurrency": [1, 2],
+        "batch_size": [8],
+    }
+    with patch.object(ctx, "get_parameter_source", return_value=None):
+        result = validate_iteration_params(ctx, None, "num_concurrency")
+    assert result == "batch_size"
+    assert ctx.params["batch_size"] == [8]
+    assert ctx.params["num_concurrency"] == [1]
+
+
+def _iteration_probe_command():
+    """
+    Build a command from the real benchmark options involved in axis selection.
+
+    Copies the Parameter objects so the shared benchmark command is untouched,
+    and drops prompting so CliRunner can drive it non-interactively. Using the
+    real options means this exercises Click's own parameter-source tracking,
+    which is what distinguishes an explicit --iteration-type from the default.
+    """
+    from genai_bench.cli.cli import benchmark
+
+    needed = {"api_backend", "task", "num_concurrency", "batch_size", "iteration_type"}
+    params = []
+    for param in benchmark.params:
+        if param.name not in needed:
+            continue
+        param = copy.copy(param)
+        param.prompt = None
+        param.required = False
+        params.append(param)
+
+    @click.command()
+    def probe(**kwargs):
+        ctx = click.get_current_context()
+        click.echo(
+            f"{ctx.params['iteration_type']}|"
+            f"{list(ctx.params['num_concurrency'])}|"
+            f"{list(ctx.params['batch_size'])}"
         )
 
-        assert result == "batch_size"
-        assert ctx.params["batch_size"] == DEFAULT_BATCH_SIZES
-        assert ctx.params["num_concurrency"] == [1]
+    probe.params = params
+    return probe
+
+
+@pytest.mark.parametrize(
+    "args,expected",
+    [
+        # Pooling tasks keep the historical batch_size axis by default
+        (
+            [],
+            f"batch_size|[1]|{DEFAULT_BATCH_SIZES}",
+        ),
+        # An explicit --iteration-type switches the axis and picks up the
+        # concurrency defaults
+        (
+            ["--iteration-type", "num_concurrency"],
+            f"num_concurrency|{DEFAULT_NUM_CONCURRENCIES}|[1]",
+        ),
+        # ... and honors explicitly requested concurrency levels
+        (
+            [
+                "--iteration-type",
+                "num_concurrency",
+                "--num-concurrency",
+                "4",
+                "--num-concurrency",
+                "16",
+            ],
+            "num_concurrency|[4, 16]|[1]",
+        ),
+        # An explicit batch_size axis still works
+        (
+            ["--iteration-type", "batch_size", "--batch-size", "8"],
+            "batch_size|[1]|[8]",
+        ),
+    ],
+)
+def test_validate_iteration_params_end_to_end(args, expected):
+    """Axis selection resolves correctly through a real Click invocation."""
+    runner = CliRunner()
+    result = runner.invoke(
+        _iteration_probe_command(),
+        ["--api-backend", "openai", "--task", "text-to-embeddings", *args],
+    )
+    assert result.exit_code == 0, result.output
+    assert expected in result.output
+
+
+def test_validate_iteration_params_end_to_end_warns_on_dropped_concurrency(caplog):
+    """--num-concurrency without an explicit axis switch warns and is dropped."""
+    runner = CliRunner()
+    with caplog.at_level(logging.WARNING, logger="genai_bench.cli.validation"):
+        result = runner.invoke(
+            _iteration_probe_command(),
+            [
+                "--api-backend",
+                "openai",
+                "--task",
+                "text-to-embeddings",
+                "--num-concurrency",
+                "4",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "Ignoring --num-concurrency" in caplog.text
+    assert f"batch_size|[1]|{DEFAULT_BATCH_SIZES}" in result.output
 
 
 def test_validate_object_storage_options():

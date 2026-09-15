@@ -51,6 +51,7 @@ genai-bench benchmark --api-backend sglang \
 - `--model-tokenizer` - Path to the model tokenizer **(required)**
 - `--num-concurrency` - Number of concurrent requests to send (multiple values supported in different runs)
 - `--batch-size` - Batch sizes for embeddings/rerank tasks
+- `--iteration-type` - Which axis to iterate over, `num_concurrency` or `batch_size`. Defaults to `batch_size` for embeddings/rerank tasks and `num_concurrency` for all others; set it explicitly to load test embeddings/rerank over concurrency levels
 - `--traffic-scenario` - Define input/output token distributions, more info in [Traffic Scenarios](../user-guide/scenario-definition.md)
 
 #### **Dataset Options**

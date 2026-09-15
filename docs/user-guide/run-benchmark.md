@@ -67,7 +67,19 @@ For complex setups, we recommend use of [dataset configs](#selecting-datasets).
 
 ### Start an embedding benchmark
 
-Below is a sample command to trigger an embedding benchmark task. Note: when running an embedding benchmark, it is recommended to set `--num-concurrency` to 1.
+Below is a sample command to trigger an embedding benchmark task. Embedding and rerank benchmarks iterate over `--batch-size` by default, which measures bulk throughput at concurrency 1.
+
+To measure online serving latency under independently arriving requests instead, pass `--iteration-type num_concurrency` and the concurrency levels you want. The run then iterates over `--num-concurrency` with a batch size of 1:
+
+```shell
+genai-bench benchmark --api-backend sglang \
+            ... \
+            --task text-to-embeddings \
+            --iteration-type num_concurrency \
+            --num-concurrency 1 \
+            --num-concurrency 8 \
+            --num-concurrency 32
+```
 
 ```shell
 genai-bench benchmark --api-backend sglang \
