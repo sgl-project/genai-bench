@@ -586,7 +586,8 @@ def experiment_options(func):
         help="""
             List of batch sizes to use for tasks. Only supported for
             text-to-embeddings or text-to-rerank tasks for now. Default batch sizes
-            [1, 2, 4, 8, 24, 48, 96].
+            [1, 2, 4, 8, 24, 48, 96]. Ignored unless the run iterates over
+            batch_size, see --iteration-type.
 
             \b
             Example:
@@ -602,6 +603,8 @@ def experiment_options(func):
         default=DEFAULT_NUM_CONCURRENCIES,
         help="""
                 List of concurrency levels to run the experiment with.
+                Ignored unless the run iterates over num_concurrency, see
+                --iteration-type.
 
                 \b
                 Example to input multiple values:
@@ -616,8 +619,11 @@ def experiment_options(func):
         default="num_concurrency",
         callback=validate_iteration_params,
         help="Type of iteration to use for the experiment. "
-        "Note: batch_size is auto-selected for text-to-embeddings tasks, "
-        "num_concurrency for others.",
+        "Defaults to batch_size for text-to-embeddings and text-to-rerank "
+        "tasks and num_concurrency for others. Set it explicitly to "
+        "num_concurrency to load test embeddings or rerank over concurrency "
+        "levels instead of batch sizes. batch_size iteration is only "
+        "supported for those two tasks.",
     )(func)
     func = click.option(
         "--model",

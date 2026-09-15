@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import click
+from click.core import ParameterSource
 from huggingface_hub.utils import HfHubHTTPError
 from transformers import AutoTokenizer
 
@@ -39,6 +40,10 @@ API_BACKEND_USER_MAP = {
 
 DEFAULT_NUM_CONCURRENCIES = [1, 2, 4, 8, 16, 32, 64, 128, 256]
 DEFAULT_BATCH_SIZES = [1, 2, 4, 8, 24, 48, 96]
+
+# Tasks that pool a batch of inputs into a single request. These iterate over
+# batch_size by default, but can also be load tested over concurrency levels.
+POOLING_TASKS = frozenset({"text-to-embeddings", "text-to-rerank"})
 
 DEFAULT_SCENARIOS_FOR_CHAT = [
     "N(480,240)/(300,150)",
@@ -205,9 +210,26 @@ def validate_tokenizer(model_tokenizer):
         raise
 
 
+def _is_explicitly_set(ctx, name: str) -> bool:
+    """
+    Check whether a parameter was set by the user rather than left at default.
+
+    The source is None for a parameter Click has not seen, in which case we
+    cannot tell the user's intent and fall back to treating it as a default.
+    """
+    source = ctx.get_parameter_source(name)
+    return source is not None and source is not ParameterSource.DEFAULT
+
+
 def validate_iteration_params(ctx, param, value) -> str:
     """
     Validate and determine iteration parameters based on task type.
+
+    Pooling tasks iterate over batch_size by default to stay backward
+    compatible, but an explicit --iteration-type is honored so they can also be
+    load tested over concurrency levels. Every other task iterates over
+    num_concurrency. Whichever axis loses is pinned to 1, and explicitly
+    provided values for it are reported as ignored instead of dropped silently.
 
     Args:
         ctx: Click context
@@ -221,20 +243,36 @@ def validate_iteration_params(ctx, param, value) -> str:
     num_concurrency = ctx.params.get("num_concurrency", [])
     batch_size = ctx.params.get("batch_size", [])
 
-    # For text-to-embeddings tasks, always use batch_size iteration
-    if task == "text-to-embeddings" or task == "text-to-rerank":
-        if value != "batch_size":
-            click.echo("Note: Using batch_size iteration for text-to-embeddings task")
-        batch_size = batch_size or DEFAULT_BATCH_SIZES
-        value = "batch_size"
-        num_concurrency = [1]
-
-    # For all other tasks, use num_concurrency iteration
-    else:
-        if value != "num_concurrency":
-            click.echo(f"Note: Using num_concurrency iteration for {task} task")
-        num_concurrency = num_concurrency or DEFAULT_NUM_CONCURRENCIES
+    if task in POOLING_TASKS:
+        if not _is_explicitly_set(ctx, "iteration_type") and value != "batch_size":
+            logger.info(
+                f"Using batch_size iteration for {task} task. Pass "
+                f"--iteration-type num_concurrency to iterate over concurrency "
+                f"levels instead."
+            )
+            value = "batch_size"
+    elif value != "num_concurrency":
+        logger.warning(
+            f"{value} iteration is not supported for {task} task, using "
+            f"num_concurrency iteration instead."
+        )
         value = "num_concurrency"
+
+    if value == "batch_size":
+        batch_size = batch_size or DEFAULT_BATCH_SIZES
+        if _is_explicitly_set(ctx, "num_concurrency"):
+            logger.warning(
+                "Ignoring --num-concurrency because this run iterates over "
+                "batch_size. Pass --iteration-type num_concurrency to iterate "
+                "over concurrency levels instead."
+            )
+        num_concurrency = [1]
+    else:
+        num_concurrency = num_concurrency or DEFAULT_NUM_CONCURRENCIES
+        if _is_explicitly_set(ctx, "batch_size"):
+            logger.warning(
+                "Ignoring --batch-size because this run iterates over num_concurrency."
+            )
         batch_size = [1]
 
     # Update context with validated values
@@ -247,11 +285,6 @@ def validate_iteration_params(ctx, param, value) -> str:
     )
 
     return value
-
-
-# -------------------------
-# CLI Validation Functions
-# -------------------------
 
 
 def validate_api_backend(ctx, param, value):
