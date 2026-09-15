@@ -178,8 +178,10 @@ def _create_sheet_with_common_layout(
         sheet.append(row)
         num_rows += 1
 
-    # Merge GPU Type column cells
-    merge_cells(sheet, 2, num_rows, 1)
+    # Merge GPU Type column cells. A scenario with no completed runs produces no
+    # rows at all, leaving nothing to merge.
+    if num_rows > 1:
+        merge_cells(sheet, 2, num_rows, 1)
 
     apply_number_format(sheet, exclude_columns=["A", "B", "C"])
     column_width_autofit(sheet)
@@ -642,6 +644,10 @@ def create_single_request_metrics_sheet(
 
 
 def merge_cells(worksheet: Worksheet, start_row: int, end_row: int, column_index: int):
+    if end_row < start_row:
+        # Empty range, i.e. the caller appended no rows for this group.
+        return
+
     start_cell = f"{get_column_letter(column_index)}{start_row}"
     end_cell = f"{get_column_letter(column_index)}{end_row}"
     value_to_keep = worksheet[start_cell].value

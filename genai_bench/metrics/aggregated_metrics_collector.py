@@ -101,6 +101,7 @@ class AggregatedMetricsCollector:
         if (
             metrics.output_latency is not None
             and metrics.output_latency < 0.001
+            and metrics.tpot is not None
             and metrics.tpot != 0
         ):
             logger.warning(
@@ -208,6 +209,12 @@ class AggregatedMetricsCollector:
             # Validate that all values are valid for processing
             if not values:
                 if key in RequestLevelMetrics.AUDIO_METRICS_FIELDS:
+                    continue
+                if key in RequestLevelMetrics.SINGLE_TOKEN_UNDEFINED_FIELDS:
+                    logger.warning(
+                        f"No values found for metric '{key}'. This is expected "
+                        f"when every response returned a single output token."
+                    )
                     continue
                 raise ValueError(
                     f"No values found for metric '{key}'. This should never happen!"

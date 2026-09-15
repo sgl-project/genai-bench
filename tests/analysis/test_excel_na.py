@@ -61,7 +61,6 @@ def test_summary_displays_na_when_threshold_not_met():
     metadata = _make_metadata([scenario])
 
     # Build run_data where no iteration exceeds threshold (10 tokens/s)
-    # Provide a dummy individual_request_metrics entry to avoid empty merge ranges
     run_data = {
         scenario: {
             1: {
@@ -191,3 +190,55 @@ def test_time_unit_conversion_milliseconds_to_seconds():
         assert e2e_latency_value == 1, (
             f"Expected e2e_latency value 1s, got: {e2e_latency_value}"
         )
+
+
+def test_workbook_with_no_completed_runs():
+    """A scenario with no completed runs yields empty sheets, not a crash.
+
+    genai-bench reaches this state whenever a scenario finishes without
+    aggregated metrics, e.g. when the run is too short for any request to
+    complete or when every request metric was rejected before aggregation.
+    """
+    scenario = "D(512,1)"
+    metadata = _make_metadata([scenario])
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "empty.xlsx")
+        create_workbook(metadata, {}, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+
+        # The Appendix has its header row and nothing else.
+        appendix = wb["Appendix"]
+        assert appendix.max_row == 1
+
+        # The Summary still reports the scenario, with N/A for both values.
+        summary_rows = [
+            row for row in wb["Summary"].iter_rows(min_row=2, values_only=True)
+        ]
+        assert any(row[2] == "N/A" and row[3] == "N/A" for row in summary_rows)
+
+
+def test_workbook_with_empty_individual_request_metrics():
+    """An iteration that recorded no individual requests must not crash."""
+    scenario = "D(100,100)"
+    metadata = _make_metadata([scenario])
+
+    run_data = {
+        scenario: {
+            1: {
+                "aggregated_metrics": _agg_metrics(
+                    scenario, 1, output_infer_speed_mean=50.0
+                ),
+                "individual_request_metrics": [],
+            }
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as td:
+        out_path = os.path.join(td, "no_requests.xlsx")
+        create_workbook(metadata, run_data, out_path, percentile="mean")
+
+        wb = load_workbook(out_path)
+        # The scenario is still summarized from its aggregated metrics.
+        assert wb["Appendix"].max_row == 2

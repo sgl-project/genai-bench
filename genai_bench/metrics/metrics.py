@@ -50,6 +50,15 @@ class RequestLevelMetrics(BaseModel):
     AUDIO_METRICS_FIELDS: ClassVar[set[str]] = {
         "audio_throughput",
     }
+    # Metrics that do not exist for a response with a single output token. TPOT
+    # measures the interval between output tokens, and the fields derived from it
+    # inherit that; one token provides no interval to measure. See
+    # RequestMetricsCollector._calculate_output_metrics.
+    SINGLE_TOKEN_UNDEFINED_FIELDS: ClassVar[set[str]] = {
+        "tpot",
+        "output_inference_speed",
+        "output_throughput",
+    }
 
     @model_validator(mode="before")
     def validate_metrics(cls, values):
@@ -60,17 +69,24 @@ class RequestLevelMetrics(BaseModel):
             return values
 
         error_code = values.get("error_code")
-        if error_code is None:
-            # Validate all metric fields
-            for field_name, field_value in values.items():
-                if (
-                    field_name
-                    not in ({"error_code", "error_message"} | cls.AUDIO_METRICS_FIELDS)
-                    and field_value is None
-                ):
-                    raise ValueError(
-                        f"{field_name} must not be None if error_code is None."
-                    )
+        if error_code is not None:
+            return values
+
+        optional_fields = {"error_code", "error_message"} | cls.AUDIO_METRICS_FIELDS
+
+        # A single output token leaves TPOT and its derived metrics undefined
+        # rather than wrong, so accept them as absent instead of rejecting the
+        # record and losing the measurements that are valid, such as TTFT.
+        num_output_tokens = values.get("num_output_tokens")
+        if num_output_tokens is not None and num_output_tokens <= 1:
+            optional_fields = optional_fields | cls.SINGLE_TOKEN_UNDEFINED_FIELDS
+
+        # Validate all metric fields
+        for field_name, field_value in values.items():
+            if field_name not in optional_fields and field_value is None:
+                raise ValueError(
+                    f"{field_name} must not be None if error_code is None."
+                )
         return values
 
 
