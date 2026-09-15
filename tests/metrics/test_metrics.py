@@ -506,3 +506,88 @@ def test_validate_metrics_from_json():
     )
     with pytest.raises(ValueError, match="tpot must not be None if error_code is None"):
         RequestLevelMetrics.model_validate_json(none_value_json)
+
+
+def _single_token_metrics(**overrides):
+    """A record as RequestMetricsCollector produces it for a 1-token response."""
+    fields = {
+        "ttft": 0.5,
+        "tpot": None,
+        "e2e_latency": 0.6,
+        "output_latency": 0.1,
+        "output_inference_speed": None,
+        "num_input_tokens": 512,
+        "num_output_tokens": 1,
+        "num_reasoning_tokens": 0,
+        "total_tokens": 513,
+        "input_throughput": 1024.0,
+        "output_throughput": None,
+    }
+    fields.update(overrides)
+    return fields
+
+
+def test_single_token_response_produces_a_valid_record():
+    """A 1-token response keeps the metrics that are defined for it."""
+    metrics = RequestLevelMetrics(**_single_token_metrics())
+
+    assert metrics.tpot is None
+    assert metrics.output_inference_speed is None
+    assert metrics.output_throughput is None
+    # The measurements that do exist survive.
+    assert metrics.ttft == 0.5
+    assert metrics.e2e_latency == 0.6
+    assert metrics.num_output_tokens == 1
+
+
+def test_single_token_record_survives_a_serialization_round_trip():
+    """The master re-validates worker records with model_validate_json."""
+    metrics = RequestLevelMetrics(**_single_token_metrics())
+
+    restored = RequestLevelMetrics.model_validate_json(metrics.model_dump_json())
+
+    assert restored.tpot is None
+    assert restored.ttft == 0.5
+    assert restored.num_output_tokens == 1
+
+
+def test_multi_token_response_still_requires_tpot():
+    """The relaxed validation only applies to single-token responses."""
+    with pytest.raises(ValueError, match="tpot must not be None"):
+        RequestLevelMetrics(**_single_token_metrics(num_output_tokens=100))
+
+
+def test_single_token_response_is_not_reported_as_abnormal(
+    aggregated_metrics_collector, caplog
+):
+    """filter_metrics must not describe an undefined tpot as abnormal."""
+    metrics = RequestLevelMetrics(**_single_token_metrics(output_latency=0.0002))
+
+    with caplog.at_level(logging.WARNING):
+        aggregated_metrics_collector.add_single_request_metrics(metrics)
+
+    assert "abnormal inference speed" not in caplog.text
+    assert len(aggregated_metrics_collector.all_request_metrics) == 1
+
+
+def test_aggregate_metrics_with_only_single_token_responses(
+    aggregated_metrics_collector,
+):
+    """A run of 1-token responses aggregates instead of raising."""
+    for _ in range(3):
+        aggregated_metrics_collector.add_single_request_metrics(
+            RequestLevelMetrics(**_single_token_metrics())
+        )
+
+    aggregated_metrics_collector.aggregate_metrics_data(
+        start_time=0.0, end_time=10.0, warmup_ratio=None, cooldown_ratio=None
+    )
+
+    stats = aggregated_metrics_collector.aggregated_metrics.stats
+    # Defined metrics are aggregated.
+    assert stats.ttft.mean == 0.5
+    assert stats.e2e_latency.mean == 0.6
+    assert stats.num_output_tokens.sum == 3
+    # Undefined ones stay empty rather than aborting the aggregation.
+    assert stats.tpot.mean is None
+    assert stats.output_inference_speed.mean is None
