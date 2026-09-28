@@ -156,6 +156,7 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
     # Check metadata calculations
     assert aggregated_metrics.num_requests == 3
     assert aggregated_metrics.num_completed_requests == 2
+    assert aggregated_metrics.error_rate == pytest.approx(1 / 3)
     assert aggregated_metrics.mean_input_throughput_tokens_per_s == pytest.approx(
         3.3333, rel=0.0001
     )
