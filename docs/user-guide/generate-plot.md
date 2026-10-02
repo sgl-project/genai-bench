@@ -96,7 +96,9 @@ Advanced multi-line example with 1x3 layout showcasing complex comparisons:
 
 ### Configuration Format
 
-Plot configurations use the following JSON schema:
+Save either of the following JSON configurations to a file and pass its path to `--plot-config`.
+
+`figsize` specifies the width and height in inches, and `position` specifies the zero-based row and column in the grid. Axis labels and per-line labels, colors, and line styles are optional.
 
 #### Single-Line Plots
 
@@ -105,17 +107,17 @@ Plot configurations use the following JSON schema:
   "layout": {
     "rows": 2,
     "cols": 2,
-    "figsize": [16, 12]  // Optional: [width, height] in inches
+    "figsize": [16, 12]
   },
   "plots": [
     {
-      "title": "Plot Title",
-      "x_field": "field.path.from.AggregatedMetrics",
-      "y_field": "another.field.path",           // Single field
-      "x_label": "Custom X Label",              // Optional
-      "y_label": "Custom Y Label",              // Optional
-      "plot_type": "line",                      // line, scatter, or bar
-      "position": [0, 0]                        // [row, col] in grid
+      "title": "Mean E2E Latency vs RPS",
+      "x_field": "requests_per_second",
+      "y_field": "stats.e2e_latency.mean",
+      "x_label": "RPS",
+      "y_label": "Latency (s)",
+      "plot_type": "line",
+      "position": [0, 0]
     }
   ]
 }
@@ -129,12 +131,12 @@ Plot configurations use the following JSON schema:
     {
       "title": "Multi-Line Comparison",
       "x_field": "requests_per_second",
-      "y_fields": [                             // Multiple fields on same plot
+      "y_fields": [
         {
           "field": "stats.e2e_latency.mean",
-          "label": "Mean Latency",              // Optional custom label
-          "color": "blue",                      // Optional custom color
-          "linestyle": "-"                      // Optional: '-', '--', '-.', ':'
+          "label": "Mean Latency",
+          "color": "blue",
+          "linestyle": "-"
         },
         {
           "field": "stats.e2e_latency.p90",
