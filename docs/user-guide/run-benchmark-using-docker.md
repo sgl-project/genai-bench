@@ -51,7 +51,7 @@ docker run -itd \
 
 ### Start a Benchmark Container
 
-Next, start the genai-bench container with the same network flag.
+Next, start the genai-bench container with the same network flag. Use the inference server container name as the API host: `localhost` inside the benchmark container refers to the benchmark container itself. Containers on `benchmark-network` resolve each other by name.
 
 **Example:**
 
@@ -81,14 +81,14 @@ docker run \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
     --env HF_TOKEN="<your_HF_TOKEN>" \
-    --network <your-network> \
+    --network benchmark-network \
     -v <path-to-your-local-model>:/models \
     -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
     --name llama-4-scout-benchmark \
     genai-bench:dev \
     benchmark \
     --api-backend sglang \
-    --api-base http://localhost:8080 \
+    --api-base http://sglang-v0.4.7.post1-llama4-scout-tp4:8080 \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
@@ -129,7 +129,7 @@ docker run \
     --shm-size 5g \
     --ulimit nofile=65535:65535 \
     --env HF_TOKEN="<your_HF_TOKEN>" \
-    --network <your-network> \
+    --network benchmark-network \
     -v <path-to-your-local-model>:/models \
     -v $HOST_OUTPUT_DIR:$CONTAINER_OUTPUT_DIR \
     -v $(pwd)/llava-config.json:/genai-bench/llava-config.json \
@@ -137,7 +137,7 @@ docker run \
     genai-bench:dev \
     benchmark \
     --api-backend sglang \
-    --api-base http://localhost:8080 \
+    --api-base http://sglang-v0.4.7.post1-llama4-scout-tp4:8080 \
     --api-key your_api_key \
     --api-model-name /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
     --model-tokenizer /models/meta-llama/Llama-4-Scout-17B-16E-Instruct \
