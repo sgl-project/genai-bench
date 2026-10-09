@@ -79,8 +79,8 @@ class AggregatedMetricsCollector:
     @staticmethod
     def filter_metrics(metrics: RequestLevelMetrics) -> bool:
         """
-        Detects and handles unreliable TPOT/inference_speed values by setting them
-        to None.
+        Detects and handles unreliable output timing and throughput values by
+        setting them to None.
 
         When output generation is very short (output_latency < 0.001s),
         TPOT becomes sensitive to timing jitter and network latency.
@@ -111,9 +111,12 @@ class AggregatedMetricsCollector:
                 f"num_output_tokens={metrics.num_output_tokens}, "
                 f"output_latency={metrics.output_latency})"
             )
-            # Set these fields to None so aggregation skips them
+            # Clear the latency and all rates derived from it so both live and
+            # final aggregation skip the same unreliable measurement.
             metrics.tpot = None
+            metrics.output_latency = None
             metrics.output_inference_speed = None
+            metrics.output_throughput = None
             return True
 
         return False
