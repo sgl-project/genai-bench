@@ -182,29 +182,32 @@ def test_event_aggregation(aggregated_metrics_collector, locust_environment):
 def test_filter_metrics(aggregated_metrics_collector):
     metrics1 = RequestLevelMetrics(
         ttft=0.1,
-        tpot=0.0000002,
+        tpot=0.0002 / 9,
         e2e_latency=1.0,
         output_latency=0.0002,
         input_throughput=20.0,
-        output_throughput=11.111,
+        output_throughput=45000.0,
         num_input_tokens=2,
         num_output_tokens=10,
-        output_inference_speed=1 / 0.0000002,
+        output_inference_speed=45000.0,
         total_tokens=12,
     )
 
     aggregated_metrics_collector.add_single_request_metrics(metrics1)
 
-    # metrics are added to list, but tpot and inference speed fields are filtered
+    # The request is stored, but its unreliable output timing and rates are filtered.
     assert len(aggregated_metrics_collector.all_request_metrics) == 1
     stored_metrics = aggregated_metrics_collector.all_request_metrics[0]
 
     assert stored_metrics.tpot is None
     assert stored_metrics.output_inference_speed is None
+    assert stored_metrics.output_throughput is None
+    assert stored_metrics.output_latency is None
+    assert aggregated_metrics_collector.get_live_metrics()["output_throughput"] == []
+    assert aggregated_metrics_collector.get_live_metrics()["output_latency"] == []
 
     # Verify other fields preserved
     assert stored_metrics.ttft == 0.1
-    assert stored_metrics.output_latency == 0.0002
     assert stored_metrics.num_output_tokens == 10
 
     embedding_metrics = RequestLevelMetrics(
@@ -216,6 +219,43 @@ def test_filter_metrics(aggregated_metrics_collector):
 
     aggregated_metrics_collector.add_single_request_metrics(embedding_metrics)
     assert embedding_metrics in aggregated_metrics_collector.all_request_metrics
+
+
+def test_filtered_output_metrics_do_not_pollute_aggregates(
+    aggregated_metrics_collector,
+):
+    normal = RequestLevelMetrics(
+        ttft=0.1,
+        tpot=0.1,
+        e2e_latency=1.0,
+        output_latency=0.9,
+        output_inference_speed=10.0,
+        num_input_tokens=2,
+        num_output_tokens=10,
+        num_reasoning_tokens=0,
+        total_tokens=12,
+        input_throughput=20.0,
+        output_throughput=10.0,
+    )
+    outlier = normal.model_copy(
+        update={
+            "tpot": 0.00002,
+            "e2e_latency": 0.10018,
+            "output_latency": 0.00018,
+            "output_inference_speed": 50000.0,
+            "output_throughput": 50000.0,
+        }
+    )
+    aggregated_metrics_collector.add_single_request_metrics(normal)
+    aggregated_metrics_collector.add_single_request_metrics(outlier)
+    aggregated_metrics_collector.aggregate_metrics_data(0, 2, None, None)
+
+    stats = aggregated_metrics_collector.aggregated_metrics.stats
+    live_stats = aggregated_metrics_collector.get_live_metrics()["stats"]
+    assert stats.output_throughput.mean == pytest.approx(10.0)
+    assert stats.output_latency.mean == pytest.approx(0.9)
+    assert live_stats["output_throughput"]["mean"] == pytest.approx(10.0)
+    assert live_stats["output_latency"]["mean"] == pytest.approx(0.9)
 
 
 def test_update_live_metrics(aggregated_metrics_collector):
