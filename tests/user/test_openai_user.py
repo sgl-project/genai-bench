@@ -1,3 +1,4 @@
+import json
 import logging
 from unittest.mock import ANY, MagicMock, patch
 
@@ -16,7 +17,9 @@ from genai_bench.protocol import (
     UserTextToSpeechRequest,
     UserTextToSpeechResponse,
 )
+from genai_bench.user.azure_openai_user import AzureOpenAIUser
 from genai_bench.user.openai_user import OpenAIUser
+from genai_bench.user.together_user import TogetherUser
 
 
 def reasoning_delta_cases():
@@ -1813,3 +1816,42 @@ def test_send_request_rerank_response_no_usage(mock_post, mock_openai_user):
     # Should use the provided num_prefill_tokens when no usage info
     assert user_response.num_prefill_tokens == 15
     mock_post.assert_called_once()
+
+
+@pytest.mark.parametrize("user_class", [OpenAIUser, AzureOpenAIUser, TogetherUser])
+@pytest.mark.parametrize(
+    "error_code, expected_status",
+    [("context_length_exceeded", -1), (None, -1), (429, 429), ("429", 429)],
+)
+def test_stream_errors_are_reported_in_request_metrics(
+    monkeypatch, user_class, error_code, expected_status
+):
+    """An HTTP 200 stream can fail with a symbolic or absent error code."""
+    monkeypatch.setattr(user_class, "host", "http://example.com")
+    user = user_class(environment=MagicMock())
+    response = MagicMock(spec=requests.Response)
+    response.status_code = 200
+    response.iter_lines.return_value = [
+        b"data: "
+        + json.dumps(
+            {"error": {"code": error_code, "message": "Request rejected"}}
+        ).encode()
+    ]
+    monkeypatch.setattr(requests, "post", lambda **kwargs: response)
+
+    result = user.send_request(
+        stream=True,
+        endpoint="/v1/chat/completions",
+        payload={},
+        parse_strategy=user.parse_chat_response,
+        num_prefill_tokens=5,
+    )
+
+    assert result.status_code == expected_status
+    assert result.error_message == "Request rejected"
+    user.environment.runner.send_message.assert_called_once()
+    metrics = json.loads(user.environment.runner.send_message.call_args.args[1])
+    assert metrics["error_code"] == expected_status
+    assert metrics["error_message"] == "Request rejected"
+    assert user.environment.events.request.fire.call_args.kwargs["exception"]
+    response.close.assert_called_once()

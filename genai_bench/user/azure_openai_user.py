@@ -247,12 +247,7 @@ class AzureOpenAIUser(BaseUser):
 
             # Handle streaming error response
             if data.get("error") is not None:
-                return UserResponse(
-                    status_code=data["error"].get("code", -1),
-                    error_message=data["error"].get(
-                        "message", "Unknown error, please check server logs"
-                    ),
-                )
+                return UserResponse.from_stream_error(data["error"])
 
             # Process the streaming data similar to OpenAI
             if (
