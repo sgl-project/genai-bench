@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, conint
+from pydantic import BaseModel, Field, ValidationError, conint
 
 LiveMetricsData = Dict[str, List[float] | Dict[str, float]]
 
@@ -153,6 +153,15 @@ class UserResponse(BaseModel):
             "all documents."
         ),
     )
+
+    @classmethod
+    def from_stream_error(cls, error: Dict[str, Any]) -> "UserResponse":
+        """Convert an API error into metrics, including nonnumeric error codes."""
+        message = error.get("message", "Unknown error, please check server logs")
+        try:
+            return cls(status_code=error.get("code", -1), error_message=message)
+        except ValidationError:
+            return cls(status_code=-1, error_message=message)
 
 
 class UserTextToSpeechResponse(UserResponse):

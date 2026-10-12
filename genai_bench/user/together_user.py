@@ -251,12 +251,7 @@ class TogetherUser(BaseUser):
             # differently. Some might return 200 first and generate error response
             # later in the chunk
             if data.get("error") is not None:
-                return UserResponse(
-                    status_code=data["error"].get("code", -1),
-                    error_message=data["error"].get(
-                        "message", "Unknown error, please check server logs"
-                    ),
-                )
+                return UserResponse.from_stream_error(data["error"])
 
             # Standard OpenAI API streams include "finish_reason"
             # in the second-to-last chunk,
