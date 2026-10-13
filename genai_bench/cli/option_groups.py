@@ -590,8 +590,9 @@ def experiment_options(func):
 
             \b
             Example:
-            --batch-size 1 --batch-size 8 \\
-            --batch-size 16 --batch-size 32
+            --batch-size 1 8 16 32
+
+            Repeating --batch-size for each value is also supported.
             """,
     )(func)
     func = click.option(
@@ -605,9 +606,9 @@ def experiment_options(func):
 
                 \b
                 Example to input multiple values:
-                --num-concurrency 1 --num-concurrency 2 \\
-                --num-concurrency 4 --num-concurrency 8 \\
-                --num-concurrency 16 --num-concurrency 32
+                --num-concurrency 1 2 4 8 16 32
+
+                Repeating --num-concurrency for each value is also supported.
              """,
     )(func)
     func = click.option(
