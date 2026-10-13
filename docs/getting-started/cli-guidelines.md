@@ -146,3 +146,14 @@ genai-bench plot --help
 ```
 
 For further information, refer to the [User Guide](../user-guide/index.md). You can also look at [option_groups.py](https://github.com/sgl-project/genai-bench/blob/main/genai_bench/cli/option_groups.py) directly.
+
+## Multiple iteration values
+
+Use space-separated values to select several concurrency levels or batch sizes:
+
+```bash
+genai-bench benchmark ... --num-concurrency 1 2 4 8
+genai-bench benchmark ... --task text-to-embeddings --batch-size 1 8 16 32
+```
+
+Repeating the flag remains supported, for example `--num-concurrency 1 --num-concurrency 2`. You can combine the two forms. Task-specific selection of the concurrency or batch-size axis follows the existing behavior.

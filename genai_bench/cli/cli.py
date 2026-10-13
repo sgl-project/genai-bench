@@ -17,6 +17,7 @@ from genai_bench.analysis.plot_report import (
     plot_single_scenario_inference_speed_vs_throughput,
 )
 from genai_bench.auth.unified_factory import UnifiedAuthFactory
+from genai_bench.cli.command import IterationValuesCommand
 from genai_bench.cli.option_groups import (
     api_options,
     distributed_locust_options,
@@ -59,7 +60,7 @@ def cli(ctx):
     pass
 
 
-@click.command(context_settings={"show_default": True})
+@click.command(cls=IterationValuesCommand, context_settings={"show_default": True})
 @api_options
 @model_auth_options
 @oci_auth_options
