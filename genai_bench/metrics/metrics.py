@@ -82,6 +82,9 @@ class StatField(BaseModel):
     mean: Optional[float] = None
     stddev: Optional[float] = None
     sum: Optional[float] = None
+    p1: Optional[float] = None
+    p5: Optional[float] = None
+    p10: Optional[float] = None
     p25: Optional[float] = None
     p50: Optional[float] = None
     p75: Optional[float] = None

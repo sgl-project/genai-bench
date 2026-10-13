@@ -41,3 +41,9 @@ This metrics collection summarizes the metrics relevant to a specific traffic lo
 | Num of Error Requests     | The number of error requests in one load.                                                                                    | <pre><code>if requests.status_code != '200': <br/> num_error_requests += 1</code></pre>     |               |
 | Num of Completed Requests | The number of completed requests in one load.                                                                                | <pre><code>if requests.status_code == '200': <br/> num_completed_requests += 1</code></pre> |               |
 | Num of Requests           | The total number of requests processed for one load.                                                                         | `total_requests = num_completed_requests + num_error_requests`                              |               |
+
+## Throughput Tail Percentiles
+
+Saved statistics include p1, p5, and p10 as well as the existing p25/p50/p75/p90/p95/p99 values. For throughput and inference speed, lower values indicate slower requests, so p1/p5/p10 show the low-throughput tail; p95/p99 describe the fast end of the distribution. The live input/output throughput panels display p1/p5/p10.
+
+Use `genai-bench excel --experiment-folder <folder> --excel-name tail --metric-percentile p5` to select p5 statistics in an Excel report, or choose `stats.output_throughput.p5` in a custom plot. As with existing choices, `--metric-percentile` selects the same percentile for all per-request metrics in the report, including latency. Existing results without these fields still load, but new percentiles require a new benchmark run.

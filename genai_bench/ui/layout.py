@@ -79,14 +79,16 @@ def create_metric_panel(
 
     throughput_table = Table.grid(expand=True)
     throughput_table.add_column(justify="left")
-    throughput_table.add_row(
-        Text.from_markup(
-            f"[yellow]Avg:[/yellow] {throughput_data['mean']:.2f} tokens/sec\n"
-            f"Min: {throughput_data['min']:.2f} tokens/sec\n"
-            f"Max: {throughput_data['max']:.2f} tokens/sec",
-            justify="left",
-        )
+    throughput_text = (
+        f"[yellow]Avg:[/yellow] {throughput_data['mean']:.2f} tokens/sec\n"
+        f"Min: {throughput_data['min']:.2f} tokens/sec\n"
+        f"Max: {throughput_data['max']:.2f} tokens/sec"
     )
+    for percentile in ("p1", "p5", "p10"):
+        value = throughput_data.get(percentile)
+        if value is not None:
+            throughput_text += f"\n{percentile.upper()}: {value:.2f} tokens/sec"
+    throughput_table.add_row(Text.from_markup(throughput_text, justify="left"))
 
     latency_panel = Panel(
         latency_table, title=f"{title} Latency", border_style="yellow"
