@@ -141,6 +141,16 @@ class AggregatedMetricsCollector:
                         }
                     )
 
+                elif key in ["input_throughput", "output_throughput"]:
+                    percentiles = np.percentile(values, [1, 5, 10])
+                    self._live_metrics_data["stats"][key].update(
+                        {
+                            "p1": percentiles[0].item(),
+                            "p5": percentiles[1].item(),
+                            "p10": percentiles[2].item(),
+                        }
+                    )
+
     def aggregate_metrics_data(
         self,
         start_time: float,
@@ -213,19 +223,22 @@ class AggregatedMetricsCollector:
                     f"No values found for metric '{key}'. This should never happen!"
                 )
 
-            percentiles = np.percentile(values, [25, 50, 75, 90, 95, 99])
+            percentiles = np.percentile(values, [1, 5, 10, 25, 50, 75, 90, 95, 99])
             stat_field = getattr(self.aggregated_metrics.stats, key)
             stat_field.min = np.min(values).item()
             stat_field.max = np.max(values).item()
             stat_field.mean = np.mean(values).item()
             stat_field.stddev = np.std(values).item()
             stat_field.sum = np.sum(values).item()
-            stat_field.p25 = percentiles[0].item()
-            stat_field.p50 = percentiles[1].item()
-            stat_field.p75 = percentiles[2].item()
-            stat_field.p90 = percentiles[3].item()
-            stat_field.p95 = percentiles[4].item()
-            stat_field.p99 = percentiles[5].item()
+            stat_field.p1 = percentiles[0].item()
+            stat_field.p5 = percentiles[1].item()
+            stat_field.p10 = percentiles[2].item()
+            stat_field.p25 = percentiles[3].item()
+            stat_field.p50 = percentiles[4].item()
+            stat_field.p75 = percentiles[5].item()
+            stat_field.p90 = percentiles[6].item()
+            stat_field.p95 = percentiles[7].item()
+            stat_field.p99 = percentiles[8].item()
 
         # Calculate additional metadata based on aggregated data
         self.aggregated_metrics.run_duration = end_time - start_time

@@ -18,7 +18,9 @@ from genai_bench.utils import is_single_experiment_folder
 @click.command()
 @click.option(
     "--metric-percentile",
-    type=click.Choice(["mean", "p25", "p50", "p75", "p90", "p95", "p99"]),
+    type=click.Choice(
+        ["mean", "p1", "p5", "p10", "p25", "p50", "p75", "p90", "p95", "p99"]
+    ),
     default="mean",
     help="The percentile of the metric data to select from.",
 )
