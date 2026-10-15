@@ -195,10 +195,26 @@ class ImageSampler(Sampler):
         Supports three input types:
         1. Dictionary with raw image bytes
         2. PIL.Image.Image input
-        3. String input (URL or file path)
+        3. String input (base64 image data URL or HTTP(S) URL)
         """
         if isinstance(image, dict) and "bytes" in image:
             image = PIL.Image.open(BytesIO(image["bytes"]))
+
+        if isinstance(image, str) and image.startswith("data:image/"):
+            header, _, payload = image.partition(",")
+            if not header.endswith(";base64") or not payload:
+                raise ValueError(
+                    "Invalid image data URL: expected base64-encoded image data."
+                )
+            try:
+                image = PIL.Image.open(
+                    BytesIO(base64.b64decode(payload, validate=True))
+                )
+                image.load()
+            except (ValueError, OSError) as exc:
+                raise ValueError(
+                    "Invalid image data URL: cannot decode image data."
+                ) from exc
 
         if isinstance(image, Image):
             if image.mode != "RGB":
