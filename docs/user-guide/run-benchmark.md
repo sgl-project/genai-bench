@@ -387,6 +387,11 @@ To specify a dataset config, use: `--dataset-config config.json`.
 
 **Vision dataset config:**
 
+Image columns can contain PIL images, dictionaries with raw image bytes, base64
+image data URLs (such as `data:image/png;base64,...`), or HTTP(S) URLs. Image data
+is converted to RGB JPEG and resized when an image scenario is provided. HTTP(S)
+URLs are passed through to the model API.
+
 ```json
 {
   "source": {
