@@ -68,7 +68,7 @@ class FileDatasetSource(DatasetSource):
         """Load CSV file as a dictionary-like structure to support column names."""
         logger.info(f"Loading CSV file: {file_path}")
 
-        # For CSV files, we'll return a pandas DataFrames
+        # For CSV files, we'll return a pandas DataFrame
         df = pd.read_csv(file_path)
         logger.info(
             f"Loaded {len(df)} rows from CSV file with columns: {list(df.columns)}"

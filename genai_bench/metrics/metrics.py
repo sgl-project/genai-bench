@@ -156,7 +156,7 @@ class AggregatedMetrics(BaseModel):
     )
     mean_input_throughput_tokens_per_s: float = Field(
         0.0,
-        description="The mean of output tokens throughput across all requests "
+        description="The mean of input tokens throughput across all requests "
         "in tokens/s",
     )
     mean_total_tokens_throughput_tokens_per_s: float = Field(
